@@ -1155,14 +1155,18 @@ function workflowButtonState(){
   else if(status==="Enviado a evaluación"){text="Procedimiento enviado";disabled=true;title="Pendiente de inicio por el asesor"}
   else if(status==="En evaluación"){text="En evaluación";disabled=true;title="El asesor se encuentra evaluando el procedimiento"}
   else if(status==="Subsanado"){text="Subsanación enviada";disabled=true;title="Pendiente de nueva revisión del asesor"}
-  else if(status==="Concepto favorable"){text="Concepto favorable";disabled=true;title="Evaluación finalizada"}
+  else if(status==="Concepto favorable"){text="Crear nueva versión";disabled=false;title="La versión aprobada permanece bloqueada; cree una copia editable para realizar cambios"}
   return{text,disabled,title,status};
 }
 function updateWorkflowAction(){
   if(!$("sendReviewTop"))return;const state=workflowButtonState(),button=$("sendReviewTop");button.textContent=state.text;button.disabled=state.disabled;button.title=state.title;$("workflowState").textContent=state.status;
 }
 function handleWorkflowAction(){
-  if(currentRole!=="autor")return;ensureEvaluation();if(["Borrador","Concepto no favorable"].includes(evaluation.status))sendForEvaluation();else if(evaluation.status==="Devuelto para ajustes")submitCorrections();else switchTab("evaluation");
+  if(currentRole!=="autor")return;ensureEvaluation();
+  if(["Borrador","Concepto no favorable"].includes(evaluation.status))sendForEvaluation();
+  else if(evaluation.status==="Devuelto para ajustes")submitCorrections();
+  else if(evaluation.status==="Concepto favorable")createNewVersionFromApproved();
+  else switchTab("evaluation");
 }
 
 function renderEvaluationAnnex(){
@@ -1927,6 +1931,7 @@ function renderEvaluationActions(){
   if(author&&["Borrador","Concepto no favorable"].includes(status))html='<button class="btn primary" type="button" onclick="sendForEvaluation()">Enviar a evaluación</button>';
   if(author&&status==="Devuelto para ajustes")html='<button class="btn primary" type="button" onclick="submitCorrections()">Enviar subsanación</button>';
   if(author&&["Enviado a evaluación","En evaluación","Subsanado"].includes(status))html='<span class="hint">El procedimiento está protegido hasta que el asesor emita una decisión o lo devuelva para ajustes.</span>';
+  if(author&&status==="Concepto favorable")html='<span class="hint">Esta versión está aprobada y permanece bloqueada. Cualquier modificación debe realizarse en una versión nueva.</span><button class="btn primary" type="button" onclick="createNewVersionFromApproved()">Crear nueva versión</button>';
   if(currentRole==="asesor"&&["Enviado a evaluación","Subsanado"].includes(status))html='<button class="btn primary" type="button" onclick="startEvaluation()">Iniciar evaluación</button>';
   if(currentRole==="asesor"&&status==="En evaluación")html='<button class="btn" type="button" onclick="returnForAdjustments()">Devolver para ajustes</button><button class="btn primary" type="button" onclick="issueEvaluationDecision(\'favorable\')">Emitir concepto favorable</button><button class="btn" type="button" onclick="issueEvaluationDecision(\'no_favorable\')">Emitir concepto no favorable</button>';
   if(!html)html='<span class="hint">Consulte el resultado y la trazabilidad de la evaluación.</span>';
@@ -1971,6 +1976,30 @@ function validateEvaluation(){
   ensureEvaluation();const missing=[],invalid=[];evaluationCriteriaFlat.forEach(c=>{const r=evaluation.criteria[c.id];if(!r.result)missing.push(c.id);if(r.result==="No cumple"&&(!filled(r.observation)||!filled(r.adjustment)))invalid.push(c.id);if(r.result==="No aplica"&&!filled(r.observation))invalid.push(c.id)});
   if(missing.length){toast(`Faltan ${missing.length} criterio(s) por evaluar.`);return false}if(invalid.length){toast(`Complete la observación y el ajuste requerido en ${invalid.length} criterio(s).`);return false}return true;
 }
+function nextMajorVersion(value){
+  const match=String(value||"").trim().match(/^(\d+)(?:\.(\d+))?$/);
+  return match?`${Number(match[1])+1}.0`:"2.0";
+}
+function createNewVersionFromApproved(){
+  ensureEvaluation();
+  if(currentRole!=="autor"||evaluation.status!=="Concepto favorable"){toast("Solo una versión aprobada puede originar una nueva versión.");return}
+  const previousVersion=val("version")||"1.0",reason=prompt(`Indique el motivo para crear una nueva versión a partir de la versión ${previousVersion}:`);
+  if(reason===null)return;
+  const normalizedReason=String(reason).trim();if(!normalizedReason){toast("Debe indicar el motivo de la nueva versión.");return}
+  if(!confirm(`La versión ${previousVersion} permanecerá bloqueada y se creará una copia editable. ¿Desea continuar?`))return;
+
+  const approvedEvaluation=JSON.parse(JSON.stringify({...evaluation,archives:undefined}));
+  approvedEvaluation.version=previousVersion;approvedEvaluation.approvedSnapshot=evaluationSnapshot();approvedEvaluation.archivedAt=new Date().toISOString();
+  const archives=[...(evaluation.archives||[]),approvedEvaluation],newVersion=nextMajorVersion(previousVersion);
+
+  $("version").value=newVersion;$("fecha").value=today();$("elaboro").value="";$("reviso").value="";$("aprobo").value="";
+  evaluation=newEvaluationState();evaluation.archives=archives;evaluation.sourceVersion=previousVersion;evaluation.sourceStatus="Concepto favorable";evaluation.createdAt=new Date().toISOString();
+  addEvaluationHistory("Creación de nueva versión",`Versión ${newVersion} derivada de la versión aprobada ${previousVersion}`);
+  addCambio({version:newVersion,fecha:today(),razon:normalizedReason});
+  addNotification("autor","Nueva versión creada",`Se creó la versión ${newVersion} a partir de la versión aprobada ${previousVersion}.`,"version");
+  updateProcedureIdentity();validateCurrentDate();runQualityRules();updateEvaluationUI();updateMenuProgress();saveLocal(true);switchTab("general");
+  toast(`Versión ${newVersion} creada. La versión ${previousVersion} permanece archivada y bloqueada.`);
+}
 function sendForEvaluation(){
   if(currentRole!=="autor")return;const completion=sectionCompletion();if(!completion.revision){toast("Complete los módulos obligatorios antes de enviar el procedimiento.");switchTab("revision");return}if(!confirm(`¿Está seguro de enviar el procedimiento “${val("nombre")||"Sin nombre"}” versión ${val("version")||"—"} para revisión metodológica? Mientras se encuentre en evaluación no podrá modificar su contenido.`))return;
   ensureEvaluation();if(["Concepto no favorable","Concepto favorable"].includes(evaluation.status)){const previous=JSON.parse(JSON.stringify({...evaluation,archives:undefined})),archives=[...(evaluation.archives||[]),previous];evaluation=newEvaluationState();evaluation.archives=archives}
@@ -1986,8 +2015,9 @@ function submitCorrections(){
   if(currentRole!=="autor"||evaluation?.status!=="Devuelto para ajustes")return;const pending=evaluationCriteriaFlat.filter(c=>evaluation.criteria[c.id].result==="No cumple"&&!filled(evaluation.criteria[c.id].response));if(pending.length){toast(`Responda ${pending.length} hallazgo(s) antes de enviar la subsanación.`);return}if(!confirm("¿Enviar los ajustes para una nueva revisión del asesor?"))return;evaluation.status="Subsanado";evaluation.iteration+=1;evaluation.submittedAt=new Date().toISOString();evaluation.snapshot=evaluationSnapshot();addEvaluationHistory("Envío de subsanación",`Iteración ${evaluation.iteration}`);addNotification("asesor","Subsanación recibida",`${val("codigo")||"El procedimiento"} fue ajustado por el autor y requiere una nueva revisión. Iteración ${evaluation.iteration}.`,"subsanacion");saveLocal(true);updateEvaluationUI();toast("Subsanación enviada. El asesor ha sido notificado.");
 }
 function issueEvaluationDecision(type){
-  if(currentRole!=="asesor"||evaluation?.status!=="En evaluación"||!validateEvaluation())return;const stats=evaluationStats();if(!filled(evaluation.concept)){toast("Registre el concepto técnico antes de emitir la decisión.");return}
+  if(currentRole!=="asesor"||evaluation?.status!=="En evaluación"||!["favorable","no_favorable"].includes(type)||!validateEvaluation())return;const stats=evaluationStats();if(!filled(evaluation.concept)){toast("Registre el concepto técnico antes de emitir la decisión.");return}
   if(type==="favorable"){const openFailures=evaluationCriteriaFlat.filter(c=>evaluation.criteria[c.id].result==="No cumple"&&evaluation.criteria[c.id].findingStatus!=="Cerrado");if(stats.score<80||stats.criticalFailures||openFailures.length){toast("El concepto favorable requiere al menos 80 puntos, ningún incumplimiento crítico y todos los hallazgos cerrados.");return}}
+  if(type==="no_favorable"&&stats.score>=90){toast(`No se puede emitir un concepto no favorable con un puntaje de ${stats.score.toFixed(1)}%. Revise las calificaciones o emita un concepto favorable.`);return}
   const label=type==="favorable"?"Concepto favorable":"Concepto no favorable";if(!confirm(`¿Emitir ${label.toLowerCase()} para esta versión?`))return;evaluation.status=label;evaluation.decision=stats.decision;addEvaluationHistory(label,`${stats.score.toFixed(1)}% · ${stats.level}`);addNotification("autor",label,`La revisión de ${val("codigo")||"su procedimiento"} finalizó con ${stats.score.toFixed(1)} puntos y nivel ${stats.level}.`,"concepto");saveLocal(true);updateEvaluationUI();toast(`${label} emitido. El autor ha sido notificado.`);
 }
 function evaluationReportHtml(){
@@ -2022,6 +2052,7 @@ function loadLocal(){
 }
 function newProcedure(){
   if(currentRole==="asesor"){toast("El perfil asesor no puede crear ni modificar procedimientos.");return}
+  if(evaluation?.status==="Concepto favorable"){toast("La versión aprobada es inmutable. Utilice “Crear nueva versión” para realizar cambios sin alterar la evidencia aprobada.");switchTab("evaluation");return}
   if(["Enviado a evaluación","En evaluación","Subsanado"].includes(evaluation?.status)){toast("Finalice o devuelva la evaluación actual antes de crear un procedimiento nuevo.");return}
   if(!confirm("¿Crear un procedimiento nuevo? Se limpiará la información en pantalla."))return;
   fieldIds.forEach(id=>{if($(id))$(id).value=""});$("version").value="1.0";setDateRules();
