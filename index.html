@@ -982,6 +982,75 @@ function initMenuProgress(){
   });
 }
 function filled(value){return !!String(value??"").trim()}
+function flowNodeLabel(a){
+  if(!a)return"Elemento sin identificar";
+  const number=displayedActivityNumber(a);
+  return `${number?number+". ":""}${a.actividad||a.descripcion||a.tipo||"Elemento sin nombre"}`;
+}
+function analyzeFlowGraph(){
+  const nodes=Array.isArray(activities)?activities.filter(a=>a&&a.uid):[],byId=new Map(nodes.map(a=>[a.uid,a]));
+  const adjacency=new Map(nodes.map(a=>[a.uid,new Set()]));
+  const addEdge=(from,to)=>{if(adjacency.has(from)&&byId.has(to))adjacency.get(from).add(to)};
+  nodes.forEach((a,index)=>{
+    if(a.tipo==="Decisión"){
+      addEdge(a.uid,a.decisionSi);addEdge(a.uid,a.decisionNo);
+    }else if(a.tipo==="Conector"){
+      addEdge(a.uid,a.connectorDestino);
+    }else if(a.tipo!=="Fin"&&nodes[index+1]){
+      addEdge(a.uid,nodes[index+1].uid);
+    }
+  });
+  const walk=(origin,map=adjacency)=>{
+    const visited=new Set(),pending=origin&&map.has(origin)?[origin]:[];
+    while(pending.length){
+      const id=pending.pop();if(visited.has(id))continue;visited.add(id);
+      (map.get(id)||[]).forEach(next=>{if(!visited.has(next))pending.push(next)});
+    }
+    return visited;
+  };
+  const start=nodes.find(a=>a.tipo==="Inicio"),end=[...nodes].reverse().find(a=>a.tipo==="Fin");
+  const reachable=walk(start?.uid),reverse=new Map(nodes.map(a=>[a.uid,new Set()]));
+  adjacency.forEach((targets,from)=>targets.forEach(to=>reverse.get(to)?.add(from)));
+  const canReachEnd=walk(end?.uid,reverse);
+  const unreachable=start?nodes.filter(a=>!reachable.has(a.uid)):nodes.slice();
+  const withoutEnd=end?nodes.filter(a=>reachable.has(a.uid)&&!canReachEnd.has(a.uid)):nodes.filter(a=>reachable.has(a.uid));
+  const startCanReachEnd=!!start&&!!end&&canReachEnd.has(start.uid);
+
+  let nextIndex=0;const indices=new Map(),lowLinks=new Map(),stack=[],onStack=new Set(),components=[];
+  const strongConnect=id=>{
+    indices.set(id,nextIndex);lowLinks.set(id,nextIndex);nextIndex++;stack.push(id);onStack.add(id);
+    (adjacency.get(id)||[]).forEach(target=>{
+      if(!reachable.has(target))return;
+      if(!indices.has(target)){strongConnect(target);lowLinks.set(id,Math.min(lowLinks.get(id),lowLinks.get(target)))}
+      else if(onStack.has(target))lowLinks.set(id,Math.min(lowLinks.get(id),indices.get(target)));
+    });
+    if(lowLinks.get(id)===indices.get(id)){
+      const component=[];let current;
+      do{current=stack.pop();onStack.delete(current);component.push(current)}while(current!==id);
+      components.push(component);
+    }
+  };
+  reachable.forEach(id=>{if(!indices.has(id))strongConnect(id)});
+  const cyclicComponents=components.filter(component=>component.length>1||(component.length===1&&adjacency.get(component[0])?.has(component[0])));
+  const asActivities=component=>component.map(id=>byId.get(id)).filter(Boolean);
+  const trappedCycles=cyclicComponents.filter(component=>component.every(id=>!canReachEnd.has(id))).map(asActivities);
+  const returningCycles=cyclicComponents.filter(component=>component.some(id=>canReachEnd.has(id))).map(asActivities);
+
+  const connectorGroups=new Map();
+  nodes.filter(a=>a.tipo==="Conector").forEach(a=>{
+    const key=String(a.connectorId||"").trim().toUpperCase();if(!key)return;
+    if(!connectorGroups.has(key))connectorGroups.set(key,[]);connectorGroups.get(key).push(a);
+  });
+  const duplicateConnectors=[...connectorGroups.entries()].filter(([,items])=>items.length>1).map(([id,items])=>({id,items}));
+
+  const divergentDecisions=[];
+  nodes.filter(a=>a.tipo==="Decisión"&&byId.has(a.decisionSi)&&byId.has(a.decisionNo)&&a.decisionSi!==a.decisionNo).forEach(a=>{
+    const yesReach=walk(a.decisionSi),noReach=walk(a.decisionNo);
+    const convergesBeforeEnd=[...yesReach].some(id=>noReach.has(id)&&id!==end?.uid);
+    if(!convergesBeforeEnd)divergentDecisions.push(a);
+  });
+  return{start,end,reachable,canReachEnd,unreachable,withoutEnd,startCanReachEnd,trappedCycles,returningCycles,duplicateConnectors,divergentDecisions};
+}
 function controlIsComplete(a){
   return !a.tieneControl||[a.controlResponsable,a.controlPeriodicidad,a.controlAccion,a.controlEjecucion,a.controlDesviacion,a.controlEvidencia].every(filled);
 }
@@ -989,7 +1058,7 @@ function activitiesAreComplete(){
   if(activities.length<2)return false;
   const starts=activities.filter(a=>a.tipo==="Inicio"),ends=activities.filter(a=>a.tipo==="Fin");
   if(starts.length!==1||ends.length!==1||activities[0]?.tipo!=="Inicio"||activities[activities.length-1]?.tipo!=="Fin"||!filled(starts[0].descripcion)||!filled(ends[0].descripcion))return false;
-  return activities.every(a=>{
+  const recordsComplete=activities.every(a=>{
     if(!filled(a.actividad))return false;
     if(a.tipo==="Conector")return filled(a.connectorId)&&filled(a.connectorDestino)&&!!activityByUid(a.connectorDestino)&&a.connectorDestino!==a.uid;
     if(a.tipo==="Inicio"||a.tipo==="Fin")return filled(a.descripcion);
@@ -997,6 +1066,9 @@ function activitiesAreComplete(){
     if(a.tipo==="Decisión")return filled(a.decisionSi)&&filled(a.decisionNo)&&a.decisionSi!==a.decisionNo&&!!activityByUid(a.decisionSi)&&!!activityByUid(a.decisionNo);
     return true;
   });
+  if(!recordsComplete)return false;
+  const graph=analyzeFlowGraph();
+  return graph.unreachable.length===0&&graph.startCanReachEnd&&graph.withoutEnd.length===0&&graph.trappedCycles.length===0&&graph.duplicateConnectors.length===0;
 }
 function sectionCompletion(){
   const general=["proceso","consecutivo","codigo","nombre","version","fecha","responsableProcedimiento"].every(id=>filled(val(id)));
@@ -1166,7 +1238,11 @@ window.addEventListener("resize",positionMethodTip);
 document.addEventListener("scroll",()=>{if(methodTipTarget)positionMethodTip()},{capture:true,passive:true});
 function esc(s=""){return String(s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]))}
 function val(id){return ($(id)?.value||"").trim()}
-function today(){return new Date().toISOString().slice(0,10)}
+function today(){
+  const parts=new Intl.DateTimeFormat("en-US",{timeZone:"America/Bogota",year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(new Date());
+  const values=Object.fromEntries(parts.filter(p=>p.type!=="literal").map(p=>[p.type,p.value]));
+  return `${values.year}-${values.month}-${values.day}`;
+}
 
 function setDateRules(){
   $("fecha").min=today();
@@ -1465,6 +1541,16 @@ function runQualityRules(){
   add(uniqueLimits,"El flujograma contiene exactamente un Inicio y un Fin.",uniqueLimits?"ok":"danger");
   const orderedLimits=uniqueLimits&&activities[0]?.tipo==="Inicio"&&activities[activities.length-1]?.tipo==="Fin";
   add(orderedLimits,"Inicio ocupa la primera posición y Fin la última.",orderedLimits?"ok":"danger");
+
+  const graph=analyzeFlowGraph();
+  const names=items=>items.slice(0,3).map(flowNodeLabel).join(", ")+(items.length>3?", …":"");
+  add(graph.unreachable.length===0,graph.unreachable.length?`${graph.unreachable.length} elemento(s) no pueden alcanzarse desde Inicio: ${names(graph.unreachable)}.`:"Todas las actividades pueden alcanzarse desde Inicio.",graph.unreachable.length?"danger":"ok");
+  add(graph.startCanReachEnd&&graph.withoutEnd.length===0,!graph.startCanReachEnd?"No existe una ruta efectiva desde Inicio hasta Fin.":`${graph.withoutEnd.length} elemento(s) alcanzables no tienen una ruta hacia Fin: ${names(graph.withoutEnd)}.`,"danger");
+  add(graph.trappedCycles.length===0,graph.trappedCycles.length?`${graph.trappedCycles.length} ciclo(s) no tienen salida hacia Fin: ${graph.trappedCycles.slice(0,2).map(group=>names(group)).join(" | ")}.`:"No se identificaron ciclos sin salida.",graph.trappedCycles.length?"danger":"ok");
+  add(graph.duplicateConnectors.length===0,graph.duplicateConnectors.length?`Identificadores de conector duplicados: ${graph.duplicateConnectors.map(group=>group.id).join(", ")}.`:"Los identificadores de conectores son únicos.",graph.duplicateConnectors.length?"danger":"ok");
+  add(graph.divergentDecisions.length===0,graph.divergentDecisions.length?`${graph.divergentDecisions.length} decisión(es) no reconvergen antes de Fin: ${names(graph.divergentDecisions)}. Confirme que las ramas representan resultados independientes.`:"Las bifurcaciones vuelven a un punto común antes de Fin.",graph.divergentDecisions.length?"warn":"ok");
+  add(graph.returningCycles.length===0,graph.returningCycles.length?`${graph.returningCycles.length} ruta(s) regresan a actividades anteriores: ${graph.returningCycles.slice(0,2).map(group=>names(group)).join(" | ")}. Documente la condición de salida, el límite de intentos o el escalamiento.`:"No se identificaron rutas de retorno que puedan repetirse indefinidamente.",graph.returningCycles.length?"warn":"ok");
+
   const startDescribed=starts.length===1&&!!String(starts[0].descripcion||"").trim();
   add(startDescribed,"Inicio describe el evento o condición que activa el procedimiento.",startDescribed?"ok":"danger");
   const endDescribed=ends.length===1&&!!String(ends[0].descripcion||"").trim();
