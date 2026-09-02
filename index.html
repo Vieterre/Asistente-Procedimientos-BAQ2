@@ -132,9 +132,16 @@ td textarea{min-height:66px}
 .kpirow{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:14px}
 .kpi{padding:14px;background:#F6F8F9;border:1px solid var(--line);border-top:3px solid var(--green);border-radius:10px}
 .kpi b{font-size:25px;display:block;color:var(--navy)} .kpi span{font-size:12px;color:var(--muted)}
-.rulelist{display:grid;gap:8px}
-.rule{padding:10px 12px;border-radius:9px;border:1px solid var(--line);background:#FAFBFB}
-.rule.ok{border-left:5px solid var(--green)} .rule.warn{border-left:5px solid var(--yellow)} .rule.danger{border-left:5px solid var(--danger)}
+.rulelist{display:grid;gap:9px}
+.rule{display:grid;grid-template-columns:28px minmax(0,1fr) auto;gap:10px;align-items:start;padding:11px 12px;border-radius:9px;border:1px solid var(--line);background:#FAFBFB}
+.rule.ok{border-left:5px solid var(--green);background:#F4FAF6}.rule.warn{border-left:5px solid #B58A00;background:#FFFBEC}.rule.danger{border-left:5px solid var(--danger);background:#FFF6F5}.rule.info{border-left:5px solid #2D6FA8;background:#F2F7FC}
+.rule-icon{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;font-weight:800;background:#E9EEF1;color:var(--navy)}
+.rule.ok .rule-icon{background:#DDF2E3;color:#14755F}.rule.warn .rule-icon{background:#FFF0B8;color:#725700}.rule.danger .rule-icon{background:#FADBD8;color:#9B1C13}.rule.info .rule-icon{background:#DDEAF5;color:#245B88}
+.rule-copy{min-width:0}.rule-copy b{display:block;margin-bottom:3px;color:var(--navy);font-size:12px}.rule-message{font-size:13px;line-height:1.42}.rule-guidance{margin-top:5px;color:#536B78;font-size:11px;line-height:1.4}
+.rule-actions{display:flex;align-items:center;gap:7px;flex-wrap:wrap;justify-content:flex-end}.rule-severity{display:inline-flex;padding:4px 7px;border-radius:999px;font-size:9px;font-weight:900;letter-spacing:.45px;text-transform:uppercase;white-space:nowrap}
+.rule.ok .rule-severity{background:#DDF2E3;color:#14755F}.rule.warn .rule-severity{background:#FFF0B8;color:#725700}.rule.danger .rule-severity{background:#FADBD8;color:#9B1C13}.rule.info .rule-severity{background:#DDEAF5;color:#245B88}
+.rule-action{border:1px solid #AFC0C9;background:#fff;color:var(--navy);border-radius:7px;padding:6px 8px;font-size:10px;font-weight:800;white-space:nowrap}.rule-action:hover{border-color:var(--green);color:#14755F}
+@media(max-width:720px){.rule{grid-template-columns:28px minmax(0,1fr)}.rule-actions{grid-column:2;justify-content:flex-start}}
 .flowwrap{background:#E9EEF1;border:1px solid #C6D0D5;border-radius:0 0 12px 12px;padding:24px;overflow:auto;min-height:420px;max-height:72vh;scrollbar-color:#91A0A8 #E0E6E9;overscroll-behavior:contain}
 .flow-canvas{width:max-content;min-width:100%;display:flex;justify-content:center;align-items:flex-start}
 #flowSvg{display:block;height:auto;background:#fff;box-shadow:0 8px 24px rgba(0,68,136,.12);transition:width .18s ease;flex:none}
@@ -643,12 +650,12 @@ body.auth-locked>.app{filter:blur(5px);pointer-events:none;user-select:none}
       <button class="btn primary" onclick="runQualityRules()">Ejecutar revisión</button>
     </div>
     <div class="kpirow" style="margin-top:15px">
-      <div class="kpi"><b id="qScore">0%</b><span>Completitud estimada</span></div>
+      <div class="kpi"><b id="qScore">0%</b><span>Calidad ponderada</span></div>
       <div class="kpi"><b id="qIssues">0</b><span>Observaciones pendientes</span></div>
       <div class="kpi"><b id="qActivities">0</b><span>Actividades registradas</span></div>
       <div class="kpi"><b id="qControls">0</b><span>Puntos de control</span></div>
     </div>
-    <div class="rulelist" id="qualityRules"></div>
+    <div class="rulelist" id="qualityRules" aria-live="polite"></div>
   </section>
 
   <section class="panel" id="evaluationPanel">
@@ -1513,66 +1520,82 @@ function renderChanges(){
 }
 
 function runQualityRules(){
-  const rules=[];const add=(ok,msg,level="warn")=>rules.push({ok,msg,level});
-  add(!!val("proceso"),"Proceso organizacional seleccionado.",val("proceso")?"ok":"danger");
-  add(/^([A-Z]{2}(?:-[A-Z]{2,3}){1,2})-P-\d{3}$/.test(val("codigo")),"Código generado y consistente con la tipología Procedimiento (P).",val("codigo")?"ok":"danger");
+  qualityIssueTargets={};flowIssueUids=new Set();
+  const rules=[];const add=(ok,msg,level="warn",options={})=>rules.push({ok,msg,level,id:options.id||`rule_${rules.length+1}`,guidance:options.guidance||"",uids:[...new Set((options.uids||[]).filter(Boolean))]});
+  add(!!val("proceso"),"Proceso organizacional seleccionado.","danger");
+  add(/^([A-Z]{2}(?:-[A-Z]{2,3}){1,2})-P-\d{3}$/.test(val("codigo")),"Código generado y consistente con la tipología Procedimiento (P).","danger");
   add(!!val("nombre"),"Nombre del procedimiento diligenciado.","danger");
   add(!!val("objetivo"),"Objetivo diligenciado.","danger");
   add(!!val("alcance"),"Alcance definido.","danger");
   add(!!val("responsableProcedimiento"),"Responsable del procedimiento identificado.","danger");
   add(!!val("definiciones"),"Definiciones diligenciadas.","warn");
   add(!!val("condiciones"),"Condiciones generales diligenciadas.","warn");
-  add(annexes.some(a=>a.documento.trim()),"Documentos relacionados / anexos identificados.","warn");
+  add(annexes.some(a=>String(a.documento||"").trim()),"Documentos relacionados / anexos identificados.","warn");
   add(activities.length>=2,"Desarrollo del procedimiento registrado.","danger");
-  const actNoResp=activities.filter(a=>!["Inicio","Conector","Fin"].includes(a.tipo)&&!String(a.responsable||"").trim()).length;
-  add(actNoResp===0,actNoResp?`${actNoResp} actividad(es) sin responsable.`:"Todas las actividades operativas tienen responsable.",actNoResp?"danger":"ok");
-  const decisions=activities.filter(a=>a.tipo==="Decisión");
-  add(decisions.every(a=>a.descripcion.trim()||a.actividad.trim()),"Las decisiones registradas están descritas de forma comprensible.",decisions.length?"ok":"warn");
-  const incompleteRoutes=decisions.filter(a=>!a.decisionSi||!a.decisionNo||a.decisionSi===a.decisionNo||!activityByUid(a.decisionSi)||!activityByUid(a.decisionNo)).length;
-  add(incompleteRoutes===0,incompleteRoutes?`${incompleteRoutes} decisión(es) sin rutas Sí/No completas, diferentes y vigentes.`:"Las decisiones cuentan con rutas Sí/No válidas.",incompleteRoutes?"danger":"ok");
-  const connectors=activities.filter(a=>a.tipo==="Conector");
-  const invalidConnectors=connectors.filter(a=>!String(a.connectorId||"").trim()||!a.connectorDestino||!activityByUid(a.connectorDestino)||a.connectorDestino===a.uid).length;
-  add(invalidConnectors===0,invalidConnectors?`${invalidConnectors} conector(es) sin identificador o destino válido.`:"Los conectores cuentan con identificador y destino válido.",invalidConnectors?"danger":"ok");
-  const controlsInFlow=activities.filter(a=>a.tieneControl).length;
-  add(controlsInFlow>0,"Se identificó al menos un punto de control en el procedimiento.",controlsInFlow?"ok":"warn");
-  const controlsMissing=activities.filter(a=>a.tieneControl && (
-    !a.controlResponsable.trim() || !a.controlPeriodicidad.trim() || !a.controlAccion.trim() ||
-    !a.controlEjecucion.trim() || !a.controlDesviacion.trim() || !a.controlEvidencia.trim()
-  )).length;
-  add(controlsMissing===0,controlsMissing?`${controlsMissing} punto(s) de control tienen atributos incompletos.`:"Los puntos de control configurados cuentan con sus atributos completos.",controlsMissing?"danger":"ok");
-  const starts=activities.filter(a=>a.tipo==="Inicio"),ends=activities.filter(a=>a.tipo==="Fin");
-  const uniqueLimits=starts.length===1&&ends.length===1;
-  add(uniqueLimits,"El flujograma contiene exactamente un Inicio y un Fin.",uniqueLimits?"ok":"danger");
-  const orderedLimits=uniqueLimits&&activities[0]?.tipo==="Inicio"&&activities[activities.length-1]?.tipo==="Fin";
-  add(orderedLimits,"Inicio ocupa la primera posición y Fin la última.",orderedLimits?"ok":"danger");
 
-  const graph=analyzeFlowGraph();
-  const names=items=>items.slice(0,3).map(flowNodeLabel).join(", ")+(items.length>3?", …":"");
-  add(graph.unreachable.length===0,graph.unreachable.length?`${graph.unreachable.length} elemento(s) no pueden alcanzarse desde Inicio: ${names(graph.unreachable)}.`:"Todas las actividades pueden alcanzarse desde Inicio.",graph.unreachable.length?"danger":"ok");
-  add(graph.startCanReachEnd&&graph.withoutEnd.length===0,!graph.startCanReachEnd?"No existe una ruta efectiva desde Inicio hasta Fin.":`${graph.withoutEnd.length} elemento(s) alcanzables no tienen una ruta hacia Fin: ${names(graph.withoutEnd)}.`,"danger");
-  add(graph.trappedCycles.length===0,graph.trappedCycles.length?`${graph.trappedCycles.length} ciclo(s) no tienen salida hacia Fin: ${graph.trappedCycles.slice(0,2).map(group=>names(group)).join(" | ")}.`:"No se identificaron ciclos sin salida.",graph.trappedCycles.length?"danger":"ok");
-  add(graph.duplicateConnectors.length===0,graph.duplicateConnectors.length?`Identificadores de conector duplicados: ${graph.duplicateConnectors.map(group=>group.id).join(", ")}.`:"Los identificadores de conectores son únicos.",graph.duplicateConnectors.length?"danger":"ok");
-  add(graph.divergentDecisions.length===0,graph.divergentDecisions.length?`${graph.divergentDecisions.length} decisión(es) no reconvergen antes de Fin: ${names(graph.divergentDecisions)}. Confirme que las ramas representan resultados independientes.`:"Las bifurcaciones vuelven a un punto común antes de Fin.",graph.divergentDecisions.length?"warn":"ok");
-  add(graph.returningCycles.length===0,graph.returningCycles.length?`${graph.returningCycles.length} ruta(s) regresan a actividades anteriores: ${graph.returningCycles.slice(0,2).map(group=>names(group)).join(" | ")}. Documente la condición de salida, el límite de intentos o el escalamiento.`:"No se identificaron rutas de retorno que puedan repetirse indefinidamente.",graph.returningCycles.length?"warn":"ok");
+  const withoutResponsible=activities.filter(a=>!["Inicio","Conector","Fin"].includes(a.tipo)&&!String(a.responsable||"").trim());
+  add(withoutResponsible.length===0,withoutResponsible.length?`${withoutResponsible.length} actividad(es) sin responsable.`:"Todas las actividades operativas tienen responsable.","danger",{id:"responsables",uids:withoutResponsible.map(a=>a.uid),guidance:"Asigne un rol responsable a cada actividad operativa."});
+  const decisions=activities.filter(a=>a.tipo==="Decisión"),unclearDecisions=decisions.filter(a=>!String(a.descripcion||a.actividad||"").trim());
+  add(unclearDecisions.length===0,"Las decisiones registradas están descritas de forma comprensible.","warn",{id:"decisiones_descripcion",uids:unclearDecisions.map(a=>a.uid),guidance:"Describa la condición que determina las rutas Sí y No."});
+  const incompleteDecisionList=decisions.filter(a=>!a.decisionSi||!a.decisionNo||a.decisionSi===a.decisionNo||!activityByUid(a.decisionSi)||!activityByUid(a.decisionNo));
+  add(incompleteDecisionList.length===0,incompleteDecisionList.length?`${incompleteDecisionList.length} decisión(es) sin rutas Sí/No completas, diferentes y vigentes.`:"Las decisiones cuentan con rutas Sí/No válidas.","danger",{id:"rutas_decision",uids:incompleteDecisionList.map(a=>a.uid),guidance:"Defina dos destinos existentes y diferentes para las rutas Sí y No."});
+  const connectors=activities.filter(a=>a.tipo==="Conector"),invalidConnectorList=connectors.filter(a=>!String(a.connectorId||"").trim()||!a.connectorDestino||!activityByUid(a.connectorDestino)||a.connectorDestino===a.uid);
+  add(invalidConnectorList.length===0,invalidConnectorList.length?`${invalidConnectorList.length} conector(es) sin identificador o destino válido.`:"Los conectores cuentan con identificador y destino válido.","danger",{id:"conectores_invalidos",uids:invalidConnectorList.map(a=>a.uid),guidance:"Asigne un identificador y un destino diferente del propio conector."});
+  const controlsInFlow=activities.filter(a=>a.tieneControl).length;
+  add(controlsInFlow>0,"Se identificó al menos un punto de control en el procedimiento.","warn");
+  const incompleteControls=activities.filter(a=>a.tieneControl && (
+    !String(a.controlResponsable||"").trim() || !String(a.controlPeriodicidad||"").trim() || !String(a.controlAccion||"").trim() ||
+    !String(a.controlEjecucion||"").trim() || !String(a.controlDesviacion||"").trim() || !String(a.controlEvidencia||"").trim()
+  ));
+  add(incompleteControls.length===0,incompleteControls.length?`${incompleteControls.length} punto(s) de control tienen atributos incompletos.`:"Los puntos de control configurados cuentan con sus atributos completos.","danger",{id:"controles_incompletos",uids:incompleteControls.map(a=>a.uid),guidance:"Complete responsable, periodicidad, propósito, ejecución, desviación y evidencia."});
+
+  const starts=activities.filter(a=>a.tipo==="Inicio"),ends=activities.filter(a=>a.tipo==="Fin"),uniqueLimits=starts.length===1&&ends.length===1;
+  add(uniqueLimits,"El flujograma contiene exactamente un Inicio y un Fin.","danger",{id:"limites_unicos",uids:[...starts,...ends].map(a=>a.uid)});
+  const orderedLimits=uniqueLimits&&activities[0]?.tipo==="Inicio"&&activities[activities.length-1]?.tipo==="Fin";
+  add(orderedLimits,"Inicio ocupa la primera posición y Fin la última.","danger",{id:"limites_orden",uids:[...starts,...ends].map(a=>a.uid)});
+
+  const graph=analyzeFlowGraph(),names=items=>items.slice(0,3).map(flowNodeLabel).join(", ")+(items.length>3?", …":"");
+  const cycleNodes=groups=>groups.flatMap(group=>group.map(a=>a.uid));
+  add(graph.unreachable.length===0,graph.unreachable.length?`${graph.unreachable.length} elemento(s) no pueden alcanzarse desde Inicio: ${names(graph.unreachable)}.`:"Todas las actividades pueden alcanzarse desde Inicio.","danger",{id:"grafo_inaccesibles",uids:graph.unreachable.map(a=>a.uid),guidance:"Conecte estos elementos desde una ruta alcanzable o elimínelos."});
+  add(graph.startCanReachEnd&&graph.withoutEnd.length===0,!graph.startCanReachEnd?"No existe una ruta efectiva desde Inicio hasta Fin.":`${graph.withoutEnd.length} elemento(s) alcanzables no tienen una ruta hacia Fin: ${names(graph.withoutEnd)}.`,"danger",{id:"grafo_sin_fin",uids:graph.withoutEnd.map(a=>a.uid),guidance:"Defina cómo continúa, se devuelve, se escala o finaliza cada ruta."});
+  add(graph.trappedCycles.length===0,graph.trappedCycles.length?`${graph.trappedCycles.length} ciclo(s) no tienen salida hacia Fin: ${graph.trappedCycles.slice(0,2).map(group=>names(group)).join(" | ")}.`:"No se identificaron ciclos sin salida.","danger",{id:"grafo_ciclos_cerrados",uids:cycleNodes(graph.trappedCycles),guidance:"Agregue una condición de salida hacia aprobación, rechazo, escalamiento o cierre."});
+  const duplicateItems=graph.duplicateConnectors.flatMap(group=>group.items);
+  add(graph.duplicateConnectors.length===0,graph.duplicateConnectors.length?`Identificadores de conector duplicados: ${graph.duplicateConnectors.map(group=>group.id).join(", ")}.`:"Los identificadores de conectores son únicos.","danger",{id:"grafo_conectores_duplicados",uids:duplicateItems.map(a=>a.uid),guidance:"Asigne un identificador único a cada conector."});
+  add(graph.divergentDecisions.length===0,graph.divergentDecisions.length?`${graph.divergentDecisions.length} decisión(es) no reconvergen antes de Fin: ${names(graph.divergentDecisions)}.`:"Las bifurcaciones vuelven a un punto común antes de Fin.","warn",{id:"grafo_bifurcaciones",uids:graph.divergentDecisions.map(a=>a.uid),guidance:"Confirme que las ramas representan resultados independientes; si no, defina un punto de convergencia."});
+  add(graph.returningCycles.length===0,graph.returningCycles.length?`${graph.returningCycles.length} ruta(s) regresan a actividades anteriores: ${graph.returningCycles.slice(0,2).map(group=>names(group)).join(" | ")}.`:"No se identificaron rutas de retorno que puedan repetirse indefinidamente.","info",{id:"grafo_retornos",uids:cycleNodes(graph.returningCycles),guidance:"Documente la condición de salida, el límite de intentos o el mecanismo de escalamiento."});
 
   const startDescribed=starts.length===1&&!!String(starts[0].descripcion||"").trim();
-  add(startDescribed,"Inicio describe el evento o condición que activa el procedimiento.",startDescribed?"ok":"danger");
+  add(startDescribed,"Inicio describe el evento o condición que activa el procedimiento.","danger",{id:"inicio_descripcion",uids:starts.map(a=>a.uid)});
   const endDescribed=ends.length===1&&!!String(ends[0].descripcion||"").trim();
-  add(endDescribed,"Fin indica el resultado, producto o condición de cierre.",endDescribed?"ok":"danger");
+  add(endDescribed,"Fin indica el resultado, producto o condición de cierre.","danger",{id:"fin_descripcion",uids:ends.map(a=>a.uid)});
   const sig=[val("elaboro"),val("reviso"),val("aprobo")].filter(Boolean);
   add(sig.length===3,"Elaboró, Revisó y Aprobó diligenciados.","warn");
   add(sig.length<3||new Set(sig.map(x=>x.toLowerCase())).size===sig.length,"Segregación entre elaboración, revisión y aprobación.","danger");
 
-  const okCount=rules.filter(r=>r.ok).length,score=Math.round(okCount/rules.length*100);
-  $("qScore").textContent=score+"%";$("qIssues").textContent=rules.length-okCount;
+  const weights={danger:3,warn:1,info:.35},totalWeight=rules.reduce((sum,r)=>sum+(weights[r.level]||1),0),passedWeight=rules.reduce((sum,r)=>sum+(r.ok?(weights[r.level]||1):0),0);
+  const score=Math.round(passedWeight/Math.max(1,totalWeight)*100),pending=rules.filter(r=>!r.ok),blockers=pending.filter(r=>r.level==="danger").length,warnings=pending.filter(r=>r.level==="warn").length,recommendations=pending.filter(r=>r.level==="info").length;
+  pending.forEach(r=>{if(r.uids.length)qualityIssueTargets[r.id]={uids:r.uids,message:r.msg}});
+  $("qScore").textContent=score+"%";$("qIssues").textContent=pending.length;$("qIssues").title=`${blockers} bloqueante(s), ${warnings} advertencia(s), ${recommendations} recomendación(es)`;
   $("qActivities").textContent=activities.length;$("qControls").textContent=controlsInFlow;
-  $("qualityRules").innerHTML=rules.map(r=>`<div class="rule ${r.ok?"ok":r.level}">${r.ok?"✓":"!"} ${esc(r.msg)}</div>`).join("");
+  const labels={danger:"Error bloqueante",warn:"Advertencia",info:"Recomendación",ok:"Correcto"},icons={danger:"×",warn:"!",info:"i",ok:"✓"};
+  $("qualityRules").innerHTML=rules.map(r=>{
+    const state=r.ok?"ok":r.level,label=labels[state],action=!r.ok&&r.uids.length?`<button class="rule-action" type="button" onclick="focusGraphIssue('${esc(r.id)}')" aria-label="Ver elementos relacionados con ${esc(r.msg)}">Ver en flujograma</button>`:"";
+    return `<div class="rule ${state}"><span class="rule-icon" aria-hidden="true">${icons[state]}</span><div class="rule-copy"><b>${label}</b><div class="rule-message">${esc(r.msg)}</div>${!r.ok&&r.guidance?`<div class="rule-guidance">${esc(r.guidance)}</div>`:""}</div><div class="rule-actions"><span class="rule-severity">${label}</span>${action}</div></div>`;
+  }).join("");
   return score;
 }
-
 function splitRoles(text){return String(text||"").split(";").map(x=>x.trim()).filter(Boolean)}
 function activityByUid(id){return activities.find(a=>a.uid===id)}
-let flowZoom=100,flowIntrinsicWidth=1000;
+let flowZoom=100,flowIntrinsicWidth=1000,flowIssueUids=new Set(),qualityIssueTargets={};
+function focusGraphIssue(ruleId){
+  const issue=qualityIssueTargets[ruleId];if(!issue||!issue.uids?.length)return;
+  flowIssueUids=new Set(issue.uids);switchTab("flujograma");
+  requestAnimationFrame(()=>{
+    const target=[...document.querySelectorAll("[data-flow-uid]")].find(node=>flowIssueUids.has(node.dataset.flowUid));
+    target?.scrollIntoView({behavior:"smooth",block:"center",inline:"center"});
+  });
+  toast(issue.message);
+}
 function setFlowZoom(value){
   flowZoom=Math.max(35,Math.min(180,Math.round(Number(value)||100)));
   const svg=$("flowSvg");
@@ -1855,6 +1878,7 @@ function renderFlow(){
     const y=p.y;
     const nodeLabel=["Inicio","Fin"].includes(a.tipo)?(a.descripcion||a.actividad||a.tipo):(a.actividad||a.descripcion||a.tipo);
     const label=a.tipo==="Conector"?[String(a.connectorId||"?").toUpperCase()]:wrap(nodeLabel,38);
+    parts.push(`<g data-flow-uid="${esc(a.uid)}">`);
 
     if(a.tipo==="Decisión"){
       parts.push(`<polygon points="${p.cx},${y} ${p.cx+p.w/2},${y+decisionH/2} ${p.cx},${y+decisionH} ${p.cx-p.w/2},${y+decisionH/2}" fill="#FDECEC" stroke="#B42318" stroke-width="3"/>`);
@@ -1881,6 +1905,11 @@ function renderFlow(){
     if(p.record){
       drawDocument(p.cx,p.recordY,p.recordText);
     }
+    if(flowIssueUids.has(a.uid)){
+      const visualW=a.tipo==="Conector"?connectorH:p.w,outlineH=visualH;
+      parts.push(`<rect x="${p.cx-visualW/2-9}" y="${y-9}" width="${visualW+18}" height="${outlineH+18}" rx="11" fill="none" stroke="#B42318" stroke-width="4" stroke-dasharray="9 5"/><rect x="${p.cx-37}" y="${y-31}" width="74" height="20" rx="8" fill="#B42318"/><text x="${p.cx}" y="${y-17}" text-anchor="middle" fill="#fff" font-size="10" font-weight="800">REVISAR</text>`);
+    }
+    parts.push("</g>");
   });
 
   svg.innerHTML=parts.join("");
