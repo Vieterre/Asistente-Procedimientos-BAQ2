@@ -199,15 +199,16 @@ td textarea{min-height:66px}
 .evaluation-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:15px}
 .evaluation-summary .kpi{margin:0}
 .evaluation-progress{height:8px;border-radius:999px;background:#DFE7EA;overflow:hidden;margin-top:7px}.evaluation-progress span{display:block;height:100%;background:var(--green);transition:width .2s ease}
-.evaluation-group{border:1px solid #CBD7DC;border-radius:11px;margin-bottom:12px;overflow:hidden;background:#fff}
-.evaluation-group summary{list-style:none;cursor:pointer;display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:10px;align-items:center;padding:12px 14px;background:#F2F6F7;color:var(--navy);font-weight:800}
+.evaluation-group{border:1px solid #CBD7DC;border-left:6px solid #CBD7DC;border-radius:11px;margin-bottom:12px;overflow:hidden;background:#fff}
+.evaluation-group.group-pending{border-left-color:#9CAAB2}.evaluation-group.group-progress{border-left-color:#C89B00}.evaluation-group.group-complete{border-left-color:var(--green)}
+.evaluation-group summary{list-style:none;cursor:pointer;display:grid;grid-template-columns:minmax(0,1fr) auto auto auto;gap:10px;align-items:center;padding:12px 14px;background:#F2F6F7;color:var(--navy);font-weight:800}
 .evaluation-group summary::-webkit-details-marker{display:none}.evaluation-group summary:before{content:"＋";grid-column:3;color:var(--green)}.evaluation-group[open] summary:before{content:"−"}
-.evaluation-group-title{display:flex;align-items:center;gap:8px}.evaluation-weight{padding:3px 7px;border-radius:999px;background:#E4EEF3;color:#3F6178;font-size:10px}.evaluation-group-score{font-size:12px;color:#5D7C94}
-.criterion-card{padding:14px;border-top:1px solid #E0E7EA}.criterion-card.criterion-fail{border-left:5px solid var(--danger);background:#FFF9F8}.criterion-card.criterion-pass{border-left:5px solid var(--green)}.criterion-card.criterion-na{border-left:5px solid var(--slate);background:#F7F9FA}
+.evaluation-group-title{display:flex;align-items:center;gap:8px}.evaluation-weight{padding:3px 7px;border-radius:999px;background:#E4EEF3;color:#3F6178;font-size:10px}.evaluation-group-score{font-size:12px;color:#5D7C94}.evaluation-group-status{padding:4px 8px;border-radius:999px;background:#EEF3F5;color:#536B78;border:1px solid #C4D2D8;font-size:9px;font-weight:900;text-transform:uppercase;letter-spacing:.35px}.group-progress .evaluation-group-status{background:#FFF8DB;color:#725700;border-color:#E8D37B}.group-complete .evaluation-group-status{background:#EAF6ED;color:#14755F;border-color:#B9DEC3}
+.criterion-card{padding:14px;border-top:1px solid #E0E7EA}.criterion-card.criterion-fail{border-left:5px solid var(--danger);background:#FFF9F8}.criterion-card.criterion-pass{border-left:5px solid var(--green)}
 .criterion-title{display:flex;gap:9px;align-items:flex-start;margin-bottom:10px}.criterion-number{flex:none;width:26px;height:26px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:var(--navy);color:#fff;font-size:10px;font-weight:800}.criterion-title p{margin:2px 0 0;font-size:13px;line-height:1.45;color:#314653}.critical-tag{display:inline-block;margin-left:6px;padding:2px 5px;border-radius:4px;background:#FFF0EE;color:#A22920;border:1px solid #EAB9B4;font-size:9px;font-weight:800;text-transform:uppercase}
 .criterion-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.criterion-grid .field textarea{min-height:72px}.criterion-result{display:flex;gap:7px;flex-wrap:wrap}.criterion-result label{display:flex;align-items:center;gap:5px;padding:7px 9px;border:1px solid #C6D2D7;border-radius:7px;background:#fff;color:#334B58;font-size:11px;font-weight:700;margin:0}.criterion-result input{width:auto;margin:0}
 .criterion-response{grid-column:1/-1;border-left:4px solid var(--slate);padding-left:10px}.criterion-help{font-size:10px;color:var(--muted);margin-top:5px}
-.variable-results{width:100%;min-width:0}.variable-results th{position:static}.variable-results td{font-size:12px}
+.variable-results{width:100%;min-width:0}.variable-results th{position:static}.variable-results td{font-size:12px}.variable-results tr.group-pending td:first-child{border-left:5px solid #9CAAB2}.variable-results tr.group-progress td:first-child{border-left:5px solid #C89B00}.variable-results tr.group-complete td:first-child{border-left:5px solid var(--green)}
 .evaluation-concept{margin-top:15px;border-top:1px solid var(--line);padding-top:15px}.evaluation-concept textarea{width:100%;min-height:105px;border:1px solid #BAC7CD;border-radius:9px;padding:10px;resize:vertical}
 .procedure-locked .panel:not(#evaluationPanel) input:disabled,.procedure-locked .panel:not(#evaluationPanel) textarea:disabled,.procedure-locked .panel:not(#evaluationPanel) select:disabled{background:#F1F4F5;color:#667780;cursor:not-allowed}.lock-note{display:none;margin-bottom:12px}.procedure-locked .lock-note{display:block}
 .role-hidden{display:none!important}
@@ -733,7 +734,7 @@ body.auth-locked>.app{filter:blur(5px);pointer-events:none;user-select:none}
   <section class="panel" id="evaluationAnnexPanel">
     <h3>Anexo B. Criterios de evaluación</h3>
     <div class="hint">Consulta directa de las variables, ponderaciones y preguntas empleadas para evaluar la adecuación de un procedimiento.</div>
-    <div class="annex-intro"><b>Cómo leer este anexo:</b> cada variable agrupa criterios que el asesor califica como Cumple, No cumple o No aplica. Cuando un criterio no aplica, debe justificarse; su peso se redistribuye entre los criterios aplicables. Los criterios marcados como críticos requieren especial atención porque afectan aspectos esenciales del procedimiento.</div>
+    <div class="annex-intro"><b>Cómo leer este anexo:</b> cada variable agrupa criterios que el asesor califica como Cumple o No cumple. Cuando un criterio no cumple, debe registrar el ajuste requerido antes de cerrar la evaluación. Los criterios marcados como críticos requieren especial atención porque afectan aspectos esenciales del procedimiento.</div>
     <h4 class="guide-section-title">Verificaciones metodológicas previas <span class="non-scored-badge">No calificables</span></h4>
     <div class="hint" style="margin-bottom:10px">Estas comprobaciones orientan la revisión, pero no suman ni restan puntos en la calificación ponderada.</div>
     <div class="tablewrap" style="margin-bottom:17px"><table class="non-scored-table"><thead><tr><th>Elemento a evaluar</th><th>Criterio de verificación (no calificable)</th></tr></thead><tbody>
@@ -766,7 +767,7 @@ body.auth-locked>.app{filter:blur(5px);pointer-events:none;user-select:none}
 <script>
 const $ = id => document.getElementById(id);
 let norms=[], activities=[], annexes=[], changes=[];
-let currentRole="autor", currentProfile={username:"",roleName:"Elaborador de Documentos",environment:"autor",isAdmin:false,canSwitchEnvironment:false}, evaluation=null, notifications=[];
+let currentRole="autor", currentProfile={username:"",roleName:"Elaborador de Documentos",environment:"autor",isAdmin:false,canSwitchEnvironment:false}, evaluation=null, notifications=[], activeEvaluationGroupId="";
 
 const evaluationGroups=[
   {id:"objetivo",name:"Objetivo",weight:8,description:"Claridad, finalidad y coherencia del objetivo.",questions:[
@@ -1117,7 +1118,7 @@ function applyRoleNavigation(){
   if(guideNav){guideNav.querySelector(".nav-number").textContent="A1";guideNav.querySelector(".nav-label").textContent="Guía del flujograma"}
   if($("previewHeading"))$("previewHeading").textContent="9. Reporte del procedimiento";if($("guideHeading"))$("guideHeading").textContent="Anexo A. Guía del flujograma";
   if($("evaluationHeading"))$("evaluationHeading").textContent=advisor?"3. Evaluación de adecuación del procedimiento":"8. Seguimiento de la revisión";
-  if($("evaluationIntro"))$("evaluationIntro").textContent=advisor?"Califique los criterios, documente la evidencia revisada y emita el concepto técnico.":"Consulte el estado, las observaciones y las respuestas asociadas a la revisión metodológica del procedimiento.";
+  if($("evaluationIntro"))$("evaluationIntro").textContent=advisor?"Califique los criterios, registre las observaciones y emita el concepto técnico.":"Consulte el estado, las observaciones y las respuestas asociadas a la revisión metodológica del procedimiento.";
   if($("evaluationRoleContext")){$("evaluationRoleContext").classList.toggle("advisor",advisor);$("evaluationRoleContext").innerHTML=advisor?`<b>Perfil activo:</b> ${esc(currentProfile.roleName)}${admin?" · Administrador":""}. Puede calificar criterios, registrar hallazgos, devolver el procedimiento o emitir concepto.`:`<b>Perfil activo:</b> ${esc(currentProfile.roleName)}${admin?" · Administrador":""}. Puede diligenciar, enviar la versión, consultar hallazgos y responder los ajustes solicitados.`}
   const indicator=$("environmentIndicator"),icon=$("environmentIcon");if(indicator){indicator.classList.toggle("evaluator",advisor);$("environmentTitle").textContent=advisor?"Evaluador":"Constructor";$("environmentDescription").textContent=advisor?`${currentProfile.roleName}: consulta y evaluación metodológica del procedimiento.`:`${currentProfile.roleName}: diligenciamiento, revisión y envío del procedimiento.`;icon.innerHTML=advisor?'<svg viewBox="0 0 48 48"><path d="M13 8h22v35H13z"/><path d="M18 5h12v7H18zM19 20h10M19 27h7"/><path d="m28 34 3 3 7-8"/></svg>':'<svg viewBox="0 0 48 48"><path d="M8 9h24l8 8v22H8z"/><path d="M32 9v8h8M15 23h18M15 29h18M15 35h10"/><path d="m12 12 4 4 7-8"/></svg>'}
   const switcher=$("environmentSwitcher"),canSwitch=!!currentProfile.canSwitchEnvironment;switcher?.classList.toggle("role-hidden",!canSwitch);$("adminEnvironmentBadge")?.classList.toggle("role-hidden",!admin);$("switchConstructor")?.classList.toggle("active",!advisor);$("switchEvaluator")?.classList.toggle("active",advisor);$("switchConstructor")?.setAttribute("aria-pressed",String(!advisor));$("switchEvaluator")?.setAttribute("aria-pressed",String(advisor));
@@ -1924,7 +1925,7 @@ function newEvaluationState(){
 function ensureEvaluation(){
   if(!evaluation||typeof evaluation!=="object")evaluation=newEvaluationState();
   evaluation.criteria=evaluation.criteria||{};evaluation.history=Array.isArray(evaluation.history)?evaluation.history:[];evaluation.archives=Array.isArray(evaluation.archives)?evaluation.archives:[];
-  evaluationCriteriaFlat.forEach(c=>{evaluation.criteria[c.id]={result:"",evidence:"",observation:"",adjustment:"",findingStatus:"Pendiente",response:"",...(evaluation.criteria[c.id]||{})}});
+  evaluationCriteriaFlat.forEach(c=>{evaluation.criteria[c.id]={result:"",evidence:"",observation:"",adjustment:"",findingStatus:"Pendiente",response:"",...(evaluation.criteria[c.id]||{})};if(evaluation.criteria[c.id].result==="No aplica")evaluation.criteria[c.id].result=""});
   evaluation.iteration=Number(evaluation.iteration)||1;evaluation.status=evaluation.status||"Borrador";return evaluation;
 }
 function currentUserEmail(){return normalizeUsername($("sessionEmail")?.textContent||"")}
@@ -1936,11 +1937,24 @@ function evaluationSnapshot(){
 function addEvaluationHistory(action,note=""){
   ensureEvaluation();evaluation.history.push({at:new Date().toISOString(),by:currentUserEmail(),role:currentRole,action,note:String(note||"").trim()});
 }
+function evaluationCriterionComplete(record){
+  if(!record?.result)return false;
+  if(record.result==="No cumple")return filled(record.observation)&&filled(record.adjustment);
+  return record.result==="Cumple";
+}
+function evaluationGroupState(group){
+  const records=group.questions.map(q=>evaluation.criteria[q[0]]);
+  const completed=records.filter(evaluationCriterionComplete).length;
+  const answered=records.filter(r=>r?.result).length;
+  if(completed===records.length)return{className:"group-complete",label:"Completa",completed};
+  if(answered||completed)return{className:"group-progress",label:"En proceso",completed};
+  return{className:"group-pending",label:"Pendiente",completed};
+}
 function evaluationStats(){
   ensureEvaluation();let answered=0,failures=0,criticalFailures=0,weighted=0;
   const groups=evaluationGroups.map(group=>{
     let applicable=0,passes=0,groupAnswered=0;
-    group.questions.forEach(q=>{const record=evaluation.criteria[q[0]];if(record.result){answered++;groupAnswered++}if(record.result!=="No aplica"){applicable++;if(record.result==="Cumple")passes++}if(record.result==="No cumple"){failures++;if(q[2])criticalFailures++}});
+    group.questions.forEach(q=>{const record=evaluation.criteria[q[0]];if(record.result){answered++;groupAnswered++}applicable++;if(record.result==="Cumple")passes++;if(record.result==="No cumple"){failures++;if(q[2])criticalFailures++}});
     const score=applicable?passes/applicable*100:100;weighted+=score*group.weight/100;
     return{id:group.id,name:group.name,weight:group.weight,answered:groupAnswered,total:group.questions.length,score};
   });
@@ -1962,22 +1976,21 @@ function renderEvaluationActions(){
   if(author&&["Enviado a evaluación","En evaluación","Subsanado"].includes(status))html='<span class="hint">El procedimiento está protegido hasta que el asesor emita una decisión o lo devuelva para ajustes.</span>';
   if(author&&status==="Concepto favorable")html='<span class="hint">Esta versión está aprobada y permanece bloqueada. Cualquier modificación debe realizarse en una versión nueva.</span><button class="btn primary" type="button" onclick="createNewVersionFromApproved()">Crear nueva versión</button>';
   if(currentRole==="asesor"&&["Enviado a evaluación","Subsanado"].includes(status))html='<button class="btn primary" type="button" onclick="startEvaluation()">Iniciar evaluación</button>';
-  if(currentRole==="asesor"&&status==="En evaluación")html='<button class="btn" type="button" onclick="returnForAdjustments()">Devolver para ajustes</button><button class="btn primary" type="button" onclick="issueEvaluationDecision(\'favorable\')">Emitir concepto favorable</button><button class="btn" type="button" onclick="issueEvaluationDecision(\'no_favorable\')">Emitir concepto no favorable</button>';
+  if(currentRole==="asesor"&&status==="En evaluación")html='<button class="btn" type="button" onclick="returnForAdjustments()">Devolver para ajustes</button><button class="btn primary" type="button" onclick="issueEvaluationDecision(\'favorable\')">Emitir concepto favorable</button>';
   if(!html)html='<span class="hint">Consulte el resultado y la trazabilidad de la evaluación.</span>';
   $("evaluationActions").innerHTML=html;
 }
 function renderEvaluationCriteria(){
   ensureEvaluation();const advisorEditable=currentRole==="asesor"&&evaluation.status==="En evaluación",authorEditable=currentRole==="autor"&&evaluation.status==="Devuelto para ajustes";
   $("evaluationCriteria").innerHTML=evaluationGroups.map((group,groupIndex)=>{
-    const groupStats=evaluationStats().groups.find(x=>x.id===group.id);
-    return `<details class="evaluation-group" ${groupIndex===0?"open":""}><summary><span class="evaluation-group-title">${esc(group.name)} <span class="evaluation-weight">${group.weight}%</span></span><span class="evaluation-group-score">${groupStats.answered}/${groupStats.total} · ${groupStats.score.toFixed(1)}%</span></summary>${group.questions.map((q,index)=>{
-      const c=evaluation.criteria[q[0]],cardClass=c.result==="Cumple"?"criterion-pass":c.result==="No cumple"?"criterion-fail":c.result==="No aplica"?"criterion-na":"";
+    const groupStats=evaluationStats().groups.find(x=>x.id===group.id),groupState=evaluationGroupState(group),isOpen=activeEvaluationGroupId?activeEvaluationGroupId===group.id:groupIndex===0;
+    return `<details class="evaluation-group ${groupState.className}" data-group-id="${group.id}" ${isOpen?"open":""}><summary onclick="activeEvaluationGroupId='${group.id}'"><span class="evaluation-group-title">${esc(group.name)} <span class="evaluation-weight">${group.weight}%</span></span><span class="evaluation-group-status">${groupState.label}</span><span class="evaluation-group-score">${groupStats.answered}/${groupStats.total} · ${groupStats.score.toFixed(1)}%</span></summary>${group.questions.map((q,index)=>{
+      const c=evaluation.criteria[q[0]],cardClass=c.result==="Cumple"?"criterion-pass":c.result==="No cumple"?"criterion-fail":"",requiredMark=c.result==="No cumple"?'<span class="required-star">*</span>':"";
       const checked=value=>c.result===value?"checked":"";
       return `<div class="criterion-card ${cardClass}"><div class="criterion-title"><span class="criterion-number">${evaluationCriteriaFlat.findIndex(x=>x.id===q[0])+1}</span><p>${esc(q[1])}${q[2]?'<span class="critical-tag">Crítico</span>':""}</p></div><div class="criterion-grid">
-        <div class="field full"><label>Resultado</label><div class="criterion-result"><label><input type="radio" name="result_${q[0]}" value="Cumple" ${checked("Cumple")} ${advisorEditable?"":"disabled"} onchange="updateEvaluationCriterion('${q[0]}','result',this.value)"> Cumple</label><label><input type="radio" name="result_${q[0]}" value="No cumple" ${checked("No cumple")} ${advisorEditable?"":"disabled"} onchange="updateEvaluationCriterion('${q[0]}','result',this.value)"> No cumple</label><label><input type="radio" name="result_${q[0]}" value="No aplica" ${checked("No aplica")} ${advisorEditable?"":"disabled"} onchange="updateEvaluationCriterion('${q[0]}','result',this.value)"> No aplica</label></div></div>
-        <div class="field"><label>Evidencia revisada</label><textarea ${advisorEditable?"":"disabled"} oninput="updateEvaluationCriterion('${q[0]}','evidence',this.value)" placeholder="Campo, actividad, registro o documento revisado.">${esc(c.evidence)}</textarea></div>
-        <div class="field"><label>Observación del asesor</label><textarea ${advisorEditable?"":"disabled"} oninput="updateEvaluationCriterion('${q[0]}','observation',this.value)" placeholder="Obligatoria cuando No cumple o No aplica.">${esc(c.observation)}</textarea></div>
-        <div class="field"><label>Ajuste requerido</label><textarea ${advisorEditable?"":"disabled"} oninput="updateEvaluationCriterion('${q[0]}','adjustment',this.value)" placeholder="Acción concreta para subsanar el incumplimiento.">${esc(c.adjustment)}</textarea></div>
+        <div class="field full"><label>Resultado</label><div class="criterion-result"><label><input type="radio" name="result_${q[0]}" value="Cumple" ${checked("Cumple")} ${advisorEditable?"":"disabled"} onchange="updateEvaluationCriterion('${q[0]}','result',this.value)"> Cumple</label><label><input type="radio" name="result_${q[0]}" value="No cumple" ${checked("No cumple")} ${advisorEditable?"":"disabled"} onchange="updateEvaluationCriterion('${q[0]}','result',this.value)"> No cumple</label></div></div>
+        <div class="field"><label>Observación del asesor ${requiredMark}</label><textarea ${advisorEditable?"":"disabled"} oninput="updateEvaluationCriterion('${q[0]}','observation',this.value)" placeholder="Obligatoria cuando No cumple.">${esc(c.observation)}</textarea></div>
+        <div class="field"><label>Ajuste requerido ${requiredMark}</label><textarea ${advisorEditable?"":"disabled"} oninput="updateEvaluationCriterion('${q[0]}','adjustment',this.value)" placeholder="Acción concreta obligatoria cuando No cumple.">${esc(c.adjustment)}</textarea></div>
         <div class="field"><label>Estado del hallazgo</label><select ${advisorEditable?"":"disabled"} onchange="updateEvaluationCriterion('${q[0]}','findingStatus',this.value)">${["Pendiente","Respondido","Subsanado","Cerrado"].map(x=>`<option ${c.findingStatus===x?"selected":""}>${x}</option>`).join("")}</select></div>
         <div class="field criterion-response"><label>Respuesta del autor</label><textarea ${authorEditable?"":"disabled"} oninput="updateEvaluationCriterion('${q[0]}','response',this.value)" placeholder="Explique el ajuste realizado o la justificación presentada.">${esc(c.response)}</textarea><div class="criterion-help">La respuesta no cambia la calificación; el asesor debe verificarla y actualizar el resultado.</div></div>
       </div></div>`;
@@ -1989,21 +2002,23 @@ function renderEvaluationSummary(){
   status.textContent=evaluation.status;status.className=`evaluation-status ${statusClass(evaluation.status)}`;
   $("evalProcedure").textContent=val("nombre")||"Sin nombre definido";$("evalCodeVersion").textContent=`${val("codigo")||"Código pendiente"} · v${val("version")||"—"}`;$("evalProcess").textContent=val("proceso")?`${val("proceso")} — ${processName(val("proceso"))}`:"Pendiente";$("evalAdvisor").textContent=evaluation.evaluatorEmail||"Sin asignar";$("evalSubmittedAt").textContent=dateTimeLabel(evaluation.submittedAt);$("evalIteration").textContent=String(evaluation.iteration);
   $("evalScore").textContent=`${stats.score.toFixed(1)}%`;$("evalLevel").textContent=stats.level;$("evalFailures").textContent=String(stats.failures);$("evalCritical").textContent=String(stats.criticalFailures);$("evalProgressBar").style.width=`${Math.round(stats.answered/stats.total*100)}%`;$("evalProgressText").textContent=`${stats.answered} de ${stats.total} criterios evaluados · ${stats.decision}`;
-  $("evaluationVariableResults").innerHTML=stats.groups.map(g=>`<tr><td><b>${esc(g.name)}</b></td><td>${g.weight}%</td><td>${g.answered} de ${g.total}</td><td>${g.score.toFixed(1)}%</td></tr>`).join("");
+  $("evaluationVariableResults").innerHTML=stats.groups.map(g=>{const group=evaluationGroups.find(x=>x.id===g.id),groupState=evaluationGroupState(group);return`<tr class="${groupState.className}"><td><b>${esc(g.name)}</b><br><span class="evaluation-group-status">${groupState.label}</span></td><td>${g.weight}%</td><td>${g.answered} de ${g.total}</td><td>${g.score.toFixed(1)}%</td></tr>`}).join("");
   $("evaluationConcept").value=evaluation.concept||"";$("evaluationConcept").disabled=!(currentRole==="asesor"&&evaluation.status==="En evaluación");
 }
 function updateEvaluationUI(){
   if(!$("evaluationPanel"))return;ensureEvaluation();renderEvaluationSummary();renderEvaluationActions();renderEvaluationCriteria();updateProcedureLock();updateWorkflowAction();updateNotificationsUI();renderAdvisorInbox();updateMenuProgress();
 }
 function updateEvaluationCriterion(id,field,value){
-  ensureEvaluation();const allowedAdvisor=["result","evidence","observation","adjustment","findingStatus"].includes(field)&&currentRole==="asesor"&&evaluation.status==="En evaluación",allowedAuthor=field==="response"&&currentRole==="autor"&&evaluation.status==="Devuelto para ajustes";if(!allowedAdvisor&&!allowedAuthor)return;
+  ensureEvaluation();const allowedAdvisor=["result","observation","adjustment","findingStatus"].includes(field)&&currentRole==="asesor"&&evaluation.status==="En evaluación",allowedAuthor=field==="response"&&currentRole==="autor"&&evaluation.status==="Devuelto para ajustes";if(!allowedAdvisor&&!allowedAuthor)return;
+  const criterionMeta=evaluationCriteriaFlat.find(c=>c.id===id);if(criterionMeta)activeEvaluationGroupId=criterionMeta.groupId;
+  if(field==="result"&&!["Cumple","No cumple"].includes(value))return;
   evaluation.criteria[id][field]=value;if(field==="result"&&value==="Cumple")evaluation.criteria[id].findingStatus="Cerrado";if(field==="result"&&value==="No cumple"&&evaluation.criteria[id].findingStatus==="Cerrado")evaluation.criteria[id].findingStatus="Pendiente";if(field==="response"&&String(value).trim()&&evaluation.criteria[id].findingStatus==="Pendiente")evaluation.criteria[id].findingStatus="Respondido";
   renderEvaluationSummary();if(field==="result"||field==="findingStatus")renderEvaluationCriteria();scheduleAutosave();
 }
 function updateEvaluationConcept(value){if(currentRole!=="asesor"||evaluation?.status!=="En evaluación")return;evaluation.concept=value;const state=$("saveState");if(state)state.textContent="Guardando…";clearTimeout(autosaveTimer);autosaveTimer=setTimeout(()=>saveLocal(true),650)}
 function validateEvaluation(){
-  ensureEvaluation();const missing=[],invalid=[];evaluationCriteriaFlat.forEach(c=>{const r=evaluation.criteria[c.id];if(!r.result)missing.push(c.id);if(r.result==="No cumple"&&(!filled(r.observation)||!filled(r.adjustment)))invalid.push(c.id);if(r.result==="No aplica"&&!filled(r.observation))invalid.push(c.id)});
-  if(missing.length){toast(`Faltan ${missing.length} criterio(s) por evaluar.`);return false}if(invalid.length){toast(`Complete la observación y el ajuste requerido en ${invalid.length} criterio(s).`);return false}return true;
+  ensureEvaluation();const missing=[],invalid=[];evaluationCriteriaFlat.forEach(c=>{const r=evaluation.criteria[c.id];if(!r.result)missing.push(c.id);if(r.result==="No cumple"&&(!filled(r.observation)||!filled(r.adjustment)))invalid.push(c.id)});
+  if(missing.length){toast(`Faltan ${missing.length} criterio(s) por evaluar.`);return false}if(invalid.length){toast(`Complete la observación y el ajuste requerido en ${invalid.length} criterio(s) marcados como No cumple.`);return false}return true;
 }
 function nextMajorVersion(value){
   const match=String(value||"").trim().match(/^(\d+)(?:\.(\d+))?$/);
@@ -2044,10 +2059,9 @@ function submitCorrections(){
   if(currentRole!=="autor"||evaluation?.status!=="Devuelto para ajustes")return;const pending=evaluationCriteriaFlat.filter(c=>evaluation.criteria[c.id].result==="No cumple"&&!filled(evaluation.criteria[c.id].response));if(pending.length){toast(`Responda ${pending.length} hallazgo(s) antes de enviar la subsanación.`);return}if(!confirm("¿Enviar los ajustes para una nueva revisión del asesor?"))return;evaluation.status="Subsanado";evaluation.iteration+=1;evaluation.submittedAt=new Date().toISOString();evaluation.snapshot=evaluationSnapshot();addEvaluationHistory("Envío de subsanación",`Iteración ${evaluation.iteration}`);addNotification("asesor","Subsanación recibida",`${val("codigo")||"El procedimiento"} fue ajustado por el autor y requiere una nueva revisión. Iteración ${evaluation.iteration}.`,"subsanacion");saveLocal(true);updateEvaluationUI();toast("Subsanación enviada. El asesor ha sido notificado.");
 }
 function issueEvaluationDecision(type){
-  if(currentRole!=="asesor"||evaluation?.status!=="En evaluación"||!["favorable","no_favorable"].includes(type)||!validateEvaluation())return;const stats=evaluationStats();if(!filled(evaluation.concept)){toast("Registre el concepto técnico antes de emitir la decisión.");return}
+  if(currentRole!=="asesor"||evaluation?.status!=="En evaluación"||type!=="favorable"||!validateEvaluation())return;const stats=evaluationStats();if(!filled(evaluation.concept)){toast("Registre el concepto técnico antes de emitir la decisión.");return}
   if(type==="favorable"){const openFailures=evaluationCriteriaFlat.filter(c=>evaluation.criteria[c.id].result==="No cumple"&&evaluation.criteria[c.id].findingStatus!=="Cerrado");if(stats.score<80||stats.criticalFailures||openFailures.length){toast("El concepto favorable requiere al menos 80 puntos, ningún incumplimiento crítico y todos los hallazgos cerrados.");return}}
-  if(type==="no_favorable"&&stats.score>=90){toast(`No se puede emitir un concepto no favorable con un puntaje de ${stats.score.toFixed(1)}%. Revise las calificaciones o emita un concepto favorable.`);return}
-  const label=type==="favorable"?"Concepto favorable":"Concepto no favorable";if(!confirm(`¿Emitir ${label.toLowerCase()} para esta versión?`))return;evaluation.status=label;evaluation.decision=stats.decision;addEvaluationHistory(label,`${stats.score.toFixed(1)}% · ${stats.level}`);addNotification("autor",label,`La revisión de ${val("codigo")||"su procedimiento"} finalizó con ${stats.score.toFixed(1)} puntos y nivel ${stats.level}.`,"concepto");saveLocal(true);updateEvaluationUI();toast(`${label} emitido. El autor ha sido notificado.`);
+  const label="Concepto favorable";if(!confirm(`¿Emitir ${label.toLowerCase()} para esta versión?`))return;evaluation.status=label;evaluation.decision=stats.decision;addEvaluationHistory(label,`${stats.score.toFixed(1)}% · ${stats.level}`);addNotification("autor",label,`La revisión de ${val("codigo")||"su procedimiento"} finalizó con ${stats.score.toFixed(1)} puntos y nivel ${stats.level}.`,"concepto");saveLocal(true);updateEvaluationUI();toast(`${label} emitido. El autor ha sido notificado.`);
 }
 function evaluationReportHtml(){
   ensureEvaluation();const stats=evaluationStats(),rows=evaluationCriteriaFlat.map((c,i)=>{const r=evaluation.criteria[c.id];return `<tr><td>${i+1}</td><td>${esc(c.groupName)}</td><td>${esc(c.question)}</td><td>${esc(r.result||"Pendiente")}</td><td>${esc(r.observation)}</td><td>${esc(r.adjustment)}</td><td>${esc(r.response)}</td><td>${esc(r.findingStatus)}</td></tr>`}).join("");
