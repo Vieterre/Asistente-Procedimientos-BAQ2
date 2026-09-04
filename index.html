@@ -767,7 +767,7 @@ body.auth-locked>.app{filter:blur(5px);pointer-events:none;user-select:none}
 <script>
 const $ = id => document.getElementById(id);
 let norms=[], activities=[], annexes=[], changes=[];
-let currentRole="autor", currentProfile={username:"",roleName:"Elaborador de Documentos",environment:"autor",isAdmin:false,canSwitchEnvironment:false}, evaluation=null, notifications=[], activeEvaluationGroupId="";
+let currentRole="autor", currentProfile={username:"",roleName:"Elaborador de Documentos",environment:"autor",isAdmin:false,canSwitchEnvironment:false,processes:[]}, evaluation=null, notifications=[], activeEvaluationGroupId="";
 
 const evaluationGroups=[
   {id:"objetivo",name:"Objetivo",weight:8,description:"Claridad, finalidad y coherencia del objetivo.",questions:[
@@ -825,14 +825,54 @@ const evaluationCriteriaFlat=evaluationGroups.flatMap(group=>group.questions.map
 const AUTH_LOG_KEY="gestion_asistente_access_log_v1";
 const AUTH_SESSION_KEY="gestion_asistente_session_v2";
 const SYSTEM_ACCOUNTS={
-  consultor:{passwordHash:"e73bac03ddddeac13b39ecc21635f1f858045dc2c9258c573db7e85fb9cd1a0c",roleName:"Consultor",environment:"asesor",isAdmin:false,canSwitchEnvironment:true},
-  coord_metodo:{passwordHash:"76626f6db5023c1dbb8a52106643380aa0748b5e7ce50034300264f4610ec503",roleName:"Coordinador Metodológico",environment:"asesor",isAdmin:true,canSwitchEnvironment:true},
-  coord_tecnico:{passwordHash:"b475bd0e82ca0a194de7ba0f0aadd49722c6f6ca46b695581de9fda414fa8d36",roleName:"Coordinador Técnico",environment:"asesor",isAdmin:true,canSwitchEnvironment:true},
-  asesor1:{passwordHash:"f9b41778fca6e6c751bf24ad0b8562d16630b4bff8fdaa5ccdc81273f60db935",roleName:"Asesor 1",environment:"asesor",isAdmin:false,canSwitchEnvironment:false},
-  asesor2:{passwordHash:"b811604397ce699e3fe89efacb73c8a3585437a4636f5e4ea5b2bf7adcf84f3d",roleName:"Asesor 2",environment:"asesor",isAdmin:false,canSwitchEnvironment:false},
-  asesor3:{passwordHash:"491d3d127920cfaee71a4cb494d5385f6b6efe2ff6a59b23777dda4ace68eb98",roleName:"Asesor 3",environment:"asesor",isAdmin:false,canSwitchEnvironment:false},
-  elaborador:{passwordHash:"3592948ddf94d2682d6038285ea306edddae07c56346c46f41006dc362636dbf",roleName:"Elaborador de Documentos",environment:"autor",isAdmin:false,canSwitchEnvironment:false}
+  asesor_tic_com_ghsst:{passwordHash:"7171ab112f724bd8b76e3a6f63c2b4cd648a9b6d8ab4305905a543c583a7f3ac",roleName:"Asesor 1",environment:"asesor",isAdmin:false,canSwitchEnvironment:false,processes:["ME-TIC","ME-GC","MA-GH"]},
+  asesor_contratacion_documental_infra:{passwordHash:"efe5e57e74e2c7370dfec1deeee1d82f0df62962346220b777e791414a7ef19d",roleName:"Asesor 2",environment:"asesor",isAdmin:false,canSwitchEnvironment:false,processes:["MA-GC","MA-GD","MA-GI"]},
+  asesor_recursos_financieros:{passwordHash:"89e9477df89b9e8629db36aa40f13bcb56157aa10bb3d1ac69cb755a4cd66612",roleName:"Asesor 3",environment:"asesor",isAdmin:false,canSwitchEnvironment:false,processes:["ME-GF"]},
+  asesor_evaluacion_juridica:{passwordHash:"be7fd632d46dac4cacf9fb6d8812acbd7a75dc58543bf229350129469ee10f31",roleName:"Asesor 4",environment:"asesor",isAdmin:false,canSwitchEnvironment:false,processes:["EC-EC","MA-GJ"]},
+  asesor_planeacion_disciplinaria:{passwordHash:"eff09df709cf9a619e98d893582651716e75ddeaf1b935c1d66352a967aeca76",roleName:"Asesor 5",environment:"asesor",isAdmin:false,canSwitchEnvironment:false,processes:["ME-DE","EC-GD"]},
+  elab_tecnologias_01:{passwordHash:"08e65712ca5c8f0ec4b22da13512a86b07a5df3107ba11ee8f5df38ca7fb09a5",roleName:"Elaborador 1 · Tecnologías e Información",environment:"autor",isAdmin:false,canSwitchEnvironment:false,processes:["ME-TIC"]},
+  elab_tecnologias_02:{passwordHash:"10c5521191a2fa68b9eb572d2b157651a124c3fe978edcba013d28522ea549f6",roleName:"Elaborador 2 · Tecnologías e Información",environment:"autor",isAdmin:false,canSwitchEnvironment:false,processes:["ME-TIC"]},
+  elab_comunicacion_01:{passwordHash:"0c087b5b4181f7dfae0eda7b35b76174b255039416a4d6cace2f1eee3a7e7086",roleName:"Elaborador 1 · Comunicación",environment:"autor",isAdmin:false,canSwitchEnvironment:false,processes:["ME-GC"]},
+  elab_comunicacion_02:{passwordHash:"eccf564c174bb4b5ea694a7a7f58804b515f47397b90c2047cdc6698474db67e",roleName:"Elaborador 2 · Comunicación",environment:"autor",isAdmin:false,canSwitchEnvironment:false,processes:["ME-GC"]},
+  elab_humana_sst_01:{passwordHash:"c04b9c27b41ec5e549825cd6decef8699aec2cb54304f6c9bfb7a6d4c0a58967",roleName:"Elaborador 1 · Gestión Humana y SST",environment:"autor",isAdmin:false,canSwitchEnvironment:false,processes:["MA-GH"]},
+  elab_humana_sst_02:{passwordHash:"9bfca081e9a25b00b11be1c228f79d8841f559e605fddba906b7233c3bb22523",roleName:"Elaborador 2 · Gestión Humana y SST",environment:"autor",isAdmin:false,canSwitchEnvironment:false,processes:["MA-GH"]},
+  elab_contratacion_01:{passwordHash:"4e658ed2f0c954b6803bef7677bb29882b8dc5f1bf9387dc59b2b131d13b9c82",roleName:"Elaborador 1 · Contratación",environment:"autor",isAdmin:false,canSwitchEnvironment:false,processes:["MA-GC"]},
+  elab_contratacion_02:{passwordHash:"1df653f2df9381d74b6b4f3571654a3e80f84df10a1cd6977b5de1adbf62a5be",roleName:"Elaborador 2 · Contratación",environment:"autor",isAdmin:false,canSwitchEnvironment:false,processes:["MA-GC"]},
+  elab_documental_01:{passwordHash:"ca7eb6930a7ffc1f6834c3c15cfdb5a136e46b0a0f924c9394d8a87591812700",roleName:"Elaborador 1 · Gestión Documental",environment:"autor",isAdmin:false,canSwitchEnvironment:false,processes:["MA-GD"]},
+  elab_documental_02:{passwordHash:"da74e285a8a93dfcadd24a7654493e51b9e59282ae4d64be760ac473a2c4898f",roleName:"Elaborador 2 · Gestión Documental",environment:"autor",isAdmin:false,canSwitchEnvironment:false,processes:["MA-GD"]},
+  elab_infraestructura_01:{passwordHash:"c8dc4118464988edab0d8b1d5d3eff08437637d1237412abcb8acf09b2f89b82",roleName:"Elaborador 1 · Infraestructura Física",environment:"autor",isAdmin:false,canSwitchEnvironment:false,processes:["MA-GI"]},
+  elab_infraestructura_02:{passwordHash:"695d98a9e7956442c3ce25c2f952eefed71e542125d7acbbf72068b43154df6b",roleName:"Elaborador 2 · Infraestructura Física",environment:"autor",isAdmin:false,canSwitchEnvironment:false,processes:["MA-GI"]},
+  elab_financiera_01:{passwordHash:"7affe4f2e0cc376afd751d02ee40111c49c9f541418a4de254a1c240533798bc",roleName:"Elaborador 1 · Recursos Financieros",environment:"autor",isAdmin:false,canSwitchEnvironment:false,processes:["ME-GF"]},
+  elab_financiera_02:{passwordHash:"4e8e8a876cc05dbad6b20bce1e3dee74a8e49e3853a468ca1226b9db8871c7ac",roleName:"Elaborador 2 · Recursos Financieros",environment:"autor",isAdmin:false,canSwitchEnvironment:false,processes:["ME-GF"]},
+  elab_evaluacion_ind_01:{passwordHash:"e9e31435dd110fb7924c7a3fc9c88f66a8ab0fe52a9a4a7510957655b40591f0",roleName:"Elaborador 1 · Evaluación Independiente",environment:"autor",isAdmin:false,canSwitchEnvironment:false,processes:["EC-EC"]},
+  elab_evaluacion_ind_02:{passwordHash:"d710ac10995d9baf1a43469a3b2b76a17bf1087a2810ef4311a07259824e433c",roleName:"Elaborador 2 · Evaluación Independiente",environment:"autor",isAdmin:false,canSwitchEnvironment:false,processes:["EC-EC"]},
+  elab_juridica_01:{passwordHash:"f177d17cc20fb2386132f028e90fa486ed3a9b4f62b23db9f8ed5284ab98af84",roleName:"Elaborador 1 · Gestión Jurídica",environment:"autor",isAdmin:false,canSwitchEnvironment:false,processes:["MA-GJ"]},
+  elab_juridica_02:{passwordHash:"75d5a3bf24526062a2ea4066287ef558ed13a599d5c60e0657773d358c3401b3",roleName:"Elaborador 2 · Gestión Jurídica",environment:"autor",isAdmin:false,canSwitchEnvironment:false,processes:["MA-GJ"]},
+  elab_planeacion_01:{passwordHash:"7e9c707edca04cf4fcefd6796bf73107c9e2944217ecb6140dd4ed13b634fdb9",roleName:"Elaborador 1 · Direccionamiento y Planeación",environment:"autor",isAdmin:false,canSwitchEnvironment:false,processes:["ME-DE"]},
+  elab_planeacion_02:{passwordHash:"d060fcebb2d07708b1a3d3cb02649cfc70d272370556d77353d07a0930419000",roleName:"Elaborador 2 · Direccionamiento y Planeación",environment:"autor",isAdmin:false,canSwitchEnvironment:false,processes:["ME-DE"]},
+  elab_disciplinaria_01:{passwordHash:"617b87fc1c50c1771b32077148465d7287a8e581264f241f268e8a19e1cb9c5a",roleName:"Elaborador 1 · Gestión Disciplinaria",environment:"autor",isAdmin:false,canSwitchEnvironment:false,processes:["EC-GD"]},
+  elab_disciplinaria_02:{passwordHash:"569566aec4fbba5df18394124e7e97e34f5cf3deb681bab0c6489ef1e8aa28e1",roleName:"Elaborador 2 · Gestión Disciplinaria",environment:"autor",isAdmin:false,canSwitchEnvironment:false,processes:["EC-GD"]}
 };
+
+function assignedProcessCodes(profile=currentProfile){return Array.isArray(profile?.processes)?profile.processes:[]}
+function assignedAdvisorForProcess(code){
+  const entry=Object.entries(SYSTEM_ACCOUNTS).find(([,profile])=>profile.environment==="asesor"&&assignedProcessCodes(profile).includes(code));
+  return entry?.[0]||"";
+}
+function canAccessCurrentProcess(){const code=val("proceso");return !!code&&assignedProcessCodes().includes(code)}
+function assignedProcessesLabel(){
+  const labels=assignedProcessCodes().map(code=>`${code} — ${processName(code)||code}`);
+  return labels.length?labels.join(", "):"Sin procesos asignados";
+}
+function applyProcessAccess(){
+  const select=$("proceso");if(!select)return;
+  const allowed=assignedProcessCodes(),author=currentRole==="autor";
+  [...select.options].forEach(option=>{if(!option.value)return;const permitted=!author||allowed.includes(option.value);option.hidden=!permitted;option.disabled=!permitted});
+  if(author&&allowed.length===1){
+    if(select.value!==allowed[0]){select.value=allowed[0];updateCode()}
+    select.disabled=true;
+  }
+}
 
 function readAuthStore(storage,key,fallback){
   try{const value=storage.getItem(key);return value?JSON.parse(value):fallback}catch(e){return fallback}
@@ -866,15 +906,18 @@ function clearAuthError(){
 }
 function setAuthenticatedState(username,profile=null,preferredEnvironment=""){
   const active=!!username&&!!profile;
-  currentProfile=active?{username,...profile}:{username:"",roleName:"Elaborador de Documentos",environment:"autor",isAdmin:false,canSwitchEnvironment:false};
+  currentProfile=active?{username,...profile}:{username:"",roleName:"Elaborador de Documentos",environment:"autor",isAdmin:false,canSwitchEnvironment:false,processes:[]};
   const allowedEnvironment=currentProfile.canSwitchEnvironment&&["autor","asesor"].includes(preferredEnvironment)?preferredEnvironment:currentProfile.environment;
   currentRole=allowedEnvironment==="asesor"?"asesor":"autor";
   document.body.classList.toggle("auth-locked",!active);
   $("authGate").classList.toggle("hidden",active);
   $("sessionEmail").textContent=active?username:"Sin sesión";
   $("sessionRole").textContent=active?`${currentProfile.roleName}${currentProfile.isAdmin?" · Administrador":""}`:"Sin perfil";
-  applyRoleNavigation();updateEvaluationUI();updateNotificationsUI();updateWorkflowAction();
-  if(active)document.querySelector(".navbtn.active")?.focus({preventScroll:true});
+  applyRoleNavigation();updateEvaluationUI();updateNotificationsUI();updateWorkflowAction();applyProcessAccess();
+  if(active){
+    $("sessionRole").title=`Procesos asignados: ${assignedProcessesLabel()}`;
+    document.querySelector(".navbtn.active")?.focus({preventScroll:true});
+  }else $("sessionRole").removeAttribute("title");
 }
 async function handleAuth(event){
   event.preventDefault();clearAuthError();
@@ -1149,9 +1192,9 @@ function markAllNotificationsRead(){notifications.forEach(n=>{if(n.role===curren
 document.addEventListener("click",event=>{if(!event.target.closest("#notificationCenter"))closeNotifications()});
 function evaluationAgeDays(){if(!evaluation?.submittedAt)return 0;return Math.max(0,Math.floor((Date.now()-new Date(evaluation.submittedAt).getTime())/86400000))}
 function renderAdvisorInbox(){
-  if(!$("advisorInboxBody"))return;ensureEvaluation();const received=evaluation.status!=="Borrador",status=evaluation.status;
-  $("inboxNew").textContent=String(["Enviado a evaluación","Subsanado"].includes(status)?1:0);$("inboxProgress").textContent=String(status==="En evaluación"?1:0);$("inboxReturned").textContent=String(status==="Devuelto para ajustes"?1:0);$("inboxClosed").textContent=String(["Concepto favorable","Concepto no favorable"].includes(status)?1:0);
-  if(!received){$("advisorInboxBody").innerHTML='<tr><td colspan="9" class="empty">No hay procedimientos enviados para revisión.</td></tr>';return}
+  if(!$("advisorInboxBody"))return;ensureEvaluation();const received=evaluation.status!=="Borrador",status=evaluation.status,assigned=canAccessCurrentProcess(),visible=received&&assigned;
+  $("inboxNew").textContent=String(visible&&["Enviado a evaluación","Subsanado"].includes(status)?1:0);$("inboxProgress").textContent=String(visible&&status==="En evaluación"?1:0);$("inboxReturned").textContent=String(visible&&status==="Devuelto para ajustes"?1:0);$("inboxClosed").textContent=String(visible&&["Concepto favorable","Concepto no favorable"].includes(status)?1:0);
+  if(!visible){$("advisorInboxBody").innerHTML='<tr><td colspan="9" class="empty">No hay procedimientos de sus procesos asignados pendientes de revisión.</td></tr>';return}
   const statusClassName=["Enviado a evaluación","Subsanado"].includes(status)?"new":evaluationAgeDays()>5&&!status.startsWith("Concepto")?"urgent":"";
   $("advisorInboxBody").innerHTML=`<tr><td class="inbox-code">${esc(val("codigo")||"Pendiente")}</td><td>${esc(val("nombre")||"Sin nombre")}</td><td>${esc(processName(val("proceso"))||val("proceso"))}</td><td>${esc(val("version")||"—")}</td><td>${esc(evaluation.authorEmail||"Sin identificar")}</td><td>${esc(dateTimeLabel(evaluation.submittedAt))}</td><td>${evaluationAgeDays()}</td><td><span class="inbox-status ${statusClassName}">${esc(status)}</span></td><td><button class="btn primary" type="button" onclick="switchTab('${["Enviado a evaluación","Subsanado","En evaluación"].includes(status)?"evaluation":"advisorProcedure"}')">${["Enviado a evaluación","Subsanado"].includes(status)?"Iniciar revisión":status==="En evaluación"?"Continuar evaluación":"Consultar"}</button></td></tr>`;
 }
@@ -1920,7 +1963,7 @@ function renderFlow(){
 
 function newEvaluationState(){
   const criteria={};evaluationCriteriaFlat.forEach(c=>criteria[c.id]={result:"",evidence:"",observation:"",adjustment:"",findingStatus:"Pendiente",response:""});
-  return{status:"Borrador",iteration:1,submittedAt:"",evaluationDate:"",authorEmail:"",evaluatorEmail:"",concept:"",decision:"",criteria,history:[],archives:[],snapshot:null};
+  return{status:"Borrador",iteration:1,submittedAt:"",evaluationDate:"",authorEmail:"",assignedEvaluator:"",evaluatorEmail:"",concept:"",decision:"",criteria,history:[],archives:[],snapshot:null};
 }
 function ensureEvaluation(){
   if(!evaluation||typeof evaluation!=="object")evaluation=newEvaluationState();
@@ -1975,15 +2018,17 @@ function updateProcedureLock(){
   ensureEvaluation();const statusLocks=["Enviado a evaluación","En evaluación","Subsanado","Concepto favorable"].includes(evaluation.status),locked=currentRole==="asesor"||statusLocks;
   document.body.classList.toggle("procedure-locked",locked);
   ["generalPanel","contextoPanel","normasPanel","actividadesPanel","flujogramaPanel","anexosPanel"].forEach(id=>{$(id)?.querySelectorAll("input,textarea,select,button").forEach(el=>{el.disabled=locked})});
+  applyProcessAccess();
 }
 function renderEvaluationActions(){
-  ensureEvaluation();const status=evaluation.status,author=currentRole==="autor";let html="";
+  ensureEvaluation();const status=evaluation.status,author=currentRole==="autor",assigned=canAccessCurrentProcess();let html="";
   if(author&&["Borrador","Concepto no favorable"].includes(status))html='<button class="btn primary" type="button" onclick="sendForEvaluation()">Enviar a evaluación</button>';
   if(author&&status==="Devuelto para ajustes")html='<button class="btn primary" type="button" onclick="submitCorrections()">Enviar subsanación</button>';
   if(author&&["Enviado a evaluación","En evaluación","Subsanado"].includes(status))html='<span class="hint">El procedimiento está protegido hasta que el asesor emita una decisión o lo devuelva para ajustes.</span>';
   if(author&&status==="Concepto favorable")html='<span class="hint">Esta versión está aprobada y permanece bloqueada. Cualquier modificación debe realizarse en una versión nueva.</span><button class="btn primary" type="button" onclick="createNewVersionFromApproved()">Crear nueva versión</button>';
-  if(currentRole==="asesor"&&["Enviado a evaluación","Subsanado"].includes(status))html='<button class="btn primary" type="button" onclick="startEvaluation()">Iniciar evaluación</button>';
-  if(currentRole==="asesor"&&status==="En evaluación")html='<button class="btn" type="button" onclick="returnForAdjustments()">Devolver para ajustes</button><button class="btn primary" type="button" onclick="issueEvaluationDecision(\'favorable\')">Emitir concepto favorable</button>';
+  if(currentRole==="asesor"&&assigned&&["Enviado a evaluación","Subsanado"].includes(status))html='<button class="btn primary" type="button" onclick="startEvaluation()">Iniciar evaluación</button>';
+  if(currentRole==="asesor"&&assigned&&status==="En evaluación")html='<button class="btn" type="button" onclick="returnForAdjustments()">Devolver para ajustes</button><button class="btn primary" type="button" onclick="issueEvaluationDecision(\'favorable\')">Emitir concepto favorable</button>';
+  if(currentRole==="asesor"&&!assigned&&status!=="Borrador")html='<span class="hint">Este procedimiento pertenece a un proceso que no está asignado a su cuenta.</span>';
   if(!html)html='<span class="hint">Consulte el resultado y la trazabilidad de la evaluación.</span>';
   $("evaluationActions").innerHTML=html;
 }
@@ -2007,7 +2052,7 @@ function renderEvaluationCriteria(){
 function renderEvaluationSummary(){
   ensureEvaluation();const stats=evaluationStats(),status=$("evaluationStatus");
   status.textContent=evaluation.status;status.className=`evaluation-status ${statusClass(evaluation.status)}`;
-  $("evalProcedure").textContent=val("nombre")||"Sin nombre definido";$("evalCodeVersion").textContent=`${val("codigo")||"Código pendiente"} · v${val("version")||"—"}`;$("evalProcess").textContent=val("proceso")?`${val("proceso")} — ${processName(val("proceso"))}`:"Pendiente";$("evalAdvisor").textContent=evaluation.evaluatorEmail||"Sin asignar";$("evalSubmittedAt").textContent=dateTimeLabel(evaluation.submittedAt);$("evalIteration").textContent=String(evaluation.iteration);
+  $("evalProcedure").textContent=val("nombre")||"Sin nombre definido";$("evalCodeVersion").textContent=`${val("codigo")||"Código pendiente"} · v${val("version")||"—"}`;$("evalProcess").textContent=val("proceso")?`${val("proceso")} — ${processName(val("proceso"))}`:"Pendiente";$("evalAdvisor").textContent=evaluation.evaluatorEmail||evaluation.assignedEvaluator||"Sin asignar";$("evalSubmittedAt").textContent=dateTimeLabel(evaluation.submittedAt);$("evalIteration").textContent=String(evaluation.iteration);
   $("evalScore").textContent=`${stats.score.toFixed(1)}%`;$("evalLevel").textContent=stats.level;$("evalFailures").textContent=String(stats.failures);$("evalCritical").textContent=String(stats.criticalFailures);$("evalProgressBar").style.width=`${Math.round(stats.answered/stats.total*100)}%`;$("evalProgressText").textContent=`${stats.answered} de ${stats.total} criterios evaluados · ${stats.decision}`;
   $("evaluationVariableResults").innerHTML=stats.groups.map(g=>{const group=evaluationGroups.find(x=>x.id===g.id),groupState=evaluationGroupState(group);return`<tr class="${groupState.className}"><td><b>${esc(g.name)}</b><br><span class="evaluation-group-status">${groupState.label}</span></td><td>${g.weight}%</td><td>${g.answered} de ${g.total}</td><td>${g.score.toFixed(1)}%</td></tr>`}).join("");
   $("evaluationConcept").value=evaluation.concept||"";$("evaluationConcept").disabled=!(currentRole==="asesor"&&evaluation.status==="En evaluación");
@@ -2059,12 +2104,15 @@ function createNewVersionFromApproved(){
   toast(`Versión ${newVersion} creada. La versión ${previousVersion} permanece archivada y bloqueada.`);
 }
 function sendForEvaluation(){
-  if(currentRole!=="autor")return;const completion=sectionCompletion();if(!completion.revision){toast("Complete los módulos obligatorios antes de enviar el procedimiento.");switchTab("revision");return}if(!confirm(`¿Está seguro de enviar el procedimiento “${val("nombre")||"Sin nombre"}” versión ${val("version")||"—"} para revisión metodológica? Mientras se encuentre en evaluación no podrá modificar su contenido.`))return;
+  if(currentRole!=="autor")return;const completion=sectionCompletion();if(!completion.revision){toast("Complete los módulos obligatorios antes de enviar el procedimiento.");switchTab("revision");return}const assignedAdvisor=assignedAdvisorForProcess(val("proceso"));if(!assignedAdvisor){toast("El proceso seleccionado no tiene un asesor asignado.");return}if(!confirm(`¿Está seguro de enviar el procedimiento “${val("nombre")||"Sin nombre"}” versión ${val("version")||"—"} para revisión metodológica? Mientras se encuentre en evaluación no podrá modificar su contenido.`))return;
   ensureEvaluation();if(["Concepto no favorable","Concepto favorable"].includes(evaluation.status)){const previous=JSON.parse(JSON.stringify({...evaluation,archives:undefined})),archives=[...(evaluation.archives||[]),previous];evaluation=newEvaluationState();evaluation.archives=archives}
-  evaluation.status="Enviado a evaluación";evaluation.authorEmail=currentUserEmail();evaluation.submittedAt=new Date().toISOString();evaluation.snapshot=evaluationSnapshot();addEvaluationHistory("Envío a evaluación",`Versión ${val("version")}`);addNotification("asesor","Nuevo procedimiento para revisar",`${val("codigo")||"Código pendiente"} — ${val("nombre")||"Procedimiento sin nombre"}. Enviado por ${evaluation.authorEmail}.`,"nuevo");saveLocal(true);updateEvaluationUI();toast("Procedimiento enviado para revisión. El asesor ha sido notificado.");
+  evaluation.status="Enviado a evaluación";evaluation.authorEmail=currentUserEmail();evaluation.assignedEvaluator=assignedAdvisor;evaluation.submittedAt=new Date().toISOString();evaluation.snapshot=evaluationSnapshot();addEvaluationHistory("Envío a evaluación",`Versión ${val("version")}`);addNotification("asesor","Nuevo procedimiento para revisar",`${val("codigo")||"Código pendiente"} — ${val("nombre")||"Procedimiento sin nombre"}. Asignado a ${assignedAdvisor}.`,"nuevo");saveLocal(true);updateEvaluationUI();toast(`Procedimiento enviado y asignado a ${assignedAdvisor}.`);
 }
 function startEvaluation(){
-  if(currentRole!=="asesor"||!["Enviado a evaluación","Subsanado"].includes(evaluation?.status))return;evaluation.status="En evaluación";evaluation.evaluatorEmail=currentUserEmail();evaluation.evaluationDate=new Date().toISOString();addEvaluationHistory("Inicio de evaluación",`Iteración ${evaluation.iteration}`);addNotification("autor","El asesor inició la revisión",`${evaluation.evaluatorEmail} inició la evaluación de ${val("codigo")||"su procedimiento"}.`,"proceso");saveLocal(true);updateEvaluationUI();toast("Evaluación iniciada. El autor ha sido notificado.");
+  if(currentRole!=="asesor"||!["Enviado a evaluación","Subsanado"].includes(evaluation?.status))return;
+  if(!canAccessCurrentProcess()||(evaluation.assignedEvaluator&&evaluation.assignedEvaluator!==currentUserEmail())){toast("Este procedimiento está asignado a otro asesor.");return}
+  if(normalizeUsername(evaluation.authorEmail)===currentUserEmail()){toast("No está permitido evaluar un procedimiento elaborado por la misma cuenta.");return}
+  evaluation.status="En evaluación";evaluation.evaluatorEmail=currentUserEmail();evaluation.evaluationDate=new Date().toISOString();addEvaluationHistory("Inicio de evaluación",`Iteración ${evaluation.iteration}`);addNotification("autor","El asesor inició la revisión",`${evaluation.evaluatorEmail} inició la evaluación de ${val("codigo")||"su procedimiento"}.`,"proceso");saveLocal(true);updateEvaluationUI();toast("Evaluación iniciada. El autor ha sido notificado.");
 }
 function returnForAdjustments(){
   if(currentRole!=="asesor"||evaluation?.status!=="En evaluación"||!validateEvaluation())return;const stats=evaluationStats();if(!stats.failures){toast("No existen criterios incumplidos para devolver el procedimiento.");return}if(!filled(evaluation.concept)){toast("Registre el concepto técnico antes de devolver el procedimiento.");return}if(!confirm("¿Devolver el procedimiento al autor para que realice los ajustes solicitados?"))return;evaluation.status="Devuelto para ajustes";addEvaluationHistory("Devolución para ajustes",`${stats.failures} criterio(s) no cumplido(s)`);addNotification("autor","Procedimiento devuelto para ajustes",`Se identificaron ${stats.failures} criterio(s) no cumplido(s) y ${stats.criticalFailures} incumplimiento(s) crítico(s).`,"ajuste");saveLocal(true);updateEvaluationUI();toast("Procedimiento devuelto. El autor ha sido notificado.");
@@ -2079,7 +2127,7 @@ function issueEvaluationDecision(type){
 }
 function evaluationReportHtml(){
   ensureEvaluation();const stats=evaluationStats(),rows=evaluationCriteriaFlat.map((c,i)=>{const r=evaluation.criteria[c.id];return `<tr><td>${i+1}</td><td>${esc(c.groupName)}</td><td>${esc(c.question)}</td><td>${esc(r.result||"Pendiente")}</td><td>${esc(r.observation)}</td><td>${esc(r.adjustment)}</td><td>${esc(r.response)}</td><td>${esc(r.findingStatus)}</td></tr>`}).join("");
-  return `<h1>INFORME DE EVALUACIÓN DE ADECUACIÓN</h1><div class="meta"><b>Procedimiento:</b> ${esc(val("nombre"))}<br><b>Código:</b> ${esc(val("codigo"))} · <b>Versión:</b> ${esc(val("version"))}<br><b>Proceso:</b> ${esc(processName(val("proceso")))}<br><b>Asesor:</b> ${esc(evaluation.evaluatorEmail||"Sin asignar")} · <b>Fecha:</b> ${esc(dateTimeLabel(evaluation.evaluationDate))}<br><b>Estado:</b> ${esc(evaluation.status)} · <b>Resultado:</b> ${stats.score.toFixed(1)}% (${esc(stats.level)})</div><h2>Concepto técnico</h2><p>${esc(evaluation.concept||"Sin concepto registrado.")}</p><h2>Detalle de criterios</h2><table><thead><tr><th>N.º</th><th>Variable</th><th>Criterio</th><th>Resultado</th><th>Observación</th><th>Ajuste requerido</th><th>Respuesta del autor</th><th>Estado</th></tr></thead><tbody>${rows}</tbody></table>`;
+  return `<h1>INFORME DE EVALUACIÓN DE ADECUACIÓN</h1><div class="meta"><b>Procedimiento:</b> ${esc(val("nombre"))}<br><b>Código:</b> ${esc(val("codigo"))} · <b>Versión:</b> ${esc(val("version"))}<br><b>Proceso:</b> ${esc(processName(val("proceso")))}<br><b>Asesor:</b> ${esc(evaluation.evaluatorEmail||evaluation.assignedEvaluator||"Sin asignar")} · <b>Fecha:</b> ${esc(dateTimeLabel(evaluation.evaluationDate))}<br><b>Estado:</b> ${esc(evaluation.status)} · <b>Resultado:</b> ${stats.score.toFixed(1)}% (${esc(stats.level)})</div><h2>Concepto técnico</h2><p>${esc(evaluation.concept||"Sin concepto registrado.")}</p><h2>Detalle de criterios</h2><table><thead><tr><th>N.º</th><th>Variable</th><th>Criterio</th><th>Resultado</th><th>Observación</th><th>Ajuste requerido</th><th>Respuesta del autor</th><th>Estado</th></tr></thead><tbody>${rows}</tbody></table>`;
 }
 function exportEvaluationPDF(){
   const popup=window.open("","_blank");if(!popup){toast("El navegador bloqueó la ventana de exportación.");return}popup.document.write(`<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Evaluación ${esc(val("codigo"))}</title><style>@page{size:A4 landscape;margin:10mm}body{font-family:Arial,sans-serif;color:#243746;font-size:10px}h1,h2{color:#004488}h1{text-align:center;font-size:18px}.meta{border:1px solid #CBD7DC;padding:10px;line-height:1.6}table{width:100%;border-collapse:collapse}th,td{border:1px solid #BFCBD1;padding:5px;vertical-align:top}th{background:#004488;color:#fff}p{white-space:pre-wrap}</style></head><body>${evaluationReportHtml()}</body></html>`);popup.document.close();popup.focus();setTimeout(()=>{popup.print();popup.close()},400);
@@ -2116,7 +2164,7 @@ function newProcedure(){
   if($("showEvidenceFlow"))$("showEvidenceFlow").checked=false;
   norms=[];activities=[];annexes=[];changes=[];evaluation=newEvaluationState();notifications=[];
   addNorma();addActivity({tipo:"Inicio",actividad:"Inicio",descripcion:""});addActivity({tipo:"Actividad",actividad:"Nueva actividad",descripcion:""});addActivity({tipo:"Fin",actividad:"Fin",descripcion:""});addAnexo();addCambio({razon:"Creación inicial del procedimiento"});
-  updateCode();validateName();renderFlow();runQualityRules();updateEvaluationUI();switchTab("general");
+  applyProcessAccess();updateCode();validateName();renderFlow();runQualityRules();updateEvaluationUI();switchTab("general");
 }
 
 function tableRows(arr,cols){if(!arr.length)return`<tr><td colspan="${cols.length}">Sin información registrada.</td></tr>`;return arr.map(o=>`<tr>${cols.map(c=>`<td>${esc(o[c]||"")}</td>`).join("")}</tr>`).join("")}
@@ -2134,7 +2182,7 @@ function routeLabel(id){const a=activityByUid(id);if(!a)return"Por definir";cons
 
 function buildPreview(){
   renderFlow();const flow=$("flowSvg").outerHTML;
-  ensureEvaluation();const evalStats=evaluationStats(),evaluationPreview=evaluation.status!=="Borrador"?`<h2>7. EVALUACIÓN DE ADECUACIÓN</h2><div class="dochead"><div><b>ESTADO:</b> ${esc(evaluation.status)}</div><div><b>RESULTADO:</b> ${evalStats.score.toFixed(1)}% — ${esc(evalStats.level)}</div><div><b>ASESOR:</b> ${esc(evaluation.evaluatorEmail||"Sin asignar")}</div><div><b>FECHA:</b> ${esc(dateTimeLabel(evaluation.evaluationDate))}</div></div><p class="context-item"><b>Concepto técnico:</b> ${esc(evaluation.concept||"Sin concepto registrado.")}</p>`:"";
+  ensureEvaluation();const evalStats=evaluationStats(),evaluationPreview=evaluation.status!=="Borrador"?`<h2>7. EVALUACIÓN DE ADECUACIÓN</h2><div class="dochead"><div><b>ESTADO:</b> ${esc(evaluation.status)}</div><div><b>RESULTADO:</b> ${evalStats.score.toFixed(1)}% — ${esc(evalStats.level)}</div><div><b>ASESOR:</b> ${esc(evaluation.evaluatorEmail||evaluation.assignedEvaluator||"Sin asignar")}</div><div><b>FECHA:</b> ${esc(dateTimeLabel(evaluation.evaluationDate))}</div></div><p class="context-item"><b>Concepto técnico:</b> ${esc(evaluation.concept||"Sin concepto registrado.")}</p>`:"";
   const showEvidenceColumn=activities.some(a=>String(a.evidencia||a.controlEvidencia||"").trim()),showSystem=activities.some(a=>String(a.sistema||"").trim()),defs=parseDefinitions(val("definiciones"));
   const controlText=a=>{if(!a.tieneControl)return"";const items=[["Responsable",a.controlResponsable],["Periodicidad",a.controlPeriodicidad],["Propósito del Control",a.controlAccion],["Ejecución",a.controlEjecucion],["Desviación",a.controlDesviacion],["Evidencia",a.controlEvidencia]].filter(x=>String(x[1]||"").trim());return items.map(x=>`<b>${x[0]}:</b> ${esc(x[1])}`).join("<br>")};
   const actRows=activities.map(a=>`<tr><td>${displayedActivityNumber(a)||"—"}</td><td>${esc(a.tipo)}</td><td>${esc(a.actividad||"")}</td><td>${esc(a.descripcion)}${a.tipo==="Decisión"?`<div class="decision-route-note"><b>Sí →</b> ${esc(routeLabel(a.decisionSi))}<br><b>No →</b> ${esc(routeLabel(a.decisionNo))}</div>`:a.tipo==="Conector"?`<div class="decision-route-note"><b>Conector ${esc(a.connectorId||"")} →</b> ${esc(routeLabel(a.connectorDestino))}</div>`:""}</td><td>${esc(a.responsable)}</td><td>${controlText(a)}</td>${showEvidenceColumn?`<td>${esc(a.evidencia||a.controlEvidencia||"")}</td>`:""}${showSystem?`<td>${esc(a.sistema||"")}</td>`:""}</tr>`).join("");
