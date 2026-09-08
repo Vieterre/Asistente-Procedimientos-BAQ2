@@ -556,7 +556,7 @@ body.auth-locked>.app{filter:blur(5px);pointer-events:none;user-select:none}
         <input id="fecha" type="date" onchange="validateCurrentDate()">
       </div>
       <div class="field">
-        <label>Responsable del procedimiento</label><input id="responsableProcedimiento" list="responsableCargoOptions" placeholder="Seleccione o escriba el cargo responsable">
+        <label>Responsable del procedimiento</label><select id="responsableProcedimiento"></select>
       </div>
     </div>
   </section>
@@ -1331,6 +1331,18 @@ function initResponsibilityRoleOptions(){
   const list=$("responsableCargoOptions");if(!list)return;
   const seen=new Set();
   list.innerHTML=RESPONSIBILITY_ROLES.filter(role=>{const key=role.cargo.toLowerCase();if(seen.has(key))return false;seen.add(key);return true}).map(role=>`<option value="${esc(role.cargo)}" label="${esc(role.level)}"></option>`).join("");
+  if($("responsableProcedimiento"))$("responsableProcedimiento").innerHTML=responsibilityRoleSelectOptions($("responsableProcedimiento").value);
+}
+function normalizeResponsibilityRole(value){
+  const text=String(value||"").replace(/\s+\d{3}-\d{2}\s*$/,"").trim();
+  if(RESPONSIBILITY_ROLES.some(role=>role.cargo===text))return text;
+  const normalized=text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+  const match=RESPONSIBILITY_ROLES.find(role=>role.cargo.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"")===normalized);
+  return match?match.cargo:"";
+}
+function responsibilityRoleSelectOptions(selected=""){
+  const current=normalizeResponsibilityRole(selected),groups=[...new Set(RESPONSIBILITY_ROLES.map(role=>role.level))];
+  return `<option value="">Seleccione un cargo</option>`+groups.map(level=>`<optgroup label="${esc(level)}">${RESPONSIBILITY_ROLES.filter(role=>role.level===level).map(role=>`<option value="${esc(role.cargo)}" ${current===role.cargo?"selected":""}>${esc(role.cargo)}</option>`).join("")}</optgroup>`).join("");
 }
 function today(){
   const parts=new Intl.DateTimeFormat("en-US",{timeZone:"America/Bogota",year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(new Date());
@@ -1550,7 +1562,7 @@ function renderActivities(){
     <td>${fixedBoundary?`<span class="fixed-type" title="Elemento fijo">🔒 ${a.tipo}</span>`:`<select class="type-select ${a.tipo==="Decisión"?"decision-select":a.tipo==="Conector"?"connector-select":""}" onchange="changeActivityType(${i},this.value)">${["Actividad","Decisión","Conector"].map(x=>`<option ${a.tipo===x?"selected":""}>${x}</option>`).join("")}</select>`}${a.tipo==="Decisión"?'<div><span class="decision-chip">◆ Decisión</span></div>':a.tipo==="Conector"?'<div><span class="connector-chip">○ Conector</span></div>':""}</td>
     <td><input value="${esc(a.actividad)}" placeholder="${a.tipo==="Inicio"?"Ej. Recepción de la solicitud":a.tipo==="Fin"?"Ej. Informe final comunicado":a.tipo==="Conector"?"Ej. Conector A":"Nombre corto"}" oninput="activities[${i}].actividad=this.value"></td>
     <td><textarea placeholder="${esc(help)}" oninput="activities[${i}].descripcion=this.value">${esc(a.descripcion)}</textarea><div class="row-help">${esc(help)}</div></td>
-    <td>${special?'<span class="control-none">No aplica</span>':`<input value="${esc(a.responsable)}" list="responsableCargoOptions" placeholder="Cargo; otro cargo" oninput="activities[${i}].responsable=this.value">`}</td>
+    <td>${special?'<span class="control-none">No aplica</span>':`<select onchange="activities[${i}].responsable=this.value">${responsibilityRoleSelectOptions(a.responsable)}</select>`}</td>
     <td>${noControl?'<span class="control-none">No aplica</span>':`<select class="control-select ${a.tieneControl?"control-yes":""}" onchange="activities[${i}].tieneControl=this.value===\'Si\';renderActivities()"><option value="No" ${!a.tieneControl?"selected":""}>No</option><option value="Si" ${a.tieneControl?"selected":""}>Sí</option></select>${a.tieneControl?'<div><span class="control-chip">✓ Punto de control</span></div>':""}`}</td>
     <td>${special?'<span class="control-none">No aplica</span>':`<textarea placeholder="Opcional" oninput="activities[${i}].evidencia=this.value">${esc(a.evidencia)}</textarea>`}</td>
     <td>${special?'<span class="control-none">No aplica</span>':`<input value="${esc(a.sistema)}" placeholder="Opcional" oninput="activities[${i}].sistema=this.value">`}</td>
@@ -1565,7 +1577,7 @@ function renderActivities(){
     <div class="field"><label>Continuar el flujo en <span class="required-star">*</span> <span class="help-tip" tabindex="0" data-tip="Seleccione la actividad o conector donde debe continuar la secuencia.">i</span></label><select required onchange="activities[${i}].connectorDestino=this.value">${activityOptions(i,a.connectorDestino,true)}</select><div class="route-note">El conector dirige el flujo al destino seleccionado y evita una línea secuencial innecesaria.</div></div>
   </div></td></tr>`:""}
   ${a.tieneControl?`<tr class="control-details-row"><td colspan="9"><div class="control-details">
-    <div class="field"><label>Responsable del control <span class="required-star">*</span> <span class="help-tip" tabindex="0" data-tip="Rol que ejecuta o verifica el control. Puede coincidir con el responsable de la actividad.">i</span></label><input required value="${esc(a.controlResponsable)}" list="responsableCargoOptions" oninput="activities[${i}].controlResponsable=this.value"></div>
+    <div class="field"><label>Responsable del control <span class="required-star">*</span> <span class="help-tip" tabindex="0" data-tip="Rol que ejecuta o verifica el control. Puede coincidir con el responsable de la actividad.">i</span></label><select required onchange="activities[${i}].controlResponsable=this.value">${responsibilityRoleSelectOptions(a.controlResponsable)}</select></div>
     <div class="field"><label>Periodicidad <span class="required-star">*</span> <span class="help-tip" tabindex="0" data-tip="Frecuencia con la que se ejecuta el control: por cada trámite, diariamente, mensual, por cada auditoría, etc.">i</span></label><input required value="${esc(a.controlPeriodicidad)}" placeholder="Ej. por cada trabajo" oninput="activities[${i}].controlPeriodicidad=this.value"></div>
     <div class="field"><label>Propósito del Control <span class="required-star">*</span> <span class="help-tip" tabindex="0" data-tip="Seleccione la acción que mejor representa el propósito del control. El verbo orienta su identificación, pero no determina por sí solo que la actividad constituya un punto de control.">i</span></label><select required aria-label="Propósito del Control" onchange="activities[${i}].controlAccion=this.value">${controlActionOptions(a.controlAccion)}</select></div>
     <div class="field"><label>Ejecución del control <span class="required-star">*</span> <span class="help-tip" tabindex="0" data-tip="Describa cómo se realiza la verificación: qué se revisa, contra qué criterio y qué acción ejecuta el responsable.">i</span></label><textarea required oninput="activities[${i}].controlEjecucion=this.value">${esc(a.controlEjecucion)}</textarea></div>
@@ -2189,8 +2201,8 @@ function data(){
   return{fields,norms,activities,annexes,changes,evaluation:ensureEvaluation(),notifications,settings:{showEvidenceFlow:!!$("showEvidenceFlow")?.checked}};
 }
 function applyData(d){
-  fieldIds.forEach(id=>{if(d.fields&&d.fields[id]!==undefined)$(id).value=d.fields[id]});
-  norms=d.norms||[];activities=d.activities||[];annexes=d.annexes||[];changes=d.changes||[];evaluation=d.evaluation||newEvaluationState();notifications=Array.isArray(d.notifications)?d.notifications:[];
+  fieldIds.forEach(id=>{if(d.fields&&d.fields[id]!==undefined)$(id).value=id==="responsableProcedimiento"?normalizeResponsibilityRole(d.fields[id]):d.fields[id]});
+  norms=d.norms||[];activities=(d.activities||[]).map(a=>({...a,responsable:normalizeResponsibilityRole(a.responsable),controlResponsable:normalizeResponsibilityRole(a.controlResponsable)}));annexes=d.annexes||[];changes=d.changes||[];evaluation=d.evaluation||newEvaluationState();notifications=Array.isArray(d.notifications)?d.notifications:[];
   if($("showEvidenceFlow"))$("showEvidenceFlow").checked=!!d.settings?.showEvidenceFlow;
   renderNorms();renderActivities();renderAnnexes();renderChanges();updateCode();validateName();validateCurrentDate();renderFlow();runQualityRules();updateProcedureIdentity();updateEvaluationUI();updateMenuProgress();
 }
