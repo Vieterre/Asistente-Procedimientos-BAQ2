@@ -639,7 +639,7 @@ body.auth-locked>.app{filter:blur(5px);pointer-events:none;user-select:none}
     <div class="sectionline"></div>
     <div class="grid3">
       <div class="field"><label>Elaboró <span class="help-tip" tabindex="0" data-tip="Cargo que prepara o actualiza técnicamente el procedimiento. Debe ser distinto de quien revisa y aprueba.">i</span></label><select id="elaboro"></select></div>
-      <div class="field"><label>Revisó <span class="help-tip" tabindex="0" data-tip="Cargo asesor o profesional que verifica coherencia, suficiencia y cumplimiento de los criterios del procedimiento. Debe ser distinto de quien elabora y aprueba.">i</span></label><select id="reviso"></select></div>
+      <div class="field"><label>Revisó <span class="help-tip" tabindex="0" data-tip="Cargo que verifica coherencia, suficiencia y cumplimiento de los criterios del procedimiento. Debe ser distinto de quien elabora y aprueba.">i</span></label><select id="reviso"></select></div>
       <div class="field"><label>Aprobó <span class="help-tip" tabindex="0" data-tip="Cargo directivo que autoriza formalmente la versión para su uso organizacional.">i</span></label><select id="aprobo"></select></div>
     </div>
     <div class="hint">Debe mantenerse la segregación entre elaboración, revisión y aprobación.</div>
@@ -855,8 +855,6 @@ const RESPONSIBILITY_ROLES=[
   {level:"Asistencial",cargo:"Operario"},
   {level:"Asistencial",cargo:"Secretaria Ejecutiva"}
 ];
-const REVIEW_ROLE_CARGOS=["Asesor","Profesional Universitario","Profesional Universitario Área salud","Profesional Especializado"];
-
 const AUTH_LOG_KEY="gestion_asistente_access_log_v1";
 const AUTH_SESSION_KEY="gestion_asistente_session_v2";
 const SYSTEM_ACCOUNTS={
@@ -1334,11 +1332,10 @@ function initResponsibilityRoleOptions(){
   list.innerHTML=RESPONSIBILITY_ROLES.filter(role=>{const key=role.cargo.toLowerCase();if(seen.has(key))return false;seen.add(key);return true}).map(role=>`<option value="${esc(role.cargo)}" label="${esc(role.level)}"></option>`).join("");
   if($("responsableProcedimiento"))$("responsableProcedimiento").innerHTML=responsibilityRoleSelectOptions($("responsableProcedimiento").value);
   if($("elaboro"))$("elaboro").innerHTML=responsibilityRoleSelectOptions($("elaboro").value);
-  if($("reviso"))$("reviso").innerHTML=responsibilityRoleSelectOptions($("reviso").value,"revision");
+  if($("reviso"))$("reviso").innerHTML=responsibilityRoleSelectOptions($("reviso").value);
   if($("aprobo"))$("aprobo").innerHTML=responsibilityRoleSelectOptions($("aprobo").value,["Directivo"]);
 }
 function responsibilityRolesByLevels(levels){
-  if(levels==="revision")return RESPONSIBILITY_ROLES.filter(role=>REVIEW_ROLE_CARGOS.includes(role.cargo));
   return Array.isArray(levels)&&levels.length?RESPONSIBILITY_ROLES.filter(role=>levels.includes(role.level)):RESPONSIBILITY_ROLES;
 }
 function normalizeText(value){
@@ -2215,7 +2212,7 @@ function data(){
 function applyData(d){
   fieldIds.forEach(id=>{
     if(!d.fields||d.fields[id]===undefined)return;
-    const roleLevels=id==="reviso"?"revision":id==="aprobo"?["Directivo"]:null;
+    const roleLevels=id==="aprobo"?["Directivo"]:null;
     $(id).value=["responsableProcedimiento","elaboro","reviso","aprobo"].includes(id)?normalizeResponsibilityRole(d.fields[id],roleLevels):d.fields[id];
   });
   norms=d.norms||[];activities=(d.activities||[]).map(a=>({...a,responsable:normalizeResponsibilityRole(a.responsable),controlResponsable:normalizeResponsibilityRole(a.controlResponsable)}));annexes=d.annexes||[];changes=d.changes||[];evaluation=d.evaluation||newEvaluationState();notifications=Array.isArray(d.notifications)?d.notifications:[];
