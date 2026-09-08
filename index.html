@@ -400,12 +400,10 @@ body.auth-locked>.app{filter:blur(5px);pointer-events:none;user-select:none}
   <div class="auth-card">
     <div class="auth-brand">
       <div class="auth-mark" aria-hidden="true"><svg viewBox="0 0 48 48"><path d="M7 38V26h7v12M19 38V18h7v20M31 38V9h7v29"/><path d="m8 26 10-8 8 6L41 9M34 9h7v7"/></svg></div>
-      <span class="auth-eyebrow">Nombre del asistente</span>
       <h1 id="authTitle">Validador y Estructurador Metodológico de Procedimientos</h1>
-      <p>Construcción de Procedimientos</p>
     </div>
     <form class="auth-form" id="authForm" onsubmit="handleAuth(event)" novalidate>
-      <h2>Acceso al Validador y Estructurador Metodológico de Procedimientos</h2>
+      <h2>Inicio de sesión</h2>
       <p class="auth-intro">Ingresa con tus credenciales oficiales para continuar.</p>
       <div class="auth-field">
         <label for="authEmail">Usuario</label>
@@ -425,7 +423,6 @@ body.auth-locked>.app{filter:blur(5px);pointer-events:none;user-select:none}
       </div>
       <div class="auth-error" id="authError" role="alert" aria-live="polite"></div>
       <button class="auth-submit" id="authSubmit" type="submit">Ingresar al asistente</button>
-      <div class="auth-local-note"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 20 6v6c0 4.5-2.7 7.7-8 9-5.3-1.3-8-4.5-8-9V6z"/><path d="m8.5 12 2.2 2.2 4.8-5"/></svg><span>Las credenciales temporales están configuradas localmente mediante hashes. La autenticación institucional, recuperación de claves y administración centralizada requieren un backend seguro.</span></div>
     </form>
   </div>
 </div>
@@ -638,9 +635,9 @@ body.auth-locked>.app{filter:blur(5px);pointer-events:none;user-select:none}
     </table></div>
     <div class="sectionline"></div>
     <div class="grid3">
-      <div class="field"><label>Elaboró <span class="help-tip" tabindex="0" data-tip="Cargo que prepara o actualiza técnicamente el procedimiento. Debe ser distinto de quien revisa y aprueba.">i</span></label><select id="elaboro"></select></div>
-      <div class="field"><label>Revisó <span class="help-tip" tabindex="0" data-tip="Cargo que verifica coherencia, suficiencia y cumplimiento de los criterios del procedimiento. Debe ser distinto de quien elabora y aprueba.">i</span></label><select id="reviso"></select></div>
-      <div class="field"><label>Aprobó <span class="help-tip" tabindex="0" data-tip="Cargo directivo que autoriza formalmente la versión para su uso organizacional.">i</span></label><select id="aprobo"></select></div>
+      <div class="field"><label>Elaboró <span class="help-tip" tabindex="0" data-tip="Cargo que prepara o actualiza técnicamente el procedimiento. Debe ser distinto de quien revisa y aprueba.">i</span></label><select id="elaboro"></select><label for="elaboroNombre">Nombre (opcional)</label><input id="elaboroNombre" type="text" placeholder="Nombre de quien elaboró"></div>
+      <div class="field"><label>Revisó <span class="help-tip" tabindex="0" data-tip="Cargo que verifica coherencia, suficiencia y cumplimiento de los criterios del procedimiento. Debe ser distinto de quien elabora y aprueba.">i</span></label><select id="reviso"></select><label for="revisoNombre">Nombre (opcional)</label><input id="revisoNombre" type="text" placeholder="Nombre de quien revisó"></div>
+      <div class="field"><label>Aprobó <span class="help-tip" tabindex="0" data-tip="Cargo directivo que autoriza formalmente la versión para su uso organizacional.">i</span></label><select id="aprobo"></select><label for="aproboNombre">Nombre (opcional)</label><input id="aproboNombre" type="text" placeholder="Nombre de quien aprobó"></div>
     </div>
     <div class="hint">Debe mantenerse la segregación entre elaboración, revisión y aprobación.</div>
   </section>
@@ -1036,7 +1033,7 @@ const processGroups = [
 const fieldIds = [
   "codigo","consecutivo","version","fecha","nombre","proceso","responsableProcedimiento",
   "objetivo","alcance","definiciones","condiciones",
-  "elaboro","reviso","aprobo"
+  "elaboro","elaboroNombre","reviso","revisoNombre","aprobo","aproboNombre"
 ];
 
 const controlActions=["Analiza","Aprueba","Autoriza","Compara","Comprueba","Concilia","Confirma","Contrasta","Controla","Evalúa","Inspecciona","Revisa","Supervisa","Valida","Verifica"];
@@ -2167,7 +2164,7 @@ function createNewVersionFromApproved(){
   approvedEvaluation.version=previousVersion;approvedEvaluation.approvedSnapshot=evaluationSnapshot();approvedEvaluation.archivedAt=new Date().toISOString();
   const archives=[...(evaluation.archives||[]),approvedEvaluation],newVersion=nextMajorVersion(previousVersion);
 
-  $("version").value=newVersion;$("fecha").value=today();$("elaboro").value="";$("reviso").value="";$("aprobo").value="";
+  $("version").value=newVersion;$("fecha").value=today();$("elaboro").value="";$("elaboroNombre").value="";$("reviso").value="";$("revisoNombre").value="";$("aprobo").value="";$("aproboNombre").value="";
   evaluation=newEvaluationState();evaluation.archives=archives;evaluation.sourceVersion=previousVersion;evaluation.sourceStatus="Concepto favorable";evaluation.createdAt=new Date().toISOString();
   addEvaluationHistory("Creación de nueva versión",`Versión ${newVersion} derivada de la versión aprobada ${previousVersion}`);
   addCambio({version:newVersion,fecha:today(),razon:normalizedReason});
@@ -2273,7 +2270,7 @@ function buildPreview(){
   <h2>3. DESCRIPCIÓN DEL PROCEDIMIENTO</h2>
   <table><thead><tr><th>N.º</th><th>Tipo</th><th>Actividad</th><th>Descripción de la actividad</th><th>Responsable</th><th>Punto de control</th>${showEvidenceColumn?"<th>Registro / Evidencia</th>":""}${showSystem?"<th>Sistema / Herramienta</th>":""}</tr></thead><tbody>${actRows||`<tr><td colspan="${6+(showEvidenceColumn?1:0)+(showSystem?1:0)}">Sin actividades.</td></tr>`}</tbody></table>
   <h2>4. DOCUMENTOS ANEXOS</h2><table><thead><tr><th>Documento</th><th>Tipo</th><th>Código / referencia</th><th>Observación</th></tr></thead><tbody>${tableRows(annexes,["documento","tipo","codigo","observacion"])}</tbody></table>
-  <h2>5. CONTROL DE CAMBIOS</h2><table><thead><tr><th>Versión</th><th>Fecha</th><th>Razón de la actualización</th></tr></thead><tbody>${tableRows(changes,["version","fecha","razon"])}</tbody></table><br><table><tr><th>Elaboró</th><th>Revisó</th><th>Aprobó</th></tr><tr><td>${esc(val("elaboro"))}</td><td>${esc(val("reviso"))}</td><td>${esc(val("aprobo"))}</td></tr></table><h2>6. FLUJOGRAMA</h2><div class="report-flow">${flow}</div>${evaluationPreview}`;
+  <h2>5. CONTROL DE CAMBIOS</h2><table><thead><tr><th>Versión</th><th>Fecha</th><th>Razón de la actualización</th></tr></thead><tbody>${tableRows(changes,["version","fecha","razon"])}</tbody></table><br><table><tr><th>Elaboró</th><th>Revisó</th><th>Aprobó</th></tr><tr><td>${esc(val("elaboro"))}${val("elaboroNombre")?`<br><small>Nombre: ${esc(val("elaboroNombre"))}</small>`:""}</td><td>${esc(val("reviso"))}${val("revisoNombre")?`<br><small>Nombre: ${esc(val("revisoNombre"))}</small>`:""}</td><td>${esc(val("aprobo"))}${val("aproboNombre")?`<br><small>Nombre: ${esc(val("aproboNombre"))}</small>`:""}</td></tr></table><h2>6. FLUJOGRAMA</h2><div class="report-flow">${flow}</div>${evaluationPreview}`;
 }
 function procedureBackup(){return{format:"BAQ-PROCEDIMIENTO",formatVersion:6,exportedAt:new Date().toISOString(),...data()}}
 function pdfWrapText(value,maxChars){
@@ -2305,7 +2302,7 @@ function pdfReportEntries(){
   if(!annexes.length)add("Sin documentos anexos registrados.");else annexes.forEach((a,i)=>add(`${i+1}. ${a.documento||""} · ${a.tipo||""} · ${a.codigo||""} · ${a.observacion||""}`));
   add("5. CONTROL DE CAMBIOS",{size:13,bold:true,spaceBefore:10});
   if(!changes.length)add("Sin cambios registrados.");else changes.forEach((c,i)=>add(`${i+1}. Versión ${c.version||""} · ${c.fecha||""} · ${c.razon||""}`));
-  field("Elaboró",val("elaboro"));field("Revisó",val("reviso"));field("Aprobó",val("aprobo"));
+  field("Elaboró",`${val("elaboro")}${val("elaboroNombre")?` · Nombre: ${val("elaboroNombre")}`:""}`);field("Revisó",`${val("reviso")}${val("revisoNombre")?` · Nombre: ${val("revisoNombre")}`:""}`);field("Aprobó",`${val("aprobo")}${val("aproboNombre")?` · Nombre: ${val("aproboNombre")}`:""}`);
   add("RESPALDO EDITABLE",{size:11,bold:true,spaceBefore:10});add("Este PDF contiene el respaldo JSON del procedimiento como archivo adjunto interno y puede cargarse nuevamente en el Validador y Estructurador Metodológico de Procedimientos.");
   add("6. FLUJOGRAMA",{size:13,bold:true,spaceBefore:10});add("La representación gráfica se presenta en la página siguiente, inmediatamente después del control de cambios y los datos de elaboración, revisión y aprobación.");
   return entries;
