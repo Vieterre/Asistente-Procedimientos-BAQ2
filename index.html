@@ -587,7 +587,7 @@ body.auth-locked>.app{filter:blur(5px);pointer-events:none;user-select:none}
     <div class="tablewrap" style="margin-top:12px"><table>
       <thead><tr>
 <th>N.º</th><th>Tipo <span class="table-help" tabindex="0" data-tip="Tipos principales: Inicio, Actividad, Decisión, Conector y Fin. El Conector permite continuar el flujo en otro punto o evitar cruces de líneas.">i</span></th><th>Actividad <span class="table-help" tabindex="0" data-tip="Nombre corto y concreto de la actividad. Ejemplo: Revisar solicitud documental.">i</span></th><th>Descripción de la actividad <span class="table-help" tabindex="0" data-tip="La ayuda cambia según el tipo seleccionado. Para Inicio registre el evento activador y para Fin el resultado o condición de cierre.">i</span></th>
-<th>Responsable <span class="table-help" tabindex="0" data-tip="Escriba el cargo o rol que ejecuta la actividad. Puede ser texto libre. Si intervienen varios roles, sepárelos con punto y coma (;). Estos roles alimentan los carriles del flujograma.">i</span></th><th>Punto de control <span class="table-help" tabindex="0" data-tip="Marque Sí solo cuando la actividad o decisión incorpore una verificación crítica asociada a un riesgo o requisito. Una decisión puede tener o no punto de control.">i</span></th><th>Registro / Evidencia <span class="table-help" tabindex="0" data-tip="Opcional. Soporte que demuestra la ejecución de la actividad: formato, correo, acta, registro de sistema, informe, etc.">i</span></th><th>Sistema / Herramienta <span class="table-help" tabindex="0" data-tip="Opcional. Aplicativo, plataforma, archivo, herramienta tecnológica o medio utilizado.">i</span></th><th></th>
+<th>Responsable <span class="table-help" tabindex="0" data-tip="Seleccione de la lista el cargo o rol que ejecuta la actividad. Este rol alimenta los carriles del flujograma.">i</span></th><th>Punto de control <span class="table-help" tabindex="0" data-tip="Marque Sí solo cuando la actividad o decisión incorpore una verificación crítica asociada a un riesgo o requisito. Una decisión puede tener o no punto de control.">i</span></th><th>Registro / Evidencia <span class="table-help" tabindex="0" data-tip="Opcional. Soporte que demuestra la ejecución de la actividad: formato, correo, acta, registro de sistema, informe, etc.">i</span></th><th>Sistema / Herramienta <span class="table-help" tabindex="0" data-tip="Opcional. Aplicativo, plataforma, archivo, herramienta tecnológica o medio utilizado.">i</span></th><th></th>
 </tr></thead>
       <tbody id="activitiesBody"></tbody>
     </table></div>
@@ -603,7 +603,7 @@ body.auth-locked>.app{filter:blur(5px);pointer-events:none;user-select:none}
 
   <section class="panel" id="flujogramaPanel">
     <div class="actions" style="justify-content:space-between">
-      <div><h3 style="margin-bottom:4px">5. Flujograma generado</h3><div class="hint">Se organiza por carriles a partir de los responsables registrados. Las decisiones usan rutas Sí / No y los conectores dirigen el flujo al destino definido en el componente 04.</div><div class="lane-note">Puede escribir responsables libremente; separe varios roles con punto y coma (;).</div></div>
+      <div><h3 style="margin-bottom:4px">5. Flujograma generado</h3><div class="hint">Se organiza por carriles a partir de los responsables seleccionados. Las decisiones usan rutas Sí / No y los conectores dirigen el flujo al destino definido en el componente 04.</div><div class="lane-note">Los carriles se generan con los cargos seleccionados en la lista de responsables.</div></div>
       <button class="btn" onclick="renderFlow()">Actualizar flujograma</button>
     </div>
     <div class="flow-legend" aria-label="Leyenda del flujograma">
@@ -638,9 +638,9 @@ body.auth-locked>.app{filter:blur(5px);pointer-events:none;user-select:none}
     </table></div>
     <div class="sectionline"></div>
     <div class="grid3">
-      <div class="field"><label>Elaboró <span class="help-tip" tabindex="0" data-tip="Persona que prepara o actualiza técnicamente el procedimiento. Debe ser distinta de quien revisa y aprueba.">i</span></label><input id="elaboro" list="responsableCargoOptions" placeholder="Nombre y cargo"></div>
-      <div class="field"><label>Revisó <span class="help-tip" tabindex="0" data-tip="Persona que verifica coherencia, suficiencia y cumplimiento de los criterios del procedimiento. Debe ser distinta de quien elabora y aprueba.">i</span></label><input id="reviso" list="responsableCargoOptions" placeholder="Nombre y cargo"></div>
-      <div class="field"><label>Aprobó <span class="help-tip" tabindex="0" data-tip="Autoridad o responsable que autoriza formalmente la versión para su uso organizacional.">i</span></label><input id="aprobo" list="responsableCargoOptions" placeholder="Nombre y cargo"></div>
+      <div class="field"><label>Elaboró <span class="help-tip" tabindex="0" data-tip="Cargo que prepara o actualiza técnicamente el procedimiento. Debe ser distinto de quien revisa y aprueba.">i</span></label><select id="elaboro"></select></div>
+      <div class="field"><label>Revisó <span class="help-tip" tabindex="0" data-tip="Cargo asesor o profesional que verifica coherencia, suficiencia y cumplimiento de los criterios del procedimiento. Debe ser distinto de quien elabora y aprueba.">i</span></label><select id="reviso"></select></div>
+      <div class="field"><label>Aprobó <span class="help-tip" tabindex="0" data-tip="Cargo directivo que autoriza formalmente la versión para su uso organizacional.">i</span></label><select id="aprobo"></select></div>
     </div>
     <div class="hint">Debe mantenerse la segregación entre elaboración, revisión y aprobación.</div>
   </section>
@@ -855,6 +855,7 @@ const RESPONSIBILITY_ROLES=[
   {level:"Asistencial",cargo:"Operario"},
   {level:"Asistencial",cargo:"Secretaria Ejecutiva"}
 ];
+const REVIEW_ROLE_CARGOS=["Asesor","Profesional Universitario","Profesional Universitario Área salud","Profesional Especializado"];
 
 const AUTH_LOG_KEY="gestion_asistente_access_log_v1";
 const AUTH_SESSION_KEY="gestion_asistente_session_v2";
@@ -1332,17 +1333,28 @@ function initResponsibilityRoleOptions(){
   const seen=new Set();
   list.innerHTML=RESPONSIBILITY_ROLES.filter(role=>{const key=role.cargo.toLowerCase();if(seen.has(key))return false;seen.add(key);return true}).map(role=>`<option value="${esc(role.cargo)}" label="${esc(role.level)}"></option>`).join("");
   if($("responsableProcedimiento"))$("responsableProcedimiento").innerHTML=responsibilityRoleSelectOptions($("responsableProcedimiento").value);
+  if($("elaboro"))$("elaboro").innerHTML=responsibilityRoleSelectOptions($("elaboro").value);
+  if($("reviso"))$("reviso").innerHTML=responsibilityRoleSelectOptions($("reviso").value,"revision");
+  if($("aprobo"))$("aprobo").innerHTML=responsibilityRoleSelectOptions($("aprobo").value,["Directivo"]);
 }
-function normalizeResponsibilityRole(value){
+function responsibilityRolesByLevels(levels){
+  if(levels==="revision")return RESPONSIBILITY_ROLES.filter(role=>REVIEW_ROLE_CARGOS.includes(role.cargo));
+  return Array.isArray(levels)&&levels.length?RESPONSIBILITY_ROLES.filter(role=>levels.includes(role.level)):RESPONSIBILITY_ROLES;
+}
+function normalizeText(value){
+  return String(value||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").trim();
+}
+function normalizeResponsibilityRole(value,levels){
   const text=String(value||"").replace(/\s+\d{3}-\d{2}\s*$/,"").trim();
-  if(RESPONSIBILITY_ROLES.some(role=>role.cargo===text))return text;
-  const normalized=text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
-  const match=RESPONSIBILITY_ROLES.find(role=>role.cargo.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"")===normalized);
+  const roles=responsibilityRolesByLevels(levels);
+  if(roles.some(role=>role.cargo===text))return text;
+  const normalized=normalizeText(text);
+  const match=roles.find(role=>normalizeText(role.cargo)===normalized)||roles.slice().sort((a,b)=>b.cargo.length-a.cargo.length).find(role=>normalized.includes(normalizeText(role.cargo)));
   return match?match.cargo:"";
 }
-function responsibilityRoleSelectOptions(selected=""){
-  const current=normalizeResponsibilityRole(selected),groups=[...new Set(RESPONSIBILITY_ROLES.map(role=>role.level))];
-  return `<option value="">Seleccione un cargo</option>`+groups.map(level=>`<optgroup label="${esc(level)}">${RESPONSIBILITY_ROLES.filter(role=>role.level===level).map(role=>`<option value="${esc(role.cargo)}" ${current===role.cargo?"selected":""}>${esc(role.cargo)}</option>`).join("")}</optgroup>`).join("");
+function responsibilityRoleSelectOptions(selected="",levels){
+  const roles=responsibilityRolesByLevels(levels),current=normalizeResponsibilityRole(selected,levels),groups=[...new Set(roles.map(role=>role.level))];
+  return `<option value="">Seleccione un cargo</option>`+groups.map(level=>`<optgroup label="${esc(level)}">${roles.filter(role=>role.level===level).map(role=>`<option value="${esc(role.cargo)}" ${current===role.cargo?"selected":""}>${esc(role.cargo)}</option>`).join("")}</optgroup>`).join("");
 }
 function today(){
   const parts=new Intl.DateTimeFormat("en-US",{timeZone:"America/Bogota",year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(new Date());
@@ -2201,7 +2213,11 @@ function data(){
   return{fields,norms,activities,annexes,changes,evaluation:ensureEvaluation(),notifications,settings:{showEvidenceFlow:!!$("showEvidenceFlow")?.checked}};
 }
 function applyData(d){
-  fieldIds.forEach(id=>{if(d.fields&&d.fields[id]!==undefined)$(id).value=id==="responsableProcedimiento"?normalizeResponsibilityRole(d.fields[id]):d.fields[id]});
+  fieldIds.forEach(id=>{
+    if(!d.fields||d.fields[id]===undefined)return;
+    const roleLevels=id==="reviso"?"revision":id==="aprobo"?["Directivo"]:null;
+    $(id).value=["responsableProcedimiento","elaboro","reviso","aprobo"].includes(id)?normalizeResponsibilityRole(d.fields[id],roleLevels):d.fields[id];
+  });
   norms=d.norms||[];activities=(d.activities||[]).map(a=>({...a,responsable:normalizeResponsibilityRole(a.responsable),controlResponsable:normalizeResponsibilityRole(a.controlResponsable)}));annexes=d.annexes||[];changes=d.changes||[];evaluation=d.evaluation||newEvaluationState();notifications=Array.isArray(d.notifications)?d.notifications:[];
   if($("showEvidenceFlow"))$("showEvidenceFlow").checked=!!d.settings?.showEvidenceFlow;
   renderNorms();renderActivities();renderAnnexes();renderChanges();updateCode();validateName();validateCurrentDate();renderFlow();runQualityRules();updateProcedureIdentity();updateEvaluationUI();updateMenuProgress();
