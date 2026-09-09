@@ -390,7 +390,22 @@ body.auth-locked>.app{filter:blur(5px);pointer-events:none;user-select:none}
 #sessionRole.role-badge{display:inline-flex;width:max-content;margin-top:2px;padding:2px 6px;border-radius:999px;background:#EAF4ED;color:#14755F;border:1px solid #B9DEC3;font-size:8px;font-weight:800;letter-spacing:.35px;text-transform:uppercase}
 .session-logout{border:0;background:transparent;color:var(--slate);font-size:10px;font-weight:700;padding:5px;border-radius:6px}
 .session-logout:hover{background:#EEF3F5;color:var(--navy)}
+.admin-layout{display:grid;grid-template-columns:minmax(280px,360px) minmax(0,1fr);gap:18px;align-items:start}
+.admin-form-card,.admin-list-card{border:1px solid var(--line);border-radius:12px;background:#fff;padding:16px}
+.admin-form-card h4,.admin-list-card h4{margin:0 0 12px;color:var(--navy)}
+.admin-form-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}
+.admin-process-list{max-height:190px;overflow:auto;border:1px solid var(--line);border-radius:9px;padding:8px;background:#F8FAFB}
+.admin-process-option{display:flex;align-items:flex-start;gap:7px;padding:5px 4px;font-size:11px;color:var(--text)}
+.admin-process-option input{width:auto;margin-top:2px}
+.admin-toolbar{display:flex;gap:10px;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap}
+.admin-toolbar input{max-width:310px}
+.admin-status{display:inline-flex;padding:3px 7px;border-radius:999px;font-size:9px;font-weight:800;text-transform:uppercase;background:#EAF4ED;color:#14755F}
+.admin-status.inactive{background:#FDECEA;color:#9D241C}
+.admin-user-actions{display:flex;gap:5px;flex-wrap:wrap}
+.admin-user-actions .btn{padding:5px 7px;font-size:9px}
+.admin-note{margin-top:12px;padding:10px;border-radius:9px;background:#FFF8E6;border:1px solid #E7D39A;color:#6E571B;font-size:10px;line-height:1.45}
 @media(max-width:900px){.session-user{order:4}.session-user-data{max-width:210px}}
+@media(max-width:900px){.admin-layout{grid-template-columns:1fr}}
 @media(max-width:520px){.auth-gate{padding:12px}.auth-brand{padding:22px 20px 18px}.auth-form{padding:21px 20px 24px}.auth-brand h1{font-size:22px}.session-user{grid-column:1/-1;width:100%}.session-user-data{max-width:none;flex:1}}
 
 </style>
@@ -433,6 +448,7 @@ body.auth-locked>.app{filter:blur(5px);pointer-events:none;user-select:none}
     <div class="brand-rule"></div>
   </div>
   <div class="nav">
+    <button class="navbtn admin-nav role-hidden" data-tab="administration"><span class="nav-number">01</span><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3"/><path d="M6 20c.5-4 2.5-6 6-6s5.5 2 6 6M18 4v5M15.5 6.5h5"/></svg><span class="nav-label">Administración de usuarios</span></button>
     <button class="navbtn advisor-nav role-hidden" data-tab="advisorInbox"><span class="nav-number">01</span><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4z"/><path d="M4 10h5l2 3h2l2-3h5"/></svg><span class="nav-label">Bandeja de evaluaciones</span></button>
     <button class="navbtn advisor-nav role-hidden" data-tab="advisorProcedure"><span class="nav-number">02</span><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3.5h9l3 3v14H6z"/><path d="M15 3.5v3h3M9 11h6M9 14h6M9 17h4"/></svg><span class="nav-label">Procedimiento recibido</span></button>
     <button class="navbtn active author-nav" data-tab="general"><span class="nav-number">01</span><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5h16v13H4z"/><path d="M8 9h8M8 13h5"/><circle cx="17" cy="14.5" r="1.5"/></svg><span class="nav-label">Identificación</span></button>
@@ -493,6 +509,33 @@ body.auth-locked>.app{filter:blur(5px);pointer-events:none;user-select:none}
       <input id="backupInput" type="file" accept=".pdf,.json,application/pdf,application/json" hidden onchange="importBackup(this.files[0]);this.value=''">
     </div>
   </div>
+
+  <section class="panel" id="administrationPanel">
+    <div class="actions" style="justify-content:space-between;margin-bottom:14px"><div><h3 style="margin:0 0 4px">Administración de usuarios</h3><div class="hint">Cree cuentas de prueba, asigne roles y procesos, y controle su estado de acceso.</div></div><span class="admin-status">Acceso exclusivo</span></div>
+    <div class="kpirow" style="margin-bottom:16px">
+      <div class="kpi"><b id="adminTotalUsers">0</b><span>Usuarios registrados</span></div>
+      <div class="kpi"><b id="adminActiveUsers">0</b><span>Usuarios activos</span></div>
+      <div class="kpi"><b id="adminAdvisorUsers">0</b><span>Asesores</span></div>
+      <div class="kpi"><b id="adminAuthorUsers">0</b><span>Elaboradores</span></div>
+    </div>
+    <div class="admin-layout">
+      <form class="admin-form-card" id="adminUserForm" onsubmit="saveManagedUser(event)">
+        <h4 id="adminFormTitle">Crear usuario</h4>
+        <div class="field"><label for="adminUsername">Nombre de usuario</label><input id="adminUsername" type="text" maxlength="60" placeholder="Ej. elab_proceso_03" required></div>
+        <div class="field"><label for="adminRoleName">Nombre visible del rol</label><input id="adminRoleName" type="text" maxlength="100" placeholder="Ej. Elaborador 3 · Contratación" required></div>
+        <div class="field"><label for="adminRole">Rol de acceso</label><select id="adminRole" onchange="renderAdminProcessSelector()"><option value="autor">Elaborador</option><option value="asesor">Asesor</option></select></div>
+        <div class="field"><label>Procesos asignados</label><div class="admin-process-list" id="adminProcessList"></div></div>
+        <div class="field"><label for="adminPassword">Clave temporal</label><input id="adminPassword" type="password" minlength="8" placeholder="Obligatoria al crear; opcional al editar"><div class="hint">Mínimo 8 caracteres.</div></div>
+        <label class="admin-process-option"><input id="adminActive" type="checkbox" checked> Usuario activo</label>
+        <div class="admin-form-actions"><button class="btn" type="button" onclick="resetAdminUserForm()">Cancelar</button><button class="btn primary" type="submit">Guardar usuario</button></div>
+      </form>
+      <div class="admin-list-card">
+        <div class="admin-toolbar"><h4 style="margin:0">Usuarios</h4><input id="adminUserSearch" type="search" placeholder="Buscar usuario, rol o proceso" oninput="renderAdminUsers()"></div>
+        <div class="tablewrap"><table><thead><tr><th>Usuario</th><th>Rol</th><th>Procesos</th><th>Estado</th><th>Acciones</th></tr></thead><tbody id="adminUsersBody"></tbody></table></div>
+        <div class="admin-note"><b>Prototipo local:</b> los cambios realizados aquí solo se conservan en este navegador. El backend permitirá administrarlos centralmente y mantener auditoría institucional.</div>
+      </div>
+    </div>
+  </section>
 
   <section class="panel" id="advisorInboxPanel">
     <div class="actions" style="justify-content:space-between"><div><h3 style="margin-bottom:4px">Bandeja de evaluaciones</h3><div class="hint">Procedimientos enviados para revisión metodológica en este entorno local.</div></div><button class="btn" type="button" onclick="renderAdvisorInbox()">Actualizar bandeja</button></div>
@@ -854,7 +897,10 @@ const RESPONSIBILITY_ROLES=[
 ];
 const AUTH_LOG_KEY="gestion_asistente_access_log_v1";
 const AUTH_SESSION_KEY="gestion_asistente_session_v2";
+const MANAGED_USERS_KEY="gestion_asistente_managed_users_v1";
+let managedUsers={};
 const SYSTEM_ACCOUNTS={
+  admin_pruebas:{passwordHash:"82c1a1328072f66e0e3a76c76ed6ac89f74dc55500c6d27cfbd20ddcd162a055",roleName:"Administrador general",environment:"admin",isAdmin:true,canSwitchEnvironment:false,processes:[],active:true},
   asesor_tic_com_ghsst:{passwordHash:"7171ab112f724bd8b76e3a6f63c2b4cd648a9b6d8ab4305905a543c583a7f3ac",roleName:"Asesor 1",environment:"asesor",isAdmin:false,canSwitchEnvironment:false,processes:["ME-TIC","ME-GC","MA-GH"]},
   asesor_contratacion_documental_infra:{passwordHash:"efe5e57e74e2c7370dfec1deeee1d82f0df62962346220b777e791414a7ef19d",roleName:"Asesor 2",environment:"asesor",isAdmin:false,canSwitchEnvironment:false,processes:["MA-GC","MA-GD","MA-GI"]},
   asesor_recursos_financieros:{passwordHash:"89e9477df89b9e8629db36aa40f13bcb56157aa10bb3d1ac69cb755a4cd66612",roleName:"Asesor 3",environment:"asesor",isAdmin:false,canSwitchEnvironment:false,processes:["ME-GF"]},
@@ -884,13 +930,18 @@ const SYSTEM_ACCOUNTS={
   elab_disciplinaria_02:{passwordHash:"569566aec4fbba5df18394124e7e97e34f5cf3deb681bab0c6489ef1e8aa28e1",roleName:"Elaborador 2 · Gestión Disciplinaria",environment:"autor",isAdmin:false,canSwitchEnvironment:false,processes:["EC-GD"]}
 };
 
+function loadManagedUsers(){managedUsers=readAuthStore(localStorage,MANAGED_USERS_KEY,{});if(!managedUsers||typeof managedUsers!=="object"||Array.isArray(managedUsers))managedUsers={}}
+function saveManagedUsers(){localStorage.setItem(MANAGED_USERS_KEY,JSON.stringify(managedUsers))}
+function accountCatalog(){return{...SYSTEM_ACCOUNTS,...managedUsers}}
+function accountByUsername(username){return accountCatalog()[normalizeUsername(username)]||null}
 function assignedProcessCodes(profile=currentProfile){return Array.isArray(profile?.processes)?profile.processes:[]}
 function assignedAdvisorForProcess(code){
-  const entry=Object.entries(SYSTEM_ACCOUNTS).find(([,profile])=>profile.environment==="asesor"&&assignedProcessCodes(profile).includes(code));
+  const entry=Object.entries(accountCatalog()).find(([,profile])=>profile.environment==="asesor"&&profile.active!==false&&assignedProcessCodes(profile).includes(code));
   return entry?.[0]||"";
 }
 function canAccessCurrentProcess(){const code=val("proceso");return !!code&&assignedProcessCodes().includes(code)}
 function assignedProcessesLabel(){
+  if(currentProfile.isAdmin)return"Administración general";
   const labels=assignedProcessCodes().map(code=>`${code} — ${processName(code)||code}`);
   return labels.length?labels.join(", "):"Sin procesos asignados";
 }
@@ -938,40 +989,41 @@ function setAuthenticatedState(username,profile=null,preferredEnvironment=""){
   const active=!!username&&!!profile;
   currentProfile=active?{username,...profile}:{username:"",roleName:"Elaborador de Documentos",environment:"autor",isAdmin:false,canSwitchEnvironment:false,processes:[]};
   const allowedEnvironment=currentProfile.canSwitchEnvironment&&["autor","asesor"].includes(preferredEnvironment)?preferredEnvironment:currentProfile.environment;
-  currentRole=allowedEnvironment==="asesor"?"asesor":"autor";
+  currentRole=allowedEnvironment==="admin"?"admin":allowedEnvironment==="asesor"?"asesor":"autor";
   document.body.classList.toggle("auth-locked",!active);
   $("authGate").classList.toggle("hidden",active);
   $("sessionEmail").textContent=active?username:"Sin sesión";
-  $("sessionRole").textContent=active?`${currentProfile.roleName}${currentProfile.isAdmin?" · Administrador":""}`:"Sin perfil";
+  $("sessionRole").textContent=active?currentProfile.roleName:"Sin perfil";
   applyRoleNavigation();updateEvaluationUI();updateNotificationsUI();updateWorkflowAction();applyProcessAccess();
   if(active){
     $("sessionRole").title=`Procesos asignados: ${assignedProcessesLabel()}`;
+    if(currentRole==="admin"){renderAdminUsers();resetAdminUserForm()}
     document.querySelector(".navbtn.active")?.focus({preventScroll:true});
   }else $("sessionRole").removeAttribute("title");
 }
 async function handleAuth(event){
   event.preventDefault();clearAuthError();
-  const username=normalizeUsername($("authEmail").value),password=$("authPassword").value,profile=SYSTEM_ACCOUNTS[username],submit=$("authSubmit");
-  if(!username||!profile){recordAuthEvent(username,"usuario_rechazado");showAuthError("Usuario o contraseña incorrectos. Verifique sus credenciales e intente nuevamente.",true,true);$("authEmail").focus();return}
+  const username=normalizeUsername($("authEmail").value),password=$("authPassword").value,profile=accountByUsername(username),submit=$("authSubmit");
+  if(!username||!profile||profile.active===false){recordAuthEvent(username,profile?.active===false?"usuario_inactivo":"usuario_rechazado");showAuthError(profile?.active===false?"Este usuario se encuentra inactivo. Consulte al administrador.":"Usuario o contraseña incorrectos. Verifique sus credenciales e intente nuevamente.",true,true);$("authEmail").focus();return}
   submit.disabled=true;submit.textContent="Validando…";
   try{
     const hash=await credentialHash(username,password);if(profile.passwordHash!==hash){recordAuthEvent(username,"clave_incorrecta");showAuthError("Usuario o contraseña incorrectos. Verifique sus credenciales e intente nuevamente.",true,true);$("authPassword").select();return}
     sessionStorage.setItem(AUTH_SESSION_KEY,JSON.stringify({username,environment:profile.environment,loginAt:new Date().toISOString()}));recordAuthEvent(username,"ingreso_exitoso");
-    $("authPassword").value="";setAuthenticatedState(username,profile,profile.environment);toast(`Bienvenido. Ambiente ${profile.environment==="asesor"?"Evaluador":"Constructor"} activado.`);
+    $("authPassword").value="";setAuthenticatedState(username,profile,profile.environment);toast(`Bienvenido. Ambiente ${profile.environment==="admin"?"Administrador":profile.environment==="asesor"?"Evaluador":"Constructor"} activado.`);
   }catch(e){
     console.error(e);showAuthError("No fue posible validar el acceso en este navegador. Intente nuevamente.");
   }finally{submit.disabled=false;submit.textContent="Ingresar al asistente"}
 }
 function initAuth(){
-  const session=readAuthStore(sessionStorage,AUTH_SESSION_KEY,null),username=normalizeUsername(session?.username),profile=SYSTEM_ACCOUNTS[username];
-  if(username&&profile){setAuthenticatedState(username,profile,session?.environment);return}
+  loadManagedUsers();const session=readAuthStore(sessionStorage,AUTH_SESSION_KEY,null),username=normalizeUsername(session?.username),profile=accountByUsername(username);
+  if(username&&profile&&profile.active!==false){setAuthenticatedState(username,profile,session?.environment);return}
   sessionStorage.removeItem(AUTH_SESSION_KEY);setAuthenticatedState("",null);
   setTimeout(()=>$("authEmail")?.focus(),80);
 }
 function logoutAssistant(){
   const username=$("sessionEmail").textContent;
   saveLocal(true);sessionStorage.removeItem(AUTH_SESSION_KEY);recordAuthEvent(username,"cierre_sesion");
-  $("authEmail").value=SYSTEM_ACCOUNTS[normalizeUsername(username)]?normalizeUsername(username):"";$("authPassword").value="";clearAuthError();setAuthenticatedState("",null);
+  $("authEmail").value=accountByUsername(username)?normalizeUsername(username):"";$("authPassword").value="";clearAuthError();setAuthenticatedState("",null);
   setTimeout(()=>$("authPassword")?.focus(),80);
 }
 function toggleAuthPassword(){
@@ -1047,6 +1099,55 @@ function initProcesses(){
     processGroups.map(g=>`<optgroup label="${g.group}">${g.items.map(i=>`<option value="${i[0]}">${i[2]==="child"?"↳ ":""}${i[0]} — ${i[1]}</option>`).join("")}</optgroup>`).join("");
 }
 
+let adminEditingUsername="";
+function isAdministrator(){return currentRole==="admin"&&!!currentProfile.isAdmin}
+function requireAdministrator(){if(isAdministrator())return true;toast("Esta acción es exclusiva del administrador.");return false}
+function adminAssignableProcesses(){
+  const codes=new Set();Object.values(SYSTEM_ACCOUNTS).forEach(profile=>assignedProcessCodes(profile).forEach(code=>codes.add(code)));
+  return [...codes].sort().map(code=>({code,name:processName(code)||code}));
+}
+function selectedAdminProcesses(){return [...document.querySelectorAll('#adminProcessList input[type="checkbox"]:checked')].map(input=>input.value)}
+function renderAdminProcessSelector(selected=null){
+  const box=$("adminProcessList");if(!box)return;const chosen=new Set(selected||selectedAdminProcesses());
+  box.innerHTML=adminAssignableProcesses().map(item=>`<label class="admin-process-option"><input type="checkbox" value="${esc(item.code)}" ${chosen.has(item.code)?"checked":""}> <span><b>${esc(item.code)}</b> — ${esc(item.name)}</span></label>`).join("");
+}
+function resetAdminUserForm(){
+  if(!$("adminUserForm"))return;adminEditingUsername="";$("adminUserForm").reset();$("adminActive").checked=true;$("adminUsername").disabled=false;$("adminFormTitle").textContent="Crear usuario";renderAdminProcessSelector([]);
+}
+function editManagedUser(username){
+  if(!requireAdministrator())return;const profile=accountByUsername(username);if(!profile||profile.isAdmin)return;
+  adminEditingUsername=username;$("adminFormTitle").textContent=`Editar ${username}`;$("adminUsername").value=username;$("adminUsername").disabled=true;$("adminRoleName").value=profile.roleName||"";$("adminRole").value=profile.environment==="asesor"?"asesor":"autor";$("adminPassword").value="";$("adminActive").checked=profile.active!==false;renderAdminProcessSelector(profile.processes||[]);$("adminRoleName").focus();
+}
+async function saveManagedUser(event){
+  event.preventDefault();if(!requireAdministrator())return;
+  const username=normalizeUsername($("adminUsername").value),existing=accountByUsername(username),isEditing=!!adminEditingUsername;
+  if(!/^[a-z0-9][a-z0-9._-]{3,59}$/.test(username)){toast("Use entre 4 y 60 caracteres: letras minúsculas, números, punto, guion o guion bajo.");return}
+  if(!isEditing&&existing){toast("El nombre de usuario ya existe.");return}
+  const roleName=val("adminRoleName"),environment=$("adminRole").value,processes=selectedAdminProcesses(),password=$("adminPassword").value;
+  if(!roleName){toast("Indique el nombre visible del rol.");return}if(!processes.length){toast("Asigne al menos un proceso.");return}if(!isEditing&&password.length<8){toast("La clave temporal debe tener mínimo 8 caracteres.");return}if(password&&password.length<8){toast("La nueva clave debe tener mínimo 8 caracteres.");return}
+  const base=existing||{},passwordHash=password?await credentialHash(username,password):base.passwordHash;
+  managedUsers[username]={...base,passwordHash,roleName,environment,isAdmin:false,canSwitchEnvironment:false,processes,active:$("adminActive").checked,managed:base.managed??!SYSTEM_ACCOUNTS[username],updatedAt:new Date().toISOString()};
+  saveManagedUsers();recordAuthEvent(currentProfile.username,`${isEditing?"usuario_actualizado":"usuario_creado"}:${username}`);renderAdminUsers();resetAdminUserForm();toast(`Usuario ${isEditing?"actualizado":"creado"} correctamente.`);
+}
+function toggleManagedUser(username){
+  if(!requireAdministrator())return;const profile=accountByUsername(username);if(!profile||profile.isAdmin)return;const nextActive=profile.active===false;
+  managedUsers[username]={...profile,active:nextActive,updatedAt:new Date().toISOString()};saveManagedUsers();recordAuthEvent(currentProfile.username,`${nextActive?"usuario_activado":"usuario_desactivado"}:${username}`);renderAdminUsers();if(adminEditingUsername===username)editManagedUser(username);toast(`Usuario ${nextActive?"activado":"desactivado"}.`);
+}
+async function resetManagedPassword(username){
+  if(!requireAdministrator())return;const profile=accountByUsername(username);if(!profile||profile.isAdmin)return;const password=prompt(`Ingrese una nueva clave temporal para ${username} (mínimo 8 caracteres):`);if(password===null)return;if(password.length<8){toast("La clave temporal debe tener mínimo 8 caracteres.");return}
+  managedUsers[username]={...profile,passwordHash:await credentialHash(username,password),updatedAt:new Date().toISOString()};saveManagedUsers();recordAuthEvent(currentProfile.username,`clave_restablecida:${username}`);renderAdminUsers();toast("Clave temporal restablecida.");
+}
+function deleteManagedUser(username){
+  if(!requireAdministrator())return;const profile=accountByUsername(username);if(!profile||profile.isAdmin)return;if(!profile.managed){toast("Las cuentas iniciales se conservan para trazabilidad; puede desactivarlas.");return}if(!confirm(`¿Eliminar definitivamente el usuario ${username}?`))return;
+  delete managedUsers[username];saveManagedUsers();recordAuthEvent(currentProfile.username,`usuario_eliminado:${username}`);if(adminEditingUsername===username)resetAdminUserForm();renderAdminUsers();toast("Usuario eliminado.");
+}
+function renderAdminUsers(){
+  if(!$("adminUsersBody")||!isAdministrator())return;const catalog=accountCatalog(),entries=Object.entries(catalog).sort(([a],[b])=>a.localeCompare(b)),query=normalizeText($("adminUserSearch")?.value||"");
+  $("adminTotalUsers").textContent=String(entries.length);$("adminActiveUsers").textContent=String(entries.filter(([,p])=>p.active!==false).length);$("adminAdvisorUsers").textContent=String(entries.filter(([,p])=>p.environment==="asesor").length);$("adminAuthorUsers").textContent=String(entries.filter(([,p])=>p.environment==="autor").length);
+  const filtered=entries.filter(([username,p])=>!query||normalizeText(`${username} ${p.roleName} ${(p.processes||[]).join(" ")}`).includes(query));
+  $("adminUsersBody").innerHTML=filtered.length?filtered.map(([username,p])=>{const protectedAccount=!!p.isAdmin,processes=(p.processes||[]).join(", ")||"Administración general";return`<tr><td><b>${esc(username)}</b></td><td>${esc(p.roleName||p.environment)}</td><td>${esc(processes)}</td><td><span class="admin-status ${p.active===false?"inactive":""}">${p.active===false?"Inactivo":"Activo"}</span></td><td><div class="admin-user-actions">${protectedAccount?'<span class="hint">Cuenta protegida</span>':`<button class="btn" type="button" onclick="editManagedUser('${username}')">Editar</button><button class="btn" type="button" onclick="toggleManagedUser('${username}')">${p.active===false?"Activar":"Desactivar"}</button><button class="btn" type="button" onclick="resetManagedPassword('${username}')">Restablecer clave</button><button class="btn danger" type="button" onclick="deleteManagedUser('${username}')" ${p.managed?"":'title="Las cuentas iniciales solo pueden desactivarse"'}>Eliminar</button>`}</div></td></tr>`}).join(""):'<tr><td colspan="5" class="empty">No se encontraron usuarios.</td></tr>';
+}
+
 document.querySelectorAll(".navbtn").forEach(btn=>btn.addEventListener("click",()=>switchTab(btn.dataset.tab)));
 
 function initMenuProgress(){
@@ -1054,7 +1155,7 @@ function initMenuProgress(){
     if(btn.querySelector(".nav-check"))return;
     const marker=document.createElement("span");
     marker.className="nav-check";marker.setAttribute("aria-hidden","true");
-    if(["guia","evaluationAnnex"].includes(btn.dataset.tab)){
+    if(["administration","guia","evaluationAnnex"].includes(btn.dataset.tab)){
       btn.classList.add("reference");marker.textContent="i";marker.title="Sección de consulta";
     }else{
       marker.textContent="○";marker.title="Módulo pendiente";
@@ -1182,9 +1283,11 @@ function updateProcedureIdentity(){
 }
 
 function applyRoleNavigation(){
-  const advisor=currentRole==="asesor",admin=!!currentProfile.isAdmin;
-  document.querySelectorAll(".author-nav").forEach(el=>el.classList.toggle("role-hidden",advisor));
+  const advisor=currentRole==="asesor",admin=currentRole==="admin"&&!!currentProfile.isAdmin;
+  document.querySelectorAll(".author-nav").forEach(el=>el.classList.toggle("role-hidden",advisor||admin));
   document.querySelectorAll(".advisor-nav").forEach(el=>el.classList.toggle("role-hidden",!advisor));
+  document.querySelectorAll(".admin-nav").forEach(el=>el.classList.toggle("role-hidden",!admin));
+  document.querySelectorAll(".shared-nav").forEach(el=>el.classList.toggle("role-hidden",admin));
   const evaluationNav=document.querySelector('[data-tab="evaluation"]'),previewNav=document.querySelector('[data-tab="preview"]'),guideNav=document.querySelector('[data-tab="guia"]');
   if(evaluationNav){evaluationNav.querySelector(".nav-number").textContent=advisor?"03":"08";evaluationNav.querySelector(".nav-label").textContent=advisor?"Evaluación de adecuación":"Seguimiento de revisión"}
   if(previewNav){previewNav.classList.toggle("role-hidden",advisor);previewNav.querySelector(".nav-number").textContent="09";previewNav.querySelector(".nav-label").textContent="Exportar PDF"}
@@ -1193,11 +1296,11 @@ function applyRoleNavigation(){
   if($("evaluationHeading"))$("evaluationHeading").textContent=advisor?"3. Evaluación de adecuación del procedimiento":"8. Seguimiento de la revisión";
   if($("evaluationIntro"))$("evaluationIntro").textContent=advisor?"Califique los criterios, registre las observaciones y emita el concepto técnico.":"Consulte el estado, las observaciones y las respuestas asociadas a la revisión metodológica del procedimiento.";
   if($("evaluationRoleContext")){$("evaluationRoleContext").classList.toggle("advisor",advisor);$("evaluationRoleContext").innerHTML=advisor?`<b>Perfil activo:</b> ${esc(currentProfile.roleName)}${admin?" · Administrador":""}. Puede calificar criterios, registrar hallazgos, devolver el procedimiento o emitir concepto.`:`<b>Perfil activo:</b> ${esc(currentProfile.roleName)}${admin?" · Administrador":""}. Puede diligenciar, enviar la versión, consultar hallazgos y responder los ajustes solicitados.`}
-  const indicator=$("environmentIndicator"),icon=$("environmentIcon");if(indicator){indicator.classList.toggle("evaluator",advisor);$("environmentTitle").textContent=advisor?"Evaluador":"Constructor";$("environmentDescription").textContent=advisor?`${currentProfile.roleName}: consulta y evaluación metodológica del procedimiento.`:`${currentProfile.roleName}: diligenciamiento, revisión y envío del procedimiento.`;icon.innerHTML=advisor?'<svg viewBox="0 0 48 48"><path d="M13 8h22v35H13z"/><path d="M18 5h12v7H18zM19 20h10M19 27h7"/><path d="m28 34 3 3 7-8"/></svg>':'<svg viewBox="0 0 48 48"><path d="M8 9h24l8 8v22H8z"/><path d="M32 9v8h8M15 23h18M15 29h18M15 35h10"/><path d="m12 12 4 4 7-8"/></svg>'}
+  const indicator=$("environmentIndicator"),icon=$("environmentIcon");if(indicator){indicator.classList.toggle("evaluator",advisor);$("environmentTitle").textContent=admin?"Administrador":advisor?"Evaluador":"Constructor";$("environmentDescription").textContent=admin?"Gestión de usuarios, roles, procesos y estados de acceso.":advisor?`${currentProfile.roleName}: consulta y evaluación metodológica del procedimiento.`:`${currentProfile.roleName}: diligenciamiento, revisión y envío del procedimiento.`;icon.innerHTML=admin?'<svg viewBox="0 0 48 48"><circle cx="24" cy="17" r="8"/><path d="M10 42c1-11 6-16 14-16s13 5 14 16M37 8v11M31.5 13.5h11"/></svg>':advisor?'<svg viewBox="0 0 48 48"><path d="M13 8h22v35H13z"/><path d="M18 5h12v7H18zM19 20h10M19 27h7"/><path d="m28 34 3 3 7-8"/></svg>':'<svg viewBox="0 0 48 48"><path d="M8 9h24l8 8v22H8z"/><path d="M32 9v8h8M15 23h18M15 29h18M15 35h10"/><path d="m12 12 4 4 7-8"/></svg>'}
   const switcher=$("environmentSwitcher"),canSwitch=!!currentProfile.canSwitchEnvironment;switcher?.classList.toggle("role-hidden",!canSwitch);$("adminEnvironmentBadge")?.classList.toggle("role-hidden",!admin);$("switchConstructor")?.classList.toggle("active",!advisor);$("switchEvaluator")?.classList.toggle("active",advisor);$("switchConstructor")?.setAttribute("aria-pressed",String(!advisor));$("switchEvaluator")?.setAttribute("aria-pressed",String(advisor));
-  $("workflowAction")?.classList.toggle("role-hidden",advisor);
-  $("fileMenu")?.classList.toggle("role-hidden",advisor);$("saveWrap")?.classList.toggle("role-hidden",advisor);$("quickExport")?.classList.toggle("role-hidden",advisor);
-  const active=document.querySelector(".navbtn.active");if(active?.classList.contains("role-hidden"))switchTab(advisor?"advisorInbox":"general");
+  $("workflowAction")?.classList.toggle("role-hidden",advisor||admin);
+  $("fileMenu")?.classList.toggle("role-hidden",advisor||admin);$("saveWrap")?.classList.toggle("role-hidden",advisor||admin);$("quickExport")?.classList.toggle("role-hidden",advisor||admin);$("notificationCenter")?.classList.toggle("role-hidden",admin);document.querySelector(".procedure-pin")?.classList.toggle("role-hidden",admin);
+  const active=document.querySelector(".navbtn.active");if(admin||active?.classList.contains("role-hidden"))switchTab(admin?"administration":advisor?"advisorInbox":"general");
 }
 function switchEnvironment(environment){
   if(!currentProfile.canSwitchEnvironment||!["autor","asesor"].includes(environment)||currentRole===environment)return;
@@ -1260,17 +1363,20 @@ function renderEvaluationAnnex(){
 }
 
 function switchTab(tab){
+  if(tab==="administration"&&!isAdministrator()){toast("El módulo de administración es exclusivo para el administrador.");return}
+  if(currentRole==="admin"&&tab!=="administration"){toast("Este perfil solo tiene acceso al módulo de administración.");tab="administration"}
   document.querySelectorAll(".navbtn").forEach(b=>b.classList.toggle("active",b.dataset.tab===tab));
   document.querySelectorAll(".panel").forEach(p=>p.classList.remove("active"));
   $(tab+"Panel").classList.add("active");
   const titles={
-    advisorInbox:"Bandeja de evaluaciones",advisorProcedure:"Procedimiento recibido",
+    administration:"Administración de usuarios",advisorInbox:"Bandeja de evaluaciones",advisorProcedure:"Procedimiento recibido",
     general:"Identificación del procedimiento",contexto:"Marco contextual",normas:"Normatividad",
     actividades:"Descripción de actividades",flujograma:"Flujograma automático",anexos:"Anexos y control de cambios",
     revision:"Revisión final de consistencia",evaluation:"Evaluación de adecuación",preview:"Reporte PDF",guia:"Guía del flujograma",evaluationAnnex:"Criterios de evaluación"
   };
   $("pageTitle").textContent=titles[tab]||"Constructor de Procedimientos";
   if(tab==="flujograma") renderFlow();
+  if(tab==="administration") renderAdminUsers();
   if(tab==="revision") runQualityRules();
   if(tab==="evaluation") updateEvaluationUI();
   if(tab==="advisorInbox") renderAdvisorInbox();
