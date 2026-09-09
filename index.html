@@ -2,7 +2,8 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#004488">
 <title>Validador y Estructurador Metodológico de Procedimientos</title>
 <style>
 :root{
@@ -407,6 +408,100 @@ body.auth-locked>.app{filter:blur(5px);pointer-events:none;user-select:none}
 @media(max-width:900px){.session-user{order:4}.session-user-data{max-width:210px}}
 @media(max-width:900px){.admin-layout{grid-template-columns:1fr}}
 @media(max-width:520px){.auth-gate{padding:12px}.auth-brand{padding:22px 20px 18px}.auth-form{padding:21px 20px 24px}.auth-brand h1{font-size:22px}.session-user{grid-column:1/-1;width:100%}.session-user-data{max-width:none;flex:1}}
+
+/* ===== Optimización Chrome y diseño adaptable v9.0 ===== */
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%;overflow-x:hidden}
+body{min-width:320px;min-height:100vh;min-height:100dvh;overflow-x:hidden}
+button,.navbtn,.flow-tool,.smallbtn{touch-action:manipulation}
+button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible,summary:focus-visible{outline:3px solid rgba(29,154,124,.28);outline-offset:2px}
+.tablewrap{scrollbar-width:thin;scrollbar-color:#91A0A8 #EEF3F5}
+.tablewrap::-webkit-scrollbar,.nav::-webkit-scrollbar,.flowwrap::-webkit-scrollbar{height:9px;width:9px}
+.tablewrap::-webkit-scrollbar-thumb,.nav::-webkit-scrollbar-thumb,.flowwrap::-webkit-scrollbar-thumb{background:#91A0A8;border-radius:999px;border:2px solid #EEF3F5}
+.tablewrap::-webkit-scrollbar-track,.nav::-webkit-scrollbar-track,.flowwrap::-webkit-scrollbar-track{background:#EEF3F5}
+
+@media screen and (min-width:761px) and (max-width:1050px){
+  .sidebar{position:sticky;top:0;height:auto;padding:9px 14px;z-index:100}
+  .brand{display:none}
+  .navbtn{min-width:205px;min-height:48px}
+  .main{padding:18px 20px 48px}
+  .procedure-pin{top:72px}
+  .grid,.grid3,.guide-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .kpirow,.inbox-hero{grid-template-columns:repeat(4,minmax(0,1fr))}
+  .evaluation-hero{grid-template-columns:minmax(0,1.25fr) minmax(280px,.75fr)}
+  .evaluation-summary,.annex-overview,.evaluation-scale{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .topbar{display:grid;grid-template-columns:minmax(220px,.8fr) minmax(0,1.2fr);align-items:center}
+  .top-actions{width:auto;justify-content:flex-end}
+  .admin-layout{grid-template-columns:minmax(260px,320px) minmax(0,1fr)}
+}
+
+@media screen and (max-width:760px){
+  .sidebar{position:sticky;top:0;height:auto;padding:max(8px,env(safe-area-inset-top)) 8px 8px;z-index:100;box-shadow:0 5px 18px rgba(0,32,64,.22)}
+  .brand{display:none}
+  .nav{margin:0 -2px;padding:1px 2px 5px;scroll-padding-inline:8px}
+  .navbtn{min-width:174px;min-height:46px;padding:8px 9px}
+  .main{padding:10px max(10px,env(safe-area-inset-right)) calc(36px + env(safe-area-inset-bottom)) max(10px,env(safe-area-inset-left))}
+  .procedure-pin{top:62px;z-index:90;margin-bottom:8px}
+  .environment-indicator{margin-bottom:9px}
+  .topbar{margin-bottom:12px}
+  .top-actions{gap:8px}
+  .session-user{max-width:100%}
+  .session-user-data{min-width:0}
+  .session-user-data span{max-width:100%}
+  .notification-popover{position:fixed;left:10px;right:10px;top:72px;width:auto;max-height:calc(100dvh - 90px)}
+  .panel{scroll-margin-top:125px}
+  .panel>.actions{flex-direction:column;align-items:stretch}
+  .panel>.actions>.btn,.panel>.actions>button{align-self:flex-start}
+  .admin-toolbar{align-items:stretch;flex-direction:column}
+  .admin-toolbar input{max-width:none;width:100%}
+  .admin-form-card,.admin-list-card{padding:13px}
+  .admin-list-card .tablewrap{border:0;overflow:visible;margin:0;max-width:100%}
+  .admin-list-card table{display:block;min-width:0}.admin-list-card thead{display:none}.admin-list-card tbody{display:grid;gap:10px}
+  .admin-list-card tr{display:block;border:1px solid var(--line);border-left:4px solid var(--green);border-radius:10px;padding:8px;background:#fff;box-shadow:0 3px 10px rgba(0,68,136,.05)}
+  .admin-list-card td{display:grid;grid-template-columns:88px minmax(0,1fr);gap:8px;padding:7px 5px;border-bottom:1px solid #E8EDEF;overflow-wrap:anywhere}
+  .admin-list-card td:last-child{border-bottom:0}.admin-list-card td:before{content:attr(data-label);color:var(--muted);font-size:9px;font-weight:900;letter-spacing:.35px;text-transform:uppercase}
+  .admin-list-card td.empty{display:block;text-align:center}.admin-list-card td.empty:before{display:none}
+  .admin-user-actions{min-width:0}
+  .tablewrap{margin-inline:-4px;max-width:calc(100% + 8px)}
+  #actividadesPanel .tablewrap{max-height:65dvh}
+  .flowwrap{min-height:300px;max-height:62dvh}
+  .preview{min-height:0}
+}
+
+@media screen and (max-width:520px){
+  .auth-gate{align-items:flex-start;padding:max(10px,env(safe-area-inset-top)) 10px max(10px,env(safe-area-inset-bottom));overflow:auto}
+  .auth-card{margin:auto 0;border-radius:14px}
+  .auth-brand{padding:18px 16px 15px}
+  .auth-mark{width:46px;height:46px;margin-bottom:9px}
+  .auth-brand h1{font-size:20px}
+  .auth-form{padding:18px 16px 20px}
+  .navbtn{min-width:164px}
+  .procedure-pin{top:61px}
+  .environment-icon{width:46px;height:46px}.environment-icon svg{width:29px;height:29px}
+  .environment-copy{flex:1}.environment-copy strong{font-size:17px}.environment-copy p{font-size:10px}
+  .top-actions{grid-template-columns:minmax(0,1fr) auto}
+  .session-user{grid-column:1/-1}
+  .workflow-action{grid-column:1/-1;width:100%;justify-content:space-between}
+  .action-menu,.save-wrap{min-width:0}
+  .action-menu .btn,.save-wrap .btn{min-height:44px}
+  .export-actions{justify-content:space-between}
+  .btn,.smallbtn,.flow-tool{min-height:44px}
+  .field input,.field textarea,.field select,td input,td textarea,td select{font-size:16px}
+  .grid,.grid3,.criterion-grid{grid-template-columns:1fr}
+  .kpirow,.evaluation-summary,.inbox-hero{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .evaluation-meta,.preview .dochead{grid-template-columns:1fr}
+  .preview .dochead{min-width:0}
+  .criterion-title{align-items:flex-start}
+  .criterion-result label{min-height:44px}
+  .admin-form-actions{display:grid;grid-template-columns:1fr 1fr}.admin-form-actions .btn{width:100%}
+  .admin-user-actions{min-width:210px}
+}
+
+@media screen and (max-width:370px){
+  .navbtn{min-width:150px}
+  .kpirow,.evaluation-summary,.inbox-hero{grid-template-columns:1fr}
+  .topbar h2{font-size:18px}
+  .procedure-pin-label{font-size:9px}
+}
 
 </style>
 </head>
@@ -1145,7 +1240,7 @@ function renderAdminUsers(){
   if(!$("adminUsersBody")||!isAdministrator())return;const catalog=accountCatalog(),entries=Object.entries(catalog).sort(([a],[b])=>a.localeCompare(b)),query=normalizeText($("adminUserSearch")?.value||"");
   $("adminTotalUsers").textContent=String(entries.length);$("adminActiveUsers").textContent=String(entries.filter(([,p])=>p.active!==false).length);$("adminAdvisorUsers").textContent=String(entries.filter(([,p])=>p.environment==="asesor").length);$("adminAuthorUsers").textContent=String(entries.filter(([,p])=>p.environment==="autor").length);
   const filtered=entries.filter(([username,p])=>!query||normalizeText(`${username} ${p.roleName} ${(p.processes||[]).join(" ")}`).includes(query));
-  $("adminUsersBody").innerHTML=filtered.length?filtered.map(([username,p])=>{const protectedAccount=!!p.isAdmin,processes=(p.processes||[]).join(", ")||"Administración general";return`<tr><td><b>${esc(username)}</b></td><td>${esc(p.roleName||p.environment)}</td><td>${esc(processes)}</td><td><span class="admin-status ${p.active===false?"inactive":""}">${p.active===false?"Inactivo":"Activo"}</span></td><td><div class="admin-user-actions">${protectedAccount?'<span class="hint">Cuenta protegida</span>':`<button class="btn" type="button" onclick="editManagedUser('${username}')">Editar</button><button class="btn" type="button" onclick="toggleManagedUser('${username}')">${p.active===false?"Activar":"Desactivar"}</button><button class="btn" type="button" onclick="resetManagedPassword('${username}')">Restablecer clave</button><button class="btn danger" type="button" onclick="deleteManagedUser('${username}')" ${p.managed?"":'title="Las cuentas iniciales solo pueden desactivarse"'}>Eliminar</button>`}</div></td></tr>`}).join(""):'<tr><td colspan="5" class="empty">No se encontraron usuarios.</td></tr>';
+  $("adminUsersBody").innerHTML=filtered.length?filtered.map(([username,p])=>{const protectedAccount=!!p.isAdmin,processes=(p.processes||[]).join(", ")||"Administración general";return`<tr><td data-label="Usuario"><b>${esc(username)}</b></td><td data-label="Rol">${esc(p.roleName||p.environment)}</td><td data-label="Procesos">${esc(processes)}</td><td data-label="Estado"><span class="admin-status ${p.active===false?"inactive":""}">${p.active===false?"Inactivo":"Activo"}</span></td><td data-label="Acciones"><div class="admin-user-actions">${protectedAccount?'<span class="hint">Cuenta protegida</span>':`<button class="btn" type="button" onclick="editManagedUser('${username}')">Editar</button><button class="btn" type="button" onclick="toggleManagedUser('${username}')">${p.active===false?"Activar":"Desactivar"}</button><button class="btn" type="button" onclick="resetManagedPassword('${username}')">Restablecer clave</button><button class="btn danger" type="button" onclick="deleteManagedUser('${username}')" ${p.managed?"":'title="Las cuentas iniciales solo pueden desactivarse"'}>Eliminar</button>`}</div></td></tr>`}).join(""):'<tr><td colspan="5" class="empty">No se encontraron usuarios.</td></tr>';
 }
 
 document.querySelectorAll(".navbtn").forEach(btn=>btn.addEventListener("click",()=>switchTab(btn.dataset.tab)));
@@ -1366,6 +1461,7 @@ function switchTab(tab){
   if(tab==="administration"&&!isAdministrator()){toast("El módulo de administración es exclusivo para el administrador.");return}
   if(currentRole==="admin"&&tab!=="administration"){toast("Este perfil solo tiene acceso al módulo de administración.");tab="administration"}
   document.querySelectorAll(".navbtn").forEach(b=>b.classList.toggle("active",b.dataset.tab===tab));
+  const activeNav=document.querySelector(`.navbtn[data-tab="${tab}"]`);if(window.innerWidth<=1050)activeNav?.scrollIntoView({behavior:"smooth",block:"nearest",inline:"center"});
   document.querySelectorAll(".panel").forEach(p=>p.classList.remove("active"));
   $(tab+"Panel").classList.add("active");
   const titles={
