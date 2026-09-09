@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#004488">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=(), payment=()">
 <title>Validador y Estructurador Metodológico de Procedimientos</title>
 <style>
 :root{
@@ -368,12 +370,10 @@ body.auth-locked>.app{filter:blur(5px);pointer-events:none;user-select:none}
 .auth-input-wrap{position:relative;display:flex;align-items:center}
 .auth-field-icon{position:absolute;left:12px;width:20px;height:20px;color:var(--slate);pointer-events:none}
 .auth-field-icon svg{width:100%;height:100%;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
-.auth-input-wrap input{width:100%;height:46px;border:1px solid #B9C8D0;border-radius:10px;padding:10px 44px 10px 42px;outline:none;color:var(--text);background:#fff}
-.auth-input-wrap input:focus{border-color:var(--green);box-shadow:0 0 0 3px rgba(29,154,124,.14)}
-.auth-input-wrap input[aria-invalid="true"]{border-color:var(--danger);box-shadow:0 0 0 3px rgba(180,35,24,.10)}
-.auth-password-toggle{position:absolute;right:8px;width:34px;height:34px;border:0;border-radius:7px;background:transparent;color:var(--slate);display:flex;align-items:center;justify-content:center}
-.auth-password-toggle:hover{background:#EEF3F5;color:var(--navy)}
-.auth-password-toggle svg{width:19px;height:19px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.auth-input-wrap input,.auth-input-wrap select{width:100%;height:46px;border:1px solid #B9C8D0;border-radius:10px;padding:10px 44px 10px 42px;outline:none;color:var(--text);background:#fff}
+.auth-input-wrap select{appearance:auto;cursor:pointer}
+.auth-input-wrap input:focus,.auth-input-wrap select:focus{border-color:var(--green);box-shadow:0 0 0 3px rgba(29,154,124,.14)}
+.auth-input-wrap input[aria-invalid="true"],.auth-input-wrap select[aria-invalid="true"]{border-color:var(--danger);box-shadow:0 0 0 3px rgba(180,35,24,.10)}
 .auth-domain{font-size:10px;color:var(--muted);margin-top:5px}
 .auth-error{display:none;margin:0 0 14px;padding:9px 10px;border-radius:8px;background:#FFF4F2;border:1px solid #E7A5A0;color:#8F1D16;font-size:12px;line-height:1.4}
 .auth-error.visible{display:block}
@@ -513,26 +513,29 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
       <h1 id="authTitle">Validador y Estructurador Metodológico de Procedimientos</h1>
     </div>
     <form class="auth-form" id="authForm" onsubmit="handleAuth(event)" novalidate>
-      <h2>Iniciar sesión</h2>
-      <p class="auth-intro">Ingresa con tus credenciales oficiales para continuar.</p>
+      <h2>Acceso de prueba</h2>
+      <p class="auth-intro">Selecciona un modo de trabajo para validar la herramienta. No ingreses datos sensibles.</p>
       <div class="auth-field">
-        <label for="authEmail">Usuario</label>
+        <label for="authEmail">Nombre de sesión</label>
         <div class="auth-input-wrap">
           <span class="auth-field-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4.5 20c.8-4.1 3.3-6.2 7.5-6.2s6.7 2.1 7.5 6.2"/></svg></span>
-          <input id="authEmail" type="text" autocomplete="username" placeholder="Usuario asignado" aria-describedby="authDomain" required>
+          <input id="authEmail" type="text" autocomplete="off" placeholder="Ej. prueba_interna" aria-describedby="authDomain">
         </div>
-        <div class="auth-domain" id="authDomain">El ambiente y los permisos se asignan automáticamente a partir de sus credenciales.</div>
+        <div class="auth-domain" id="authDomain">Este dato solo identifica la sesión en este navegador.</div>
       </div>
       <div class="auth-field">
-        <label for="authPassword">Clave de ingreso</label>
+        <label for="authMode">Modo de trabajo</label>
         <div class="auth-input-wrap">
-          <span class="auth-field-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3M12 14v2"/></svg></span>
-          <input id="authPassword" type="password" minlength="8" autocomplete="current-password" placeholder="Mínimo 8 caracteres" required>
-          <button class="auth-password-toggle" type="button" onclick="toggleAuthPassword()" aria-label="Mostrar clave" title="Mostrar u ocultar clave"><svg viewBox="0 0 24 24"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"/><circle cx="12" cy="12" r="2.6"/></svg></button>
+          <span class="auth-field-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 5h16v14H4z"/><path d="M8 9h8M8 13h5"/><circle cx="17" cy="14.5" r="1.5"/></svg></span>
+          <select id="authMode" required>
+            <option value="autor">Constructor de procedimientos</option>
+            <option value="asesor">Evaluador metodológico</option>
+          </select>
         </div>
       </div>
       <div class="auth-error" id="authError" role="alert" aria-live="polite"></div>
-      <button class="auth-submit" id="authSubmit" type="submit">Ingresar al asistente</button>
+      <button class="auth-submit" id="authSubmit" type="submit">Entrar en modo de prueba</button>
+      <div class="auth-local-note"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 20 6v6c0 4.5-2.7 7.7-8 9-5.3-1.3-8-4.5-8-9V6z"/><path d="m8.5 12 2.2 2.2 4.8-5"/></svg><span>Esta versión pública no contiene usuarios reales ni datos privados embebidos. El control institucional de acceso debe implementarse con un backend seguro.</span></div>
     </form>
   </div>
 </div>
@@ -543,7 +546,6 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
     <div class="brand-rule"></div>
   </div>
   <div class="nav">
-    <button class="navbtn admin-nav role-hidden" data-tab="administration"><span class="nav-number">01</span><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3"/><path d="M6 20c.5-4 2.5-6 6-6s5.5 2 6 6M18 4v5M15.5 6.5h5"/></svg><span class="nav-label">Administración de usuarios</span></button>
     <button class="navbtn advisor-nav role-hidden" data-tab="advisorInbox"><span class="nav-number">01</span><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4z"/><path d="M4 10h5l2 3h2l2-3h5"/></svg><span class="nav-label">Bandeja de evaluaciones</span></button>
     <button class="navbtn advisor-nav role-hidden" data-tab="advisorProcedure"><span class="nav-number">02</span><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3.5h9l3 3v14H6z"/><path d="M15 3.5v3h3M9 11h6M9 14h6M9 17h4"/></svg><span class="nav-label">Procedimiento recibido</span></button>
     <button class="navbtn active author-nav" data-tab="general"><span class="nav-number">01</span><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5h16v13H4z"/><path d="M8 9h8M8 13h5"/><circle cx="17" cy="14.5" r="1.5"/></svg><span class="nav-label">Identificación</span></button>
@@ -604,33 +606,6 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
       <input id="backupInput" type="file" accept=".pdf,.json,application/pdf,application/json" hidden onchange="importBackup(this.files[0]);this.value=''">
     </div>
   </div>
-
-  <section class="panel" id="administrationPanel">
-    <div class="actions" style="justify-content:space-between;margin-bottom:14px"><div><h3 style="margin:0 0 4px">Administración de usuarios</h3><div class="hint">Cree cuentas de prueba, asigne roles y procesos, y controle su estado de acceso.</div></div><span class="admin-status">Acceso exclusivo</span></div>
-    <div class="kpirow" style="margin-bottom:16px">
-      <div class="kpi"><b id="adminTotalUsers">0</b><span>Usuarios registrados</span></div>
-      <div class="kpi"><b id="adminActiveUsers">0</b><span>Usuarios activos</span></div>
-      <div class="kpi"><b id="adminAdvisorUsers">0</b><span>Asesores</span></div>
-      <div class="kpi"><b id="adminAuthorUsers">0</b><span>Elaboradores</span></div>
-    </div>
-    <div class="admin-layout">
-      <form class="admin-form-card" id="adminUserForm" onsubmit="saveManagedUser(event)">
-        <h4 id="adminFormTitle">Crear usuario</h4>
-        <div class="field"><label for="adminUsername">Nombre de usuario</label><input id="adminUsername" type="text" maxlength="60" placeholder="Ej. elab_proceso_03" required></div>
-        <div class="field"><label for="adminRoleName">Nombre visible del rol</label><input id="adminRoleName" type="text" maxlength="100" placeholder="Ej. Elaborador 3 · Contratación" required></div>
-        <div class="field"><label for="adminRole">Rol de acceso</label><select id="adminRole" onchange="renderAdminProcessSelector()"><option value="autor">Elaborador</option><option value="asesor">Asesor</option></select></div>
-        <div class="field"><label>Procesos asignados</label><div class="admin-process-list" id="adminProcessList"></div></div>
-        <div class="field"><label for="adminPassword">Clave temporal</label><input id="adminPassword" type="password" minlength="8" placeholder="Obligatoria al crear; opcional al editar"><div class="hint">Mínimo 8 caracteres.</div></div>
-        <label class="admin-process-option"><input id="adminActive" type="checkbox" checked> Usuario activo</label>
-        <div class="admin-form-actions"><button class="btn" type="button" onclick="resetAdminUserForm()">Cancelar</button><button class="btn primary" type="submit">Guardar usuario</button></div>
-      </form>
-      <div class="admin-list-card">
-        <div class="admin-toolbar"><h4 style="margin:0">Usuarios</h4><input id="adminUserSearch" type="search" placeholder="Buscar usuario, rol o proceso" oninput="renderAdminUsers()"></div>
-        <div class="tablewrap"><table><thead><tr><th>Usuario</th><th>Rol</th><th>Procesos</th><th>Estado</th><th>Acciones</th></tr></thead><tbody id="adminUsersBody"></tbody></table></div>
-        <div class="admin-note"><b>Prototipo local:</b> los cambios realizados aquí solo se conservan en este navegador. El backend permitirá administrarlos centralmente y mantener auditoría institucional.</div>
-      </div>
-    </div>
-  </section>
 
   <section class="panel" id="advisorInboxPanel">
     <div class="actions" style="justify-content:space-between"><div><h3 style="margin-bottom:4px">Bandeja de evaluaciones</h3><div class="hint">Procedimientos enviados para revisión metodológica en este entorno local.</div></div><button class="btn" type="button" onclick="renderAdvisorInbox()">Actualizar bandeja</button></div>
@@ -990,50 +965,19 @@ const RESPONSIBILITY_ROLES=[
   {level:"Asistencial",cargo:"Operario"},
   {level:"Asistencial",cargo:"Secretaria Ejecutiva"}
 ];
-const AUTH_LOG_KEY="gestion_asistente_access_log_v1";
-const AUTH_SESSION_KEY="gestion_asistente_session_v2";
-const MANAGED_USERS_KEY="gestion_asistente_managed_users_v1";
-let managedUsers={};
-const SYSTEM_ACCOUNTS={
-  admin_pruebas:{passwordHash:"82c1a1328072f66e0e3a76c76ed6ac89f74dc55500c6d27cfbd20ddcd162a055",roleName:"Administrador general",environment:"admin",isAdmin:true,canSwitchEnvironment:false,processes:[],active:true},
-  asesor_tic_com_ghsst:{passwordHash:"7171ab112f724bd8b76e3a6f63c2b4cd648a9b6d8ab4305905a543c583a7f3ac",roleName:"Asesor 1",environment:"asesor",isAdmin:false,canSwitchEnvironment:false,processes:["ME-TIC","ME-GC","MA-GH"]},
-  asesor_contratacion_documental_infra:{passwordHash:"efe5e57e74e2c7370dfec1deeee1d82f0df62962346220b777e791414a7ef19d",roleName:"Asesor 2",environment:"asesor",isAdmin:false,canSwitchEnvironment:false,processes:["MA-GC","MA-GD","MA-GI"]},
-  asesor_recursos_financieros:{passwordHash:"89e9477df89b9e8629db36aa40f13bcb56157aa10bb3d1ac69cb755a4cd66612",roleName:"Asesor 3",environment:"asesor",isAdmin:false,canSwitchEnvironment:false,processes:["ME-GF"]},
-  asesor_evaluacion_juridica:{passwordHash:"be7fd632d46dac4cacf9fb6d8812acbd7a75dc58543bf229350129469ee10f31",roleName:"Asesor 4",environment:"asesor",isAdmin:false,canSwitchEnvironment:false,processes:["EC-EC","MA-GJ"]},
-  asesor_planeacion_disciplinaria:{passwordHash:"eff09df709cf9a619e98d893582651716e75ddeaf1b935c1d66352a967aeca76",roleName:"Asesor 5",environment:"asesor",isAdmin:false,canSwitchEnvironment:false,processes:["ME-DE","EC-GD"]},
-  elab_tecnologias_01:{passwordHash:"08e65712ca5c8f0ec4b22da13512a86b07a5df3107ba11ee8f5df38ca7fb09a5",roleName:"Elaborador 1 · Tecnologías e Información",environment:"autor",isAdmin:false,canSwitchEnvironment:false,processes:["ME-TIC"]},
-  elab_tecnologias_02:{passwordHash:"10c5521191a2fa68b9eb572d2b157651a124c3fe978edcba013d28522ea549f6",roleName:"Elaborador 2 · Tecnologías e Información",environment:"autor",isAdmin:false,canSwitchEnvironment:false,processes:["ME-TIC"]},
-  elab_comunicacion_01:{passwordHash:"0c087b5b4181f7dfae0eda7b35b76174b255039416a4d6cace2f1eee3a7e7086",roleName:"Elaborador 1 · Comunicación",environment:"autor",isAdmin:false,canSwitchEnvironment:false,processes:["ME-GC"]},
-  elab_comunicacion_02:{passwordHash:"eccf564c174bb4b5ea694a7a7f58804b515f47397b90c2047cdc6698474db67e",roleName:"Elaborador 2 · Comunicación",environment:"autor",isAdmin:false,canSwitchEnvironment:false,processes:["ME-GC"]},
-  elab_humana_sst_01:{passwordHash:"c04b9c27b41ec5e549825cd6decef8699aec2cb54304f6c9bfb7a6d4c0a58967",roleName:"Elaborador 1 · Gestión Humana y SST",environment:"autor",isAdmin:false,canSwitchEnvironment:false,processes:["MA-GH"]},
-  elab_humana_sst_02:{passwordHash:"9bfca081e9a25b00b11be1c228f79d8841f559e605fddba906b7233c3bb22523",roleName:"Elaborador 2 · Gestión Humana y SST",environment:"autor",isAdmin:false,canSwitchEnvironment:false,processes:["MA-GH"]},
-  elab_contratacion_01:{passwordHash:"4e658ed2f0c954b6803bef7677bb29882b8dc5f1bf9387dc59b2b131d13b9c82",roleName:"Elaborador 1 · Contratación",environment:"autor",isAdmin:false,canSwitchEnvironment:false,processes:["MA-GC"]},
-  elab_contratacion_02:{passwordHash:"1df653f2df9381d74b6b4f3571654a3e80f84df10a1cd6977b5de1adbf62a5be",roleName:"Elaborador 2 · Contratación",environment:"autor",isAdmin:false,canSwitchEnvironment:false,processes:["MA-GC"]},
-  elab_documental_01:{passwordHash:"ca7eb6930a7ffc1f6834c3c15cfdb5a136e46b0a0f924c9394d8a87591812700",roleName:"Elaborador 1 · Gestión Documental",environment:"autor",isAdmin:false,canSwitchEnvironment:false,processes:["MA-GD"]},
-  elab_documental_02:{passwordHash:"da74e285a8a93dfcadd24a7654493e51b9e59282ae4d64be760ac473a2c4898f",roleName:"Elaborador 2 · Gestión Documental",environment:"autor",isAdmin:false,canSwitchEnvironment:false,processes:["MA-GD"]},
-  elab_infraestructura_01:{passwordHash:"c8dc4118464988edab0d8b1d5d3eff08437637d1237412abcb8acf09b2f89b82",roleName:"Elaborador 1 · Infraestructura Física",environment:"autor",isAdmin:false,canSwitchEnvironment:false,processes:["MA-GI"]},
-  elab_infraestructura_02:{passwordHash:"695d98a9e7956442c3ce25c2f952eefed71e542125d7acbbf72068b43154df6b",roleName:"Elaborador 2 · Infraestructura Física",environment:"autor",isAdmin:false,canSwitchEnvironment:false,processes:["MA-GI"]},
-  elab_financiera_01:{passwordHash:"7affe4f2e0cc376afd751d02ee40111c49c9f541418a4de254a1c240533798bc",roleName:"Elaborador 1 · Recursos Financieros",environment:"autor",isAdmin:false,canSwitchEnvironment:false,processes:["ME-GF"]},
-  elab_financiera_02:{passwordHash:"4e8e8a876cc05dbad6b20bce1e3dee74a8e49e3853a468ca1226b9db8871c7ac",roleName:"Elaborador 2 · Recursos Financieros",environment:"autor",isAdmin:false,canSwitchEnvironment:false,processes:["ME-GF"]},
-  elab_evaluacion_ind_01:{passwordHash:"e9e31435dd110fb7924c7a3fc9c88f66a8ab0fe52a9a4a7510957655b40591f0",roleName:"Elaborador 1 · Evaluación Independiente",environment:"autor",isAdmin:false,canSwitchEnvironment:false,processes:["EC-EC"]},
-  elab_evaluacion_ind_02:{passwordHash:"d710ac10995d9baf1a43469a3b2b76a17bf1087a2810ef4311a07259824e433c",roleName:"Elaborador 2 · Evaluación Independiente",environment:"autor",isAdmin:false,canSwitchEnvironment:false,processes:["EC-EC"]},
-  elab_juridica_01:{passwordHash:"f177d17cc20fb2386132f028e90fa486ed3a9b4f62b23db9f8ed5284ab98af84",roleName:"Elaborador 1 · Gestión Jurídica",environment:"autor",isAdmin:false,canSwitchEnvironment:false,processes:["MA-GJ"]},
-  elab_juridica_02:{passwordHash:"75d5a3bf24526062a2ea4066287ef558ed13a599d5c60e0657773d358c3401b3",roleName:"Elaborador 2 · Gestión Jurídica",environment:"autor",isAdmin:false,canSwitchEnvironment:false,processes:["MA-GJ"]},
-  elab_planeacion_01:{passwordHash:"7e9c707edca04cf4fcefd6796bf73107c9e2944217ecb6140dd4ed13b634fdb9",roleName:"Elaborador 1 · Direccionamiento y Planeación",environment:"autor",isAdmin:false,canSwitchEnvironment:false,processes:["ME-DE"]},
-  elab_planeacion_02:{passwordHash:"d060fcebb2d07708b1a3d3cb02649cfc70d272370556d77353d07a0930419000",roleName:"Elaborador 2 · Direccionamiento y Planeación",environment:"autor",isAdmin:false,canSwitchEnvironment:false,processes:["ME-DE"]},
-  elab_disciplinaria_01:{passwordHash:"617b87fc1c50c1771b32077148465d7287a8e581264f241f268e8a19e1cb9c5a",roleName:"Elaborador 1 · Gestión Disciplinaria",environment:"autor",isAdmin:false,canSwitchEnvironment:false,processes:["EC-GD"]},
-  elab_disciplinaria_02:{passwordHash:"569566aec4fbba5df18394124e7e97e34f5cf3deb681bab0c6489ef1e8aa28e1",roleName:"Elaborador 2 · Gestión Disciplinaria",environment:"autor",isAdmin:false,canSwitchEnvironment:false,processes:["EC-GD"]}
+const AUTH_SESSION_KEY="gestion_asistente_demo_session_v1";
+const DEMO_USERS={
+  autor:{username:"constructor_prueba",roleName:"Constructor de procedimientos",environment:"autor",isAdmin:false,canSwitchEnvironment:false},
+  asesor:{username:"asesor_prueba",roleName:"Evaluador metodológico",environment:"asesor",isAdmin:false,canSwitchEnvironment:false}
 };
 
-function loadManagedUsers(){managedUsers=readAuthStore(localStorage,MANAGED_USERS_KEY,{});if(!managedUsers||typeof managedUsers!=="object"||Array.isArray(managedUsers))managedUsers={}}
-function saveManagedUsers(){localStorage.setItem(MANAGED_USERS_KEY,JSON.stringify(managedUsers))}
-function accountCatalog(){return{...SYSTEM_ACCOUNTS,...managedUsers}}
-function accountByUsername(username){return accountCatalog()[normalizeUsername(username)]||null}
-function assignedProcessCodes(profile=currentProfile){return Array.isArray(profile?.processes)?profile.processes:[]}
-function assignedAdvisorForProcess(code){
-  const entry=Object.entries(accountCatalog()).find(([,profile])=>profile.environment==="asesor"&&profile.active!==false&&assignedProcessCodes(profile).includes(code));
-  return entry?.[0]||"";
+function allProcessCodes(){return processGroups.flatMap(group=>group.items.map(item=>item[0]))}
+function demoProfileFor(environment){
+  const key=environment==="asesor"?"asesor":"autor",template=DEMO_USERS[key];
+  return {...template,processes:allProcessCodes()};
 }
+function assignedProcessCodes(profile=currentProfile){return Array.isArray(profile?.processes)?profile.processes:allProcessCodes()}
+function assignedAdvisorForProcess(code){return code&&allProcessCodes().includes(code)?DEMO_USERS.asesor.username:""}
 function canAccessCurrentProcess(){const code=val("proceso");return !!code&&assignedProcessCodes().includes(code)}
 function assignedProcessesLabel(){
   if(currentProfile.isAdmin)return"Administración general";
@@ -1054,31 +998,18 @@ function readAuthStore(storage,key,fallback){
   try{const value=storage.getItem(key);return value?JSON.parse(value):fallback}catch(e){return fallback}
 }
 function normalizeUsername(value){return String(value||"").trim().toLowerCase()}
-async function credentialHash(username,password){
-  const source=`${normalizeUsername(username)}|${password}|baq-procedimientos-credentials-v1`;
-  if(window.crypto?.subtle){
-    const bytes=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(source));
-    return Array.from(new Uint8Array(bytes),b=>b.toString(16).padStart(2,"0")).join("");
-  }
-  let hash=2166136261;
-  for(let i=0;i<source.length;i++){hash^=source.charCodeAt(i);hash=Math.imul(hash,16777619)}
-  return `unsupported-${(hash>>>0).toString(16)}`;
+function safeSessionName(value,environment){
+  const cleaned=normalizeUsername(value).replace(/[^a-z0-9._-]+/g,"_").replace(/^_+|_+$/g,"");
+  return cleaned||DEMO_USERS[environment==="asesor"?"asesor":"autor"].username;
 }
-function recordAuthEvent(username,event){
-  try{
-    const log=readAuthStore(localStorage,AUTH_LOG_KEY,[]);
-    log.push({username:normalizeUsername(username),event,at:new Date().toISOString()});
-    localStorage.setItem(AUTH_LOG_KEY,JSON.stringify(log.slice(-100)));
-  }catch(e){}
-}
-function showAuthError(message,emailInvalid=false,passwordInvalid=false){
+function showAuthError(message,emailInvalid=false,modeInvalid=false){
   const box=$("authError");box.textContent=message;box.classList.add("visible");
   $("authEmail").setAttribute("aria-invalid",emailInvalid?"true":"false");
-  $("authPassword").setAttribute("aria-invalid",passwordInvalid?"true":"false");
+  $("authMode").setAttribute("aria-invalid",modeInvalid?"true":"false");
 }
 function clearAuthError(){
   $("authError").textContent="";$("authError").classList.remove("visible");
-  $("authEmail").setAttribute("aria-invalid","false");$("authPassword").setAttribute("aria-invalid","false");
+  $("authEmail").setAttribute("aria-invalid","false");$("authMode").setAttribute("aria-invalid","false");
 }
 function setAuthenticatedState(username,profile=null,preferredEnvironment=""){
   const active=!!username&&!!profile;
@@ -1096,34 +1027,28 @@ function setAuthenticatedState(username,profile=null,preferredEnvironment=""){
     document.querySelector(".navbtn.active")?.focus({preventScroll:true});
   }else $("sessionRole").removeAttribute("title");
 }
-async function handleAuth(event){
+function handleAuth(event){
   event.preventDefault();clearAuthError();
-  const username=normalizeUsername($("authEmail").value),password=$("authPassword").value,profile=accountByUsername(username),submit=$("authSubmit");
-  if(!username||!profile||profile.active===false){recordAuthEvent(username,profile?.active===false?"usuario_inactivo":"usuario_rechazado");showAuthError(profile?.active===false?"Este usuario se encuentra inactivo. Consulte al administrador.":"Usuario o contraseña incorrectos. Verifique sus credenciales e intente nuevamente.",true,true);$("authEmail").focus();return}
-  submit.disabled=true;submit.textContent="Validando…";
+  const environment=$("authMode")?.value==="asesor"?"asesor":"autor",profile=demoProfileFor(environment),submit=$("authSubmit");
+  const username=safeSessionName($("authEmail").value,environment);
+  submit.disabled=true;submit.textContent="Abriendo...";
   try{
-    const hash=await credentialHash(username,password);if(profile.passwordHash!==hash){recordAuthEvent(username,"clave_incorrecta");showAuthError("Usuario o contraseña incorrectos. Verifique sus credenciales e intente nuevamente.",true,true);$("authPassword").select();return}
-    sessionStorage.setItem(AUTH_SESSION_KEY,JSON.stringify({username,environment:profile.environment,loginAt:new Date().toISOString()}));recordAuthEvent(username,"ingreso_exitoso");
-    $("authPassword").value="";setAuthenticatedState(username,profile,profile.environment);toast(`Bienvenido. Ambiente ${profile.environment==="admin"?"Administrador":profile.environment==="asesor"?"Evaluador":"Constructor"} activado.`);
+    sessionStorage.setItem(AUTH_SESSION_KEY,JSON.stringify({username,environment:profile.environment,loginAt:new Date().toISOString(),demo:true}));
+    setAuthenticatedState(username,profile,profile.environment);toast(`Modo ${profile.environment==="asesor"?"Evaluador":"Constructor"} activado.`);
   }catch(e){
-    console.error(e);showAuthError("No fue posible validar el acceso en este navegador. Intente nuevamente.");
-  }finally{submit.disabled=false;submit.textContent="Ingresar al asistente"}
+    console.error(e);showAuthError("No fue posible abrir el modo de prueba en este navegador. Intente nuevamente.");
+  }finally{submit.disabled=false;submit.textContent="Entrar en modo de prueba"}
 }
 function initAuth(){
-  loadManagedUsers();const session=readAuthStore(sessionStorage,AUTH_SESSION_KEY,null),username=normalizeUsername(session?.username),profile=accountByUsername(username);
-  if(username&&profile&&profile.active!==false){setAuthenticatedState(username,profile,session?.environment);return}
+  const session=readAuthStore(sessionStorage,AUTH_SESSION_KEY,null),environment=session?.environment==="asesor"?"asesor":session?.environment==="autor"?"autor":"";
+  if(session?.demo&&environment){setAuthenticatedState(safeSessionName(session?.username,environment),demoProfileFor(environment),environment);return}
   sessionStorage.removeItem(AUTH_SESSION_KEY);setAuthenticatedState("",null);
   setTimeout(()=>$("authEmail")?.focus(),80);
 }
 function logoutAssistant(){
-  const username=$("sessionEmail").textContent;
-  saveLocal(true);sessionStorage.removeItem(AUTH_SESSION_KEY);recordAuthEvent(username,"cierre_sesion");
-  $("authEmail").value=accountByUsername(username)?normalizeUsername(username):"";$("authPassword").value="";clearAuthError();setAuthenticatedState("",null);
-  setTimeout(()=>$("authPassword")?.focus(),80);
-}
-function toggleAuthPassword(){
-  const input=$("authPassword"),button=document.querySelector(".auth-password-toggle"),show=input.type==="password";
-  input.type=show?"text":"password";button.setAttribute("aria-label",show?"Ocultar clave":"Mostrar clave");input.focus();
+  saveLocal(true);sessionStorage.removeItem(AUTH_SESSION_KEY);
+  $("authEmail").value="";clearAuthError();setAuthenticatedState("",null);
+  setTimeout(()=>$("authMode")?.focus(),80);
 }
 
 const processGroups = [
@@ -1195,53 +1120,18 @@ function initProcesses(){
 }
 
 let adminEditingUsername="";
-function isAdministrator(){return currentRole==="admin"&&!!currentProfile.isAdmin}
-function requireAdministrator(){if(isAdministrator())return true;toast("Esta acción es exclusiva del administrador.");return false}
-function adminAssignableProcesses(){
-  const codes=new Set();Object.values(SYSTEM_ACCOUNTS).forEach(profile=>assignedProcessCodes(profile).forEach(code=>codes.add(code)));
-  return [...codes].sort().map(code=>({code,name:processName(code)||code}));
-}
-function selectedAdminProcesses(){return [...document.querySelectorAll('#adminProcessList input[type="checkbox"]:checked')].map(input=>input.value)}
-function renderAdminProcessSelector(selected=null){
-  const box=$("adminProcessList");if(!box)return;const chosen=new Set(selected||selectedAdminProcesses());
-  box.innerHTML=adminAssignableProcesses().map(item=>`<label class="admin-process-option"><input type="checkbox" value="${esc(item.code)}" ${chosen.has(item.code)?"checked":""}> <span><b>${esc(item.code)}</b> — ${esc(item.name)}</span></label>`).join("");
-}
-function resetAdminUserForm(){
-  if(!$("adminUserForm"))return;adminEditingUsername="";$("adminUserForm").reset();$("adminActive").checked=true;$("adminUsername").disabled=false;$("adminFormTitle").textContent="Crear usuario";renderAdminProcessSelector([]);
-}
-function editManagedUser(username){
-  if(!requireAdministrator())return;const profile=accountByUsername(username);if(!profile||profile.isAdmin)return;
-  adminEditingUsername=username;$("adminFormTitle").textContent=`Editar ${username}`;$("adminUsername").value=username;$("adminUsername").disabled=true;$("adminRoleName").value=profile.roleName||"";$("adminRole").value=profile.environment==="asesor"?"asesor":"autor";$("adminPassword").value="";$("adminActive").checked=profile.active!==false;renderAdminProcessSelector(profile.processes||[]);$("adminRoleName").focus();
-}
-async function saveManagedUser(event){
-  event.preventDefault();if(!requireAdministrator())return;
-  const username=normalizeUsername($("adminUsername").value),existing=accountByUsername(username),isEditing=!!adminEditingUsername;
-  if(!/^[a-z0-9][a-z0-9._-]{3,59}$/.test(username)){toast("Use entre 4 y 60 caracteres: letras minúsculas, números, punto, guion o guion bajo.");return}
-  if(!isEditing&&existing){toast("El nombre de usuario ya existe.");return}
-  const roleName=val("adminRoleName"),environment=$("adminRole").value,processes=selectedAdminProcesses(),password=$("adminPassword").value;
-  if(!roleName){toast("Indique el nombre visible del rol.");return}if(!processes.length){toast("Asigne al menos un proceso.");return}if(!isEditing&&password.length<8){toast("La clave temporal debe tener mínimo 8 caracteres.");return}if(password&&password.length<8){toast("La nueva clave debe tener mínimo 8 caracteres.");return}
-  const base=existing||{},passwordHash=password?await credentialHash(username,password):base.passwordHash;
-  managedUsers[username]={...base,passwordHash,roleName,environment,isAdmin:false,canSwitchEnvironment:false,processes,active:$("adminActive").checked,managed:base.managed??!SYSTEM_ACCOUNTS[username],updatedAt:new Date().toISOString()};
-  saveManagedUsers();recordAuthEvent(currentProfile.username,`${isEditing?"usuario_actualizado":"usuario_creado"}:${username}`);renderAdminUsers();resetAdminUserForm();toast(`Usuario ${isEditing?"actualizado":"creado"} correctamente.`);
-}
-function toggleManagedUser(username){
-  if(!requireAdministrator())return;const profile=accountByUsername(username);if(!profile||profile.isAdmin)return;const nextActive=profile.active===false;
-  managedUsers[username]={...profile,active:nextActive,updatedAt:new Date().toISOString()};saveManagedUsers();recordAuthEvent(currentProfile.username,`${nextActive?"usuario_activado":"usuario_desactivado"}:${username}`);renderAdminUsers();if(adminEditingUsername===username)editManagedUser(username);toast(`Usuario ${nextActive?"activado":"desactivado"}.`);
-}
-async function resetManagedPassword(username){
-  if(!requireAdministrator())return;const profile=accountByUsername(username);if(!profile||profile.isAdmin)return;const password=prompt(`Ingrese una nueva clave temporal para ${username} (mínimo 8 caracteres):`);if(password===null)return;if(password.length<8){toast("La clave temporal debe tener mínimo 8 caracteres.");return}
-  managedUsers[username]={...profile,passwordHash:await credentialHash(username,password),updatedAt:new Date().toISOString()};saveManagedUsers();recordAuthEvent(currentProfile.username,`clave_restablecida:${username}`);renderAdminUsers();toast("Clave temporal restablecida.");
-}
-function deleteManagedUser(username){
-  if(!requireAdministrator())return;const profile=accountByUsername(username);if(!profile||profile.isAdmin)return;if(!profile.managed){toast("Las cuentas iniciales se conservan para trazabilidad; puede desactivarlas.");return}if(!confirm(`¿Eliminar definitivamente el usuario ${username}?`))return;
-  delete managedUsers[username];saveManagedUsers();recordAuthEvent(currentProfile.username,`usuario_eliminado:${username}`);if(adminEditingUsername===username)resetAdminUserForm();renderAdminUsers();toast("Usuario eliminado.");
-}
-function renderAdminUsers(){
-  if(!$("adminUsersBody")||!isAdministrator())return;const catalog=accountCatalog(),entries=Object.entries(catalog).sort(([a],[b])=>a.localeCompare(b)),query=normalizeText($("adminUserSearch")?.value||"");
-  $("adminTotalUsers").textContent=String(entries.length);$("adminActiveUsers").textContent=String(entries.filter(([,p])=>p.active!==false).length);$("adminAdvisorUsers").textContent=String(entries.filter(([,p])=>p.environment==="asesor").length);$("adminAuthorUsers").textContent=String(entries.filter(([,p])=>p.environment==="autor").length);
-  const filtered=entries.filter(([username,p])=>!query||normalizeText(`${username} ${p.roleName} ${(p.processes||[]).join(" ")}`).includes(query));
-  $("adminUsersBody").innerHTML=filtered.length?filtered.map(([username,p])=>{const protectedAccount=!!p.isAdmin,processes=(p.processes||[]).join(", ")||"Administración general";return`<tr><td data-label="Usuario"><b>${esc(username)}</b></td><td data-label="Rol">${esc(p.roleName||p.environment)}</td><td data-label="Procesos">${esc(processes)}</td><td data-label="Estado"><span class="admin-status ${p.active===false?"inactive":""}">${p.active===false?"Inactivo":"Activo"}</span></td><td data-label="Acciones"><div class="admin-user-actions">${protectedAccount?'<span class="hint">Cuenta protegida</span>':`<button class="btn" type="button" onclick="editManagedUser('${username}')">Editar</button><button class="btn" type="button" onclick="toggleManagedUser('${username}')">${p.active===false?"Activar":"Desactivar"}</button><button class="btn" type="button" onclick="resetManagedPassword('${username}')">Restablecer clave</button><button class="btn danger" type="button" onclick="deleteManagedUser('${username}')" ${p.managed?"":'title="Las cuentas iniciales solo pueden desactivarse"'}>Eliminar</button>`}</div></td></tr>`}).join(""):'<tr><td colspan="5" class="empty">No se encontraron usuarios.</td></tr>';
-}
+function isAdministrator(){return false}
+function requireAdministrator(){toast("La administración de usuarios requiere un backend seguro.");return false}
+function adminAssignableProcesses(){return[]}
+function selectedAdminProcesses(){return[]}
+function renderAdminProcessSelector(){}
+function resetAdminUserForm(){adminEditingUsername=""}
+function editManagedUser(){}
+function saveManagedUser(event){event?.preventDefault();requireAdministrator()}
+function toggleManagedUser(){requireAdministrator()}
+function resetManagedPassword(){requireAdministrator()}
+function deleteManagedUser(){requireAdministrator()}
+function renderAdminUsers(){}
 
 document.querySelectorAll(".navbtn").forEach(btn=>btn.addEventListener("click",()=>switchTab(btn.dataset.tab)));
 
@@ -2381,7 +2271,7 @@ function sendForEvaluation(){
 }
 function startEvaluation(){
   if(currentRole!=="asesor"||!["Enviado a evaluación","Subsanado"].includes(evaluation?.status))return;
-  if(!canAccessCurrentProcess()||(evaluation.assignedEvaluator&&evaluation.assignedEvaluator!==currentUserEmail())){toast("Este procedimiento está asignado a otro asesor.");return}
+  if(!canAccessCurrentProcess()||(evaluation.assignedEvaluator&&evaluation.assignedEvaluator!==currentUserEmail()&&evaluation.assignedEvaluator!==DEMO_USERS.asesor.username)){toast("Este procedimiento está asignado a otro asesor.");return}
   if(normalizeUsername(evaluation.authorEmail)===currentUserEmail()){toast("No está permitido evaluar un procedimiento elaborado por la misma cuenta.");return}
   evaluation.status="En evaluación";evaluation.evaluatorEmail=currentUserEmail();evaluation.evaluationDate=new Date().toISOString();addEvaluationHistory("Inicio de evaluación",`Iteración ${evaluation.iteration}`);addNotification("autor","El asesor inició la revisión",`${evaluation.evaluatorEmail} inició la evaluación de ${val("codigo")||"su procedimiento"}.`,"proceso");saveLocal(true);updateEvaluationUI();toast("Evaluación iniciada. El autor ha sido notificado.");
 }
