@@ -1691,7 +1691,9 @@ function setActivityResponsibility(index,value){
   if(value==="__otro__"){
     activity.responsableOtro=true;activity.responsable="";renderActivities();
     toast("Especifique claramente quién es responsable de la actividad.");
-  }else{activity.responsableOtro=false;activity.responsable=value}
+  }else{
+    activity.responsableOtro=false;activity.responsable=value;renderActivities();
+  }
 }
 function updateOtherActivityResponsibility(index,value,input){
   const activity=activities[index];if(!activity)return;activity.responsable=value;
