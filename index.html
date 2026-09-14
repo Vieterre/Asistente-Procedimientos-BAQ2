@@ -407,6 +407,15 @@ body.auth-locked>.app{filter:blur(5px);pointer-events:none;user-select:none}
 .analytics-bar{width:100%;min-height:6px;border-radius:7px 7px 3px 3px;background:linear-gradient(180deg,var(--green),#14755F)}
 .analytics-day span{font-size:10px;color:var(--muted);font-weight:700}
 .analytics-day b{font-size:12px;color:var(--navy)}
+.analytics-toolbar{display:grid;grid-template-columns:minmax(145px,.65fr) minmax(180px,1fr) minmax(160px,.8fr) auto;gap:10px;align-items:end;margin:0 0 16px;padding:13px;border:1px solid var(--line);border-radius:14px;background:#F7F9FC}
+.analytics-filter{display:grid;gap:5px}.analytics-filter label{font-size:9px;font-weight:900;letter-spacing:.65px;text-transform:uppercase;color:var(--muted)}.analytics-filter select{width:100%;height:40px;padding:7px 9px;border:1px solid #C9D5E1;border-radius:9px;background:#fff;color:var(--text)}
+.analytics-filter-summary{align-self:center;color:var(--muted);font-size:10px;line-height:1.35;text-align:right}
+.dashboard-kpis{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px}.dashboard-kpi{position:relative;overflow:hidden;min-height:108px;padding:15px;border:1px solid var(--line);border-radius:15px;background:#fff;box-shadow:0 8px 22px rgba(16,30,46,.06)}.dashboard-kpi:before{content:"";position:absolute;left:0;right:0;top:0;height:4px;background:var(--kpi-color,#1F6FD0)}.dashboard-kpi b{display:block;margin:8px 0 4px;color:var(--text);font-size:25px;letter-spacing:-.04em}.dashboard-kpi span{display:block;color:var(--muted);font-size:10px;font-weight:700;line-height:1.25}.dashboard-kpi small{display:block;margin-top:6px;color:#81909D;font-size:8.5px;line-height:1.25}.dashboard-kpi.good{--kpi-color:var(--green)}.dashboard-kpi.warn{--kpi-color:#D39A18}.dashboard-kpi.info{--kpi-color:#1F6FD0}.dashboard-kpi.alert{--kpi-color:var(--danger)}
+.analytics-grid{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(300px,.85fr);gap:14px}.analytics-card{padding:15px;border:1px solid var(--line);border-radius:15px;background:#fff}.analytics-card-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:12px}.analytics-card-head h4{margin:0;color:var(--navy)}.analytics-card-head span{color:var(--muted);font-size:9px;text-align:right}
+.flow-funnel{display:grid;grid-template-columns:repeat(6,minmax(82px,1fr));gap:7px;overflow-x:auto;padding:3px 0 7px}.flow-stage{position:relative;min-width:82px;padding:11px 9px;border:1px solid #DCE4ED;border-radius:11px;background:#F7F9FC}.flow-stage:not(:last-child):after{content:"›";position:absolute;z-index:2;right:-7px;top:50%;transform:translateY(-50%);width:14px;height:20px;display:flex;align-items:center;justify-content:center;border-radius:99px;background:#fff;color:#7D8D9C;font-weight:900}.flow-stage b{display:block;color:var(--navy);font-size:19px}.flow-stage span{display:block;margin-top:3px;color:var(--muted);font-size:9px;font-weight:700;line-height:1.2}.flow-stage-meter{height:4px;margin-top:9px;border-radius:99px;background:#DFE7EF;overflow:hidden}.flow-stage-meter i{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,var(--green),#1F6FD0)}
+.analytics-status{display:grid;gap:8px}.analytics-status-row{display:grid;grid-template-columns:minmax(105px,.8fr) minmax(100px,1fr) 34px;gap:8px;align-items:center}.analytics-status-row span{font-size:10px;color:var(--muted);font-weight:700}.analytics-status-track{height:9px;border-radius:99px;background:#E8EDF3;overflow:hidden}.analytics-status-track i{display:block;height:100%;min-width:3px;border-radius:inherit;background:linear-gradient(90deg,#1F6FD0,var(--green))}.analytics-status-row b{text-align:right;color:var(--navy);font-size:11px}
+.analytics-empty{padding:18px;text-align:center;color:var(--muted);font-size:11px}.analytics-table td{font-size:11px;vertical-align:middle}.analytics-table td:first-child{font-weight:800;color:var(--navy)}.analytics-table .status{white-space:nowrap}.analytics-section-subtitle{margin:-4px 0 11px;color:var(--muted);font-size:10px}
+#analyticsLastLogin{font-size:13px;line-height:1.3;letter-spacing:0;overflow-wrap:anywhere}
 .alert-list{display:grid;gap:8px}
 .alert-item{display:grid;grid-template-columns:28px minmax(0,1fr) auto;gap:10px;align-items:start;padding:11px 12px;border:1px solid var(--line);border-left:5px solid #B58A00;border-radius:9px;background:#FFFBEC}
 .alert-item.ok{border-left-color:var(--green);background:#F4FAF6}
@@ -414,7 +423,9 @@ body.auth-locked>.app{filter:blur(5px);pointer-events:none;user-select:none}
 .alert-item p{margin:0;color:#526874;font-size:12px;line-height:1.35}
 .alert-tag{font-size:9px;font-weight:900;text-transform:uppercase;color:#725700;background:#FFF0B8;border:1px solid #E4C75A;border-radius:999px;padding:3px 7px}
 @media(max-width:900px){.session-user{order:4}.session-user-data{max-width:210px}}
-@media(max-width:520px){.auth-gate{padding:12px}.auth-brand{padding:22px 20px 18px}.auth-form{padding:21px 20px 24px}.auth-brand h1{font-size:22px}.session-user{grid-column:1/-1;width:100%}.session-user-data{max-width:none;flex:1}}
+@media(max-width:1100px){.dashboard-kpis{grid-template-columns:repeat(3,minmax(0,1fr))}.analytics-toolbar{grid-template-columns:repeat(3,minmax(0,1fr))}.analytics-filter-summary{grid-column:1/-1;text-align:left}}
+@media(max-width:760px){.analytics-toolbar{grid-template-columns:1fr}.analytics-filter-summary{grid-column:auto}.dashboard-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.analytics-grid{grid-template-columns:1fr}.analytics-card{padding:12px}.flow-funnel{grid-template-columns:repeat(6,104px)}.analytics-card-head{flex-direction:column}.analytics-card-head span{text-align:left}}
+@media(max-width:520px){.auth-gate{padding:12px}.auth-brand{padding:22px 20px 18px}.auth-form{padding:21px 20px 24px}.auth-brand h1{font-size:22px}.session-user{grid-column:1/-1;width:100%}.session-user-data{max-width:none;flex:1}.dashboard-kpi{min-height:100px;padding:12px}.dashboard-kpi b{font-size:22px}.analytics-status-row{grid-template-columns:95px minmax(70px,1fr) 30px}}
 
 /* ===== Optimización Chrome y diseño adaptable v9.0 ===== */
 html{-webkit-text-size-adjust:100%;text-size-adjust:100%;overflow-x:hidden}
@@ -501,11 +512,11 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 /* ===== Sistema visual claro v10.0 ===== */
 :root{--navy:#123A60;--green:#0E9E78;--yellow:#1F6FD0;--warning:#8F5D08;--gray:#5A6B7A;--slate:#5A6B7A;--bg:#EEF2F7;--paper:#FFFFFF;--soft:#EFF3F8;--line:#DCE4ED;--text:#101E2E;--muted:#5A6B7A;--danger:#C4362A;--shadow:0 2px 5px rgba(16,30,46,.06),0 18px 44px rgba(16,30,46,.08);--ease:cubic-bezier(.22,.61,.36,1)}
 body{font-family:"Inter","Aptos","Segoe UI",Arial,sans-serif;letter-spacing:-.005em;background-color:var(--bg);background-image:radial-gradient(circle at 4% 0,rgba(31,111,208,.14),transparent 34rem),radial-gradient(circle at 96% 0,rgba(14,158,120,.13),transparent 32rem);background-attachment:fixed}
-.app{grid-template-columns:286px minmax(0,1fr)}
-.sidebar{background:radial-gradient(circle at 85% 4%,rgba(14,158,120,.20),transparent 34%),linear-gradient(185deg,#0E4667 0%,#0A3454 52%,#07283F 100%);padding:20px 14px;box-shadow:8px 0 28px rgba(8,30,48,.18)}
+.app{display:block;min-height:100vh}
+.sidebar{position:fixed;inset:0 auto 0 0;width:286px;height:100vh;height:100dvh;overflow-y:auto;background:radial-gradient(circle at 85% 4%,rgba(14,158,120,.20),transparent 34%),linear-gradient(185deg,#0E4667 0%,#0A3454 52%,#07283F 100%);padding:20px 14px;box-shadow:8px 0 28px rgba(8,30,48,.18)}
 .brand{text-align:center;border-bottom-color:rgba(255,255,255,.16);padding-bottom:18px}.brand-product{display:grid;justify-items:center;padding:4px 7px}.brand-mark{width:52px;height:52px;display:flex;align-items:center;justify-content:center;margin-bottom:11px;border-radius:16px;background:linear-gradient(145deg,#17B88E,#1F6FD0);color:#fff;box-shadow:0 9px 24px rgba(4,24,39,.28),inset 0 1px 0 rgba(255,255,255,.25)}.brand-mark svg{width:29px;height:29px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}.brand-product h1{font-family:"Inter","Aptos","Segoe UI",Arial,sans-serif;font-size:16px;line-height:1.25;letter-spacing:-.02em;text-align:center}.brand-product small{color:rgba(255,255,255,.76);font-size:10px;letter-spacing:.45px}.brand-rule{width:44px;height:3px;border-radius:99px;margin:11px auto 0;background:linear-gradient(90deg,#20C497,#5AA3FF)}
 .nav{gap:6px}.nav-section-label{color:rgba(255,255,255,.68);font-size:9px;letter-spacing:1.4px}.navbtn{min-height:39px;border:1px solid transparent;border-left:0;padding:8px 10px;border-radius:11px;color:rgba(255,255,255,.86);transition:transform 160ms var(--ease),background 160ms var(--ease),box-shadow 160ms var(--ease)}.navbtn:hover{transform:translateX(2px);border-left-color:transparent;background:rgba(255,255,255,.10)}.navbtn.active{position:relative;border-color:rgba(255,255,255,.18);border-left:0;background:linear-gradient(110deg,rgba(14,158,120,.98),rgba(31,111,208,.88));box-shadow:0 8px 18px rgba(3,27,43,.24),inset 0 1px 0 rgba(255,255,255,.22)}.navbtn.active:before{content:"";position:absolute;left:0;top:8px;bottom:8px;width:3px;border-radius:0 4px 4px 0;background:#8EF3D5;box-shadow:0 0 10px rgba(142,243,213,.85)}.nav-number{color:rgba(255,255,255,.64)}.nav-label{font-size:12.8px;font-weight:600}
-.main{padding:22px 30px 60px}.procedure-pin{border:1px solid rgba(14,158,120,.28);border-left:4px solid var(--green);border-radius:14px;background:rgba(255,255,255,.88);box-shadow:0 2px 5px rgba(16,30,46,.05),0 12px 30px rgba(16,30,46,.07);backdrop-filter:blur(14px) saturate(180%)}.procedure-pin-label{color:#0A7A5D}
+.main{width:calc(100% - 286px);margin-left:286px;margin-right:0;padding:22px 30px 60px}.procedure-pin{border:1px solid rgba(14,158,120,.28);border-left:4px solid var(--green);border-radius:14px;background:rgba(255,255,255,.88);box-shadow:0 2px 5px rgba(16,30,46,.05),0 12px 30px rgba(16,30,46,.07);backdrop-filter:blur(14px) saturate(180%)}.procedure-pin-label{color:#0A7A5D}
 .topbar{position:relative;z-index:6;border-radius:18px;padding:15px 17px;background:rgba(255,255,255,.82);box-shadow:0 2px 5px rgba(16,30,46,.06),0 14px 34px rgba(16,30,46,.07);backdrop-filter:blur(14px) saturate(180%)}.topbar h2{font-family:"Inter","Aptos","Segoe UI",Arial,sans-serif;color:var(--text);font-size:22px;font-weight:800;letter-spacing:-.02em}.session-user{order:1}.notification-center{order:2}.save-wrap{order:3}.action-menu{order:4}.workflow-action{order:5}
 .environment-indicator{border:1px solid rgba(31,111,208,.22);border-left:6px solid #1F6FD0;border-radius:18px;background:linear-gradient(110deg,rgba(247,249,252,.93),rgba(255,255,255,.9));box-shadow:0 2px 5px rgba(16,30,46,.04),0 12px 28px rgba(16,30,46,.06)}.environment-icon{background:linear-gradient(145deg,#123A60,#1F6FD0);box-shadow:0 10px 24px rgba(31,111,208,.22)}.environment-indicator.evaluator{border-left-color:var(--green);background:linear-gradient(110deg,rgba(238,249,246,.94),rgba(255,255,255,.9))}.environment-indicator.evaluator .environment-icon{background:linear-gradient(145deg,#0A7A5D,#17B88E)}
 .panel{position:relative;border:1px solid var(--line);border-top:3px solid transparent;border-radius:24px;padding:26px;background:#fff;box-shadow:var(--shadow)}.panel:before{content:"";position:absolute;z-index:1;left:0;right:0;top:-3px;height:4px;border-radius:24px 24px 0 0;background:linear-gradient(90deg,var(--green),#1F6FD0,rgba(31,111,208,.2))}.panel.active{animation:panel-in 280ms var(--ease)}@keyframes panel-in{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
@@ -521,9 +532,10 @@ body{font-family:"Inter","Aptos","Segoe UI",Arial,sans-serif;letter-spacing:-.00
 .auth-gate{background:radial-gradient(circle at 15% 10%,rgba(14,158,120,.28),transparent 31rem),radial-gradient(circle at 88% 100%,rgba(31,111,208,.24),transparent 35rem),linear-gradient(135deg,#063B4A 0%,#052F40 46%,#06283A 100%)}
 .auth-card{border:1px solid rgba(220,228,237,.92);border-radius:24px;box-shadow:0 8px 18px rgba(1,18,29,.18),0 34px 90px rgba(1,18,29,.34)}.auth-brand{padding:31px 30px 25px;background:linear-gradient(180deg,#FFFFFF,#F7F9FC);border-bottom-color:#DCE4ED}.auth-mark{width:56px;height:56px;border-radius:16px;background:linear-gradient(145deg,#17B88E,#1F6FD0);box-shadow:0 9px 24px rgba(31,111,208,.24),inset 0 1px 0 rgba(255,255,255,.25)}.auth-brand h1{font-family:"Inter","Aptos","Segoe UI",Arial,sans-serif;color:#101E2E;font-weight:800;letter-spacing:-.025em}.auth-form{padding:27px 30px 30px}.auth-form h2{color:#101E2E;font-size:19px;font-weight:800;letter-spacing:-.02em}.auth-intro{color:#5A6B7A;font-size:12.5px}.auth-field label{color:#3A4C5E}.auth-input-wrap input,.auth-input-wrap select{height:48px;border-color:#DCE4ED;border-radius:10px;background:#F7F9FC}.auth-input-wrap input:focus,.auth-input-wrap select:focus{background:#fff;border-color:#0E9E78;box-shadow:0 0 0 3px rgba(14,158,120,.22)}.auth-submit{height:47px;border-radius:11px;background:linear-gradient(135deg,#0E9E78,#08785D);box-shadow:0 8px 20px rgba(14,158,120,.25);transition:transform 150ms var(--ease),box-shadow 150ms var(--ease)}.auth-submit:hover{filter:none;transform:translateY(-1px);box-shadow:0 11px 26px rgba(14,158,120,.3)}.auth-local-note{border:1px solid #E7ECF2;border-radius:10px;background:#F3F6F9;color:#5A6B7A}
 button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible,summary:focus-visible{outline:2px solid var(--green);outline-offset:2px}
-@media(max-width:1050px){.app{display:block}.sidebar{position:sticky;top:0;height:auto;padding:9px 14px}.brand{display:none}.nav{display:flex;overflow:auto}.main{padding:18px 20px 48px}.navbtn:hover{transform:translateY(-1px)}}
+@media(max-width:1050px){.app{display:block}.sidebar{position:sticky;inset:auto;top:0;width:100%;height:auto;padding:9px 14px}.brand{display:none}.nav{display:flex;overflow:auto}.main{width:100%;margin-left:0;padding:18px 20px 48px}.navbtn:hover{transform:translateY(-1px)}}
 @media(max-width:760px){.sidebar{padding:max(8px,env(safe-area-inset-top)) 8px 8px}.main{padding:10px max(10px,env(safe-area-inset-right)) calc(36px + env(safe-area-inset-bottom)) max(10px,env(safe-area-inset-left))}.panel{padding:18px;border-radius:18px}.topbar{padding:13px;border-radius:16px}.btn,.smallbtn,.flow-tool{min-height:44px}.field input,.field textarea,.field select,td input,td textarea,td select{font-size:16px}}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
+@media print{.main{width:auto;margin-left:0}.sidebar{position:static;width:auto;height:auto}}
 
 </style>
 </head>
@@ -897,33 +909,73 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 
   <section class="panel" id="analyticsPanel">
     <div class="actions" style="justify-content:space-between;margin-bottom:14px">
-      <div><h3 style="margin:0 0 4px">Analítica</h3><div class="hint">Tablero local de prueba para consultar uso general, productividad y alertas del flujo de trabajo.</div></div>
+      <div><h3 style="margin:0 0 4px">Cuadro de mando</h3><div class="hint">Seguimiento operativo del uso, avance y tiempos del flujo de procedimientos.</div></div>
       <button class="btn" type="button" onclick="resetAnalyticsDemo()">Reiniciar datos de prueba</button>
     </div>
-    <div class="kpirow">
-      <div class="kpi"><b id="analyticsTotalLogins">0</b><span>Ingresos registrados</span></div>
-      <div class="kpi"><b id="analyticsRecentActive">0</b><span>Sesiones recientes</span></div>
-      <div class="kpi"><b id="analyticsSentReviews">0</b><span>Envíos a evaluación</span></div>
-      <div class="kpi"><b id="analyticsConcepts">0</b><span>Conceptos emitidos</span></div>
+    <div class="analytics-toolbar" aria-label="Filtros del cuadro de mando">
+      <div class="analytics-filter"><label for="analyticsPeriod">Periodo</label><select id="analyticsPeriod" onchange="renderUsageAnalytics()"><option value="7">Últimos 7 días</option><option value="30" selected>Últimos 30 días</option><option value="90">Últimos 90 días</option><option value="all">Todo el historial local</option></select></div>
+      <div class="analytics-filter"><label for="analyticsProcess">Proceso</label><select id="analyticsProcess" onchange="renderUsageAnalytics()"><option value="all">Todos los procesos</option></select></div>
+      <div class="analytics-filter"><label for="analyticsRole">Rol</label><select id="analyticsRole" onchange="renderUsageAnalytics()"><option value="all">Todos los roles</option><option value="autor">Elaborador</option><option value="asesor">Evaluador</option></select></div>
+      <div class="analytics-filter-summary" id="analyticsFilterSummary">Datos almacenados en este navegador</div>
+    </div>
+    <div class="dashboard-kpis">
+      <div class="dashboard-kpi info"><b id="analyticsProcedures">0</b><span>Procedimientos iniciados</span><small>Registros con actividad durante el periodo</small></div>
+      <div class="dashboard-kpi warn"><b id="analyticsPending">0</b><span>Pendientes de evaluación</span><small>Enviados o subsanados por atender</small></div>
+      <div class="dashboard-kpi alert"><b id="analyticsAdjustments">0</b><span>En ajuste</span><small>Devueltos al elaborador</small></div>
+      <div class="dashboard-kpi good"><b id="analyticsConcepts">0</b><span>Conceptos favorables</span><small>Evaluaciones cerradas satisfactoriamente</small></div>
+      <div class="dashboard-kpi info"><b id="analyticsAverageTime">—</b><span>Tiempo medio de atención</span><small>Desde el envío hasta iniciar evaluación</small></div>
+      <div class="dashboard-kpi good"><b id="analyticsFirstPass">—</b><span>Aprobación en primera revisión</span><small>Conceptos sin subsanaciones previas</small></div>
     </div>
     <div class="analytics-section">
-      <h4>Uso general</h4>
-      <div class="grid3">
-        <div class="kpi"><b id="analyticsTodayLogins">0</b><span>Ingresos de hoy</span></div>
-        <div class="kpi"><b id="analyticsWeekLogins">0</b><span>Ingresos últimos 7 días</span></div>
-        <div class="kpi"><b id="analyticsLastLogin">Sin registro</b><span>Último ingreso</span></div>
+      <div class="analytics-grid">
+        <div class="analytics-card">
+          <div class="analytics-card-head"><h4>Avance del flujo</h4><span>Volumen acumulado por etapa</span></div>
+          <div class="flow-funnel" id="analyticsFlowFunnel"></div>
+        </div>
+        <div class="analytics-card">
+          <div class="analytics-card-head"><h4>Distribución operativa</h4><span>Eventos principales del periodo</span></div>
+          <div class="analytics-status" id="analyticsStatusDistribution"></div>
+        </div>
       </div>
-      <div class="analytics-bars" id="analyticsLoginChart" aria-label="Ingresos últimos siete días"></div>
     </div>
     <div class="analytics-section">
-      <h4>Productividad</h4>
-      <div class="tablewrap"><table><thead><tr><th>Indicador</th><th>Conteo</th><th>Lectura</th></tr></thead><tbody id="analyticsProductivityBody"></tbody></table></div>
+      <div class="analytics-grid">
+        <div class="analytics-card">
+          <div class="analytics-card-head"><h4>Tendencia de ingresos</h4><span id="analyticsLoginSummary">Actividad de los últimos 7 días</span></div>
+          <div class="analytics-bars" id="analyticsLoginChart" aria-label="Ingresos de los últimos siete días"></div>
+        </div>
+        <div class="analytics-card">
+          <div class="analytics-card-head"><h4>Uso del sistema</h4><span>Adopción local</span></div>
+          <div class="grid3">
+            <div class="kpi"><b id="analyticsTotalLogins">0</b><span>Ingresos del periodo</span></div>
+            <div class="kpi"><b id="analyticsRecentActive">0</b><span>Sesiones recientes</span></div>
+            <div class="kpi"><b id="analyticsLastLogin">Sin registro</b><span>Último ingreso</span></div>
+          </div>
+        </div>
+      </div>
     </div>
     <div class="analytics-section">
-      <h4>Alertas</h4>
-      <div class="alert-list" id="analyticsAlerts"></div>
+      <h4>Gestión por proceso</h4>
+      <div class="analytics-section-subtitle">Consolida únicamente eventos que ya tienen un proceso identificado.</div>
+      <div class="tablewrap"><table class="analytics-table"><thead><tr><th>Proceso</th><th>Iniciados</th><th>Enviados</th><th>Evaluaciones</th><th>Devoluciones</th><th>Conceptos</th><th>Última actividad</th></tr></thead><tbody id="analyticsProcessBody"></tbody></table></div>
     </div>
-    <div class="analytics-note"><b>Alcance de la prueba:</b> estos datos se guardan solo en este navegador y no contienen documentos, claves ni información personal. La medición institucional entre equipos requerirá el backend del VPS.</div>
+    <div class="analytics-section">
+      <div class="analytics-grid">
+        <div class="analytics-card">
+          <div class="analytics-card-head"><h4>Actividad por rol</h4><span>Uso y operaciones registradas</span></div>
+          <div class="tablewrap"><table class="analytics-table"><thead><tr><th>Rol</th><th>Ingresos</th><th>Acciones</th><th>Última actividad</th></tr></thead><tbody id="analyticsRoleBody"></tbody></table></div>
+        </div>
+        <div class="analytics-card">
+          <div class="analytics-card-head"><h4>Alertas del flujo</h4><span>Situaciones que requieren seguimiento</span></div>
+          <div class="alert-list" id="analyticsAlerts"></div>
+        </div>
+      </div>
+    </div>
+    <div class="analytics-section">
+      <h4>Detalle de productividad</h4>
+      <div class="tablewrap"><table class="analytics-table"><thead><tr><th>Indicador</th><th>Conteo</th><th>Lectura</th></tr></thead><tbody id="analyticsProductivityBody"></tbody></table></div>
+    </div>
+    <div class="analytics-note"><b>Alcance de la prueba:</b> el cuadro de mando utiliza eventos guardados únicamente en este navegador. Los filtros, indicadores y estructuras quedan preparados para conectarse posteriormente al backend y a PostgreSQL; hasta entonces no consolidan otros computadores.</div>
   </section>
 </main>
 </div>
@@ -1071,16 +1123,19 @@ function recordAnalytics(type,detail={}){
   const store=analyticsStore(),now=new Date().toISOString(),sessionId=analyticsSessionId();
   store.events=Array.isArray(store.events)?store.events:[];
   store.sessions=store.sessions&&typeof store.sessions==="object"?store.sessions:{};
-  store.events.push({type,role:currentRole||detail.role||"",at:now,detail});
+  const process=String(detail.process||($('proceso')?val('proceso'):"")||"");
+  const user=currentProfile?.username||"";
+  const context={process,user,status:evaluation?.status||"",iteration:Number(evaluation?.iteration||1),...detail};
+  store.events.push({type,role:currentRole||detail.role||"",process,user,at:now,detail:context});
   store.events=store.events.slice(-700);
-  store.sessions[sessionId]={role:currentRole||detail.role||"",lastSeen:now};
+  store.sessions[sessionId]={role:currentRole||detail.role||"",process,user,lastSeen:now};
   saveAnalyticsStore(store);
 }
 function analyticsHeartbeat(){
   if(!currentProfile.username)return;
   const store=analyticsStore(),sessionId=analyticsSessionId(),now=new Date().toISOString();
   store.sessions=store.sessions&&typeof store.sessions==="object"?store.sessions:{};
-  store.sessions[sessionId]={role:currentRole,lastSeen:now};
+  store.sessions[sessionId]={role:currentRole,process:$('proceso')?val('proceso'):"",user:currentProfile.username,lastSeen:now};
   saveAnalyticsStore(store);
 }
 function markProcedureStarted(){
@@ -1211,9 +1266,18 @@ function initProcesses(){
 }
 
 function analyticsEvents(type=""){const events=analyticsStore().events||[];return type?events.filter(e=>e.type===type):events}
-function analyticsSince(days,type=""){
-  const threshold=Date.now()-days*86400000;
-  return analyticsEvents(type).filter(e=>new Date(e.at).getTime()>=threshold);
+function populateAnalyticsProcessFilter(){
+  const select=$("analyticsProcess");if(!select||select.options.length>1)return;
+  processGroups.forEach(group=>group.items.forEach(item=>select.add(new Option(`${item[0]} — ${item[1]}`,item[0]))));
+}
+function analyticsFilters(){
+  populateAnalyticsProcessFilter();
+  return {period:$("analyticsPeriod")?.value||"30",process:$("analyticsProcess")?.value||"all",role:$("analyticsRole")?.value||"all"};
+}
+function analyticsEventProcess(event){return String(event.process||event.detail?.process||"")}
+function analyticsFilteredEvents(type=""){
+  const filters=analyticsFilters(),threshold=filters.period==="all"?0:Date.now()-Number(filters.period)*86400000;
+  return analyticsEvents(type).filter(event=>(!threshold||new Date(event.at).getTime()>=threshold)&&(filters.process==="all"||analyticsEventProcess(event)===filters.process)&&(filters.role==="all"||event.role===filters.role));
 }
 function analyticsDateKey(value){
   const parts=new Intl.DateTimeFormat("en-US",{timeZone:"America/Bogota",year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(new Date(value));
@@ -1221,47 +1285,83 @@ function analyticsDateKey(value){
   return `${fields.year}-${fields.month}-${fields.day}`;
 }
 function analyticsDayLabel(date){return new Intl.DateTimeFormat("es-CO",{weekday:"short",timeZone:"America/Bogota"}).format(date).replace(".","")}
-function countEvents(type){return analyticsEvents(type).length}
-function recentSessions(minutes=10){
+function countEvents(type,events=analyticsFilteredEvents()){return events.filter(event=>event.type===type).length}
+function recentSessions(minutes=10,filters=analyticsFilters()){
   const cutoff=Date.now()-minutes*60000,store=analyticsStore(),sessions=Object.values(store.sessions||{});
-  return sessions.filter(s=>new Date(s.lastSeen).getTime()>=cutoff);
+  return sessions.filter(session=>new Date(session.lastSeen).getTime()>=cutoff&&(filters.process==="all"||session.process===filters.process)&&(filters.role==="all"||session.role===filters.role));
+}
+function analyticsDurationLabel(milliseconds){
+  if(!Number.isFinite(milliseconds)||milliseconds<0)return "—";
+  const minutes=Math.round(milliseconds/60000);if(minutes<60)return `${Math.max(1,minutes)} min`;
+  const hours=milliseconds/3600000;if(hours<48)return `${hours.toFixed(hours<10?1:0)} h`;
+  return `${(hours/24).toFixed(1)} días`;
+}
+function averageEvaluationWait(events){
+  const sends=events.filter(event=>["review_sent","corrections_submitted"].includes(event.type)).sort((a,b)=>new Date(a.at)-new Date(b.at));
+  const starts=events.filter(event=>event.type==="evaluation_started").sort((a,b)=>new Date(a.at)-new Date(b.at)),durations=[];
+  sends.forEach(sent=>{const match=starts.find(start=>new Date(start.at)>new Date(sent.at)&&(!analyticsEventProcess(sent)||!analyticsEventProcess(start)||analyticsEventProcess(sent)===analyticsEventProcess(start)));if(match)durations.push(new Date(match.at)-new Date(sent.at))});
+  return durations.length?durations.reduce((sum,value)=>sum+value,0)/durations.length:NaN;
 }
 function renderUsageAnalytics(){
-  if(!$("analyticsTotalLogins"))return;const events=analyticsEvents(),now=new Date(),todayKey=analyticsDateKey(now);
-  const logins=events.filter(e=>e.type==="login"),todayLogins=logins.filter(e=>analyticsDateKey(e.at)===todayKey),weekLogins=analyticsSince(7,"login"),active=recentSessions(10);
+  if(!$("analyticsTotalLogins"))return;const filters=analyticsFilters(),events=analyticsFilteredEvents(),logins=events.filter(e=>e.type==="login"),active=recentSessions(10,filters);
+  const sent=countEvents("review_sent",events)+countEvents("corrections_submitted",events),started=countEvents("evaluation_started",events),returned=countEvents("returned_for_adjustments",events),corrected=countEvents("corrections_submitted",events),conceptEvents=events.filter(event=>event.type==="concept_issued");
+  const firstPass=conceptEvents.filter(event=>Number(event.detail?.iteration||1)<=1).length;
+  $("analyticsProcedures").textContent=String(countEvents("procedure_started",events));
+  $("analyticsPending").textContent=String(Math.max(0,sent-started));
+  $("analyticsAdjustments").textContent=String(Math.max(0,returned-corrected));
+  $("analyticsConcepts").textContent=String(conceptEvents.length);
+  $("analyticsAverageTime").textContent=analyticsDurationLabel(averageEvaluationWait(events));
+  $("analyticsFirstPass").textContent=conceptEvents.length?`${Math.round(firstPass/conceptEvents.length*100)}%`:"—";
   $("analyticsTotalLogins").textContent=String(logins.length);
   $("analyticsRecentActive").textContent=String(active.length);
-  $("analyticsSentReviews").textContent=String(countEvents("review_sent")+countEvents("corrections_submitted"));
-  $("analyticsConcepts").textContent=String(countEvents("concept_issued"));
-  $("analyticsTodayLogins").textContent=String(todayLogins.length);
-  $("analyticsWeekLogins").textContent=String(weekLogins.length);
   $("analyticsLastLogin").textContent=logins.length?dateTimeLabel(logins[logins.length-1].at):"Sin registro";
-  renderAnalyticsChart(logins);renderAnalyticsProductivity();renderAnalyticsAlerts();
+  const periodLabel=filters.period==="all"?"Todo el historial local":`Últimos ${filters.period} días`,processLabel=filters.process==="all"?"todos los procesos":processName(filters.process)||filters.process,roleLabel=filters.role==="all"?"todos los roles":filters.role==="asesor"?"evaluador":"elaborador";
+  $("analyticsFilterSummary").textContent=`${periodLabel} · ${processLabel} · ${roleLabel} · ${events.length} evento(s)`;
+  renderAnalyticsFlow(events);renderAnalyticsDistribution(events);renderAnalyticsChart(logins);renderAnalyticsProcessTable(events);renderAnalyticsRoleTable(events);renderAnalyticsProductivity(events);renderAnalyticsAlerts(filters);
+}
+function renderAnalyticsFlow(events){
+  const stages=[["procedure_started","Iniciados"],["review_sent","Enviados"],["evaluation_started","En evaluación"],["returned_for_adjustments","Devueltos"],["corrections_submitted","Subsanados"],["concept_issued","Aprobados"]],counts=stages.map(stage=>countEvents(stage[0],events)),max=Math.max(1,...counts);
+  $("analyticsFlowFunnel").innerHTML=stages.map((stage,index)=>`<div class="flow-stage"><b>${counts[index]}</b><span>${esc(stage[1])}</span><div class="flow-stage-meter"><i style="width:${Math.round(counts[index]/max*100)}%"></i></div></div>`).join("");
+}
+function renderAnalyticsDistribution(events){
+  const rows=[["Envíos",countEvents("review_sent",events)],["Evaluaciones",countEvents("evaluation_started",events)],["Devoluciones",countEvents("returned_for_adjustments",events)],["Subsanaciones",countEvents("corrections_submitted",events)],["Conceptos",countEvents("concept_issued",events)],["PDF generados",countEvents("pdf_generated",events)]],max=Math.max(1,...rows.map(row=>row[1]));
+  $("analyticsStatusDistribution").innerHTML=rows.map(row=>`<div class="analytics-status-row"><span>${esc(row[0])}</span><div class="analytics-status-track"><i style="width:${Math.round(row[1]/max*100)}%"></i></div><b>${row[1]}</b></div>`).join("");
 }
 function renderAnalyticsChart(logins){
   const box=$("analyticsLoginChart");if(!box)return;const days=[...Array(7)].map((_,i)=>{const d=new Date();d.setDate(d.getDate()-(6-i));return d});
   const counts=days.map(day=>logins.filter(e=>analyticsDateKey(e.at)===analyticsDateKey(day)).length),max=Math.max(1,...counts);
   box.innerHTML=days.map((day,i)=>`<div class="analytics-day"><div class="analytics-bar" style="height:${Math.max(6,Math.round((counts[i]/max)*104))}px"></div><b>${counts[i]}</b><span>${esc(analyticsDayLabel(day))}</span></div>`).join("");
+  $("analyticsLoginSummary").textContent=`${counts.reduce((sum,value)=>sum+value,0)} ingreso(s) en los últimos 7 días`;
 }
-function renderAnalyticsProductivity(){
+function renderAnalyticsProcessTable(events){
+  const map=new Map();events.forEach(event=>{const process=analyticsEventProcess(event);if(!process)return;const row=map.get(process)||{process,started:0,sent:0,evaluations:0,returned:0,concepts:0,last:""};if(event.type==="procedure_started")row.started++;if(event.type==="review_sent")row.sent++;if(event.type==="evaluation_started")row.evaluations++;if(event.type==="returned_for_adjustments")row.returned++;if(event.type==="concept_issued")row.concepts++;if(!row.last||new Date(event.at)>new Date(row.last))row.last=event.at;map.set(process,row)});
+  const rows=[...map.values()].sort((a,b)=>new Date(b.last)-new Date(a.last)),body=$("analyticsProcessBody");
+  body.innerHTML=rows.length?rows.map(row=>`<tr><td>${esc(row.process)} — ${esc(processName(row.process)||"Proceso sin nombre")}</td><td>${row.started}</td><td>${row.sent}</td><td>${row.evaluations}</td><td>${row.returned}</td><td>${row.concepts}</td><td>${esc(dateTimeLabel(row.last))}</td></tr>`).join(""):'<tr><td colspan="7" class="analytics-empty">Aún no hay eventos asociados a un proceso para los filtros seleccionados.</td></tr>';
+}
+function renderAnalyticsRoleTable(events){
+  const rows=[["autor","Elaborador"],["asesor","Evaluador"]].map(([role,label])=>{const roleEvents=events.filter(event=>event.role===role),logins=roleEvents.filter(event=>event.type==="login").length,actions=roleEvents.filter(event=>event.type!=="login"&&event.type!=="logout"&&event.type!=="module_view").length,last=roleEvents.sort((a,b)=>new Date(b.at)-new Date(a.at))[0]?.at;return [label,logins,actions,last?dateTimeLabel(last):"Sin actividad"]});
+  $("analyticsRoleBody").innerHTML=rows.map(row=>`<tr><td>${esc(row[0])}</td><td>${row[1]}</td><td>${row[2]}</td><td>${esc(row[3])}</td></tr>`).join("");
+}
+function renderAnalyticsProductivity(events){
   const rows=[
-    ["Procedimientos iniciados",countEvents("procedure_started"),"Cantidad de procedimientos creados o diligenciados en esta prueba."],
-    ["Envíos a evaluación",countEvents("review_sent"),"Procedimientos remitidos al modo evaluador."],
-    ["Evaluaciones iniciadas",countEvents("evaluation_started"),"Revisiones metodológicas que pasaron a estado En evaluación."],
-    ["Devoluciones para ajustes",countEvents("returned_for_adjustments"),"Casos devueltos al constructor para subsanar."],
-    ["Subsanaciones enviadas",countEvents("corrections_submitted"),"Respuestas del constructor remitidas nuevamente al evaluador."],
-    ["Conceptos emitidos",countEvents("concept_issued"),"Evaluaciones cerradas con concepto favorable."],
-    ["PDF generados",countEvents("pdf_generated"),"Reportes descargados desde el asistente."]
+    ["Procedimientos iniciados",countEvents("procedure_started",events),"Procedimientos con diligenciamiento registrado."],
+    ["Envíos a evaluación",countEvents("review_sent",events),"Procedimientos remitidos al evaluador."],
+    ["Evaluaciones iniciadas",countEvents("evaluation_started",events),"Revisiones que pasaron al estado En evaluación."],
+    ["Devoluciones para ajustes",countEvents("returned_for_adjustments",events),"Casos devueltos al elaborador para subsanar."],
+    ["Subsanaciones enviadas",countEvents("corrections_submitted",events),"Ajustes remitidos nuevamente al evaluador."],
+    ["Conceptos favorables",countEvents("concept_issued",events),"Evaluaciones cerradas satisfactoriamente."],
+    ["PDF generados",countEvents("pdf_generated",events),"Reportes descargados desde la aplicación."]
   ];
   if($("analyticsProductivityBody"))$("analyticsProductivityBody").innerHTML=rows.map(row=>`<tr><td><b>${esc(row[0])}</b></td><td>${row[1]}</td><td>${esc(row[2])}</td></tr>`).join("");
 }
-function renderAnalyticsAlerts(){
+function renderAnalyticsAlerts(filters=analyticsFilters()){
   ensureEvaluation();const alerts=[],status=evaluation.status,age=evaluationAgeDays(),failures=evaluationStats().failures;
-  if(status==="Borrador"&&[val("nombre"),val("objetivo"),val("alcance")].some(Boolean))alerts.push(["Borrador activo","Existe un procedimiento en borrador con información diligenciada.","Seguimiento"]);
-  if(["Enviado a evaluación","Subsanado"].includes(status)&&age>=1)alerts.push(["Pendiente de iniciar evaluación",`El procedimiento lleva ${age} día(s) enviado sin inicio de revisión.`,"Atención"]);
-  if(status==="En evaluación"&&age>=2)alerts.push(["Evaluación abierta",`La revisión está en curso desde hace ${age} día(s) sin concepto final.`,"Atención"]);
-  if(status==="Devuelto para ajustes")alerts.push(["Ajustes pendientes","El procedimiento fue devuelto y requiere respuesta del constructor.","Ajustes"]);
-  if(failures>0)alerts.push(["Criterios no cumplidos",`Hay ${failures} criterio(s) con resultado No cumple en la evaluación actual.`,"Calidad"]);
+  const currentProcess=val("proceso"),includeCurrent=filters.process==="all"||filters.process===currentProcess;
+  if(includeCurrent&&status==="Borrador"&&[val("nombre"),val("objetivo"),val("alcance")].some(Boolean))alerts.push(["Borrador activo","Existe un procedimiento en borrador con información diligenciada.","Seguimiento"]);
+  if(includeCurrent&&["Enviado a evaluación","Subsanado"].includes(status)&&age>=1)alerts.push(["Pendiente de iniciar evaluación",`El procedimiento lleva ${age} día(s) enviado sin inicio de revisión.`,"Atención"]);
+  if(includeCurrent&&status==="En evaluación"&&age>=2)alerts.push(["Evaluación abierta",`La revisión está en curso desde hace ${age} día(s) sin concepto final.`,"Atención"]);
+  if(includeCurrent&&status==="Devuelto para ajustes")alerts.push(["Ajustes pendientes","El procedimiento fue devuelto y requiere respuesta del elaborador.","Ajustes"]);
+  if(includeCurrent&&failures>0)alerts.push(["Criterios no cumplidos",`Hay ${failures} criterio(s) con resultado No cumple en la evaluación actual.`,"Calidad"]);
   if(!alerts.length)alerts.push(["Sin alertas críticas","No se identifican alertas en esta prueba local.","OK"]);
   if($("analyticsAlerts"))$("analyticsAlerts").innerHTML=alerts.map(a=>`<div class="alert-item ${a[2]==="OK"?"ok":""}"><span class="rule-icon">${a[2]==="OK"?"✓":"!"}</span><div><b>${esc(a[0])}</b><p>${esc(a[1])}</p></div><span class="alert-tag">${esc(a[2])}</span></div>`).join("");
 }
