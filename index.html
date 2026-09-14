@@ -6,6 +6,9 @@
 <meta name="theme-color" content="#004488">
 <meta name="referrer" content="no-referrer">
 <meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=(), payment=()">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <title>Validador y Estructurador Metodológico de Procedimientos</title>
 <style>
 :root{
@@ -49,7 +52,7 @@ button{cursor:pointer}
 .environment-icon{flex:none;width:68px;height:68px;border-radius:17px;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 9px 22px rgba(0,68,136,.22)}.environment-icon svg{width:42px;height:42px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .environment-copy{min-width:0}.environment-eyebrow{display:block;color:#5D7C94;font-size:10px;font-weight:900;letter-spacing:1.1px;text-transform:uppercase;margin-bottom:3px}.environment-copy strong{display:block;color:var(--navy);font-size:22px;line-height:1.1}.environment-copy p{margin:5px 0 0;color:#60737D;font-size:11px;line-height:1.35}
 .environment-indicator.evaluator{border-left-color:var(--green);background:linear-gradient(100deg,#EDF8F1,#fff)}.environment-indicator.evaluator .environment-icon{background:var(--green);box-shadow:0 9px 22px rgba(29,154,124,.22)}.environment-indicator.evaluator .environment-copy strong{color:#14755F}
-.environment-actions{margin-left:auto;display:flex;align-items:flex-end;gap:8px;flex-direction:column}.admin-environment-badge{display:inline-flex;padding:4px 8px;border-radius:999px;background:#FFF3C4;color:#725700;border:1px solid #E1C65B;font-size:9px;font-weight:900;letter-spacing:.5px;text-transform:uppercase}.environment-switcher{display:flex;padding:4px;border:1px solid #BFCFDB;border-radius:10px;background:#EEF3F5}.environment-switcher button{min-width:104px;padding:8px 11px;border:0;border-radius:7px;background:transparent;color:#536B78;font-size:11px;font-weight:800}.environment-switcher button:hover{color:var(--navy);background:#fff}.environment-switcher button.active{background:var(--navy);color:#fff;box-shadow:0 3px 10px rgba(0,68,136,.18)}.environment-indicator.evaluator .environment-switcher button.active{background:var(--green)}
+.environment-actions{margin-left:auto;display:flex;align-items:flex-end;gap:8px;flex-direction:column}.environment-switcher{display:flex;padding:4px;border:1px solid #BFCFDB;border-radius:10px;background:#EEF3F5}.environment-switcher button{min-width:104px;padding:8px 11px;border:0;border-radius:7px;background:transparent;color:#536B78;font-size:11px;font-weight:800}.environment-switcher button:hover{color:var(--navy);background:#fff}.environment-switcher button.active{background:var(--navy);color:#fff;box-shadow:0 3px 10px rgba(0,68,136,.18)}.environment-indicator.evaluator .environment-switcher button.active{background:var(--green)}
 .status{margin-top:18px;padding:12px;border:1px solid rgba(255,255,255,.16);border-radius:10px;background:rgba(255,255,255,.06);color:#fff}
 .status b{display:block;margin-bottom:5px} .status small{color:#DDE5E9;line-height:1.35}
 .main{padding:20px 28px 55px;max-width:1650px;width:100%;min-width:0;margin:auto}
@@ -316,6 +319,11 @@ td textarea{min-height:66px}
 .decision-chip{background:#FFF1B8;color:#725500;border:1px solid #E5C35A}
 .connector-chip{background:#E8F2FB;color:#3F6178;border:1px solid #A9CBE8}
 .control-chip{background:#E6F5EA;color:#14755F;border:1px solid #B4DEC0}
+.other-responsible-wrap{display:grid;gap:6px;margin-top:7px}
+.other-responsible-wrap input{min-width:190px;background:#fff}
+.other-responsible-note{padding:7px 8px;border:1px solid #E4C75A;border-left:4px solid #B58A00;border-radius:7px;background:#FFFBEC;color:#6E571B;font-size:10px;line-height:1.4}
+.other-responsible-note b{color:#725700}
+.other-responsible-wrap input[aria-invalid="true"]{border-color:#B8382E;background:#FFF7F6}
 .decision-details-row td{background:#FFFDF3;padding:12px 14px;border-top:0}
 .decision-details{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;border-left:4px solid #5D7C94;padding-left:12px}
 .route-box{border:1px solid #E4D486;background:#fff;border-radius:9px;padding:10px}
@@ -391,20 +399,7 @@ body.auth-locked>.app{filter:blur(5px);pointer-events:none;user-select:none}
 #sessionRole.role-badge{display:inline-flex;width:max-content;margin-top:2px;padding:2px 6px;border-radius:999px;background:#EAF4ED;color:#14755F;border:1px solid #B9DEC3;font-size:8px;font-weight:800;letter-spacing:.35px;text-transform:uppercase}
 .session-logout{border:0;background:transparent;color:var(--slate);font-size:10px;font-weight:700;padding:5px;border-radius:6px}
 .session-logout:hover{background:#EEF3F5;color:var(--navy)}
-.admin-layout{display:grid;grid-template-columns:minmax(280px,360px) minmax(0,1fr);gap:18px;align-items:start}
-.admin-form-card,.admin-list-card{border:1px solid var(--line);border-radius:12px;background:#fff;padding:16px}
-.admin-form-card h4,.admin-list-card h4{margin:0 0 12px;color:var(--navy)}
-.admin-form-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}
-.admin-process-list{max-height:190px;overflow:auto;border:1px solid var(--line);border-radius:9px;padding:8px;background:#F8FAFB}
-.admin-process-option{display:flex;align-items:flex-start;gap:7px;padding:5px 4px;font-size:11px;color:var(--text)}
-.admin-process-option input{width:auto;margin-top:2px}
-.admin-toolbar{display:flex;gap:10px;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap}
-.admin-toolbar input{max-width:310px}
-.admin-status{display:inline-flex;padding:3px 7px;border-radius:999px;font-size:9px;font-weight:800;text-transform:uppercase;background:#EAF4ED;color:#14755F}
-.admin-status.inactive{background:#FDECEA;color:#9D241C}
-.admin-user-actions{display:flex;gap:5px;flex-wrap:wrap}
-.admin-user-actions .btn{padding:5px 7px;font-size:9px}
-.admin-note{margin-top:12px;padding:10px;border-radius:9px;background:#FFF8E6;border:1px solid #E7D39A;color:#6E571B;font-size:10px;line-height:1.45}
+.analytics-note{margin-top:12px;padding:10px;border-radius:9px;background:#FFF8E6;border:1px solid #E7D39A;color:#6E571B;font-size:10px;line-height:1.45}
 .analytics-section{margin-top:18px}
 .analytics-section h4{margin:0 0 10px;color:var(--navy)}
 .analytics-bars{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px;align-items:end;min-height:150px;padding:14px;border:1px solid var(--line);border-radius:12px;background:#fff}
@@ -418,25 +413,7 @@ body.auth-locked>.app{filter:blur(5px);pointer-events:none;user-select:none}
 .alert-item b{display:block;color:var(--navy);font-size:12px;margin-bottom:2px}
 .alert-item p{margin:0;color:#526874;font-size:12px;line-height:1.35}
 .alert-tag{font-size:9px;font-weight:900;text-transform:uppercase;color:#725700;background:#FFF0B8;border:1px solid #E4C75A;border-radius:999px;padding:3px 7px}
-.procedure-analytics-intro{display:flex;justify-content:space-between;gap:18px;align-items:flex-start;margin-bottom:16px}
-.procedure-analytics-role{flex:0 0 auto;padding:6px 10px;border-radius:999px;background:#EAF4ED;border:1px solid #B9DEC3;color:#14755F;font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.35px}
-.analytics-progress-list{display:grid;gap:10px}
-.analytics-progress-row{display:grid;grid-template-columns:minmax(150px,1fr) minmax(180px,2fr) 78px;gap:12px;align-items:center;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:#fff}
-.analytics-progress-row b{color:var(--navy);font-size:12px}
-.analytics-progress-track{height:9px;border-radius:999px;background:#E7EEF1;overflow:hidden}
-.analytics-progress-track span{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,var(--green),#14755F)}
-.analytics-progress-state{text-align:right;font-size:10px;font-weight:900;text-transform:uppercase;color:#9D241C}
-.analytics-progress-state.complete{color:#14755F}
-.graph-health-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
-.graph-health-card{padding:12px;border:1px solid var(--line);border-left:5px solid #B58A00;border-radius:10px;background:#FFFBEC}
-.graph-health-card.ok{border-left-color:var(--green);background:#F4FAF6}
-.graph-health-card strong{display:block;font-size:22px;line-height:1;color:var(--navy);margin-bottom:6px}
-.graph-health-card b{display:block;color:var(--navy);font-size:11px;margin-bottom:3px}
-.graph-health-card span{display:block;color:#526874;font-size:10px;line-height:1.35}
-@media(max-width:760px){.procedure-analytics-intro{display:grid}.procedure-analytics-role{width:max-content}.graph-health-grid{grid-template-columns:1fr 1fr}.analytics-progress-row{grid-template-columns:1fr 62px}.analytics-progress-track{grid-column:1/-1;grid-row:2}.analytics-progress-state{grid-column:2;grid-row:1}}
-@media(max-width:430px){.graph-health-grid{grid-template-columns:1fr}}
 @media(max-width:900px){.session-user{order:4}.session-user-data{max-width:210px}}
-@media(max-width:900px){.admin-layout{grid-template-columns:1fr}}
 @media(max-width:520px){.auth-gate{padding:12px}.auth-brand{padding:22px 20px 18px}.auth-form{padding:21px 20px 24px}.auth-brand h1{font-size:22px}.session-user{grid-column:1/-1;width:100%}.session-user-data{max-width:none;flex:1}}
 
 /* ===== Optimización Chrome y diseño adaptable v9.0 ===== */
@@ -461,7 +438,6 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
   .evaluation-summary,.annex-overview,.evaluation-scale{grid-template-columns:repeat(3,minmax(0,1fr))}
   .topbar{display:grid;grid-template-columns:minmax(220px,.8fr) minmax(0,1.2fr);align-items:center}
   .top-actions{width:auto;justify-content:flex-end}
-  .admin-layout{grid-template-columns:minmax(260px,320px) minmax(0,1fr)}
 }
 
 @media screen and (max-width:760px){
@@ -481,16 +457,6 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
   .panel{scroll-margin-top:125px}
   .panel>.actions{flex-direction:column;align-items:stretch}
   .panel>.actions>.btn,.panel>.actions>button{align-self:flex-start}
-  .admin-toolbar{align-items:stretch;flex-direction:column}
-  .admin-toolbar input{max-width:none;width:100%}
-  .admin-form-card,.admin-list-card{padding:13px}
-  .admin-list-card .tablewrap{border:0;overflow:visible;margin:0;max-width:100%}
-  .admin-list-card table{display:block;min-width:0}.admin-list-card thead{display:none}.admin-list-card tbody{display:grid;gap:10px}
-  .admin-list-card tr{display:block;border:1px solid var(--line);border-left:4px solid var(--green);border-radius:10px;padding:8px;background:#fff;box-shadow:0 3px 10px rgba(0,68,136,.05)}
-  .admin-list-card td{display:grid;grid-template-columns:88px minmax(0,1fr);gap:8px;padding:7px 5px;border-bottom:1px solid #E8EDEF;overflow-wrap:anywhere}
-  .admin-list-card td:last-child{border-bottom:0}.admin-list-card td:before{content:attr(data-label);color:var(--muted);font-size:9px;font-weight:900;letter-spacing:.35px;text-transform:uppercase}
-  .admin-list-card td.empty{display:block;text-align:center}.admin-list-card td.empty:before{display:none}
-  .admin-user-actions{min-width:0}
   .tablewrap{margin-inline:-4px;max-width:calc(100% + 8px)}
   #actividadesPanel .tablewrap{max-height:65dvh}
   .flowwrap{min-height:300px;max-height:62dvh}
@@ -522,8 +488,6 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
   .preview .dochead{min-width:0}
   .criterion-title{align-items:flex-start}
   .criterion-result label{min-height:44px}
-  .admin-form-actions{display:grid;grid-template-columns:1fr 1fr}.admin-form-actions .btn{width:100%}
-  .admin-user-actions{min-width:210px}
 }
 
 @media screen and (max-width:370px){
@@ -532,6 +496,32 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
   .topbar h2{font-size:18px}
   .procedure-pin-label{font-size:9px}
 }
+
+
+/* ===== Sistema visual claro v10.0 ===== */
+:root{--navy:#123A60;--green:#0E9E78;--yellow:#1F6FD0;--warning:#8F5D08;--gray:#5A6B7A;--slate:#5A6B7A;--bg:#EEF2F7;--paper:#FFFFFF;--soft:#EFF3F8;--line:#DCE4ED;--text:#101E2E;--muted:#5A6B7A;--danger:#C4362A;--shadow:0 2px 5px rgba(16,30,46,.06),0 18px 44px rgba(16,30,46,.08);--ease:cubic-bezier(.22,.61,.36,1)}
+body{font-family:"Inter","Aptos","Segoe UI",Arial,sans-serif;letter-spacing:-.005em;background-color:var(--bg);background-image:radial-gradient(circle at 4% 0,rgba(31,111,208,.14),transparent 34rem),radial-gradient(circle at 96% 0,rgba(14,158,120,.13),transparent 32rem);background-attachment:fixed}
+.app{grid-template-columns:286px minmax(0,1fr)}
+.sidebar{background:radial-gradient(circle at 85% 4%,rgba(14,158,120,.20),transparent 34%),linear-gradient(185deg,#0E4667 0%,#0A3454 52%,#07283F 100%);padding:20px 14px;box-shadow:8px 0 28px rgba(8,30,48,.18)}
+.brand{text-align:center;border-bottom-color:rgba(255,255,255,.16);padding-bottom:18px}.brand-product{display:grid;justify-items:center;padding:4px 7px}.brand-mark{width:52px;height:52px;display:flex;align-items:center;justify-content:center;margin-bottom:11px;border-radius:16px;background:linear-gradient(145deg,#17B88E,#1F6FD0);color:#fff;box-shadow:0 9px 24px rgba(4,24,39,.28),inset 0 1px 0 rgba(255,255,255,.25)}.brand-mark svg{width:29px;height:29px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}.brand-product h1{font-family:"Inter","Aptos","Segoe UI",Arial,sans-serif;font-size:16px;line-height:1.25;letter-spacing:-.02em;text-align:center}.brand-product small{color:rgba(255,255,255,.76);font-size:10px;letter-spacing:.45px}.brand-rule{width:44px;height:3px;border-radius:99px;margin:11px auto 0;background:linear-gradient(90deg,#20C497,#5AA3FF)}
+.nav{gap:6px}.nav-section-label{color:rgba(255,255,255,.68);font-size:9px;letter-spacing:1.4px}.navbtn{min-height:39px;border:1px solid transparent;border-left:0;padding:8px 10px;border-radius:11px;color:rgba(255,255,255,.86);transition:transform 160ms var(--ease),background 160ms var(--ease),box-shadow 160ms var(--ease)}.navbtn:hover{transform:translateX(2px);border-left-color:transparent;background:rgba(255,255,255,.10)}.navbtn.active{position:relative;border-color:rgba(255,255,255,.18);border-left:0;background:linear-gradient(110deg,rgba(14,158,120,.98),rgba(31,111,208,.88));box-shadow:0 8px 18px rgba(3,27,43,.24),inset 0 1px 0 rgba(255,255,255,.22)}.navbtn.active:before{content:"";position:absolute;left:0;top:8px;bottom:8px;width:3px;border-radius:0 4px 4px 0;background:#8EF3D5;box-shadow:0 0 10px rgba(142,243,213,.85)}.nav-number{color:rgba(255,255,255,.64)}.nav-label{font-size:12.8px;font-weight:600}
+.main{padding:22px 30px 60px}.procedure-pin{border:1px solid rgba(14,158,120,.28);border-left:4px solid var(--green);border-radius:14px;background:rgba(255,255,255,.88);box-shadow:0 2px 5px rgba(16,30,46,.05),0 12px 30px rgba(16,30,46,.07);backdrop-filter:blur(14px) saturate(180%)}.procedure-pin-label{color:#0A7A5D}
+.topbar{position:relative;z-index:6;border-radius:18px;padding:15px 17px;background:rgba(255,255,255,.82);box-shadow:0 2px 5px rgba(16,30,46,.06),0 14px 34px rgba(16,30,46,.07);backdrop-filter:blur(14px) saturate(180%)}.topbar h2{font-family:"Inter","Aptos","Segoe UI",Arial,sans-serif;color:var(--text);font-size:22px;font-weight:800;letter-spacing:-.02em}.session-user{order:1}.notification-center{order:2}.save-wrap{order:3}.action-menu{order:4}.workflow-action{order:5}
+.environment-indicator{border:1px solid rgba(31,111,208,.22);border-left:6px solid #1F6FD0;border-radius:18px;background:linear-gradient(110deg,rgba(247,249,252,.93),rgba(255,255,255,.9));box-shadow:0 2px 5px rgba(16,30,46,.04),0 12px 28px rgba(16,30,46,.06)}.environment-icon{background:linear-gradient(145deg,#123A60,#1F6FD0);box-shadow:0 10px 24px rgba(31,111,208,.22)}.environment-indicator.evaluator{border-left-color:var(--green);background:linear-gradient(110deg,rgba(238,249,246,.94),rgba(255,255,255,.9))}.environment-indicator.evaluator .environment-icon{background:linear-gradient(145deg,#0A7A5D,#17B88E)}
+.panel{position:relative;border:1px solid var(--line);border-top:3px solid transparent;border-radius:24px;padding:26px;background:#fff;box-shadow:var(--shadow)}.panel:before{content:"";position:absolute;z-index:1;left:0;right:0;top:-3px;height:4px;border-radius:24px 24px 0 0;background:linear-gradient(90deg,var(--green),#1F6FD0,rgba(31,111,208,.2))}.panel.active{animation:panel-in 280ms var(--ease)}@keyframes panel-in{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.panel>h3,.panel>.actions h3{display:flex;align-items:center;gap:10px;color:var(--text);font-family:"Inter","Aptos","Segoe UI",Arial,sans-serif;font-size:20px;font-weight:800;letter-spacing:-.02em}.panel>h3:before,.panel>.actions h3:before{content:"";flex:none;width:4px;height:24px;border-radius:99px;background:linear-gradient(180deg,var(--green),#1F6FD0)}
+.field label{font-size:12px;color:var(--text);font-weight:700}.field input,.field textarea,.field select,td input,td textarea,td select{border-color:var(--line);border-radius:10px;background:#F7F9FC;color:var(--text);padding:11px}.field input:focus,.field textarea:focus,.field select:focus,td input:focus,td textarea:focus,td select:focus{background:#fff;border-color:var(--green);box-shadow:0 0 0 3px rgba(14,158,120,.22)}.field input[readonly]{background:#EFF3F8;color:var(--text);font-weight:700}
+.btn{min-height:35px;border-color:var(--line);border-radius:10px;background:#fff;color:var(--text);font-size:12.5px;font-weight:600;box-shadow:0 1px 2px rgba(16,30,46,.05);transition:transform 150ms var(--ease),box-shadow 150ms var(--ease),border-color 150ms var(--ease)}.btn:hover{transform:translateY(-1px);border-color:rgba(14,158,120,.55);background:#fff;box-shadow:0 5px 14px rgba(16,30,46,.10)}.btn:active{transform:translateY(0)}.btn.primary{border-color:#0A8264;background:linear-gradient(135deg,#0E9E78,#0A8264);color:#fff;box-shadow:0 5px 14px rgba(14,158,120,.24)}.btn.dark{border-color:#123A60;background:linear-gradient(135deg,#123A60,#0B2B49);color:#fff}.btn:disabled{opacity:.5;filter:saturate(.3);transform:none;box-shadow:none}
+.action-menu-popover,.notification-popover{border-radius:18px;border-color:var(--line);box-shadow:0 6px 14px rgba(16,30,46,.08),0 24px 54px rgba(16,30,46,.14)}.menu-action-divider{height:1px;margin:4px 7px;background:var(--line)}.notification-bell{border-color:var(--line);color:var(--text)}.session-logout{width:30px;height:30px;display:flex;align-items:center;justify-content:center;border-radius:8px}.session-logout svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}.session-logout:hover{background:#FFF0EE;color:var(--danger)}.save-wrap>.btn,.export-actions{display:none!important}.save-state{max-width:none}
+.tablewrap{border-color:var(--line);border-radius:14px;box-shadow:0 1px 2px rgba(16,30,46,.03)}th{padding:12px 10px;background:linear-gradient(110deg,#123A60,#185A8F);font-size:11px;letter-spacing:.55px;text-transform:uppercase}td{padding:10px;border-bottom-color:var(--line);font-size:13px}tbody tr{transition:background 140ms var(--ease)}tbody tr:hover>td{background-color:rgba(14,158,120,.05)}
+.smallbtn,.flow-tool{min-width:31px;min-height:31px;border-color:var(--line);border-radius:8px;background:#fff;transition:transform 140ms var(--ease),border-color 140ms var(--ease),color 140ms var(--ease)}.smallbtn:hover,.flow-tool:hover{transform:translateY(-1px);border-color:rgba(196,54,42,.45);color:var(--danger)}
+.kpi{position:relative;overflow:hidden;border:1px solid var(--line);border-left:4px solid var(--green);border-top:1px solid var(--line);border-radius:14px;background:#fff;box-shadow:0 2px 6px rgba(16,30,46,.05);transition:transform 160ms var(--ease),box-shadow 160ms var(--ease)}.kpi:hover{transform:translateY(-3px);box-shadow:0 8px 20px rgba(16,30,46,.09)}.kpi b{font-size:30px;background:linear-gradient(110deg,#0A7A5D,#1F6FD0);-webkit-background-clip:text;background-clip:text;color:transparent}
+.rule-icon{color:#fff}.rule.ok .rule-icon{background:#0A7A5D;color:#fff}.rule.warn .rule-icon{background:#8F5D08;color:#fff}.rule.danger .rule-icon{background:#C4362A;color:#fff}.rule.info .rule-icon{background:#14509B;color:#fff}
+.flowwrap{background-color:#F4F7FA;background-image:radial-gradient(circle,#B8C6D3 1.15px,transparent 1.15px);background-size:18px 18px;border-color:var(--line);padding:28px}.flow-toolbar{border-color:var(--line);background:rgba(255,255,255,.84)}#flowSvg{box-shadow:0 5px 12px rgba(16,30,46,.08),0 22px 48px rgba(16,30,46,.12)}
+.auth-card{border-radius:24px;border-color:var(--line);box-shadow:0 5px 14px rgba(16,30,46,.10),0 28px 70px rgba(16,30,46,.16)}button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible,summary:focus-visible{outline:2px solid var(--green);outline-offset:2px}
+@media(max-width:1050px){.app{display:block}.sidebar{position:sticky;top:0;height:auto;padding:9px 14px}.brand{display:none}.nav{display:flex;overflow:auto}.main{padding:18px 20px 48px}.navbtn:hover{transform:translateY(-1px)}}
+@media(max-width:760px){.sidebar{padding:max(8px,env(safe-area-inset-top)) 8px 8px}.main{padding:10px max(10px,env(safe-area-inset-right)) calc(36px + env(safe-area-inset-bottom)) max(10px,env(safe-area-inset-left))}.panel{padding:18px;border-radius:18px}.topbar{padding:13px;border-radius:16px}.btn,.smallbtn,.flow-tool{min-height:44px}.field input,.field textarea,.field select,td input,td textarea,td select{font-size:16px}}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
 
 </style>
 </head>
@@ -560,7 +550,6 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
           <select id="authMode" required>
             <option value="autor">Constructor de procedimientos</option>
             <option value="asesor">Evaluador metodológico</option>
-            <option value="admin">Administrador de analítica</option>
           </select>
         </div>
       </div>
@@ -573,11 +562,10 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 <div class="app">
 <aside class="sidebar">
   <div class="brand">
-    <div class="brand-product"><h1>Validador y Estructurador Metodológico<br>de Procedimientos</h1><small>Consulting Tool Code: G1-2026</small></div>
+    <div class="brand-product"><div class="brand-mark" aria-hidden="true"><svg viewBox="0 0 48 48"><path d="M9 8h25l6 6v26H9z"/><path d="M34 8v7h6M17 23l5 5 10-12M17 34h15"/></svg></div><h1>Validador y Estructurador Metodológico<br>de Procedimientos</h1><small>Consulting Tool Code: G1-2026</small></div>
     <div class="brand-rule"></div>
   </div>
   <div class="nav">
-    <button class="navbtn admin-nav role-hidden" data-tab="administration"><span class="nav-number">01</span><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V5"/><path d="M4 19h16"/><rect x="7" y="11" width="3" height="5" rx=".5"/><rect x="12" y="7" width="3" height="9" rx=".5"/><rect x="17" y="9" width="3" height="7" rx=".5"/></svg><span class="nav-label">Analítica administrativa</span></button>
     <button class="navbtn advisor-nav role-hidden" data-tab="advisorInbox"><span class="nav-number">01</span><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4z"/><path d="M4 10h5l2 3h2l2-3h5"/></svg><span class="nav-label">Bandeja de evaluaciones</span></button>
     <button class="navbtn advisor-nav role-hidden" data-tab="advisorProcedure"><span class="nav-number">02</span><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3.5h9l3 3v14H6z"/><path d="M15 3.5v3h3M9 11h6M9 14h6M9 17h4"/></svg><span class="nav-label">Procedimiento recibido</span></button>
     <button class="navbtn active author-nav" data-tab="general"><span class="nav-number">01</span><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5h16v13H4z"/><path d="M8 9h8M8 13h5"/><circle cx="17" cy="14.5" r="1.5"/></svg><span class="nav-label">Identificación</span></button>
@@ -593,7 +581,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
     <button class="navbtn shared-nav" data-tab="guia"><span class="nav-number">A1</span><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6.5h6l2 2h8v11H4z"/><path d="M8 13h8M8 16h5"/></svg><span class="nav-label">Guía del flujograma</span></button>
     <button class="navbtn shared-nav" data-tab="evaluationAnnex"><span class="nav-number">A2</span><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3.5h12v17H6z"/><path d="M9 8h6M9 12h3M9 16h3"/><path d="m14.5 15.5 1.5 1.5 3-3"/></svg><span class="nav-label">Criterios de evaluación</span></button>
     <div class="nav-section-label">Analítica</div>
-    <button class="navbtn shared-nav" data-tab="analytics"><span class="nav-number">D1</span><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V5"/><path d="M4 19h16"/><rect x="7" y="12" width="3" height="4" rx=".5"/><rect x="12" y="8" width="3" height="8" rx=".5"/><rect x="17" y="5" width="3" height="11" rx=".5"/></svg><span class="nav-label">Analítica del procedimiento</span></button>
+    <button class="navbtn shared-nav" data-tab="analytics"><span class="nav-number">D1</span><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V5"/><path d="M4 19h16"/><rect x="7" y="12" width="3" height="4" rx=".5"/><rect x="12" y="8" width="3" height="8" rx=".5"/><rect x="17" y="5" width="3" height="11" rx=".5"/></svg><span class="nav-label">Analítica</span></button>
   </div>
 </aside>
 
@@ -607,7 +595,6 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
     <div class="environment-icon" id="environmentIcon" aria-hidden="true"><svg viewBox="0 0 48 48"><path d="M8 9h24l8 8v22H8z"/><path d="M32 9v8h8M15 23h18M15 29h18M15 35h10"/><path d="m12 12 4 4 7-8"/></svg></div>
     <div class="environment-copy"><span class="environment-eyebrow">Ambiente de trabajo activo</span><strong id="environmentTitle">Constructor</strong><p id="environmentDescription">Diligenciamiento, revisión y envío del procedimiento.</p></div>
     <div class="environment-actions">
-      <span class="admin-environment-badge role-hidden" id="adminEnvironmentBadge">Administrador</span>
       <div class="environment-switcher role-hidden" id="environmentSwitcher" aria-label="Cambiar ambiente de trabajo">
         <button type="button" id="switchConstructor" onclick="switchEnvironment('autor')">Constructor</button>
         <button type="button" id="switchEvaluator" onclick="switchEnvironment('asesor')">Evaluador</button>
@@ -620,7 +607,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
       <div class="session-user" id="sessionUser" aria-label="Usuario autenticado">
         <span class="session-user-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4.5 20c.8-4.1 3.3-6.2 7.5-6.2s6.7 2.1 7.5 6.2"/></svg></span>
         <span class="session-user-data"><b>USUARIO</b><span id="sessionEmail">Sin sesión</span><span class="role-badge" id="sessionRole">Autor</span></span>
-        <button class="session-logout" type="button" onclick="logoutAssistant()" title="Cerrar la sesión actual">Cerrar sesión</button>
+        <button class="session-logout" type="button" onclick="logoutAssistant()" title="Cerrar la sesión actual" aria-label="Cerrar sesión"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 5H5v14h5M14 8l4 4-4 4M8 12h10"/></svg></button>
       </div>
       <div class="notification-center" id="notificationCenter">
         <button class="notification-bell" type="button" aria-label="Abrir notificaciones" aria-expanded="false" onclick="toggleNotifications(event)"><svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg><span class="notification-count" id="notificationCount"></span></button>
@@ -630,6 +617,9 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
       <div class="action-menu" id="fileMenu">
         <button class="btn action-menu-trigger" type="button" aria-haspopup="menu" aria-expanded="false" onclick="toggleFileMenu(event)">Archivo</button>
         <div class="action-menu-popover" role="menu">
+          <button class="menu-action" role="menuitem" onclick="closeFileMenu();saveLocal()">Guardar<small>Guardar los cambios actuales en este navegador</small></button>
+          <button class="menu-action" role="menuitem" onclick="closeFileMenu();generatePDF()">Exportar a PDF<small>Descargar el reporte con respaldo editable</small></button>
+          <div class="menu-action-divider" aria-hidden="true"></div>
           <button class="menu-action" role="menuitem" onclick="closeFileMenu();newProcedure()">Nuevo procedimiento<small>Iniciar un formulario vacío</small></button>
           <button class="menu-action" role="menuitem" onclick="closeFileMenu();openBackup()">Cargar respaldo PDF o JSON<small>Recuperar la información editable del procedimiento</small></button>
         </div>
@@ -640,37 +630,6 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
       <input id="backupInput" type="file" accept=".pdf,.json,application/pdf,application/json" hidden onchange="importBackup(this.files[0]);this.value=''">
     </div>
   </div>
-
-  <section class="panel" id="administrationPanel">
-    <div class="actions" style="justify-content:space-between;margin-bottom:14px">
-      <div><h3 style="margin:0 0 4px">Analítica administrativa</h3><div class="hint">Tablero local de prueba para uso general, productividad y alertas. Para métricas institucionales entre varios equipos se requiere backend.</div></div>
-      <button class="btn" type="button" onclick="resetAnalyticsDemo()">Reiniciar datos de prueba</button>
-    </div>
-    <div class="kpirow">
-      <div class="kpi"><b id="analyticsTotalLogins">0</b><span>Ingresos registrados</span></div>
-      <div class="kpi"><b id="analyticsRecentActive">0</b><span>Sesiones recientes</span></div>
-      <div class="kpi"><b id="analyticsSentReviews">0</b><span>Envíos a evaluación</span></div>
-      <div class="kpi"><b id="analyticsConcepts">0</b><span>Conceptos emitidos</span></div>
-    </div>
-    <div class="analytics-section">
-      <h4>Uso general</h4>
-      <div class="grid3">
-        <div class="kpi"><b id="analyticsTodayLogins">0</b><span>Ingresos de hoy</span></div>
-        <div class="kpi"><b id="analyticsWeekLogins">0</b><span>Ingresos últimos 7 días</span></div>
-        <div class="kpi"><b id="analyticsLastLogin">Sin registro</b><span>Último ingreso</span></div>
-      </div>
-      <div class="analytics-bars" id="analyticsLoginChart" aria-label="Ingresos últimos siete días"></div>
-    </div>
-    <div class="analytics-section">
-      <h4>Productividad</h4>
-      <div class="tablewrap"><table><thead><tr><th>Indicador</th><th>Conteo</th><th>Lectura administrativa</th></tr></thead><tbody id="analyticsProductivityBody"></tbody></table></div>
-    </div>
-    <div class="analytics-section">
-      <h4>Alertas administrativas</h4>
-      <div class="alert-list" id="analyticsAlerts"></div>
-    </div>
-    <div class="admin-note"><b>Alcance de la prueba:</b> estos datos se guardan solo en este navegador y no contienen documentos, claves ni información personal. La medición real de usuarios conectados requiere un backend en el VPS.</div>
-  </section>
 
   <section class="panel" id="advisorInboxPanel">
     <div class="actions" style="justify-content:space-between"><div><h3 style="margin-bottom:4px">Bandeja de evaluaciones</h3><div class="hint">Procedimientos enviados para revisión metodológica en este entorno local.</div></div><button class="btn" type="button" onclick="renderAdvisorInbox()">Actualizar bandeja</button></div>
@@ -935,34 +894,34 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
   </section>
 
   <section class="panel" id="analyticsPanel">
-    <div class="procedure-analytics-intro">
-      <div><h3 style="margin:0 0 5px">Analítica del procedimiento</h3><div class="hint" id="procedureAnalyticsIntro">Resumen del avance, la evaluación y la salud metodológica del procedimiento actual.</div></div>
-      <span class="procedure-analytics-role" id="procedureAnalyticsRole">Elaborador</span>
+    <div class="actions" style="justify-content:space-between;margin-bottom:14px">
+      <div><h3 style="margin:0 0 4px">Analítica</h3><div class="hint">Tablero local de prueba para consultar uso general, productividad y alertas del flujo de trabajo.</div></div>
+      <button class="btn" type="button" onclick="resetAnalyticsDemo()">Reiniciar datos de prueba</button>
     </div>
     <div class="kpirow">
-      <div class="kpi"><b id="procedureAnalyticsCompletion">0%</b><span>Avance de construcción</span></div>
-      <div class="kpi"><b id="procedureAnalyticsActivities">0</b><span>Actividades del flujo</span></div>
-      <div class="kpi"><b id="procedureAnalyticsControls">0</b><span>Puntos de control</span></div>
-      <div class="kpi"><b id="procedureAnalyticsAlerts">0</b><span>Alertas del grafo</span></div>
+      <div class="kpi"><b id="analyticsTotalLogins">0</b><span>Ingresos registrados</span></div>
+      <div class="kpi"><b id="analyticsRecentActive">0</b><span>Sesiones recientes</span></div>
+      <div class="kpi"><b id="analyticsSentReviews">0</b><span>Envíos a evaluación</span></div>
+      <div class="kpi"><b id="analyticsConcepts">0</b><span>Conceptos emitidos</span></div>
     </div>
     <div class="analytics-section">
-      <h4>Avance por componente</h4>
-      <div class="analytics-progress-list" id="procedureAnalyticsProgress"></div>
-    </div>
-    <div class="analytics-section">
-      <h4>Estado de la evaluación</h4>
+      <h4>Uso general</h4>
       <div class="grid3">
-        <div class="kpi"><b id="procedureAnalyticsEvalStatus">Borrador</b><span>Estado actual</span></div>
-        <div class="kpi"><b id="procedureAnalyticsEvalScore">0%</b><span>Calificación ponderada</span></div>
-        <div class="kpi"><b id="procedureAnalyticsEvalProgress">0 de 31</b><span>Criterios evaluados</span></div>
+        <div class="kpi"><b id="analyticsTodayLogins">0</b><span>Ingresos de hoy</span></div>
+        <div class="kpi"><b id="analyticsWeekLogins">0</b><span>Ingresos últimos 7 días</span></div>
+        <div class="kpi"><b id="analyticsLastLogin">Sin registro</b><span>Último ingreso</span></div>
       </div>
-      <div class="hint" id="procedureAnalyticsIteration" style="margin-top:9px">Iteración 1 · Sin asesor asignado</div>
+      <div class="analytics-bars" id="analyticsLoginChart" aria-label="Ingresos últimos siete días"></div>
     </div>
     <div class="analytics-section">
-      <h4>Salud del grafo</h4>
-      <div class="graph-health-grid" id="procedureAnalyticsGraph"></div>
+      <h4>Productividad</h4>
+      <div class="tablewrap"><table><thead><tr><th>Indicador</th><th>Conteo</th><th>Lectura</th></tr></thead><tbody id="analyticsProductivityBody"></tbody></table></div>
     </div>
-    <div class="admin-note"><b>Alcance:</b> esta analítica resume únicamente el procedimiento abierto en este navegador. No compara información de otros usuarios o equipos.</div>
+    <div class="analytics-section">
+      <h4>Alertas</h4>
+      <div class="alert-list" id="analyticsAlerts"></div>
+    </div>
+    <div class="analytics-note"><b>Alcance de la prueba:</b> estos datos se guardan solo en este navegador y no contienen documentos, claves ni información personal. La medición institucional entre equipos requerirá el backend del VPS.</div>
   </section>
 </main>
 </div>
@@ -974,7 +933,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 <script>
 const $ = id => document.getElementById(id);
 let norms=[], activities=[], annexes=[], changes=[];
-let currentRole="autor", currentProfile={username:"",roleName:"Elaborador de Documentos",environment:"autor",isAdmin:false,canSwitchEnvironment:false,processes:[]}, evaluation=null, notifications=[], activeEvaluationGroupId="";
+let currentRole="autor", currentProfile={username:"",roleName:"Elaborador de Documentos",environment:"autor",canSwitchEnvironment:false,processes:[]}, evaluation=null, notifications=[], activeEvaluationGroupId="";
 
 const evaluationGroups=[
   {id:"objetivo",name:"Objetivo",weight:8,description:"Claridad, finalidad y coherencia del objetivo.",questions:[
@@ -1065,21 +1024,19 @@ const AUTH_SESSION_KEY="gestion_asistente_demo_session_v1";
 const ANALYTICS_KEY="gestion_asistente_analytics_v1";
 const ANALYTICS_SESSION_KEY="gestion_asistente_analytics_session_v1";
 const DEMO_USERS={
-  autor:{username:"constructor_prueba",roleName:"Constructor de procedimientos",environment:"autor",isAdmin:false,canSwitchEnvironment:false},
-  asesor:{username:"asesor_prueba",roleName:"Evaluador metodológico",environment:"asesor",isAdmin:false,canSwitchEnvironment:false},
-  admin:{username:"admin_analitica",roleName:"Administrador de analítica",environment:"admin",isAdmin:true,canSwitchEnvironment:false}
+  autor:{username:"constructor_prueba",roleName:"Constructor de procedimientos",environment:"autor",canSwitchEnvironment:false},
+  asesor:{username:"asesor_prueba",roleName:"Evaluador metodológico",environment:"asesor",canSwitchEnvironment:false}
 };
 
 function allProcessCodes(){return processGroups.flatMap(group=>group.items.map(item=>item[0]))}
 function demoProfileFor(environment){
-  const key=environment==="admin"?"admin":environment==="asesor"?"asesor":"autor",template=DEMO_USERS[key];
-  return {...template,processes:key==="admin"?[]:allProcessCodes()};
+  const key=environment==="asesor"?"asesor":"autor",template=DEMO_USERS[key];
+  return {...template,processes:allProcessCodes()};
 }
 function assignedProcessCodes(profile=currentProfile){return Array.isArray(profile?.processes)?profile.processes:allProcessCodes()}
 function assignedAdvisorForProcess(code){return code&&allProcessCodes().includes(code)?DEMO_USERS.asesor.username:""}
 function canAccessCurrentProcess(){const code=val("proceso");return !!code&&assignedProcessCodes().includes(code)}
 function assignedProcessesLabel(){
-  if(currentProfile.isAdmin)return"Administración general";
   const labels=assignedProcessCodes().map(code=>`${code} — ${processName(code)||code}`);
   return labels.length?labels.join(", "):"Sin procesos asignados";
 }
@@ -1099,7 +1056,7 @@ function readAuthStore(storage,key,fallback){
 function normalizeUsername(value){return String(value||"").trim().toLowerCase()}
 function safeSessionName(value,environment){
   const cleaned=normalizeUsername(value).replace(/[^a-z0-9._-]+/g,"_").replace(/^_+|_+$/g,"");
-  return cleaned||DEMO_USERS[environment==="admin"?"admin":environment==="asesor"?"asesor":"autor"].username;
+  return cleaned||DEMO_USERS[environment==="asesor"?"asesor":"autor"].username;
 }
 function analyticsStore(){return readAuthStore(localStorage,ANALYTICS_KEY,{events:[],sessions:{},started:false})}
 function saveAnalyticsStore(store){try{localStorage.setItem(ANALYTICS_KEY,JSON.stringify(store))}catch(e){}}
@@ -1116,7 +1073,6 @@ function recordAnalytics(type,detail={}){
   store.events=store.events.slice(-700);
   store.sessions[sessionId]={role:currentRole||detail.role||"",lastSeen:now};
   saveAnalyticsStore(store);
-  if(currentRole==="admin")renderAdminAnalytics();
 }
 function analyticsHeartbeat(){
   if(!currentProfile.username)return;
@@ -1124,7 +1080,6 @@ function analyticsHeartbeat(){
   store.sessions=store.sessions&&typeof store.sessions==="object"?store.sessions:{};
   store.sessions[sessionId]={role:currentRole,lastSeen:now};
   saveAnalyticsStore(store);
-  if(currentRole==="admin")renderAdminAnalytics();
 }
 function markProcedureStarted(){
   const defaultActivities=new Set(["Inicio","Nueva actividad","Fin"]);
@@ -1145,9 +1100,9 @@ function clearAuthError(){
 }
 function setAuthenticatedState(username,profile=null,preferredEnvironment=""){
   const active=!!username&&!!profile;
-  currentProfile=active?{username,...profile}:{username:"",roleName:"Elaborador de Documentos",environment:"autor",isAdmin:false,canSwitchEnvironment:false,processes:[]};
+  currentProfile=active?{username,...profile}:{username:"",roleName:"Elaborador de Documentos",environment:"autor",canSwitchEnvironment:false,processes:[]};
   const allowedEnvironment=currentProfile.canSwitchEnvironment&&["autor","asesor"].includes(preferredEnvironment)?preferredEnvironment:currentProfile.environment;
-  currentRole=allowedEnvironment==="admin"?"admin":allowedEnvironment==="asesor"?"asesor":"autor";
+  currentRole=allowedEnvironment==="asesor"?"asesor":"autor";
   document.body.classList.toggle("auth-locked",!active);
   $("authGate").classList.toggle("hidden",active);
   $("sessionEmail").textContent=active?username:"Sin sesión";
@@ -1156,25 +1111,24 @@ function setAuthenticatedState(username,profile=null,preferredEnvironment=""){
   if(active){
     $("sessionRole").title=`Procesos asignados: ${assignedProcessesLabel()}`;
     analyticsHeartbeat();
-    if(currentRole==="admin")renderAdminAnalytics();
     document.querySelector(".navbtn.active")?.focus({preventScroll:true});
   }else $("sessionRole").removeAttribute("title");
 }
 function handleAuth(event){
   event.preventDefault();clearAuthError();
-  const environment=$("authMode")?.value==="admin"?"admin":$("authMode")?.value==="asesor"?"asesor":"autor",profile=demoProfileFor(environment),submit=$("authSubmit");
+  const environment=$("authMode")?.value==="asesor"?"asesor":"autor",profile=demoProfileFor(environment),submit=$("authSubmit");
   const username=safeSessionName($("authEmail").value,environment);
   submit.disabled=true;submit.textContent="Abriendo...";
   try{
     sessionStorage.setItem(AUTH_SESSION_KEY,JSON.stringify({username,environment:profile.environment,loginAt:new Date().toISOString(),demo:true}));
     setAuthenticatedState(username,profile,profile.environment);recordAnalytics("login",{role:profile.environment});
-    toast(`Modo ${profile.environment==="admin"?"Administrador":profile.environment==="asesor"?"Evaluador":"Constructor"} activado.`);
+    toast(`Modo ${profile.environment==="asesor"?"Evaluador":"Constructor"} activado.`);
   }catch(e){
     console.error(e);showAuthError("No fue posible abrir el modo de prueba en este navegador. Intente nuevamente.");
   }finally{submit.disabled=false;submit.textContent="Entrar en modo de prueba"}
 }
 function initAuth(){
-  const session=readAuthStore(sessionStorage,AUTH_SESSION_KEY,null),environment=session?.environment==="admin"?"admin":session?.environment==="asesor"?"asesor":session?.environment==="autor"?"autor":"";
+  const session=readAuthStore(sessionStorage,AUTH_SESSION_KEY,null),environment=session?.environment==="asesor"?"asesor":session?.environment==="autor"?"autor":"";
   if(session?.demo&&environment){setAuthenticatedState(safeSessionName(session?.username,environment),demoProfileFor(environment),environment);return}
   sessionStorage.removeItem(AUTH_SESSION_KEY);setAuthenticatedState("",null);
   setTimeout(()=>$("authEmail")?.focus(),80);
@@ -1254,34 +1208,25 @@ function initProcesses(){
     processGroups.map(g=>`<optgroup label="${g.group}">${g.items.map(i=>`<option value="${i[0]}">${i[2]==="child"?"↳ ":""}${i[0]} — ${i[1]}</option>`).join("")}</optgroup>`).join("");
 }
 
-let adminEditingUsername="";
-function isAdministrator(){return currentRole==="admin"&&!!currentProfile.isAdmin}
-function requireAdministrator(){toast("La administración de usuarios requiere un backend seguro.");return false}
-function adminAssignableProcesses(){return[]}
-function selectedAdminProcesses(){return[]}
-function renderAdminProcessSelector(){}
-function resetAdminUserForm(){adminEditingUsername=""}
-function editManagedUser(){}
-function saveManagedUser(event){event?.preventDefault();requireAdministrator()}
-function toggleManagedUser(){requireAdministrator()}
-function resetManagedPassword(){requireAdministrator()}
-function deleteManagedUser(){requireAdministrator()}
-function renderAdminUsers(){renderAdminAnalytics()}
 function analyticsEvents(type=""){const events=analyticsStore().events||[];return type?events.filter(e=>e.type===type):events}
 function analyticsSince(days,type=""){
   const threshold=Date.now()-days*86400000;
   return analyticsEvents(type).filter(e=>new Date(e.at).getTime()>=threshold);
 }
-function analyticsDateKey(date){return date.toISOString().slice(0,10)}
+function analyticsDateKey(value){
+  const parts=new Intl.DateTimeFormat("en-US",{timeZone:"America/Bogota",year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(new Date(value));
+  const fields=Object.fromEntries(parts.filter(part=>part.type!=="literal").map(part=>[part.type,part.value]));
+  return `${fields.year}-${fields.month}-${fields.day}`;
+}
 function analyticsDayLabel(date){return new Intl.DateTimeFormat("es-CO",{weekday:"short",timeZone:"America/Bogota"}).format(date).replace(".","")}
 function countEvents(type){return analyticsEvents(type).length}
 function recentSessions(minutes=10){
   const cutoff=Date.now()-minutes*60000,store=analyticsStore(),sessions=Object.values(store.sessions||{});
   return sessions.filter(s=>new Date(s.lastSeen).getTime()>=cutoff);
 }
-function renderAdminAnalytics(){
+function renderUsageAnalytics(){
   if(!$("analyticsTotalLogins"))return;const events=analyticsEvents(),now=new Date(),todayKey=analyticsDateKey(now);
-  const logins=events.filter(e=>e.type==="login"),todayLogins=logins.filter(e=>String(e.at).slice(0,10)===todayKey),weekLogins=analyticsSince(7,"login"),active=recentSessions(10);
+  const logins=events.filter(e=>e.type==="login"),todayLogins=logins.filter(e=>analyticsDateKey(e.at)===todayKey),weekLogins=analyticsSince(7,"login"),active=recentSessions(10);
   $("analyticsTotalLogins").textContent=String(logins.length);
   $("analyticsRecentActive").textContent=String(active.length);
   $("analyticsSentReviews").textContent=String(countEvents("review_sent")+countEvents("corrections_submitted"));
@@ -1293,7 +1238,7 @@ function renderAdminAnalytics(){
 }
 function renderAnalyticsChart(logins){
   const box=$("analyticsLoginChart");if(!box)return;const days=[...Array(7)].map((_,i)=>{const d=new Date();d.setDate(d.getDate()-(6-i));return d});
-  const counts=days.map(day=>logins.filter(e=>String(e.at).slice(0,10)===analyticsDateKey(day)).length),max=Math.max(1,...counts);
+  const counts=days.map(day=>logins.filter(e=>analyticsDateKey(e.at)===analyticsDateKey(day)).length),max=Math.max(1,...counts);
   box.innerHTML=days.map((day,i)=>`<div class="analytics-day"><div class="analytics-bar" style="height:${Math.max(6,Math.round((counts[i]/max)*104))}px"></div><b>${counts[i]}</b><span>${esc(analyticsDayLabel(day))}</span></div>`).join("");
 }
 function renderAnalyticsProductivity(){
@@ -1315,12 +1260,12 @@ function renderAnalyticsAlerts(){
   if(status==="En evaluación"&&age>=2)alerts.push(["Evaluación abierta",`La revisión está en curso desde hace ${age} día(s) sin concepto final.`,"Atención"]);
   if(status==="Devuelto para ajustes")alerts.push(["Ajustes pendientes","El procedimiento fue devuelto y requiere respuesta del constructor.","Ajustes"]);
   if(failures>0)alerts.push(["Criterios no cumplidos",`Hay ${failures} criterio(s) con resultado No cumple en la evaluación actual.`,"Calidad"]);
-  if(!alerts.length)alerts.push(["Sin alertas críticas","No se identifican alertas administrativas en esta prueba local.","OK"]);
+  if(!alerts.length)alerts.push(["Sin alertas críticas","No se identifican alertas en esta prueba local.","OK"]);
   if($("analyticsAlerts"))$("analyticsAlerts").innerHTML=alerts.map(a=>`<div class="alert-item ${a[2]==="OK"?"ok":""}"><span class="rule-icon">${a[2]==="OK"?"✓":"!"}</span><div><b>${esc(a[0])}</b><p>${esc(a[1])}</p></div><span class="alert-tag">${esc(a[2])}</span></div>`).join("");
 }
 function resetAnalyticsDemo(){
   if(!confirm("¿Reiniciar los datos locales de analítica de prueba en este navegador?"))return;
-  localStorage.removeItem(ANALYTICS_KEY);analyticsHeartbeat();renderAdminAnalytics();toast("Analítica local reiniciada.");
+  localStorage.removeItem(ANALYTICS_KEY);analyticsHeartbeat();renderUsageAnalytics();toast("Analítica local reiniciada.");
 }
 
 document.querySelectorAll(".navbtn").forEach(btn=>btn.addEventListener("click",()=>switchTab(btn.dataset.tab)));
@@ -1330,7 +1275,7 @@ function initMenuProgress(){
     if(btn.querySelector(".nav-check"))return;
     const marker=document.createElement("span");
     marker.className="nav-check";marker.setAttribute("aria-hidden","true");
-    if(["administration","guia","evaluationAnnex","analytics"].includes(btn.dataset.tab)){
+    if(["guia","evaluationAnnex","analytics"].includes(btn.dataset.tab)){
       btn.classList.add("reference");marker.textContent="i";marker.title="Sección de consulta";
     }else{
       marker.textContent="○";marker.title="Módulo pendiente";
@@ -1419,7 +1364,7 @@ function activitiesAreComplete(){
     if(!filled(a.actividad))return false;
     if(a.tipo==="Conector")return filled(a.connectorId)&&filled(a.connectorDestino)&&!!activityByUid(a.connectorDestino)&&a.connectorDestino!==a.uid;
     if(a.tipo==="Inicio"||a.tipo==="Fin")return filled(a.descripcion);
-    if(!filled(a.descripcion)||!filled(a.responsable)||!controlIsComplete(a))return false;
+    if(!filled(a.descripcion)||!activityResponsibilityIsComplete(a)||!controlIsComplete(a))return false;
     if(a.tipo==="Decisión")return filled(a.decisionSi)&&filled(a.decisionNo)&&a.decisionSi!==a.decisionNo&&!!activityByUid(a.decisionSi)&&!!activityByUid(a.decisionNo);
     return true;
   });
@@ -1444,7 +1389,7 @@ function sectionCompletion(){
 function updateMenuProgress(){
   const state=sectionCompletion();
   document.querySelectorAll(".navbtn").forEach(btn=>{
-    if(["administration","guia","evaluationAnnex","analytics"].includes(btn.dataset.tab))return;
+    if(["guia","evaluationAnnex","analytics"].includes(btn.dataset.tab))return;
     const complete=!!state[btn.dataset.tab],marker=btn.querySelector(".nav-check");
     btn.classList.toggle("complete",complete);
     if(marker){marker.textContent=complete?"✓":"○";marker.title=complete?(btn.dataset.tab==="preview"?"Listo para exportar":"Módulo completo"):"Módulo pendiente"}
@@ -1458,11 +1403,10 @@ function updateProcedureIdentity(){
 }
 
 function applyRoleNavigation(){
-  const advisor=currentRole==="asesor",admin=currentRole==="admin"&&!!currentProfile.isAdmin;
-  document.querySelectorAll(".author-nav").forEach(el=>el.classList.toggle("role-hidden",advisor||admin));
+  const advisor=currentRole==="asesor";
+  document.querySelectorAll(".author-nav").forEach(el=>el.classList.toggle("role-hidden",advisor));
   document.querySelectorAll(".advisor-nav").forEach(el=>el.classList.toggle("role-hidden",!advisor));
-  document.querySelectorAll(".admin-nav").forEach(el=>el.classList.toggle("role-hidden",!admin));
-  document.querySelectorAll(".shared-nav").forEach(el=>el.classList.toggle("role-hidden",admin));
+  document.querySelectorAll(".shared-nav").forEach(el=>el.classList.remove("role-hidden"));
   const evaluationNav=document.querySelector('[data-tab="evaluation"]'),previewNav=document.querySelector('[data-tab="preview"]'),guideNav=document.querySelector('[data-tab="guia"]');
   if(evaluationNav){evaluationNav.querySelector(".nav-number").textContent=advisor?"03":"08";evaluationNav.querySelector(".nav-label").textContent=advisor?"Evaluación de adecuación":"Seguimiento de revisión"}
   if(previewNav){previewNav.classList.toggle("role-hidden",advisor);previewNav.querySelector(".nav-number").textContent="09";previewNav.querySelector(".nav-label").textContent="Exportar PDF"}
@@ -1470,12 +1414,12 @@ function applyRoleNavigation(){
   if($("previewHeading"))$("previewHeading").textContent="9. Reporte del procedimiento";if($("guideHeading"))$("guideHeading").textContent="Anexo A. Guía del flujograma";
   if($("evaluationHeading"))$("evaluationHeading").textContent=advisor?"3. Evaluación de adecuación del procedimiento":"8. Seguimiento de la revisión";
   if($("evaluationIntro"))$("evaluationIntro").textContent=advisor?"Califique los criterios, registre las observaciones y emita el concepto técnico.":"Consulte el estado, las observaciones y las respuestas asociadas a la revisión metodológica del procedimiento.";
-  if($("evaluationRoleContext")){$("evaluationRoleContext").classList.toggle("advisor",advisor);$("evaluationRoleContext").innerHTML=advisor?`<b>Perfil activo:</b> ${esc(currentProfile.roleName)}${admin?" · Administrador":""}. Puede calificar criterios, registrar hallazgos, devolver el procedimiento o emitir concepto.`:`<b>Perfil activo:</b> ${esc(currentProfile.roleName)}${admin?" · Administrador":""}. Puede diligenciar, enviar la versión, consultar hallazgos y responder los ajustes solicitados.`}
-  const indicator=$("environmentIndicator"),icon=$("environmentIcon");if(indicator){indicator.classList.toggle("evaluator",advisor);$("environmentTitle").textContent=admin?"Administrador":advisor?"Evaluador":"Constructor";$("environmentDescription").textContent=admin?"Consulta de uso general, productividad y alertas administrativas de la prueba.":advisor?`${currentProfile.roleName}: consulta y evaluación metodológica del procedimiento.`:`${currentProfile.roleName}: diligenciamiento, revisión y envío del procedimiento.`;icon.innerHTML=admin?'<svg viewBox="0 0 48 48"><path d="M8 39V9"/><path d="M8 39h32"/><rect x="14" y="23" width="6" height="12" rx="1"/><rect x="23" y="14" width="6" height="21" rx="1"/><rect x="32" y="19" width="6" height="16" rx="1"/></svg>':advisor?'<svg viewBox="0 0 48 48"><path d="M13 8h22v35H13z"/><path d="M18 5h12v7H18zM19 20h10M19 27h7"/><path d="m28 34 3 3 7-8"/></svg>':'<svg viewBox="0 0 48 48"><path d="M8 9h24l8 8v22H8z"/><path d="M32 9v8h8M15 23h18M15 29h18M15 35h10"/><path d="m12 12 4 4 7-8"/></svg>'}
-  const switcher=$("environmentSwitcher"),canSwitch=!!currentProfile.canSwitchEnvironment;switcher?.classList.toggle("role-hidden",!canSwitch);$("adminEnvironmentBadge")?.classList.toggle("role-hidden",!admin);$("switchConstructor")?.classList.toggle("active",!advisor);$("switchEvaluator")?.classList.toggle("active",advisor);$("switchConstructor")?.setAttribute("aria-pressed",String(!advisor));$("switchEvaluator")?.setAttribute("aria-pressed",String(advisor));
-  $("workflowAction")?.classList.toggle("role-hidden",advisor||admin);
-  $("fileMenu")?.classList.toggle("role-hidden",advisor||admin);$("saveWrap")?.classList.toggle("role-hidden",advisor||admin);$("quickExport")?.classList.toggle("role-hidden",advisor||admin);$("notificationCenter")?.classList.toggle("role-hidden",admin);document.querySelector(".procedure-pin")?.classList.toggle("role-hidden",admin);
-  const active=document.querySelector(".navbtn.active");if(admin||active?.classList.contains("role-hidden"))switchTab(admin?"administration":advisor?"advisorInbox":"general");
+  if($("evaluationRoleContext")){$("evaluationRoleContext").classList.toggle("advisor",advisor);$("evaluationRoleContext").innerHTML=advisor?`<b>Perfil activo:</b> ${esc(currentProfile.roleName)}. Puede calificar criterios, registrar hallazgos, devolver el procedimiento o emitir concepto.`:`<b>Perfil activo:</b> ${esc(currentProfile.roleName)}. Puede diligenciar, enviar la versión, consultar hallazgos y responder los ajustes solicitados.`}
+  const indicator=$("environmentIndicator"),icon=$("environmentIcon");if(indicator){indicator.classList.toggle("evaluator",advisor);$("environmentTitle").textContent=advisor?"Evaluador":"Constructor";$("environmentDescription").textContent=advisor?`${currentProfile.roleName}: consulta y evaluación metodológica del procedimiento.`:`${currentProfile.roleName}: diligenciamiento, revisión y envío del procedimiento.`;icon.innerHTML=advisor?'<svg viewBox="0 0 48 48"><path d="M13 8h22v35H13z"/><path d="M18 5h12v7H18zM19 20h10M19 27h7"/><path d="m28 34 3 3 7-8"/></svg>':'<svg viewBox="0 0 48 48"><path d="M8 9h24l8 8v22H8z"/><path d="M32 9v8h8M15 23h18M15 29h18M15 35h10"/><path d="m12 12 4 4 7-8"/></svg>'}
+  const switcher=$("environmentSwitcher"),canSwitch=!!currentProfile.canSwitchEnvironment;switcher?.classList.toggle("role-hidden",!canSwitch);$("switchConstructor")?.classList.toggle("active",!advisor);$("switchEvaluator")?.classList.toggle("active",advisor);$("switchConstructor")?.setAttribute("aria-pressed",String(!advisor));$("switchEvaluator")?.setAttribute("aria-pressed",String(advisor));
+  $("workflowAction")?.classList.toggle("role-hidden",advisor);
+  $("fileMenu")?.classList.toggle("role-hidden",advisor);$("saveWrap")?.classList.toggle("role-hidden",advisor);$("quickExport")?.classList.toggle("role-hidden",advisor);$("notificationCenter")?.classList.remove("role-hidden");document.querySelector(".procedure-pin")?.classList.remove("role-hidden");
+  const active=document.querySelector(".navbtn.active");if(active?.classList.contains("role-hidden"))switchTab(advisor?"advisorInbox":"general");
 }
 function switchEnvironment(environment){
   if(!currentProfile.canSwitchEnvironment||!["autor","asesor"].includes(environment)||currentRole===environment)return;
@@ -1537,65 +1481,26 @@ function renderEvaluationAnnex(){
   if($("evaluationAnnexCriteria"))$("evaluationAnnexCriteria").innerHTML=evaluationGroups.map((group,groupIndex)=>`<details class="reference-group" ${groupIndex===0?"open":""}><summary><span>${groupIndex+1}. ${esc(group.name)} · ${group.weight}%</span></summary><div class="reference-group-description">${esc(group.description)}</div>${group.questions.map((question,index)=>{const criterionMeta=evaluationCriteriaFlat.find(c=>c.id===question[0]);return`<div class="reference-criterion"><span class="reference-criterion-number">${index+1}</span><span>${esc(question[1])}${criterionMeta?.critical?'<span class="critical-tag">Crítico</span>':""}${criterionMeta?.newProcedureNotApplicable?'<span class="optional-tag">No aplica para procedimientos nuevos</span>':""}</span></div>`}).join("")}</details>`).join("");
 }
 
-function renderProcedureAnalytics(){
-  ensureEvaluation();
-  const completion=sectionCompletion(),graph=analyzeFlowGraph(),stats=evaluationStats();
-  const modules=[
-    ["Identificación",completion.general],
-    ["Marco contextual",completion.contexto],
-    ["Normatividad",completion.normas],
-    ["Actividades y flujograma",completion.actividades],
-    ["Documentos y cambios",completion.anexos]
-  ];
-  const completed=modules.filter(([,done])=>done).length,percent=Math.round(completed/modules.length*100);
-  const controls=activities.filter(a=>a.tieneControl),completeControls=controls.filter(controlIsComplete).length;
-  const graphChecks=[
-    ["Actividades inaccesibles",graph.unreachable.length,"No pueden alcanzarse desde Inicio."],
-    ["Ruta efectiva hasta Fin",graph.startCanReachEnd?0:1,graph.startCanReachEnd?"Inicio sí conduce a Fin.":"No existe una ruta completa de Inicio a Fin."],
-    ["Ciclos sin salida",graph.trappedCycles.length,"Bucles que no permiten llegar a Fin."],
-    ["Conectores duplicados",graph.duplicateConnectors.length,"Identificadores de conector repetidos."],
-    ["Bifurcaciones sin convergencia",graph.divergentDecisions.length,"Decisiones cuyas rutas no vuelven a reunirse."],
-    ["Rutas de retorno",graph.returningCycles.length,"Ciclos que pueden repetir actividades antes de salir."]
-  ];
-  const alertCount=graphChecks.reduce((sum,item)=>sum+item[1],0);
-  $("procedureAnalyticsCompletion").textContent=`${percent}%`;
-  $("procedureAnalyticsActivities").textContent=String(activities.length);
-  $("procedureAnalyticsControls").textContent=controls.length?`${completeControls}/${controls.length}`:"0";
-  $("procedureAnalyticsAlerts").textContent=String(alertCount);
-  $("procedureAnalyticsProgress").innerHTML=modules.map(([name,done])=>`<div class="analytics-progress-row"><b>${esc(name)}</b><div class="analytics-progress-track" aria-label="${esc(name)}: ${done?100:0}%"><span style="width:${done?100:0}%"></span></div><span class="analytics-progress-state ${done?"complete":""}">${done?"Completo":"Pendiente"}</span></div>`).join("");
-  $("procedureAnalyticsEvalStatus").textContent=evaluation.status||"Borrador";
-  $("procedureAnalyticsEvalScore").textContent=`${stats.score.toFixed(1)}%`;
-  $("procedureAnalyticsEvalProgress").textContent=`${stats.answered} de ${stats.total}`;
-  $("procedureAnalyticsIteration").textContent=`Iteración ${evaluation.iteration||1} · ${evaluation.evaluatorEmail||evaluation.assignedEvaluator||"Sin asesor asignado"}`;
-  $("procedureAnalyticsGraph").innerHTML=graphChecks.map(([name,count,description])=>`<div class="graph-health-card ${count===0?"ok":""}"><strong>${count===0?"✓":count}</strong><b>${esc(name)}</b><span>${esc(description)}</span></div>`).join("");
-  const evaluator=currentRole==="asesor";
-  $("procedureAnalyticsRole").textContent=evaluator?"Evaluador":"Elaborador";
-  $("procedureAnalyticsIntro").textContent=evaluator?"Consulte el estado, la calificación y los hallazgos metodológicos del procedimiento recibido.":"Consulte el avance y los pendientes metodológicos antes de enviar el procedimiento a evaluación.";
-}
-
 function switchTab(tab){
-  if(tab==="administration"&&!isAdministrator()){toast("El módulo de administración es exclusivo para el administrador.");return}
-  if(currentRole==="admin"&&tab!=="administration"){toast("Este perfil solo tiene acceso al módulo de analítica.");tab="administration"}
   document.querySelectorAll(".navbtn").forEach(b=>b.classList.toggle("active",b.dataset.tab===tab));
   const activeNav=document.querySelector(`.navbtn[data-tab="${tab}"]`);if(window.innerWidth<=1050)activeNav?.scrollIntoView({behavior:"smooth",block:"nearest",inline:"center"});
   document.querySelectorAll(".panel").forEach(p=>p.classList.remove("active"));
   $(tab+"Panel").classList.add("active");
   const titles={
-    administration:"Analítica administrativa",advisorInbox:"Bandeja de evaluaciones",advisorProcedure:"Procedimiento recibido",
+    advisorInbox:"Bandeja de evaluaciones",advisorProcedure:"Procedimiento recibido",
     general:"Identificación del procedimiento",contexto:"Marco contextual",normas:"Normatividad",
     actividades:"Descripción de actividades",flujograma:"Flujograma automático",anexos:"Anexos y control de cambios",
-    revision:"Revisión final de consistencia",evaluation:"Evaluación de adecuación",preview:"Reporte PDF",guia:"Guía del flujograma",evaluationAnnex:"Criterios de evaluación",analytics:"Analítica del procedimiento"
+    revision:"Revisión final de consistencia",evaluation:"Evaluación de adecuación",preview:"Reporte PDF",guia:"Guía del flujograma",evaluationAnnex:"Criterios de evaluación",analytics:"Analítica"
   };
   $("pageTitle").textContent=titles[tab]||"Constructor de Procedimientos";
   if(tab==="flujograma") renderFlow();
-  if(tab==="administration") renderAdminUsers();
   if(tab==="revision") runQualityRules();
   if(tab==="evaluation") updateEvaluationUI();
   if(tab==="advisorInbox") renderAdvisorInbox();
   if(tab==="advisorProcedure") buildAdvisorProcedurePreview();
   if(tab==="preview") buildPreview();
   if(tab==="evaluationAnnex") renderEvaluationAnnex();
-  if(tab==="analytics") renderProcedureAnalytics();
+  if(tab==="analytics") renderUsageAnalytics();
   if(currentProfile.username)recordAnalytics("module_view",{module:tab});
 }
 
@@ -1669,6 +1574,28 @@ function normalizeResponsibilityRole(value,levels){
 function responsibilityRoleSelectOptions(selected="",levels){
   const roles=responsibilityRolesByLevels(levels),current=normalizeResponsibilityRole(selected,levels),groups=[...new Set(roles.map(role=>role.level))];
   return `<option value="">Seleccione un cargo</option>`+groups.map(level=>`<optgroup label="${esc(level)}">${roles.filter(role=>role.level===level).map(role=>`<option value="${esc(role.cargo)}" ${current===role.cargo?"selected":""}>${esc(role.cargo)}</option>`).join("")}</optgroup>`).join("");
+}
+function activityResponsibilitySelectOptions(activity){
+  return responsibilityRoleSelectOptions(activity.responsableOtro?"":activity.responsable)+`<option value="__otro__" ${activity.responsableOtro?"selected":""}>Otro — ¿Cuál?</option>`;
+}
+function vagueOtherResponsibility(value){
+  return /^(varios|todos|quien corresponda|n\/?a|no aplica)$/i.test(normalizeText(value));
+}
+function activityResponsibilityIsComplete(activity){
+  return filled(activity?.responsable)&&(!activity.responsableOtro||!vagueOtherResponsibility(activity.responsable));
+}
+function setActivityResponsibility(index,value){
+  const activity=activities[index];if(!activity)return;
+  if(value==="__otro__"){
+    activity.responsableOtro=true;activity.responsable="";renderActivities();
+    toast("Especifique claramente quién es responsable de la actividad.");
+  }else{activity.responsableOtro=false;activity.responsable=value}
+}
+function updateOtherActivityResponsibility(index,value,input){
+  const activity=activities[index];if(!activity)return;activity.responsable=value;
+  const invalid=vagueOtherResponsibility(value);
+  input?.setCustomValidity(invalid?'Indique un cargo, dependencia o actor específico; no use expresiones genéricas.':"");
+  input?.setAttribute("aria-invalid",String(invalid));
 }
 function today(){
   const parts=new Intl.DateTimeFormat("en-US",{timeZone:"America/Bogota",year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(new Date());
@@ -1758,7 +1685,7 @@ function uid(){
 }
 function addActivity(data={}){
   const record={
-    uid:uid(),n:activities.length+1,tipo:"Actividad",actividad:"",descripcion:"",responsable:"",
+    uid:uid(),n:activities.length+1,tipo:"Actividad",actividad:"",descripcion:"",responsable:"",responsableOtro:false,
     decisionSi:"",decisionNo:"",tieneControl:false,controlResponsable:"",controlPeriodicidad:"",controlAccion:"",controlProposito:"",
     controlEjecucion:"",controlDesviacion:"",controlEvidencia:"",evidencia:"",sistema:"",
     connectorId:"",connectorDestino:"",...data
@@ -1784,6 +1711,10 @@ function renumber(){
 function displayedActivityNumber(a){return a?.tipo==="Actividad"?String(a.n||""):""}
 function normalizeActivity(a){
   if(!a.uid)a.uid=uid();
+  const normalizedResponsible=normalizeResponsibilityRole(a.responsable);
+  if(a.responsableOtro===undefined)a.responsableOtro=filled(a.responsable)&&!normalizedResponsible;
+  a.responsableOtro=!!a.responsableOtro;
+  if(!a.responsableOtro&&normalizedResponsible)a.responsable=normalizedResponsible;
   if(a.tipo==="Control"){a.tipo="Actividad";a.tieneControl=true}
   if(a.control!==undefined&&a.tieneControl===undefined)a.tieneControl=!!String(a.control||"").trim();
   if(a.tipo==="Inicio"&&String(a.descripcion||"").trim().toLowerCase()==="inicio del procedimiento")a.descripcion="";
@@ -1845,7 +1776,7 @@ function changeActivityType(index,type){
   if(type!=="Conector"){a.connectorId="";a.connectorDestino=""}
   if(["Inicio","Decisión","Conector","Fin"].includes(type)){
     a.tieneControl=false;a.controlResponsable="";a.controlPeriodicidad="";a.controlAccion="";a.controlProposito="";
-    a.controlEjecucion="";a.controlDesviacion="";a.controlEvidencia="";a.responsable="";a.evidencia="";a.sistema="";
+    a.controlEjecucion="";a.controlDesviacion="";a.controlEvidencia="";a.responsable="";a.responsableOtro=false;a.evidencia="";a.sistema="";
   }
   if(type==="Conector"){
     a.connectorId=nextConnectorId();a.actividad=`Conector ${a.connectorId}`;a.descripcion="";
@@ -1888,7 +1819,7 @@ function renderActivities(){
     <td>${fixedBoundary?`<span class="fixed-type" title="Elemento fijo">🔒 ${a.tipo}</span>`:`<select class="type-select ${a.tipo==="Decisión"?"decision-select":a.tipo==="Conector"?"connector-select":""}" onchange="changeActivityType(${i},this.value)">${["Actividad","Decisión","Conector"].map(x=>`<option ${a.tipo===x?"selected":""}>${x}</option>`).join("")}</select>`}${a.tipo==="Decisión"?'<div><span class="decision-chip">◆ Decisión</span></div>':a.tipo==="Conector"?'<div><span class="connector-chip">○ Conector</span></div>':""}</td>
     <td><input value="${esc(a.actividad)}" placeholder="${a.tipo==="Inicio"?"Ej. Recepción de la solicitud":a.tipo==="Fin"?"Ej. Informe final comunicado":a.tipo==="Conector"?"Ej. Conector A":"Nombre corto"}" oninput="activities[${i}].actividad=this.value"></td>
     <td><textarea placeholder="${esc(help)}" oninput="activities[${i}].descripcion=this.value">${esc(a.descripcion)}</textarea><div class="row-help">${esc(help)}</div></td>
-    <td>${special?'<span class="control-none">No aplica</span>':`<select onchange="activities[${i}].responsable=this.value">${responsibilityRoleSelectOptions(a.responsable)}</select>`}</td>
+    <td>${special?'<span class="control-none">No aplica</span>':`<select aria-label="Responsable de la actividad" onchange="setActivityResponsibility(${i},this.value)">${activityResponsibilitySelectOptions(a)}</select>${a.responsableOtro?`<div class="other-responsible-wrap"><input required aria-label="¿Cuál responsable?" aria-invalid="${vagueOtherResponsibility(a.responsable)}" value="${esc(a.responsable)}" placeholder="Ej. Supervisor del contrato" oninput="updateOtherActivityResponsibility(${i},this.value,this)"><div class="other-responsible-note"><b>Importante:</b> especifique claramente el cargo, dependencia o actor encargado. La responsabilidad de toda actividad debe estar claramente establecida para asegurar su ejecución, control y trazabilidad.</div></div>`:""}`}</td>
     <td>${noControl?'<span class="control-none">No aplica</span>':`<select class="control-select ${a.tieneControl?"control-yes":""}" onchange="activities[${i}].tieneControl=this.value===\'Si\';renderActivities()"><option value="No" ${!a.tieneControl?"selected":""}>No</option><option value="Si" ${a.tieneControl?"selected":""}>Sí</option></select>${a.tieneControl?'<div><span class="control-chip">✓ Punto de control</span></div>':""}`}</td>
     <td>${special?'<span class="control-none">No aplica</span>':`<textarea placeholder="Opcional" oninput="activities[${i}].evidencia=this.value">${esc(a.evidencia)}</textarea>`}</td>
     <td>${special?'<span class="control-none">No aplica</span>':`<input value="${esc(a.sistema)}" placeholder="Opcional" oninput="activities[${i}].sistema=this.value">`}</td>
@@ -1956,6 +1887,8 @@ function runQualityRules(){
 
   const withoutResponsible=activities.filter(a=>!["Inicio","Conector","Fin"].includes(a.tipo)&&!String(a.responsable||"").trim());
   add(withoutResponsible.length===0,withoutResponsible.length?`${withoutResponsible.length} actividad(es) sin responsable.`:"Todas las actividades operativas tienen responsable.","danger",{id:"responsables",uids:withoutResponsible.map(a=>a.uid),guidance:"Asigne un rol responsable a cada actividad operativa."});
+  const vagueOtherResponsibles=activities.filter(a=>!["Inicio","Conector","Fin"].includes(a.tipo)&&a.responsableOtro&&vagueOtherResponsibility(a.responsable));
+  add(vagueOtherResponsibles.length===0,vagueOtherResponsibles.length?`${vagueOtherResponsibles.length} responsable(s) definido(s) con expresiones ambiguas.`:"Los responsables personalizados están definidos de forma específica.","danger",{id:"responsables_otro",uids:vagueOtherResponsibles.map(a=>a.uid),guidance:"Indique un cargo, dependencia o actor concreto. Evite “Varios”, “Todos”, “Quien corresponda” o “N/A”."});
   const decisions=activities.filter(a=>a.tipo==="Decisión"),unclearDecisions=decisions.filter(a=>!String(a.descripcion||a.actividad||"").trim());
   add(unclearDecisions.length===0,"Las decisiones registradas están descritas de forma comprensible.","warn",{id:"decisiones_descripcion",uids:unclearDecisions.map(a=>a.uid),guidance:"Describa la condición que determina las rutas Sí y No."});
   const incompleteDecisionList=decisions.filter(a=>!a.decisionSi||!a.decisionNo||a.decisionSi===a.decisionNo||!activityByUid(a.decisionSi)||!activityByUid(a.decisionNo));
@@ -2532,7 +2465,7 @@ function applyData(d){
     const roleLevels=id==="aprobo"?["Directivo"]:null;
     $(id).value=["responsableProcedimiento","elaboro","reviso","aprobo"].includes(id)?normalizeResponsibilityRole(d.fields[id],roleLevels):d.fields[id];
   });
-  norms=d.norms||[];activities=(d.activities||[]).map(a=>({...a,responsable:normalizeResponsibilityRole(a.responsable),controlResponsable:normalizeResponsibilityRole(a.controlResponsable)}));annexes=d.annexes||[];changes=d.changes||[];evaluation=d.evaluation||newEvaluationState();notifications=Array.isArray(d.notifications)?d.notifications:[];
+  norms=d.norms||[];activities=(d.activities||[]).map(a=>normalizeActivity({...a,controlResponsable:normalizeResponsibilityRole(a.controlResponsable)}));annexes=d.annexes||[];changes=d.changes||[];evaluation=d.evaluation||newEvaluationState();notifications=Array.isArray(d.notifications)?d.notifications:[];
   if($("showEvidenceFlow"))$("showEvidenceFlow").checked=!!d.settings?.showEvidenceFlow;
   renderNorms();renderActivities();renderAnnexes();renderChanges();updateCode();validateName();validateCurrentDate();renderFlow();runQualityRules();updateProcedureIdentity();updateEvaluationUI();updateMenuProgress();
 }
