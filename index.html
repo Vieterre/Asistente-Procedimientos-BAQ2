@@ -418,6 +418,23 @@ body.auth-locked>.app{filter:blur(5px);pointer-events:none;user-select:none}
 .alert-item b{display:block;color:var(--navy);font-size:12px;margin-bottom:2px}
 .alert-item p{margin:0;color:#526874;font-size:12px;line-height:1.35}
 .alert-tag{font-size:9px;font-weight:900;text-transform:uppercase;color:#725700;background:#FFF0B8;border:1px solid #E4C75A;border-radius:999px;padding:3px 7px}
+.procedure-analytics-intro{display:flex;justify-content:space-between;gap:18px;align-items:flex-start;margin-bottom:16px}
+.procedure-analytics-role{flex:0 0 auto;padding:6px 10px;border-radius:999px;background:#EAF4ED;border:1px solid #B9DEC3;color:#14755F;font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.35px}
+.analytics-progress-list{display:grid;gap:10px}
+.analytics-progress-row{display:grid;grid-template-columns:minmax(150px,1fr) minmax(180px,2fr) 78px;gap:12px;align-items:center;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:#fff}
+.analytics-progress-row b{color:var(--navy);font-size:12px}
+.analytics-progress-track{height:9px;border-radius:999px;background:#E7EEF1;overflow:hidden}
+.analytics-progress-track span{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,var(--green),#14755F)}
+.analytics-progress-state{text-align:right;font-size:10px;font-weight:900;text-transform:uppercase;color:#9D241C}
+.analytics-progress-state.complete{color:#14755F}
+.graph-health-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.graph-health-card{padding:12px;border:1px solid var(--line);border-left:5px solid #B58A00;border-radius:10px;background:#FFFBEC}
+.graph-health-card.ok{border-left-color:var(--green);background:#F4FAF6}
+.graph-health-card strong{display:block;font-size:22px;line-height:1;color:var(--navy);margin-bottom:6px}
+.graph-health-card b{display:block;color:var(--navy);font-size:11px;margin-bottom:3px}
+.graph-health-card span{display:block;color:#526874;font-size:10px;line-height:1.35}
+@media(max-width:760px){.procedure-analytics-intro{display:grid}.procedure-analytics-role{width:max-content}.graph-health-grid{grid-template-columns:1fr 1fr}.analytics-progress-row{grid-template-columns:1fr 62px}.analytics-progress-track{grid-column:1/-1;grid-row:2}.analytics-progress-state{grid-column:2;grid-row:1}}
+@media(max-width:430px){.graph-health-grid{grid-template-columns:1fr}}
 @media(max-width:900px){.session-user{order:4}.session-user-data{max-width:210px}}
 @media(max-width:900px){.admin-layout{grid-template-columns:1fr}}
 @media(max-width:520px){.auth-gate{padding:12px}.auth-brand{padding:22px 20px 18px}.auth-form{padding:21px 20px 24px}.auth-brand h1{font-size:22px}.session-user{grid-column:1/-1;width:100%}.session-user-data{max-width:none;flex:1}}
@@ -575,6 +592,8 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
     <div class="nav-section-label">Anexos de consulta</div>
     <button class="navbtn shared-nav" data-tab="guia"><span class="nav-number">A1</span><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6.5h6l2 2h8v11H4z"/><path d="M8 13h8M8 16h5"/></svg><span class="nav-label">Guía del flujograma</span></button>
     <button class="navbtn shared-nav" data-tab="evaluationAnnex"><span class="nav-number">A2</span><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3.5h12v17H6z"/><path d="M9 8h6M9 12h3M9 16h3"/><path d="m14.5 15.5 1.5 1.5 3-3"/></svg><span class="nav-label">Criterios de evaluación</span></button>
+    <div class="nav-section-label">Analítica</div>
+    <button class="navbtn shared-nav" data-tab="analytics"><span class="nav-number">D1</span><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V5"/><path d="M4 19h16"/><rect x="7" y="12" width="3" height="4" rx=".5"/><rect x="12" y="8" width="3" height="8" rx=".5"/><rect x="17" y="5" width="3" height="11" rx=".5"/></svg><span class="nav-label">Analítica del procedimiento</span></button>
   </div>
 </aside>
 
@@ -913,6 +932,37 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
       <div class="scale-card medium"><strong>40–89%</strong><span>Nivel medio: cumple parcialmente y requiere mejoras.</span></div>
       <div class="scale-card high"><strong>90–100%</strong><span>Nivel alto: presenta una adecuación metodológica favorable.</span></div>
     </div>
+  </section>
+
+  <section class="panel" id="analyticsPanel">
+    <div class="procedure-analytics-intro">
+      <div><h3 style="margin:0 0 5px">Analítica del procedimiento</h3><div class="hint" id="procedureAnalyticsIntro">Resumen del avance, la evaluación y la salud metodológica del procedimiento actual.</div></div>
+      <span class="procedure-analytics-role" id="procedureAnalyticsRole">Elaborador</span>
+    </div>
+    <div class="kpirow">
+      <div class="kpi"><b id="procedureAnalyticsCompletion">0%</b><span>Avance de construcción</span></div>
+      <div class="kpi"><b id="procedureAnalyticsActivities">0</b><span>Actividades del flujo</span></div>
+      <div class="kpi"><b id="procedureAnalyticsControls">0</b><span>Puntos de control</span></div>
+      <div class="kpi"><b id="procedureAnalyticsAlerts">0</b><span>Alertas del grafo</span></div>
+    </div>
+    <div class="analytics-section">
+      <h4>Avance por componente</h4>
+      <div class="analytics-progress-list" id="procedureAnalyticsProgress"></div>
+    </div>
+    <div class="analytics-section">
+      <h4>Estado de la evaluación</h4>
+      <div class="grid3">
+        <div class="kpi"><b id="procedureAnalyticsEvalStatus">Borrador</b><span>Estado actual</span></div>
+        <div class="kpi"><b id="procedureAnalyticsEvalScore">0%</b><span>Calificación ponderada</span></div>
+        <div class="kpi"><b id="procedureAnalyticsEvalProgress">0 de 31</b><span>Criterios evaluados</span></div>
+      </div>
+      <div class="hint" id="procedureAnalyticsIteration" style="margin-top:9px">Iteración 1 · Sin asesor asignado</div>
+    </div>
+    <div class="analytics-section">
+      <h4>Salud del grafo</h4>
+      <div class="graph-health-grid" id="procedureAnalyticsGraph"></div>
+    </div>
+    <div class="admin-note"><b>Alcance:</b> esta analítica resume únicamente el procedimiento abierto en este navegador. No compara información de otros usuarios o equipos.</div>
   </section>
 </main>
 </div>
@@ -1280,7 +1330,7 @@ function initMenuProgress(){
     if(btn.querySelector(".nav-check"))return;
     const marker=document.createElement("span");
     marker.className="nav-check";marker.setAttribute("aria-hidden","true");
-    if(["administration","guia","evaluationAnnex"].includes(btn.dataset.tab)){
+    if(["administration","guia","evaluationAnnex","analytics"].includes(btn.dataset.tab)){
       btn.classList.add("reference");marker.textContent="i";marker.title="Sección de consulta";
     }else{
       marker.textContent="○";marker.title="Módulo pendiente";
@@ -1394,7 +1444,7 @@ function sectionCompletion(){
 function updateMenuProgress(){
   const state=sectionCompletion();
   document.querySelectorAll(".navbtn").forEach(btn=>{
-    if(["administration","guia","evaluationAnnex"].includes(btn.dataset.tab))return;
+    if(["administration","guia","evaluationAnnex","analytics"].includes(btn.dataset.tab))return;
     const complete=!!state[btn.dataset.tab],marker=btn.querySelector(".nav-check");
     btn.classList.toggle("complete",complete);
     if(marker){marker.textContent=complete?"✓":"○";marker.title=complete?(btn.dataset.tab==="preview"?"Listo para exportar":"Módulo completo"):"Módulo pendiente"}
@@ -1487,6 +1537,42 @@ function renderEvaluationAnnex(){
   if($("evaluationAnnexCriteria"))$("evaluationAnnexCriteria").innerHTML=evaluationGroups.map((group,groupIndex)=>`<details class="reference-group" ${groupIndex===0?"open":""}><summary><span>${groupIndex+1}. ${esc(group.name)} · ${group.weight}%</span></summary><div class="reference-group-description">${esc(group.description)}</div>${group.questions.map((question,index)=>{const criterionMeta=evaluationCriteriaFlat.find(c=>c.id===question[0]);return`<div class="reference-criterion"><span class="reference-criterion-number">${index+1}</span><span>${esc(question[1])}${criterionMeta?.critical?'<span class="critical-tag">Crítico</span>':""}${criterionMeta?.newProcedureNotApplicable?'<span class="optional-tag">No aplica para procedimientos nuevos</span>':""}</span></div>`}).join("")}</details>`).join("");
 }
 
+function renderProcedureAnalytics(){
+  ensureEvaluation();
+  const completion=sectionCompletion(),graph=analyzeFlowGraph(),stats=evaluationStats();
+  const modules=[
+    ["Identificación",completion.general],
+    ["Marco contextual",completion.contexto],
+    ["Normatividad",completion.normas],
+    ["Actividades y flujograma",completion.actividades],
+    ["Documentos y cambios",completion.anexos]
+  ];
+  const completed=modules.filter(([,done])=>done).length,percent=Math.round(completed/modules.length*100);
+  const controls=activities.filter(a=>a.tieneControl),completeControls=controls.filter(controlIsComplete).length;
+  const graphChecks=[
+    ["Actividades inaccesibles",graph.unreachable.length,"No pueden alcanzarse desde Inicio."],
+    ["Ruta efectiva hasta Fin",graph.startCanReachEnd?0:1,graph.startCanReachEnd?"Inicio sí conduce a Fin.":"No existe una ruta completa de Inicio a Fin."],
+    ["Ciclos sin salida",graph.trappedCycles.length,"Bucles que no permiten llegar a Fin."],
+    ["Conectores duplicados",graph.duplicateConnectors.length,"Identificadores de conector repetidos."],
+    ["Bifurcaciones sin convergencia",graph.divergentDecisions.length,"Decisiones cuyas rutas no vuelven a reunirse."],
+    ["Rutas de retorno",graph.returningCycles.length,"Ciclos que pueden repetir actividades antes de salir."]
+  ];
+  const alertCount=graphChecks.reduce((sum,item)=>sum+item[1],0);
+  $("procedureAnalyticsCompletion").textContent=`${percent}%`;
+  $("procedureAnalyticsActivities").textContent=String(activities.length);
+  $("procedureAnalyticsControls").textContent=controls.length?`${completeControls}/${controls.length}`:"0";
+  $("procedureAnalyticsAlerts").textContent=String(alertCount);
+  $("procedureAnalyticsProgress").innerHTML=modules.map(([name,done])=>`<div class="analytics-progress-row"><b>${esc(name)}</b><div class="analytics-progress-track" aria-label="${esc(name)}: ${done?100:0}%"><span style="width:${done?100:0}%"></span></div><span class="analytics-progress-state ${done?"complete":""}">${done?"Completo":"Pendiente"}</span></div>`).join("");
+  $("procedureAnalyticsEvalStatus").textContent=evaluation.status||"Borrador";
+  $("procedureAnalyticsEvalScore").textContent=`${stats.score.toFixed(1)}%`;
+  $("procedureAnalyticsEvalProgress").textContent=`${stats.answered} de ${stats.total}`;
+  $("procedureAnalyticsIteration").textContent=`Iteración ${evaluation.iteration||1} · ${evaluation.evaluatorEmail||evaluation.assignedEvaluator||"Sin asesor asignado"}`;
+  $("procedureAnalyticsGraph").innerHTML=graphChecks.map(([name,count,description])=>`<div class="graph-health-card ${count===0?"ok":""}"><strong>${count===0?"✓":count}</strong><b>${esc(name)}</b><span>${esc(description)}</span></div>`).join("");
+  const evaluator=currentRole==="asesor";
+  $("procedureAnalyticsRole").textContent=evaluator?"Evaluador":"Elaborador";
+  $("procedureAnalyticsIntro").textContent=evaluator?"Consulte el estado, la calificación y los hallazgos metodológicos del procedimiento recibido.":"Consulte el avance y los pendientes metodológicos antes de enviar el procedimiento a evaluación.";
+}
+
 function switchTab(tab){
   if(tab==="administration"&&!isAdministrator()){toast("El módulo de administración es exclusivo para el administrador.");return}
   if(currentRole==="admin"&&tab!=="administration"){toast("Este perfil solo tiene acceso al módulo de analítica.");tab="administration"}
@@ -1498,7 +1584,7 @@ function switchTab(tab){
     administration:"Analítica administrativa",advisorInbox:"Bandeja de evaluaciones",advisorProcedure:"Procedimiento recibido",
     general:"Identificación del procedimiento",contexto:"Marco contextual",normas:"Normatividad",
     actividades:"Descripción de actividades",flujograma:"Flujograma automático",anexos:"Anexos y control de cambios",
-    revision:"Revisión final de consistencia",evaluation:"Evaluación de adecuación",preview:"Reporte PDF",guia:"Guía del flujograma",evaluationAnnex:"Criterios de evaluación"
+    revision:"Revisión final de consistencia",evaluation:"Evaluación de adecuación",preview:"Reporte PDF",guia:"Guía del flujograma",evaluationAnnex:"Criterios de evaluación",analytics:"Analítica del procedimiento"
   };
   $("pageTitle").textContent=titles[tab]||"Constructor de Procedimientos";
   if(tab==="flujograma") renderFlow();
@@ -1509,6 +1595,7 @@ function switchTab(tab){
   if(tab==="advisorProcedure") buildAdvisorProcedurePreview();
   if(tab==="preview") buildPreview();
   if(tab==="evaluationAnnex") renderEvaluationAnnex();
+  if(tab==="analytics") renderProcedureAnalytics();
   if(currentProfile.username)recordAnalytics("module_view",{module:tab});
 }
 
