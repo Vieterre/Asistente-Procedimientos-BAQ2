@@ -405,6 +405,19 @@ body.auth-locked>.app{filter:blur(5px);pointer-events:none;user-select:none}
 .admin-user-actions{display:flex;gap:5px;flex-wrap:wrap}
 .admin-user-actions .btn{padding:5px 7px;font-size:9px}
 .admin-note{margin-top:12px;padding:10px;border-radius:9px;background:#FFF8E6;border:1px solid #E7D39A;color:#6E571B;font-size:10px;line-height:1.45}
+.analytics-section{margin-top:18px}
+.analytics-section h4{margin:0 0 10px;color:var(--navy)}
+.analytics-bars{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px;align-items:end;min-height:150px;padding:14px;border:1px solid var(--line);border-radius:12px;background:#fff}
+.analytics-day{display:grid;align-items:end;gap:7px;min-height:120px;text-align:center}
+.analytics-bar{width:100%;min-height:6px;border-radius:7px 7px 3px 3px;background:linear-gradient(180deg,var(--green),#14755F)}
+.analytics-day span{font-size:10px;color:var(--muted);font-weight:700}
+.analytics-day b{font-size:12px;color:var(--navy)}
+.alert-list{display:grid;gap:8px}
+.alert-item{display:grid;grid-template-columns:28px minmax(0,1fr) auto;gap:10px;align-items:start;padding:11px 12px;border:1px solid var(--line);border-left:5px solid #B58A00;border-radius:9px;background:#FFFBEC}
+.alert-item.ok{border-left-color:var(--green);background:#F4FAF6}
+.alert-item b{display:block;color:var(--navy);font-size:12px;margin-bottom:2px}
+.alert-item p{margin:0;color:#526874;font-size:12px;line-height:1.35}
+.alert-tag{font-size:9px;font-weight:900;text-transform:uppercase;color:#725700;background:#FFF0B8;border:1px solid #E4C75A;border-radius:999px;padding:3px 7px}
 @media(max-width:900px){.session-user{order:4}.session-user-data{max-width:210px}}
 @media(max-width:900px){.admin-layout{grid-template-columns:1fr}}
 @media(max-width:520px){.auth-gate{padding:12px}.auth-brand{padding:22px 20px 18px}.auth-form{padding:21px 20px 24px}.auth-brand h1{font-size:22px}.session-user{grid-column:1/-1;width:100%}.session-user-data{max-width:none;flex:1}}
@@ -530,6 +543,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
           <select id="authMode" required>
             <option value="autor">Constructor de procedimientos</option>
             <option value="asesor">Evaluador metodológico</option>
+            <option value="admin">Administrador de analítica</option>
           </select>
         </div>
       </div>
@@ -546,6 +560,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
     <div class="brand-rule"></div>
   </div>
   <div class="nav">
+    <button class="navbtn admin-nav role-hidden" data-tab="administration"><span class="nav-number">01</span><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V5"/><path d="M4 19h16"/><rect x="7" y="11" width="3" height="5" rx=".5"/><rect x="12" y="7" width="3" height="9" rx=".5"/><rect x="17" y="9" width="3" height="7" rx=".5"/></svg><span class="nav-label">Analítica administrativa</span></button>
     <button class="navbtn advisor-nav role-hidden" data-tab="advisorInbox"><span class="nav-number">01</span><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4z"/><path d="M4 10h5l2 3h2l2-3h5"/></svg><span class="nav-label">Bandeja de evaluaciones</span></button>
     <button class="navbtn advisor-nav role-hidden" data-tab="advisorProcedure"><span class="nav-number">02</span><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3.5h9l3 3v14H6z"/><path d="M15 3.5v3h3M9 11h6M9 14h6M9 17h4"/></svg><span class="nav-label">Procedimiento recibido</span></button>
     <button class="navbtn active author-nav" data-tab="general"><span class="nav-number">01</span><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5h16v13H4z"/><path d="M8 9h8M8 13h5"/><circle cx="17" cy="14.5" r="1.5"/></svg><span class="nav-label">Identificación</span></button>
@@ -606,6 +621,37 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
       <input id="backupInput" type="file" accept=".pdf,.json,application/pdf,application/json" hidden onchange="importBackup(this.files[0]);this.value=''">
     </div>
   </div>
+
+  <section class="panel" id="administrationPanel">
+    <div class="actions" style="justify-content:space-between;margin-bottom:14px">
+      <div><h3 style="margin:0 0 4px">Analítica administrativa</h3><div class="hint">Tablero local de prueba para uso general, productividad y alertas. Para métricas institucionales entre varios equipos se requiere backend.</div></div>
+      <button class="btn" type="button" onclick="resetAnalyticsDemo()">Reiniciar datos de prueba</button>
+    </div>
+    <div class="kpirow">
+      <div class="kpi"><b id="analyticsTotalLogins">0</b><span>Ingresos registrados</span></div>
+      <div class="kpi"><b id="analyticsRecentActive">0</b><span>Sesiones recientes</span></div>
+      <div class="kpi"><b id="analyticsSentReviews">0</b><span>Envíos a evaluación</span></div>
+      <div class="kpi"><b id="analyticsConcepts">0</b><span>Conceptos emitidos</span></div>
+    </div>
+    <div class="analytics-section">
+      <h4>Uso general</h4>
+      <div class="grid3">
+        <div class="kpi"><b id="analyticsTodayLogins">0</b><span>Ingresos de hoy</span></div>
+        <div class="kpi"><b id="analyticsWeekLogins">0</b><span>Ingresos últimos 7 días</span></div>
+        <div class="kpi"><b id="analyticsLastLogin">Sin registro</b><span>Último ingreso</span></div>
+      </div>
+      <div class="analytics-bars" id="analyticsLoginChart" aria-label="Ingresos últimos siete días"></div>
+    </div>
+    <div class="analytics-section">
+      <h4>Productividad</h4>
+      <div class="tablewrap"><table><thead><tr><th>Indicador</th><th>Conteo</th><th>Lectura administrativa</th></tr></thead><tbody id="analyticsProductivityBody"></tbody></table></div>
+    </div>
+    <div class="analytics-section">
+      <h4>Alertas administrativas</h4>
+      <div class="alert-list" id="analyticsAlerts"></div>
+    </div>
+    <div class="admin-note"><b>Alcance de la prueba:</b> estos datos se guardan solo en este navegador y no contienen documentos, claves ni información personal. La medición real de usuarios conectados requiere un backend en el VPS.</div>
+  </section>
 
   <section class="panel" id="advisorInboxPanel">
     <div class="actions" style="justify-content:space-between"><div><h3 style="margin-bottom:4px">Bandeja de evaluaciones</h3><div class="hint">Procedimientos enviados para revisión metodológica en este entorno local.</div></div><button class="btn" type="button" onclick="renderAdvisorInbox()">Actualizar bandeja</button></div>
@@ -966,15 +1012,18 @@ const RESPONSIBILITY_ROLES=[
   {level:"Asistencial",cargo:"Secretaria Ejecutiva"}
 ];
 const AUTH_SESSION_KEY="gestion_asistente_demo_session_v1";
+const ANALYTICS_KEY="gestion_asistente_analytics_v1";
+const ANALYTICS_SESSION_KEY="gestion_asistente_analytics_session_v1";
 const DEMO_USERS={
   autor:{username:"constructor_prueba",roleName:"Constructor de procedimientos",environment:"autor",isAdmin:false,canSwitchEnvironment:false},
-  asesor:{username:"asesor_prueba",roleName:"Evaluador metodológico",environment:"asesor",isAdmin:false,canSwitchEnvironment:false}
+  asesor:{username:"asesor_prueba",roleName:"Evaluador metodológico",environment:"asesor",isAdmin:false,canSwitchEnvironment:false},
+  admin:{username:"admin_analitica",roleName:"Administrador de analítica",environment:"admin",isAdmin:true,canSwitchEnvironment:false}
 };
 
 function allProcessCodes(){return processGroups.flatMap(group=>group.items.map(item=>item[0]))}
 function demoProfileFor(environment){
-  const key=environment==="asesor"?"asesor":"autor",template=DEMO_USERS[key];
-  return {...template,processes:allProcessCodes()};
+  const key=environment==="admin"?"admin":environment==="asesor"?"asesor":"autor",template=DEMO_USERS[key];
+  return {...template,processes:key==="admin"?[]:allProcessCodes()};
 }
 function assignedProcessCodes(profile=currentProfile){return Array.isArray(profile?.processes)?profile.processes:allProcessCodes()}
 function assignedAdvisorForProcess(code){return code&&allProcessCodes().includes(code)?DEMO_USERS.asesor.username:""}
@@ -1000,7 +1049,40 @@ function readAuthStore(storage,key,fallback){
 function normalizeUsername(value){return String(value||"").trim().toLowerCase()}
 function safeSessionName(value,environment){
   const cleaned=normalizeUsername(value).replace(/[^a-z0-9._-]+/g,"_").replace(/^_+|_+$/g,"");
-  return cleaned||DEMO_USERS[environment==="asesor"?"asesor":"autor"].username;
+  return cleaned||DEMO_USERS[environment==="admin"?"admin":environment==="asesor"?"asesor":"autor"].username;
+}
+function analyticsStore(){return readAuthStore(localStorage,ANALYTICS_KEY,{events:[],sessions:{},started:false})}
+function saveAnalyticsStore(store){try{localStorage.setItem(ANALYTICS_KEY,JSON.stringify(store))}catch(e){}}
+function analyticsSessionId(){
+  let id=sessionStorage.getItem(ANALYTICS_SESSION_KEY);
+  if(!id){id=`ses_${Date.now().toString(36)}_${Math.random().toString(36).slice(2,8)}`;sessionStorage.setItem(ANALYTICS_SESSION_KEY,id)}
+  return id;
+}
+function recordAnalytics(type,detail={}){
+  const store=analyticsStore(),now=new Date().toISOString(),sessionId=analyticsSessionId();
+  store.events=Array.isArray(store.events)?store.events:[];
+  store.sessions=store.sessions&&typeof store.sessions==="object"?store.sessions:{};
+  store.events.push({type,role:currentRole||detail.role||"",at:now,detail});
+  store.events=store.events.slice(-700);
+  store.sessions[sessionId]={role:currentRole||detail.role||"",lastSeen:now};
+  saveAnalyticsStore(store);
+  if(currentRole==="admin")renderAdminAnalytics();
+}
+function analyticsHeartbeat(){
+  if(!currentProfile.username)return;
+  const store=analyticsStore(),sessionId=analyticsSessionId(),now=new Date().toISOString();
+  store.sessions=store.sessions&&typeof store.sessions==="object"?store.sessions:{};
+  store.sessions[sessionId]={role:currentRole,lastSeen:now};
+  saveAnalyticsStore(store);
+  if(currentRole==="admin")renderAdminAnalytics();
+}
+function markProcedureStarted(){
+  const defaultActivities=new Set(["Inicio","Nueva actividad","Fin"]);
+  const meaningfulActivity=activities.some(a=>filled(a.descripcion)||filled(a.responsable)||filled(a.evidencia)||filled(a.sistema)||!defaultActivities.has(String(a.actividad||"").trim()));
+  const hasContent=[val("codigo"),val("nombre"),val("objetivo"),val("alcance"),val("definiciones"),val("condiciones")].some(Boolean)||meaningfulActivity||norms.some(n=>Object.values(n).some(filled));
+  if(!hasContent)return;
+  const store=analyticsStore();if(store.started)return;
+  store.started=true;saveAnalyticsStore(store);recordAnalytics("procedure_started");
 }
 function showAuthError(message,emailInvalid=false,modeInvalid=false){
   const box=$("authError");box.textContent=message;box.classList.add("visible");
@@ -1023,29 +1105,32 @@ function setAuthenticatedState(username,profile=null,preferredEnvironment=""){
   applyRoleNavigation();updateEvaluationUI();updateNotificationsUI();updateWorkflowAction();applyProcessAccess();
   if(active){
     $("sessionRole").title=`Procesos asignados: ${assignedProcessesLabel()}`;
-    if(currentRole==="admin"){renderAdminUsers();resetAdminUserForm()}
+    analyticsHeartbeat();
+    if(currentRole==="admin")renderAdminAnalytics();
     document.querySelector(".navbtn.active")?.focus({preventScroll:true});
   }else $("sessionRole").removeAttribute("title");
 }
 function handleAuth(event){
   event.preventDefault();clearAuthError();
-  const environment=$("authMode")?.value==="asesor"?"asesor":"autor",profile=demoProfileFor(environment),submit=$("authSubmit");
+  const environment=$("authMode")?.value==="admin"?"admin":$("authMode")?.value==="asesor"?"asesor":"autor",profile=demoProfileFor(environment),submit=$("authSubmit");
   const username=safeSessionName($("authEmail").value,environment);
   submit.disabled=true;submit.textContent="Abriendo...";
   try{
     sessionStorage.setItem(AUTH_SESSION_KEY,JSON.stringify({username,environment:profile.environment,loginAt:new Date().toISOString(),demo:true}));
-    setAuthenticatedState(username,profile,profile.environment);toast(`Modo ${profile.environment==="asesor"?"Evaluador":"Constructor"} activado.`);
+    setAuthenticatedState(username,profile,profile.environment);recordAnalytics("login",{role:profile.environment});
+    toast(`Modo ${profile.environment==="admin"?"Administrador":profile.environment==="asesor"?"Evaluador":"Constructor"} activado.`);
   }catch(e){
     console.error(e);showAuthError("No fue posible abrir el modo de prueba en este navegador. Intente nuevamente.");
   }finally{submit.disabled=false;submit.textContent="Entrar en modo de prueba"}
 }
 function initAuth(){
-  const session=readAuthStore(sessionStorage,AUTH_SESSION_KEY,null),environment=session?.environment==="asesor"?"asesor":session?.environment==="autor"?"autor":"";
+  const session=readAuthStore(sessionStorage,AUTH_SESSION_KEY,null),environment=session?.environment==="admin"?"admin":session?.environment==="asesor"?"asesor":session?.environment==="autor"?"autor":"";
   if(session?.demo&&environment){setAuthenticatedState(safeSessionName(session?.username,environment),demoProfileFor(environment),environment);return}
   sessionStorage.removeItem(AUTH_SESSION_KEY);setAuthenticatedState("",null);
   setTimeout(()=>$("authEmail")?.focus(),80);
 }
 function logoutAssistant(){
+  recordAnalytics("logout");
   saveLocal(true);sessionStorage.removeItem(AUTH_SESSION_KEY);
   $("authEmail").value="";clearAuthError();setAuthenticatedState("",null);
   setTimeout(()=>$("authMode")?.focus(),80);
@@ -1120,7 +1205,7 @@ function initProcesses(){
 }
 
 let adminEditingUsername="";
-function isAdministrator(){return false}
+function isAdministrator(){return currentRole==="admin"&&!!currentProfile.isAdmin}
 function requireAdministrator(){toast("La administración de usuarios requiere un backend seguro.");return false}
 function adminAssignableProcesses(){return[]}
 function selectedAdminProcesses(){return[]}
@@ -1131,7 +1216,62 @@ function saveManagedUser(event){event?.preventDefault();requireAdministrator()}
 function toggleManagedUser(){requireAdministrator()}
 function resetManagedPassword(){requireAdministrator()}
 function deleteManagedUser(){requireAdministrator()}
-function renderAdminUsers(){}
+function renderAdminUsers(){renderAdminAnalytics()}
+function analyticsEvents(type=""){const events=analyticsStore().events||[];return type?events.filter(e=>e.type===type):events}
+function analyticsSince(days,type=""){
+  const threshold=Date.now()-days*86400000;
+  return analyticsEvents(type).filter(e=>new Date(e.at).getTime()>=threshold);
+}
+function analyticsDateKey(date){return date.toISOString().slice(0,10)}
+function analyticsDayLabel(date){return new Intl.DateTimeFormat("es-CO",{weekday:"short",timeZone:"America/Bogota"}).format(date).replace(".","")}
+function countEvents(type){return analyticsEvents(type).length}
+function recentSessions(minutes=10){
+  const cutoff=Date.now()-minutes*60000,store=analyticsStore(),sessions=Object.values(store.sessions||{});
+  return sessions.filter(s=>new Date(s.lastSeen).getTime()>=cutoff);
+}
+function renderAdminAnalytics(){
+  if(!$("analyticsTotalLogins"))return;const events=analyticsEvents(),now=new Date(),todayKey=analyticsDateKey(now);
+  const logins=events.filter(e=>e.type==="login"),todayLogins=logins.filter(e=>String(e.at).slice(0,10)===todayKey),weekLogins=analyticsSince(7,"login"),active=recentSessions(10);
+  $("analyticsTotalLogins").textContent=String(logins.length);
+  $("analyticsRecentActive").textContent=String(active.length);
+  $("analyticsSentReviews").textContent=String(countEvents("review_sent")+countEvents("corrections_submitted"));
+  $("analyticsConcepts").textContent=String(countEvents("concept_issued"));
+  $("analyticsTodayLogins").textContent=String(todayLogins.length);
+  $("analyticsWeekLogins").textContent=String(weekLogins.length);
+  $("analyticsLastLogin").textContent=logins.length?dateTimeLabel(logins[logins.length-1].at):"Sin registro";
+  renderAnalyticsChart(logins);renderAnalyticsProductivity();renderAnalyticsAlerts();
+}
+function renderAnalyticsChart(logins){
+  const box=$("analyticsLoginChart");if(!box)return;const days=[...Array(7)].map((_,i)=>{const d=new Date();d.setDate(d.getDate()-(6-i));return d});
+  const counts=days.map(day=>logins.filter(e=>String(e.at).slice(0,10)===analyticsDateKey(day)).length),max=Math.max(1,...counts);
+  box.innerHTML=days.map((day,i)=>`<div class="analytics-day"><div class="analytics-bar" style="height:${Math.max(6,Math.round((counts[i]/max)*104))}px"></div><b>${counts[i]}</b><span>${esc(analyticsDayLabel(day))}</span></div>`).join("");
+}
+function renderAnalyticsProductivity(){
+  const rows=[
+    ["Procedimientos iniciados",countEvents("procedure_started"),"Cantidad de procedimientos creados o diligenciados en esta prueba."],
+    ["Envíos a evaluación",countEvents("review_sent"),"Procedimientos remitidos al modo evaluador."],
+    ["Evaluaciones iniciadas",countEvents("evaluation_started"),"Revisiones metodológicas que pasaron a estado En evaluación."],
+    ["Devoluciones para ajustes",countEvents("returned_for_adjustments"),"Casos devueltos al constructor para subsanar."],
+    ["Subsanaciones enviadas",countEvents("corrections_submitted"),"Respuestas del constructor remitidas nuevamente al evaluador."],
+    ["Conceptos emitidos",countEvents("concept_issued"),"Evaluaciones cerradas con concepto favorable."],
+    ["PDF generados",countEvents("pdf_generated"),"Reportes descargados desde el asistente."]
+  ];
+  if($("analyticsProductivityBody"))$("analyticsProductivityBody").innerHTML=rows.map(row=>`<tr><td><b>${esc(row[0])}</b></td><td>${row[1]}</td><td>${esc(row[2])}</td></tr>`).join("");
+}
+function renderAnalyticsAlerts(){
+  ensureEvaluation();const alerts=[],status=evaluation.status,age=evaluationAgeDays(),failures=evaluationStats().failures;
+  if(status==="Borrador"&&[val("nombre"),val("objetivo"),val("alcance")].some(Boolean))alerts.push(["Borrador activo","Existe un procedimiento en borrador con información diligenciada.","Seguimiento"]);
+  if(["Enviado a evaluación","Subsanado"].includes(status)&&age>=1)alerts.push(["Pendiente de iniciar evaluación",`El procedimiento lleva ${age} día(s) enviado sin inicio de revisión.`,"Atención"]);
+  if(status==="En evaluación"&&age>=2)alerts.push(["Evaluación abierta",`La revisión está en curso desde hace ${age} día(s) sin concepto final.`,"Atención"]);
+  if(status==="Devuelto para ajustes")alerts.push(["Ajustes pendientes","El procedimiento fue devuelto y requiere respuesta del constructor.","Ajustes"]);
+  if(failures>0)alerts.push(["Criterios no cumplidos",`Hay ${failures} criterio(s) con resultado No cumple en la evaluación actual.`,"Calidad"]);
+  if(!alerts.length)alerts.push(["Sin alertas críticas","No se identifican alertas administrativas en esta prueba local.","OK"]);
+  if($("analyticsAlerts"))$("analyticsAlerts").innerHTML=alerts.map(a=>`<div class="alert-item ${a[2]==="OK"?"ok":""}"><span class="rule-icon">${a[2]==="OK"?"✓":"!"}</span><div><b>${esc(a[0])}</b><p>${esc(a[1])}</p></div><span class="alert-tag">${esc(a[2])}</span></div>`).join("");
+}
+function resetAnalyticsDemo(){
+  if(!confirm("¿Reiniciar los datos locales de analítica de prueba en este navegador?"))return;
+  localStorage.removeItem(ANALYTICS_KEY);analyticsHeartbeat();renderAdminAnalytics();toast("Analítica local reiniciada.");
+}
 
 document.querySelectorAll(".navbtn").forEach(btn=>btn.addEventListener("click",()=>switchTab(btn.dataset.tab)));
 
@@ -1254,7 +1394,7 @@ function sectionCompletion(){
 function updateMenuProgress(){
   const state=sectionCompletion();
   document.querySelectorAll(".navbtn").forEach(btn=>{
-    if(["guia","evaluationAnnex"].includes(btn.dataset.tab))return;
+    if(["administration","guia","evaluationAnnex"].includes(btn.dataset.tab))return;
     const complete=!!state[btn.dataset.tab],marker=btn.querySelector(".nav-check");
     btn.classList.toggle("complete",complete);
     if(marker){marker.textContent=complete?"✓":"○";marker.title=complete?(btn.dataset.tab==="preview"?"Listo para exportar":"Módulo completo"):"Módulo pendiente"}
@@ -1281,7 +1421,7 @@ function applyRoleNavigation(){
   if($("evaluationHeading"))$("evaluationHeading").textContent=advisor?"3. Evaluación de adecuación del procedimiento":"8. Seguimiento de la revisión";
   if($("evaluationIntro"))$("evaluationIntro").textContent=advisor?"Califique los criterios, registre las observaciones y emita el concepto técnico.":"Consulte el estado, las observaciones y las respuestas asociadas a la revisión metodológica del procedimiento.";
   if($("evaluationRoleContext")){$("evaluationRoleContext").classList.toggle("advisor",advisor);$("evaluationRoleContext").innerHTML=advisor?`<b>Perfil activo:</b> ${esc(currentProfile.roleName)}${admin?" · Administrador":""}. Puede calificar criterios, registrar hallazgos, devolver el procedimiento o emitir concepto.`:`<b>Perfil activo:</b> ${esc(currentProfile.roleName)}${admin?" · Administrador":""}. Puede diligenciar, enviar la versión, consultar hallazgos y responder los ajustes solicitados.`}
-  const indicator=$("environmentIndicator"),icon=$("environmentIcon");if(indicator){indicator.classList.toggle("evaluator",advisor);$("environmentTitle").textContent=admin?"Administrador":advisor?"Evaluador":"Constructor";$("environmentDescription").textContent=admin?"Gestión de usuarios, roles, procesos y estados de acceso.":advisor?`${currentProfile.roleName}: consulta y evaluación metodológica del procedimiento.`:`${currentProfile.roleName}: diligenciamiento, revisión y envío del procedimiento.`;icon.innerHTML=admin?'<svg viewBox="0 0 48 48"><circle cx="24" cy="17" r="8"/><path d="M10 42c1-11 6-16 14-16s13 5 14 16M37 8v11M31.5 13.5h11"/></svg>':advisor?'<svg viewBox="0 0 48 48"><path d="M13 8h22v35H13z"/><path d="M18 5h12v7H18zM19 20h10M19 27h7"/><path d="m28 34 3 3 7-8"/></svg>':'<svg viewBox="0 0 48 48"><path d="M8 9h24l8 8v22H8z"/><path d="M32 9v8h8M15 23h18M15 29h18M15 35h10"/><path d="m12 12 4 4 7-8"/></svg>'}
+  const indicator=$("environmentIndicator"),icon=$("environmentIcon");if(indicator){indicator.classList.toggle("evaluator",advisor);$("environmentTitle").textContent=admin?"Administrador":advisor?"Evaluador":"Constructor";$("environmentDescription").textContent=admin?"Consulta de uso general, productividad y alertas administrativas de la prueba.":advisor?`${currentProfile.roleName}: consulta y evaluación metodológica del procedimiento.`:`${currentProfile.roleName}: diligenciamiento, revisión y envío del procedimiento.`;icon.innerHTML=admin?'<svg viewBox="0 0 48 48"><path d="M8 39V9"/><path d="M8 39h32"/><rect x="14" y="23" width="6" height="12" rx="1"/><rect x="23" y="14" width="6" height="21" rx="1"/><rect x="32" y="19" width="6" height="16" rx="1"/></svg>':advisor?'<svg viewBox="0 0 48 48"><path d="M13 8h22v35H13z"/><path d="M18 5h12v7H18zM19 20h10M19 27h7"/><path d="m28 34 3 3 7-8"/></svg>':'<svg viewBox="0 0 48 48"><path d="M8 9h24l8 8v22H8z"/><path d="M32 9v8h8M15 23h18M15 29h18M15 35h10"/><path d="m12 12 4 4 7-8"/></svg>'}
   const switcher=$("environmentSwitcher"),canSwitch=!!currentProfile.canSwitchEnvironment;switcher?.classList.toggle("role-hidden",!canSwitch);$("adminEnvironmentBadge")?.classList.toggle("role-hidden",!admin);$("switchConstructor")?.classList.toggle("active",!advisor);$("switchEvaluator")?.classList.toggle("active",advisor);$("switchConstructor")?.setAttribute("aria-pressed",String(!advisor));$("switchEvaluator")?.setAttribute("aria-pressed",String(advisor));
   $("workflowAction")?.classList.toggle("role-hidden",advisor||admin);
   $("fileMenu")?.classList.toggle("role-hidden",advisor||admin);$("saveWrap")?.classList.toggle("role-hidden",advisor||admin);$("quickExport")?.classList.toggle("role-hidden",advisor||admin);$("notificationCenter")?.classList.toggle("role-hidden",admin);document.querySelector(".procedure-pin")?.classList.toggle("role-hidden",admin);
@@ -1349,13 +1489,13 @@ function renderEvaluationAnnex(){
 
 function switchTab(tab){
   if(tab==="administration"&&!isAdministrator()){toast("El módulo de administración es exclusivo para el administrador.");return}
-  if(currentRole==="admin"&&tab!=="administration"){toast("Este perfil solo tiene acceso al módulo de administración.");tab="administration"}
+  if(currentRole==="admin"&&tab!=="administration"){toast("Este perfil solo tiene acceso al módulo de analítica.");tab="administration"}
   document.querySelectorAll(".navbtn").forEach(b=>b.classList.toggle("active",b.dataset.tab===tab));
   const activeNav=document.querySelector(`.navbtn[data-tab="${tab}"]`);if(window.innerWidth<=1050)activeNav?.scrollIntoView({behavior:"smooth",block:"nearest",inline:"center"});
   document.querySelectorAll(".panel").forEach(p=>p.classList.remove("active"));
   $(tab+"Panel").classList.add("active");
   const titles={
-    administration:"Administración de usuarios",advisorInbox:"Bandeja de evaluaciones",advisorProcedure:"Procedimiento recibido",
+    administration:"Analítica administrativa",advisorInbox:"Bandeja de evaluaciones",advisorProcedure:"Procedimiento recibido",
     general:"Identificación del procedimiento",contexto:"Marco contextual",normas:"Normatividad",
     actividades:"Descripción de actividades",flujograma:"Flujograma automático",anexos:"Anexos y control de cambios",
     revision:"Revisión final de consistencia",evaluation:"Evaluación de adecuación",preview:"Reporte PDF",guia:"Guía del flujograma",evaluationAnnex:"Criterios de evaluación"
@@ -1369,6 +1509,7 @@ function switchTab(tab){
   if(tab==="advisorProcedure") buildAdvisorProcedurePreview();
   if(tab==="preview") buildPreview();
   if(tab==="evaluationAnnex") renderEvaluationAnnex();
+  if(currentProfile.username)recordAnalytics("module_view",{module:tab});
 }
 
 function toggleFileMenu(event){
@@ -2267,24 +2408,24 @@ function createNewVersionFromApproved(){
 function sendForEvaluation(){
   if(currentRole!=="autor")return;const completion=sectionCompletion();if(!completion.revision){toast("Complete los módulos obligatorios antes de enviar el procedimiento.");switchTab("revision");return}const assignedAdvisor=assignedAdvisorForProcess(val("proceso"));if(!assignedAdvisor){toast("El proceso seleccionado no tiene un asesor asignado.");return}if(!confirm(`¿Está seguro de enviar el procedimiento “${val("nombre")||"Sin nombre"}” versión ${val("version")||"—"} para revisión metodológica? Mientras se encuentre en evaluación no podrá modificar su contenido.`))return;
   ensureEvaluation();if(["Concepto no favorable","Concepto favorable"].includes(evaluation.status)){const previous=JSON.parse(JSON.stringify({...evaluation,archives:undefined})),archives=[...(evaluation.archives||[]),previous];evaluation=newEvaluationState();evaluation.archives=archives}
-  evaluation.status="Enviado a evaluación";evaluation.authorEmail=currentUserEmail();evaluation.assignedEvaluator=assignedAdvisor;evaluation.submittedAt=new Date().toISOString();evaluation.snapshot=evaluationSnapshot();addEvaluationHistory("Envío a evaluación",`Versión ${val("version")}`);addNotification("asesor","Nuevo procedimiento para revisar",`${val("codigo")||"Código pendiente"} — ${val("nombre")||"Procedimiento sin nombre"}. Asignado a ${assignedAdvisor}.`,"nuevo");saveLocal(true);updateEvaluationUI();toast(`Procedimiento enviado y asignado a ${assignedAdvisor}.`);
+  evaluation.status="Enviado a evaluación";evaluation.authorEmail=currentUserEmail();evaluation.assignedEvaluator=assignedAdvisor;evaluation.submittedAt=new Date().toISOString();evaluation.snapshot=evaluationSnapshot();addEvaluationHistory("Envío a evaluación",`Versión ${val("version")}`);addNotification("asesor","Nuevo procedimiento para revisar",`${val("codigo")||"Código pendiente"} — ${val("nombre")||"Procedimiento sin nombre"}. Asignado a ${assignedAdvisor}.`,"nuevo");recordAnalytics("review_sent");saveLocal(true);updateEvaluationUI();toast(`Procedimiento enviado y asignado a ${assignedAdvisor}.`);
 }
 function startEvaluation(){
   if(currentRole!=="asesor"||!["Enviado a evaluación","Subsanado"].includes(evaluation?.status))return;
   if(!canAccessCurrentProcess()||(evaluation.assignedEvaluator&&evaluation.assignedEvaluator!==currentUserEmail()&&evaluation.assignedEvaluator!==DEMO_USERS.asesor.username)){toast("Este procedimiento está asignado a otro asesor.");return}
   if(normalizeUsername(evaluation.authorEmail)===currentUserEmail()){toast("No está permitido evaluar un procedimiento elaborado por la misma cuenta.");return}
-  evaluation.status="En evaluación";evaluation.evaluatorEmail=currentUserEmail();evaluation.evaluationDate=new Date().toISOString();addEvaluationHistory("Inicio de evaluación",`Iteración ${evaluation.iteration}`);addNotification("autor","El asesor inició la revisión",`${evaluation.evaluatorEmail} inició la evaluación de ${val("codigo")||"su procedimiento"}.`,"proceso");saveLocal(true);updateEvaluationUI();toast("Evaluación iniciada. El autor ha sido notificado.");
+  evaluation.status="En evaluación";evaluation.evaluatorEmail=currentUserEmail();evaluation.evaluationDate=new Date().toISOString();addEvaluationHistory("Inicio de evaluación",`Iteración ${evaluation.iteration}`);addNotification("autor","El asesor inició la revisión",`${evaluation.evaluatorEmail} inició la evaluación de ${val("codigo")||"su procedimiento"}.`,"proceso");recordAnalytics("evaluation_started");saveLocal(true);updateEvaluationUI();toast("Evaluación iniciada. El autor ha sido notificado.");
 }
 function returnForAdjustments(){
-  if(currentRole!=="asesor"||evaluation?.status!=="En evaluación"||!validateEvaluation())return;const stats=evaluationStats();if(!stats.failures){toast("No existen criterios incumplidos para devolver el procedimiento.");return}if(!filled(evaluation.concept)){toast("Registre el concepto técnico antes de devolver el procedimiento.");return}if(!confirm("¿Devolver el procedimiento al autor para que realice los ajustes solicitados?"))return;evaluation.status="Devuelto para ajustes";addEvaluationHistory("Devolución para ajustes",`${stats.failures} criterio(s) no cumplido(s)`);addNotification("autor","Procedimiento devuelto para ajustes",`Se identificaron ${stats.failures} criterio(s) no cumplido(s) y ${stats.criticalFailures} incumplimiento(s) crítico(s).`,"ajuste");saveLocal(true);updateEvaluationUI();toast("Procedimiento devuelto. El autor ha sido notificado.");
+  if(currentRole!=="asesor"||evaluation?.status!=="En evaluación"||!validateEvaluation())return;const stats=evaluationStats();if(!stats.failures){toast("No existen criterios incumplidos para devolver el procedimiento.");return}if(!filled(evaluation.concept)){toast("Registre el concepto técnico antes de devolver el procedimiento.");return}if(!confirm("¿Devolver el procedimiento al autor para que realice los ajustes solicitados?"))return;evaluation.status="Devuelto para ajustes";addEvaluationHistory("Devolución para ajustes",`${stats.failures} criterio(s) no cumplido(s)`);addNotification("autor","Procedimiento devuelto para ajustes",`Se identificaron ${stats.failures} criterio(s) no cumplido(s) y ${stats.criticalFailures} incumplimiento(s) crítico(s).`,"ajuste");recordAnalytics("returned_for_adjustments");saveLocal(true);updateEvaluationUI();toast("Procedimiento devuelto. El autor ha sido notificado.");
 }
 function submitCorrections(){
-  if(currentRole!=="autor"||evaluation?.status!=="Devuelto para ajustes")return;const pending=evaluationCriteriaFlat.filter(c=>evaluation.criteria[c.id].result==="No cumple"&&!filled(evaluation.criteria[c.id].response));if(pending.length){toast(`Responda ${pending.length} hallazgo(s) antes de enviar la subsanación.`);return}if(!confirm("¿Enviar los ajustes para una nueva revisión del asesor?"))return;evaluation.status="Subsanado";evaluation.iteration+=1;evaluation.submittedAt=new Date().toISOString();evaluation.snapshot=evaluationSnapshot();addEvaluationHistory("Envío de subsanación",`Iteración ${evaluation.iteration}`);addNotification("asesor","Subsanación recibida",`${val("codigo")||"El procedimiento"} fue ajustado por el autor y requiere una nueva revisión. Iteración ${evaluation.iteration}.`,"subsanacion");saveLocal(true);updateEvaluationUI();toast("Subsanación enviada. El asesor ha sido notificado.");
+  if(currentRole!=="autor"||evaluation?.status!=="Devuelto para ajustes")return;const pending=evaluationCriteriaFlat.filter(c=>evaluation.criteria[c.id].result==="No cumple"&&!filled(evaluation.criteria[c.id].response));if(pending.length){toast(`Responda ${pending.length} hallazgo(s) antes de enviar la subsanación.`);return}if(!confirm("¿Enviar los ajustes para una nueva revisión del asesor?"))return;evaluation.status="Subsanado";evaluation.iteration+=1;evaluation.submittedAt=new Date().toISOString();evaluation.snapshot=evaluationSnapshot();addEvaluationHistory("Envío de subsanación",`Iteración ${evaluation.iteration}`);addNotification("asesor","Subsanación recibida",`${val("codigo")||"El procedimiento"} fue ajustado por el autor y requiere una nueva revisión. Iteración ${evaluation.iteration}.`,"subsanacion");recordAnalytics("corrections_submitted");saveLocal(true);updateEvaluationUI();toast("Subsanación enviada. El asesor ha sido notificado.");
 }
 function issueEvaluationDecision(type){
   if(currentRole!=="asesor"||evaluation?.status!=="En evaluación"||type!=="favorable"||!validateEvaluation())return;const stats=evaluationStats();if(!filled(evaluation.concept)){toast("Registre el concepto técnico antes de emitir la decisión.");return}
   if(type==="favorable"){const openFailures=evaluationCriteriaFlat.filter(c=>evaluation.criteria[c.id].result==="No cumple"&&evaluation.criteria[c.id].findingStatus!=="Cerrado");if(stats.score<90||stats.criticalFailures||openFailures.length){toast("El concepto favorable requiere al menos 90 puntos, ningún incumplimiento crítico y todos los hallazgos cerrados.");return}}
-  const label="Concepto favorable";if(!confirm(`¿Emitir ${label.toLowerCase()} para esta versión?`))return;evaluation.status=label;evaluation.decision=stats.decision;addEvaluationHistory(label,`${stats.score.toFixed(1)}% · ${stats.level}`);addNotification("autor",label,`La revisión de ${val("codigo")||"su procedimiento"} finalizó con ${stats.score.toFixed(1)} puntos y nivel ${stats.level}.`,"concepto");saveLocal(true);updateEvaluationUI();toast(`${label} emitido. El autor ha sido notificado.`);
+  const label="Concepto favorable";if(!confirm(`¿Emitir ${label.toLowerCase()} para esta versión?`))return;evaluation.status=label;evaluation.decision=stats.decision;addEvaluationHistory(label,`${stats.score.toFixed(1)}% · ${stats.level}`);addNotification("autor",label,`La revisión de ${val("codigo")||"su procedimiento"} finalizó con ${stats.score.toFixed(1)} puntos y nivel ${stats.level}.`,"concepto");recordAnalytics("concept_issued",{score:Number(stats.score.toFixed(1)),level:stats.level});saveLocal(true);updateEvaluationUI();toast(`${label} emitido. El autor ha sido notificado.`);
 }
 function evaluationReportHtml(){
   ensureEvaluation();const stats=evaluationStats(),rows=evaluationCriteriaFlat.map((c,i)=>{const r=evaluation.criteria[c.id];return `<tr><td>${i+1}</td><td>${esc(c.groupName)}</td><td>${esc(c.question)}</td><td>${esc(r.result||"Pendiente")}</td><td>${esc(r.observation)}</td><td>${esc(r.adjustment)}</td><td>${esc(r.response)}</td><td>${esc(r.findingStatus)}</td></tr>`}).join("");
@@ -2310,6 +2451,7 @@ function applyData(d){
 }
 function saveLocal(silent=false){
   try{
+    if(currentProfile.username)markProcedureStarted();
     localStorage.setItem("procedimiento_baq_v8",JSON.stringify({...data(),savedAt:new Date().toISOString()}));
     const state=$("saveState");if(state)state.textContent=silent?"Guardado automático":"Guardado ahora";
     if(!silent)toast("Procedimiento guardado localmente.");
@@ -2435,7 +2577,7 @@ function buildProcedurePdf(flowImage){
 }
 async function generatePDF(){
   const score=runQualityRules();buildPreview();switchTab("preview");toast("Preparando PDF con respaldo JSON…");
-  try{const flowImage=await flowJpeg().catch(()=>null),bytes=buildProcedurePdf(flowImage);downloadBlob(new Blob([bytes],{type:"application/pdf"}),safeFileName(val("codigo")||val("nombre"))+".pdf");saveLocal(true);toast(score<100?"PDF generado con observaciones pendientes y respaldo JSON incluido.":"PDF generado con respaldo JSON incluido.")}catch(e){console.error(e);toast("No fue posible generar el PDF. Intente nuevamente.")}
+  try{const flowImage=await flowJpeg().catch(()=>null),bytes=buildProcedurePdf(flowImage);downloadBlob(new Blob([bytes],{type:"application/pdf"}),safeFileName(val("codigo")||val("nombre"))+".pdf");recordAnalytics("pdf_generated");saveLocal(true);toast(score<100?"PDF generado con observaciones pendientes y respaldo JSON incluido.":"PDF generado con respaldo JSON incluido.")}catch(e){console.error(e);toast("No fue posible generar el PDF. Intente nuevamente.")}
 }
 
 function safeFileName(value){
@@ -2499,6 +2641,7 @@ addActivity({tipo:"Actividad",actividad:"Nueva actividad",descripcion:""});
 addActivity({tipo:"Fin",actividad:"Fin",descripcion:""});
 addAnexo();addCambio({razon:"Creación inicial del procedimiento"});
 updateCode();renderFlow();runQualityRules();loadLocal();updateProcedureIdentity();updateMenuProgress();initAuth();
+setInterval(analyticsHeartbeat,30000);
 document.addEventListener("input",scheduleAutosave);
 document.addEventListener("change",scheduleAutosave);
 document.addEventListener("click",e=>{if(e.target.closest("button"))scheduleAutosave()});
