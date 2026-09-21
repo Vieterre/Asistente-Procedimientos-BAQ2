@@ -6,6 +6,9 @@
 <meta name="theme-color" content="#004488">
 <meta name="referrer" content="no-referrer">
 <meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=(), payment=()">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <title>Validador y Estructurador Metodológico de Procedimientos</title>
 <style>
 :root{
@@ -47,9 +50,9 @@ button{cursor:pointer}
 .procedure-pin-code{flex:0 0 auto;margin-left:auto;padding:4px 7px;border-radius:6px;background:#EEF3F5;color:#5D6C75;font-size:10px;font-weight:700}
 .environment-indicator{display:flex;align-items:center;gap:15px;margin:0 0 12px;padding:13px 16px;border:1px solid #BFCFDB;border-left:7px solid var(--navy);border-radius:13px;background:linear-gradient(100deg,#F4F8FC,#fff);box-shadow:0 7px 20px rgba(0,68,136,.08)}
 .environment-icon{flex:none;width:68px;height:68px;border-radius:17px;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 9px 22px rgba(0,68,136,.22)}.environment-icon svg{width:42px;height:42px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
-.environment-copy{min-width:0}.environment-eyebrow{display:block;color:#5D7C94;font-size:10px;font-weight:900;letter-spacing:1.1px;text-transform:uppercase;margin-bottom:3px}.environment-copy strong{display:block;color:var(--navy);font-size:22px;line-height:1.1}.environment-copy p{margin:5px 0 0;color:#60737D;font-size:11px;line-height:1.35}
+.environment-copy{min-width:0}.environment-eyebrow{display:block;color:#5D7C94;font-size:10px;font-weight:900;letter-spacing:1.1px;text-transform:uppercase;margin-bottom:3px}.environment-copy strong{display:block;color:var(--navy);font-size:22px;line-height:1.1}.environment-copy p{margin:5px 0 0;color:#60737D;font-size:11px;line-height:1.35}.environment-copy p:empty{display:none}
 .environment-indicator.evaluator{border-left-color:var(--green);background:linear-gradient(100deg,#EDF8F1,#fff)}.environment-indicator.evaluator .environment-icon{background:var(--green);box-shadow:0 9px 22px rgba(29,154,124,.22)}.environment-indicator.evaluator .environment-copy strong{color:#14755F}
-.environment-actions{margin-left:auto;display:flex;align-items:flex-end;gap:8px;flex-direction:column}.admin-environment-badge{display:inline-flex;padding:4px 8px;border-radius:999px;background:#FFF3C4;color:#725700;border:1px solid #E1C65B;font-size:9px;font-weight:900;letter-spacing:.5px;text-transform:uppercase}.environment-switcher{display:flex;padding:4px;border:1px solid #BFCFDB;border-radius:10px;background:#EEF3F5}.environment-switcher button{min-width:104px;padding:8px 11px;border:0;border-radius:7px;background:transparent;color:#536B78;font-size:11px;font-weight:800}.environment-switcher button:hover{color:var(--navy);background:#fff}.environment-switcher button.active{background:var(--navy);color:#fff;box-shadow:0 3px 10px rgba(0,68,136,.18)}.environment-indicator.evaluator .environment-switcher button.active{background:var(--green)}
+.environment-actions{margin-left:auto;display:flex;align-items:flex-end;gap:8px;flex-direction:column}.environment-switcher{display:flex;padding:4px;border:1px solid #BFCFDB;border-radius:10px;background:#EEF3F5}.environment-switcher button{min-width:104px;padding:8px 11px;border:0;border-radius:7px;background:transparent;color:#536B78;font-size:11px;font-weight:800}.environment-switcher button:hover{color:var(--navy);background:#fff}.environment-switcher button.active{background:var(--navy);color:#fff;box-shadow:0 3px 10px rgba(0,68,136,.18)}.environment-indicator.evaluator .environment-switcher button.active{background:var(--green)}
 .status{margin-top:18px;padding:12px;border:1px solid rgba(255,255,255,.16);border-radius:10px;background:rgba(255,255,255,.06);color:#fff}
 .status b{display:block;margin-bottom:5px} .status small{color:#DDE5E9;line-height:1.35}
 .main{padding:20px 28px 55px;max-width:1650px;width:100%;min-width:0;margin:auto}
@@ -124,6 +127,8 @@ button{cursor:pointer}
 .tablewrap{max-width:100%;overflow:auto;border:1px solid var(--line);border-radius:10px;background:#fff;-webkit-overflow-scrolling:touch;overscroll-behavior-inline:contain}
 #actividadesPanel .tablewrap{max-height:calc(100vh - 245px);overflow:auto;position:relative}
 #actividadesPanel thead th{position:sticky;top:0;z-index:6;box-shadow:0 2px 0 rgba(255,255,255,.18)}
+.activity-collapse-btn{white-space:nowrap;margin-top:5px}.activity-collapsed td{vertical-align:middle;background:#F7F9FC}.activity-collapsed-summary{display:flex;align-items:center;gap:10px;flex-wrap:wrap;min-height:38px}.activity-collapsed-summary b{color:var(--navy);font-size:12px}.activity-collapsed-summary span{color:var(--muted);font-size:10px}.activity-completion-tag{display:inline-flex;padding:3px 7px;border-radius:999px;border:1px solid #B9DEC3;background:#EAF6ED;color:#14755F!important;font-weight:800}.activity-completion-tag.pending{border-color:#E7D39A;background:#FFF8E6;color:#725700!important}.decision-question-label{display:block;margin-bottom:5px;color:var(--navy);font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.45px}.decision-question{min-height:78px}.decision-unused{background:#F7F9FC}
+.annex-applicability{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.annex-applicability label{font-size:11px;font-weight:800;color:var(--navy)}.annex-applicability select{min-width:145px;border:1px solid #BCC8CE;border-radius:9px;padding:9px;background:#fff;color:var(--text)}.annex-na-message{display:none;padding:14px;border:1px solid #B9DEC3;border-left:5px solid var(--green);border-radius:10px;background:#F1F8F3;color:#315C4F;font-size:12px;line-height:1.45}.annex-na-message.visible{display:block}
 table{width:100%;border-collapse:collapse;min-width:1000px}
 #normasPanel table{min-width:1320px}
 #normasPanel th:nth-child(1){width:135px}
@@ -228,6 +233,7 @@ td textarea{min-height:66px}
 .workflow-action .btn{white-space:nowrap}.workflow-state{max-width:150px;padding:0 6px;color:#5D6C75;font-size:9px;font-weight:800;line-height:1.2;text-transform:uppercase;letter-spacing:.35px}
 .notification-center{position:relative}.notification-bell{position:relative;width:39px;height:39px;border:1px solid #C3CFD4;border-radius:10px;background:#fff;color:var(--navy);display:flex;align-items:center;justify-content:center}.notification-bell:hover{border-color:var(--green);color:var(--green)}.notification-bell svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}.notification-count{position:absolute;right:-5px;top:-6px;min-width:18px;height:18px;padding:0 4px;border-radius:999px;background:var(--danger);color:#fff;border:2px solid #fff;font-size:9px;font-weight:800;display:flex;align-items:center;justify-content:center}.notification-count:empty{display:none}
 .notification-popover{display:none;position:absolute;right:0;top:calc(100% + 8px);z-index:70;width:min(390px,calc(100vw - 28px));max-height:470px;overflow:auto;padding:8px;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 18px 45px rgba(0,68,136,.22)}.notification-center.open .notification-popover{display:block}.notification-head{display:flex;justify-content:space-between;align-items:center;padding:6px 7px 10px;border-bottom:1px solid #E1E7EA}.notification-head b{color:var(--navy)}.notification-head button{border:0;background:transparent;color:var(--green);font-size:10px;font-weight:800}.notification-list{display:grid;gap:5px;padding-top:7px}.notification-item{border:1px solid #D9E2E6;border-left:4px solid var(--slate);border-radius:8px;padding:9px;background:#FAFBFB}.notification-item.unread{border-left-color:var(--green);background:#F1F8F3}.notification-item b{display:block;color:var(--navy);font-size:12px;margin-bottom:3px}.notification-item p{margin:0;color:#536773;font-size:11px;line-height:1.4}.notification-item time{display:block;color:#87949B;font-size:9px;margin-top:5px}
+.quick-file-actions{display:flex;align-items:center;gap:6px}.quick-action-button{position:relative;width:39px;height:39px;display:grid;place-items:center;padding:0;border:1px solid #C3CFD4;border-radius:10px;background:#fff;color:var(--navy);cursor:pointer}.quick-action-button:hover{border-color:var(--green);background:#F0F9F6;color:#08785D}.quick-action-button svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}.quick-action-button.pdf{background:#123A60;border-color:#123A60;color:#fff}.quick-action-button.pdf:hover{background:#0B2B49;border-color:#0B2B49}.quick-action-button .pdf-mark{position:absolute;right:3px;bottom:2px;padding:1px 2px;border-radius:3px;background:#fff;color:#123A60;font-size:6px;font-weight:900;line-height:1}
 .inbox-hero{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:14px 0}.inbox-table{min-width:1050px}.inbox-table td{font-size:12px;vertical-align:middle}.inbox-code{font-weight:800;color:var(--navy)}.inbox-status{display:inline-flex;padding:4px 7px;border-radius:999px;background:#EEF3F5;color:#3F6178;border:1px solid #C9D5DB;font-size:10px;font-weight:800}.inbox-status.new{background:#EAF6ED;color:#14755F;border-color:#B9DEC3}.inbox-status.urgent{background:#FFF1EF;color:#9A251C;border-color:#E9B3AE}
 .role-context{display:flex;align-items:center;gap:8px;margin-bottom:12px;padding:9px 12px;border-radius:9px;background:#EDF4F7;border-left:5px solid var(--navy);color:#3F5866;font-size:12px}.role-context b{color:var(--navy)}.role-context.advisor{background:#EDF7F0;border-left-color:var(--green)}
 .annex-overview{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:11px;margin:16px 0}.annex-overview .kpi{margin:0}.annex-intro{margin:14px 0;padding:14px 16px;border:1px solid #C9D8DE;border-left:6px solid var(--green);border-radius:10px;background:#F7FAF9;color:#445B68;font-size:13px;line-height:1.55}.annex-variable-table{min-width:640px}.annex-variable-table th{position:static}.non-scored-table{min-width:820px}.non-scored-table th{position:static}.non-scored-table th:first-child{width:145px}.non-scored-table td{font-size:13px;line-height:1.55;vertical-align:middle}.non-scored-table td:first-child{color:var(--navy);font-weight:900}.non-scored-badge{display:inline-flex;margin-left:6px;padding:3px 7px;border:1px solid #C4D2D8;border-radius:999px;background:#EEF3F5;color:#536B78;font-size:9px;font-weight:900;letter-spacing:.4px;text-transform:uppercase}.reference-group{border:1px solid #CBD7DC;border-radius:11px;margin-bottom:11px;overflow:hidden;background:#fff}.reference-group summary{cursor:pointer;list-style:none;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;padding:12px 14px;background:#F2F6F7;color:var(--navy);font-weight:800}.reference-group summary::-webkit-details-marker{display:none}.reference-group summary:after{content:"＋";color:var(--green)}.reference-group[open] summary:after{content:"−"}.reference-group-description{padding:10px 14px;border-top:1px solid #E0E7EA;color:#5D6F79;font-size:12px}.reference-criterion{display:flex;gap:10px;align-items:flex-start;padding:11px 14px;border-top:1px solid #E0E7EA;color:#314653;font-size:13px;line-height:1.45}.reference-criterion-number{flex:none;width:25px;height:25px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--navy);color:#fff;font-size:10px;font-weight:900}.evaluation-scale{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:14px}.scale-card{padding:13px;border:1px solid #D3DDE2;border-top:4px solid var(--slate);border-radius:10px;background:#fff}.scale-card strong{display:block;color:var(--navy);font-size:16px}.scale-card span{color:#5D6F79;font-size:12px}.scale-card.low{border-top-color:var(--danger)}.scale-card.medium{border-top-color:#C89B00}.scale-card.high{border-top-color:var(--green)}
@@ -325,6 +331,11 @@ td textarea{min-height:66px}
 .decision-chip{background:#FFF1B8;color:#725500;border:1px solid #E5C35A}
 .connector-chip{background:#E8F2FB;color:#3F6178;border:1px solid #A9CBE8}
 .control-chip{background:#E6F5EA;color:#14755F;border:1px solid #B4DEC0}
+.other-responsible-wrap{display:grid;gap:6px;margin-top:7px}
+.other-responsible-wrap input{min-width:190px;background:#fff}
+.other-responsible-note{padding:7px 8px;border:1px solid #E4C75A;border-left:4px solid #B58A00;border-radius:7px;background:#FFFBEC;color:#6E571B;font-size:10px;line-height:1.4}
+.other-responsible-note b{color:#725700}
+.other-responsible-wrap input[aria-invalid="true"]{border-color:#B8382E;background:#FFF7F6}
 .decision-details-row td{background:#FFFDF3;padding:12px 14px;border-top:0}
 .decision-details{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;border-left:4px solid #5D7C94;padding-left:12px}
 .route-box{border:1px solid #E4D486;background:#fff;border-radius:9px;padding:10px}
@@ -400,20 +411,7 @@ body.auth-locked>.app{filter:blur(5px);pointer-events:none;user-select:none}
 #sessionRole.role-badge{display:inline-flex;width:max-content;margin-top:2px;padding:2px 6px;border-radius:999px;background:#EAF4ED;color:#14755F;border:1px solid #B9DEC3;font-size:8px;font-weight:800;letter-spacing:.35px;text-transform:uppercase}
 .session-logout{border:0;background:transparent;color:var(--slate);font-size:10px;font-weight:700;padding:5px;border-radius:6px}
 .session-logout:hover{background:#EEF3F5;color:var(--navy)}
-.admin-layout{display:grid;grid-template-columns:minmax(280px,360px) minmax(0,1fr);gap:18px;align-items:start}
-.admin-form-card,.admin-list-card{border:1px solid var(--line);border-radius:12px;background:#fff;padding:16px}
-.admin-form-card h4,.admin-list-card h4{margin:0 0 12px;color:var(--navy)}
-.admin-form-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}
-.admin-process-list{max-height:190px;overflow:auto;border:1px solid var(--line);border-radius:9px;padding:8px;background:#F8FAFB}
-.admin-process-option{display:flex;align-items:flex-start;gap:7px;padding:5px 4px;font-size:11px;color:var(--text)}
-.admin-process-option input{width:auto;margin-top:2px}
-.admin-toolbar{display:flex;gap:10px;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap}
-.admin-toolbar input{max-width:310px}
-.admin-status{display:inline-flex;padding:3px 7px;border-radius:999px;font-size:9px;font-weight:800;text-transform:uppercase;background:#EAF4ED;color:#14755F}
-.admin-status.inactive{background:#FDECEA;color:#9D241C}
-.admin-user-actions{display:flex;gap:5px;flex-wrap:wrap}
-.admin-user-actions .btn{padding:5px 7px;font-size:9px}
-.admin-note{margin-top:12px;padding:10px;border-radius:9px;background:#FFF8E6;border:1px solid #E7D39A;color:#6E571B;font-size:10px;line-height:1.45}
+.analytics-note{margin-top:12px;padding:10px;border-radius:9px;background:#FFF8E6;border:1px solid #E7D39A;color:#6E571B;font-size:10px;line-height:1.45}
 .analytics-section{margin-top:18px}
 .analytics-section h4{margin:0 0 10px;color:var(--navy)}
 .analytics-bars{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px;align-items:end;min-height:150px;padding:14px;border:1px solid var(--line);border-radius:12px;background:#fff}
@@ -421,6 +419,15 @@ body.auth-locked>.app{filter:blur(5px);pointer-events:none;user-select:none}
 .analytics-bar{width:100%;min-height:6px;border-radius:7px 7px 3px 3px;background:linear-gradient(180deg,var(--green),#14755F)}
 .analytics-day span{font-size:10px;color:var(--muted);font-weight:700}
 .analytics-day b{font-size:12px;color:var(--navy)}
+.analytics-toolbar{display:grid;grid-template-columns:minmax(145px,.65fr) minmax(180px,1fr) minmax(160px,.8fr) auto;gap:10px;align-items:end;margin:0 0 16px;padding:13px;border:1px solid var(--line);border-radius:14px;background:#F7F9FC}
+.analytics-filter{display:grid;gap:5px}.analytics-filter label{font-size:9px;font-weight:900;letter-spacing:.65px;text-transform:uppercase;color:var(--muted)}.analytics-filter select{width:100%;height:40px;padding:7px 9px;border:1px solid #C9D5E1;border-radius:9px;background:#fff;color:var(--text)}
+.analytics-filter-summary{align-self:center;color:var(--muted);font-size:10px;line-height:1.35;text-align:right}
+.dashboard-kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}.dashboard-kpi{position:relative;overflow:hidden;min-height:108px;padding:15px;border:1px solid var(--line);border-radius:15px;background:#fff;box-shadow:0 8px 22px rgba(16,30,46,.06)}.dashboard-kpi:before{content:"";position:absolute;left:0;right:0;top:0;height:4px;background:var(--kpi-color,#1F6FD0)}.dashboard-kpi b{display:block;margin:8px 0 4px;color:var(--text);font-size:25px;letter-spacing:-.04em}.dashboard-kpi span{display:block;color:var(--muted);font-size:10px;font-weight:700;line-height:1.25}.dashboard-kpi small{display:block;margin-top:6px;color:#81909D;font-size:8.5px;line-height:1.25}.dashboard-kpi.good{--kpi-color:var(--green)}.dashboard-kpi.warn{--kpi-color:#D39A18}.dashboard-kpi.info{--kpi-color:#1F6FD0}.dashboard-kpi.alert{--kpi-color:var(--danger)}
+.analytics-grid{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(300px,.85fr);gap:14px}.analytics-card{padding:15px;border:1px solid var(--line);border-radius:15px;background:#fff}.analytics-card-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:12px}.analytics-card-head h4{margin:0;color:var(--navy)}.analytics-card-head span{color:var(--muted);font-size:9px;text-align:right}
+.flow-funnel{display:grid;grid-template-columns:repeat(6,minmax(82px,1fr));gap:7px;overflow-x:auto;padding:3px 0 7px}.flow-stage{position:relative;min-width:82px;padding:11px 9px;border:1px solid #DCE4ED;border-radius:11px;background:#F7F9FC}.flow-stage:not(:last-child):after{content:"›";position:absolute;z-index:2;right:-7px;top:50%;transform:translateY(-50%);width:14px;height:20px;display:flex;align-items:center;justify-content:center;border-radius:99px;background:#fff;color:#7D8D9C;font-weight:900}.flow-stage b{display:block;color:var(--navy);font-size:19px}.flow-stage span{display:block;margin-top:3px;color:var(--muted);font-size:9px;font-weight:700;line-height:1.2}.flow-stage-meter{height:4px;margin-top:9px;border-radius:99px;background:#DFE7EF;overflow:hidden}.flow-stage-meter i{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,var(--green),#1F6FD0)}
+.analytics-status{display:grid;gap:8px}.analytics-status-row{display:grid;grid-template-columns:minmax(105px,.8fr) minmax(100px,1fr) 34px;gap:8px;align-items:center}.analytics-status-row span{font-size:10px;color:var(--muted);font-weight:700}.analytics-status-track{height:9px;border-radius:99px;background:#E8EDF3;overflow:hidden}.analytics-status-track i{display:block;height:100%;min-width:3px;border-radius:inherit;background:linear-gradient(90deg,#1F6FD0,var(--green))}.analytics-status-row b{text-align:right;color:var(--navy);font-size:11px}
+.analytics-empty{padding:18px;text-align:center;color:var(--muted);font-size:11px}.analytics-table td{font-size:11px;vertical-align:middle}.analytics-table td:first-child{font-weight:800;color:var(--navy)}.analytics-table .status{white-space:nowrap}.analytics-section-subtitle{margin:-4px 0 11px;color:var(--muted);font-size:10px}
+#analyticsLastLogin{font-size:13px;line-height:1.3;letter-spacing:0;overflow-wrap:anywhere}
 .alert-list{display:grid;gap:8px}
 .alert-item{display:grid;grid-template-columns:28px minmax(0,1fr) auto;gap:10px;align-items:start;padding:11px 12px;border:1px solid var(--line);border-left:5px solid #B58A00;border-radius:9px;background:#FFFBEC}
 .alert-item.ok{border-left-color:var(--green);background:#F4FAF6}
@@ -428,8 +435,9 @@ body.auth-locked>.app{filter:blur(5px);pointer-events:none;user-select:none}
 .alert-item p{margin:0;color:#526874;font-size:12px;line-height:1.35}
 .alert-tag{font-size:9px;font-weight:900;text-transform:uppercase;color:#725700;background:#FFF0B8;border:1px solid #E4C75A;border-radius:999px;padding:3px 7px}
 @media(max-width:900px){.session-user{order:4}.session-user-data{max-width:210px}}
-@media(max-width:900px){.admin-layout{grid-template-columns:1fr}}
-@media(max-width:520px){.auth-gate{padding:12px}.auth-brand{padding:22px 20px 18px}.auth-form{padding:21px 20px 24px}.auth-brand h1{font-size:22px}.session-user{grid-column:1/-1;width:100%}.session-user-data{max-width:none;flex:1}}
+@media(max-width:1100px){.dashboard-kpis{grid-template-columns:repeat(3,minmax(0,1fr))}.analytics-toolbar{grid-template-columns:repeat(3,minmax(0,1fr))}.analytics-filter-summary{grid-column:1/-1;text-align:left}}
+@media(max-width:760px){.analytics-toolbar{grid-template-columns:1fr}.analytics-filter-summary{grid-column:auto}.dashboard-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.analytics-grid{grid-template-columns:1fr}.analytics-card{padding:12px}.flow-funnel{grid-template-columns:repeat(6,104px)}.analytics-card-head{flex-direction:column}.analytics-card-head span{text-align:left}}
+@media(max-width:520px){.auth-gate{padding:12px}.auth-brand{padding:22px 20px 18px}.auth-form{padding:21px 20px 24px}.auth-brand h1{font-size:22px}.session-user{grid-column:1/-1;width:100%}.session-user-data{max-width:none;flex:1}.dashboard-kpi{min-height:100px;padding:12px}.dashboard-kpi b{font-size:22px}.analytics-status-row{grid-template-columns:95px minmax(70px,1fr) 30px}}
 
 /* ===== Optimización Chrome y diseño adaptable v9.0 ===== */
 html{-webkit-text-size-adjust:100%;text-size-adjust:100%;overflow-x:hidden}
@@ -453,7 +461,6 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
   .evaluation-summary,.annex-overview,.evaluation-scale{grid-template-columns:repeat(3,minmax(0,1fr))}
   .topbar{display:grid;grid-template-columns:minmax(220px,.8fr) minmax(0,1.2fr);align-items:center}
   .top-actions{width:auto;justify-content:flex-end}
-  .admin-layout{grid-template-columns:minmax(260px,320px) minmax(0,1fr)}
 }
 
 @media screen and (max-width:760px){
@@ -473,16 +480,6 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
   .panel{scroll-margin-top:125px}
   .panel>.actions{flex-direction:column;align-items:stretch}
   .panel>.actions>.btn,.panel>.actions>button{align-self:flex-start}
-  .admin-toolbar{align-items:stretch;flex-direction:column}
-  .admin-toolbar input{max-width:none;width:100%}
-  .admin-form-card,.admin-list-card{padding:13px}
-  .admin-list-card .tablewrap{border:0;overflow:visible;margin:0;max-width:100%}
-  .admin-list-card table{display:block;min-width:0}.admin-list-card thead{display:none}.admin-list-card tbody{display:grid;gap:10px}
-  .admin-list-card tr{display:block;border:1px solid var(--line);border-left:4px solid var(--green);border-radius:10px;padding:8px;background:#fff;box-shadow:0 3px 10px rgba(0,68,136,.05)}
-  .admin-list-card td{display:grid;grid-template-columns:88px minmax(0,1fr);gap:8px;padding:7px 5px;border-bottom:1px solid #E8EDEF;overflow-wrap:anywhere}
-  .admin-list-card td:last-child{border-bottom:0}.admin-list-card td:before{content:attr(data-label);color:var(--muted);font-size:9px;font-weight:900;letter-spacing:.35px;text-transform:uppercase}
-  .admin-list-card td.empty{display:block;text-align:center}.admin-list-card td.empty:before{display:none}
-  .admin-user-actions{min-width:0}
   .tablewrap{margin-inline:-4px;max-width:calc(100% + 8px)}
   #actividadesPanel .tablewrap{max-height:65dvh}
   .flowwrap{min-height:300px;max-height:62dvh}
@@ -502,6 +499,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
   .environment-copy{flex:1}.environment-copy strong{font-size:17px}.environment-copy p{font-size:10px}
   .top-actions{grid-template-columns:minmax(0,1fr) auto}
   .session-user{grid-column:1/-1}
+  .quick-file-actions{grid-column:1/-1}
   .workflow-action{grid-column:1/-1;width:100%;justify-content:space-between}
   .action-menu,.save-wrap{min-width:0}
   .action-menu .btn,.save-wrap .btn{min-height:44px}
@@ -514,8 +512,6 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
   .preview .dochead{min-width:0}
   .criterion-title{align-items:flex-start}
   .criterion-result label{min-height:44px}
-  .admin-form-actions{display:grid;grid-template-columns:1fr 1fr}.admin-form-actions .btn{width:100%}
-  .admin-user-actions{min-width:210px}
 }
 
 @media screen and (max-width:370px){
@@ -524,6 +520,38 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
   .topbar h2{font-size:18px}
   .procedure-pin-label{font-size:9px}
 }
+
+
+/* ===== Sistema visual claro v10.0 ===== */
+:root{--navy:#123A60;--green:#0E9E78;--yellow:#1F6FD0;--warning:#8F5D08;--gray:#5A6B7A;--slate:#5A6B7A;--bg:#EEF2F7;--paper:#FFFFFF;--soft:#EFF3F8;--line:#DCE4ED;--text:#101E2E;--muted:#5A6B7A;--danger:#C4362A;--shadow:0 2px 5px rgba(16,30,46,.06),0 18px 44px rgba(16,30,46,.08);--ease:cubic-bezier(.22,.61,.36,1)}
+body{font-family:"Inter","Aptos","Segoe UI",Arial,sans-serif;letter-spacing:-.005em;background-color:var(--bg);background-image:radial-gradient(circle at 4% 0,rgba(31,111,208,.14),transparent 34rem),radial-gradient(circle at 96% 0,rgba(14,158,120,.13),transparent 32rem);background-attachment:fixed}
+.app{display:block;min-height:100vh}
+.sidebar{position:fixed;inset:0 auto 0 0;width:286px;height:100vh;height:100dvh;overflow-y:auto;background:radial-gradient(circle at 85% 4%,rgba(14,158,120,.20),transparent 34%),linear-gradient(185deg,#0E4667 0%,#0A3454 52%,#07283F 100%);padding:20px 14px;box-shadow:8px 0 28px rgba(8,30,48,.18)}
+.brand{text-align:center;border-bottom-color:rgba(255,255,255,.16);padding-bottom:18px}.brand-product{display:grid;justify-items:center;padding:4px 7px}.brand-mark{width:52px;height:52px;display:flex;align-items:center;justify-content:center;margin-bottom:11px;border-radius:16px;background:linear-gradient(145deg,#17B88E,#1F6FD0);color:#fff;box-shadow:0 9px 24px rgba(4,24,39,.28),inset 0 1px 0 rgba(255,255,255,.25)}.brand-mark svg{width:29px;height:29px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}.brand-product h1{font-family:"Inter","Aptos","Segoe UI",Arial,sans-serif;font-size:16px;line-height:1.25;letter-spacing:-.02em;text-align:center}.brand-product small{color:rgba(255,255,255,.76);font-size:10px;letter-spacing:.45px}.brand-rule{width:44px;height:3px;border-radius:99px;margin:11px auto 0;background:linear-gradient(90deg,#20C497,#5AA3FF)}
+.sidebar-toggle{width:100%;min-height:38px;display:flex;align-items:center;justify-content:center;gap:8px;margin:10px 0 12px;padding:8px 10px;border:1px solid rgba(255,255,255,.2);border-radius:10px;background:rgba(255,255,255,.08);color:#fff;font:inherit;font-size:11px;font-weight:700;cursor:pointer;transition:background 160ms var(--ease),transform 160ms var(--ease)}.sidebar-toggle:hover{background:rgba(255,255,255,.15);transform:translateY(-1px)}.sidebar-toggle svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;transition:transform 180ms var(--ease)}
+.nav{gap:6px}.nav-section-label{color:rgba(255,255,255,.68);font-size:9px;letter-spacing:1.4px}.navbtn{min-height:39px;border:1px solid transparent;border-left:0;padding:8px 10px;border-radius:11px;color:rgba(255,255,255,.86);transition:transform 160ms var(--ease),background 160ms var(--ease),box-shadow 160ms var(--ease)}.navbtn:hover{transform:translateX(2px);border-left-color:transparent;background:rgba(255,255,255,.10)}.navbtn.active{position:relative;border-color:rgba(255,255,255,.18);border-left:0;background:linear-gradient(110deg,rgba(14,158,120,.98),rgba(31,111,208,.88));box-shadow:0 8px 18px rgba(3,27,43,.24),inset 0 1px 0 rgba(255,255,255,.22)}.navbtn.active:before{content:"";position:absolute;left:0;top:8px;bottom:8px;width:3px;border-radius:0 4px 4px 0;background:#8EF3D5;box-shadow:0 0 10px rgba(142,243,213,.85)}.nav-number{color:rgba(255,255,255,.64)}.nav-label{font-size:12.8px;font-weight:600}
+.main{width:calc(100% - 286px);margin-left:286px;margin-right:0;padding:22px 30px 60px}.procedure-pin{border:1px solid rgba(14,158,120,.28);border-left:4px solid var(--green);border-radius:14px;background:rgba(255,255,255,.88);box-shadow:0 2px 5px rgba(16,30,46,.05),0 12px 30px rgba(16,30,46,.07);backdrop-filter:blur(14px) saturate(180%)}.procedure-pin-label{color:#0A7A5D}
+.topbar{position:relative;z-index:6;border-radius:18px;padding:15px 17px;background:rgba(255,255,255,.82);box-shadow:0 2px 5px rgba(16,30,46,.06),0 14px 34px rgba(16,30,46,.07);backdrop-filter:blur(14px) saturate(180%)}.topbar-heading{display:none}.top-actions{margin-left:auto}.session-user{order:1}.notification-center{order:2}.quick-file-actions{order:3}.save-wrap{order:4}.workflow-action{order:5}
+.environment-indicator{border:1px solid rgba(31,111,208,.22);border-left:6px solid #1F6FD0;border-radius:18px;background:linear-gradient(110deg,rgba(247,249,252,.93),rgba(255,255,255,.9));box-shadow:0 2px 5px rgba(16,30,46,.04),0 12px 28px rgba(16,30,46,.06)}.environment-icon{background:linear-gradient(145deg,#123A60,#1F6FD0);box-shadow:0 10px 24px rgba(31,111,208,.22)}.environment-indicator.evaluator{border-left-color:var(--green);background:linear-gradient(110deg,rgba(238,249,246,.94),rgba(255,255,255,.9))}.environment-indicator.evaluator .environment-icon{background:linear-gradient(145deg,#0A7A5D,#17B88E)}
+.panel{position:relative;border:1px solid var(--line);border-top:3px solid transparent;border-radius:24px;padding:26px;background:#fff;box-shadow:var(--shadow)}.panel:before{content:"";position:absolute;z-index:1;left:0;right:0;top:-3px;height:4px;border-radius:24px 24px 0 0;background:linear-gradient(90deg,var(--green),#1F6FD0,rgba(31,111,208,.2))}.panel.active{animation:panel-in 280ms var(--ease)}@keyframes panel-in{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.panel>h3,.panel>.actions h3{display:flex;align-items:center;gap:10px;color:var(--text);font-family:"Inter","Aptos","Segoe UI",Arial,sans-serif;font-size:20px;font-weight:800;letter-spacing:-.02em}.panel>h3:before,.panel>.actions h3:before{content:"";flex:none;width:4px;height:24px;border-radius:99px;background:linear-gradient(180deg,var(--green),#1F6FD0)}
+.field label{font-size:12px;color:var(--text);font-weight:700}.field input,.field textarea,.field select,td input,td textarea,td select{border-color:var(--line);border-radius:10px;background:#F7F9FC;color:var(--text);padding:11px}.field input:focus,.field textarea:focus,.field select:focus,td input:focus,td textarea:focus,td select:focus{background:#fff;border-color:var(--green);box-shadow:0 0 0 3px rgba(14,158,120,.22)}.field input[readonly]{background:#EFF3F8;color:var(--text);font-weight:700}
+.btn{min-height:35px;border-color:var(--line);border-radius:10px;background:#fff;color:var(--text);font-size:12.5px;font-weight:600;box-shadow:0 1px 2px rgba(16,30,46,.05);transition:transform 150ms var(--ease),box-shadow 150ms var(--ease),border-color 150ms var(--ease)}.btn:hover{transform:translateY(-1px);border-color:rgba(14,158,120,.55);background:#fff;box-shadow:0 5px 14px rgba(16,30,46,.10)}.btn:active{transform:translateY(0)}.btn.primary{border-color:#0A8264;background:linear-gradient(135deg,#0E9E78,#0A8264);color:#fff;box-shadow:0 5px 14px rgba(14,158,120,.24)}.btn.dark{border-color:#123A60;background:linear-gradient(135deg,#123A60,#0B2B49);color:#fff}.btn:disabled{opacity:.5;filter:saturate(.3);transform:none;box-shadow:none}
+.action-menu-popover,.notification-popover{border-radius:18px;border-color:var(--line);box-shadow:0 6px 14px rgba(16,30,46,.08),0 24px 54px rgba(16,30,46,.14)}.menu-action-divider{height:1px;margin:4px 7px;background:var(--line)}.notification-bell{border-color:var(--line);color:var(--text)}.session-logout{width:auto;height:32px;display:flex;align-items:center;justify-content:center;gap:6px;padding:0 9px;border:1px solid var(--line);border-radius:8px;background:#F7F9FC;color:#3A4C5E;font-size:10.5px;font-weight:700;white-space:nowrap}.session-logout svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}.session-logout:hover{border-color:rgba(196,54,42,.42);background:#FFF0EE;color:var(--danger)}.save-wrap>.btn,.export-actions{display:none!important}.save-state{max-width:none}
+.tablewrap{border-color:var(--line);border-radius:14px;box-shadow:0 1px 2px rgba(16,30,46,.03)}th{padding:12px 10px;background:linear-gradient(110deg,#123A60,#185A8F);font-size:11px;letter-spacing:.55px;text-transform:uppercase}td{padding:10px;border-bottom-color:var(--line);font-size:13px}tbody tr{transition:background 140ms var(--ease)}tbody tr:hover>td{background-color:rgba(14,158,120,.05)}
+.version-guide{margin:14px 0 16px;border:1px solid var(--line);border-radius:14px;background:#F7F9FC;overflow:hidden}.version-guide summary{display:flex;align-items:center;gap:9px;padding:13px 15px;color:var(--text);font-size:12.5px;font-weight:800;cursor:pointer;list-style:none}.version-guide summary::-webkit-details-marker{display:none}.version-guide summary:before{content:"+";width:22px;height:22px;display:grid;place-items:center;flex:none;border-radius:7px;background:#E5EEF8;color:#14509B;font-size:16px}.version-guide[open] summary:before{content:"−"}.version-guide-intro{margin:0;padding:0 15px 12px;color:var(--muted);font-size:11.5px;line-height:1.45}.version-guide .tablewrap{margin:0 14px 14px;background:#fff}.version-guide table{min-width:760px}.version-guide td:first-child{width:56%}.version-class{display:inline-flex;padding:4px 9px;border-radius:99px;background:#E6F5F0;color:#08785D;font-size:10.5px;font-weight:800}.version-class.major{background:#FFF0EE;color:#A92D23}
+.smallbtn,.flow-tool{min-width:31px;min-height:31px;border-color:var(--line);border-radius:8px;background:#fff;transition:transform 140ms var(--ease),border-color 140ms var(--ease),color 140ms var(--ease)}.smallbtn:hover,.flow-tool:hover{transform:translateY(-1px);border-color:rgba(196,54,42,.45);color:var(--danger)}
+.kpi{position:relative;overflow:hidden;border:1px solid var(--line);border-left:4px solid var(--green);border-top:1px solid var(--line);border-radius:14px;background:#fff;box-shadow:0 2px 6px rgba(16,30,46,.05);transition:transform 160ms var(--ease),box-shadow 160ms var(--ease)}.kpi:hover{transform:translateY(-3px);box-shadow:0 8px 20px rgba(16,30,46,.09)}.kpi b{font-size:30px;background:linear-gradient(110deg,#0A7A5D,#1F6FD0);-webkit-background-clip:text;background-clip:text;color:transparent}
+.rule-icon{color:#fff}.rule.ok .rule-icon{background:#0A7A5D;color:#fff}.rule.warn .rule-icon{background:#8F5D08;color:#fff}.rule.danger .rule-icon{background:#C4362A;color:#fff}.rule.info .rule-icon{background:#14509B;color:#fff}
+.flowwrap{background-color:#F4F7FA;background-image:radial-gradient(circle,#B8C6D3 1.15px,transparent 1.15px);background-size:18px 18px;border-color:var(--line);padding:28px}.flow-toolbar{border-color:var(--line);background:rgba(255,255,255,.84)}#flowSvg{box-shadow:0 5px 12px rgba(16,30,46,.08),0 22px 48px rgba(16,30,46,.12)}
+.auth-gate{background:radial-gradient(circle at 15% 10%,rgba(14,158,120,.28),transparent 31rem),radial-gradient(circle at 88% 100%,rgba(31,111,208,.24),transparent 35rem),linear-gradient(135deg,#063B4A 0%,#052F40 46%,#06283A 100%)}
+.auth-card{border:1px solid rgba(220,228,237,.92);border-radius:24px;box-shadow:0 8px 18px rgba(1,18,29,.18),0 34px 90px rgba(1,18,29,.34)}.auth-brand{padding:31px 30px 25px;background:linear-gradient(180deg,#FFFFFF,#F7F9FC);border-bottom-color:#DCE4ED}.auth-mark{width:56px;height:56px;border-radius:16px;background:linear-gradient(145deg,#17B88E,#1F6FD0);box-shadow:0 9px 24px rgba(31,111,208,.24),inset 0 1px 0 rgba(255,255,255,.25)}.auth-brand h1{font-family:"Inter","Aptos","Segoe UI",Arial,sans-serif;color:#101E2E;font-weight:800;letter-spacing:-.025em}.auth-form{padding:27px 30px 30px}.auth-form h2{color:#101E2E;font-size:19px;font-weight:800;letter-spacing:-.02em}.auth-intro{color:#5A6B7A;font-size:12.5px}.auth-field label{color:#3A4C5E}.auth-input-wrap input,.auth-input-wrap select{height:48px;border-color:#DCE4ED;border-radius:10px;background:#F7F9FC}.auth-input-wrap input:focus,.auth-input-wrap select:focus{background:#fff;border-color:#0E9E78;box-shadow:0 0 0 3px rgba(14,158,120,.22)}.auth-submit{height:47px;border-radius:11px;background:linear-gradient(135deg,#0E9E78,#08785D);box-shadow:0 8px 20px rgba(14,158,120,.25);transition:transform 150ms var(--ease),box-shadow 150ms var(--ease)}.auth-submit:hover{filter:none;transform:translateY(-1px);box-shadow:0 11px 26px rgba(14,158,120,.3)}.auth-local-note{border:1px solid #E7ECF2;border-radius:10px;background:#F3F6F9;color:#5A6B7A}
+button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible,summary:focus-visible{outline:2px solid var(--green);outline-offset:2px}
+@media(min-width:1051px){.sidebar,.main{transition:width 220ms var(--ease),margin-left 220ms var(--ease),padding 220ms var(--ease)}body.sidebar-collapsed .sidebar{width:82px;padding-left:10px;padding-right:10px}body.sidebar-collapsed .main{width:calc(100% - 82px);margin-left:82px}body.sidebar-collapsed .brand{padding-bottom:8px}body.sidebar-collapsed .brand-product{padding:0}body.sidebar-collapsed .brand-mark{width:44px;height:44px;margin-bottom:0;border-radius:13px}body.sidebar-collapsed .brand-product h1,body.sidebar-collapsed .brand-product small,body.sidebar-collapsed .brand-rule,body.sidebar-collapsed .sidebar-toggle span,body.sidebar-collapsed .nav-section-label,body.sidebar-collapsed .nav-number,body.sidebar-collapsed .nav-label,body.sidebar-collapsed .nav-check{display:none}body.sidebar-collapsed .sidebar-toggle{width:44px;margin:10px auto 12px;padding:8px}body.sidebar-collapsed .sidebar-toggle svg{transform:rotate(180deg)}body.sidebar-collapsed .navbtn{display:grid;grid-template-columns:1fr;justify-items:center;min-width:0;padding:8px}body.sidebar-collapsed .nav-icon{width:21px;height:21px}}
+@media(max-width:1050px){.app{display:block}.sidebar{position:sticky;inset:auto;top:0;width:100%;height:auto;padding:9px 14px}.brand,.sidebar-toggle{display:none}.nav{display:flex;overflow:auto}.main{width:100%;margin-left:0;padding:18px 20px 48px}.navbtn:hover{transform:translateY(-1px)}}
+@media(max-width:760px){.sidebar{padding:max(8px,env(safe-area-inset-top)) 8px 8px}.main{padding:10px max(10px,env(safe-area-inset-right)) calc(36px + env(safe-area-inset-bottom)) max(10px,env(safe-area-inset-left))}.panel{padding:18px;border-radius:18px}.topbar{padding:13px;border-radius:16px}.btn,.smallbtn,.flow-tool{min-height:44px}.field input,.field textarea,.field select,td input,td textarea,td select{font-size:16px}}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
+@media print{.main{width:auto;margin-left:0}.sidebar{position:static;width:auto;height:auto}}
 
 </style>
 </head>
@@ -550,9 +578,8 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
         <div class="auth-input-wrap">
           <span class="auth-field-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 5h16v14H4z"/><path d="M8 9h8M8 13h5"/><circle cx="17" cy="14.5" r="1.5"/></svg></span>
           <select id="authMode" required>
-            <option value="autor">Constructor de procedimientos</option>
-            <option value="asesor">Evaluador metodológico</option>
-            <option value="admin">Administrador de analítica</option>
+            <option value="autor">Elaborador</option>
+            <option value="asesor">Evaluador</option>
           </select>
         </div>
       </div>
@@ -565,11 +592,13 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 <div class="app">
 <aside class="sidebar">
   <div class="brand">
-    <div class="brand-product"><h1>Validador y Estructurador Metodológico<br>de Procedimientos</h1><small>Consulting Tool Code: G1-2026</small></div>
+    <div class="brand-product"><div class="brand-mark" aria-hidden="true"><svg viewBox="0 0 48 48"><path d="M9 8h25l6 6v26H9z"/><path d="M34 8v7h6M17 23l5 5 10-12M17 34h15"/></svg></div><h1>Validador y Estructurador Metodológico<br>de Procedimientos</h1><small>Consulting Tool Code: G1-2026</small></div>
     <div class="brand-rule"></div>
   </div>
+  <button class="sidebar-toggle" id="sidebarToggle" type="button" onclick="toggleSidebar()" aria-expanded="true" aria-label="Contraer barra lateral" title="Contraer barra lateral">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14 6-6 6 6 6"/><path d="M20 4v16"/></svg><span>Contraer menú</span>
+  </button>
   <div class="nav">
-    <button class="navbtn admin-nav role-hidden" data-tab="administration"><span class="nav-number">01</span><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V5"/><path d="M4 19h16"/><rect x="7" y="11" width="3" height="5" rx=".5"/><rect x="12" y="7" width="3" height="9" rx=".5"/><rect x="17" y="9" width="3" height="7" rx=".5"/></svg><span class="nav-label">Analítica administrativa</span></button>
     <button class="navbtn advisor-nav role-hidden" data-tab="advisorInbox"><span class="nav-number">01</span><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4z"/><path d="M4 10h5l2 3h2l2-3h5"/></svg><span class="nav-label">Bandeja de evaluaciones</span></button>
     <button class="navbtn advisor-nav role-hidden" data-tab="advisorProcedure"><span class="nav-number">02</span><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3.5h9l3 3v14H6z"/><path d="M15 3.5v3h3M9 11h6M9 14h6M9 17h4"/></svg><span class="nav-label">Procedimiento recibido</span></button>
     <button class="navbtn active author-nav" data-tab="general"><span class="nav-number">01</span><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5h16v13H4z"/><path d="M8 9h8M8 13h5"/><circle cx="17" cy="14.5" r="1.5"/></svg><span class="nav-label">Identificación</span></button>
@@ -584,6 +613,8 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
     <div class="nav-section-label">Anexos de consulta</div>
     <button class="navbtn shared-nav" data-tab="guia"><span class="nav-number">A1</span><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6.5h6l2 2h8v11H4z"/><path d="M8 13h8M8 16h5"/></svg><span class="nav-label">Guía del flujograma</span></button>
     <button class="navbtn shared-nav" data-tab="evaluationAnnex"><span class="nav-number">A2</span><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3.5h12v17H6z"/><path d="M9 8h6M9 12h3M9 16h3"/><path d="m14.5 15.5 1.5 1.5 3-3"/></svg><span class="nav-label">Criterios de evaluación</span></button>
+    <div class="nav-section-label">Analítica</div>
+    <button class="navbtn shared-nav" data-tab="analytics"><span class="nav-number">D1</span><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V5"/><path d="M4 19h16"/><rect x="7" y="12" width="3" height="4" rx=".5"/><rect x="12" y="8" width="3" height="8" rx=".5"/><rect x="17" y="5" width="3" height="11" rx=".5"/></svg><span class="nav-label">Analítica</span></button>
   </div>
 </aside>
 
@@ -595,72 +626,38 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
   </div>
   <div class="environment-indicator" id="environmentIndicator" aria-live="polite">
     <div class="environment-icon" id="environmentIcon" aria-hidden="true"><svg viewBox="0 0 48 48"><path d="M8 9h24l8 8v22H8z"/><path d="M32 9v8h8M15 23h18M15 29h18M15 35h10"/><path d="m12 12 4 4 7-8"/></svg></div>
-    <div class="environment-copy"><span class="environment-eyebrow">Ambiente de trabajo activo</span><strong id="environmentTitle">Constructor</strong><p id="environmentDescription">Diligenciamiento, revisión y envío del procedimiento.</p></div>
+    <div class="environment-copy"><span class="environment-eyebrow">Ambiente de trabajo activo</span><strong id="environmentTitle">Elaborador</strong><p id="environmentDescription"></p></div>
     <div class="environment-actions">
-      <span class="admin-environment-badge role-hidden" id="adminEnvironmentBadge">Administrador</span>
       <div class="environment-switcher role-hidden" id="environmentSwitcher" aria-label="Cambiar ambiente de trabajo">
-        <button type="button" id="switchConstructor" onclick="switchEnvironment('autor')">Constructor</button>
+        <button type="button" id="switchConstructor" onclick="switchEnvironment('autor')">Elaborador</button>
         <button type="button" id="switchEvaluator" onclick="switchEnvironment('asesor')">Evaluador</button>
       </div>
     </div>
   </div>
   <div class="topbar">
-    <div><h2 id="pageTitle">Identificación del procedimiento</h2><div class="hint">Herramienta institucional para la estandarización y mejora de procesos</div></div>
+    <div class="topbar-heading" aria-hidden="true"></div>
     <div class="top-actions">
       <div class="session-user" id="sessionUser" aria-label="Usuario autenticado">
         <span class="session-user-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4.5 20c.8-4.1 3.3-6.2 7.5-6.2s6.7 2.1 7.5 6.2"/></svg></span>
         <span class="session-user-data"><b>USUARIO</b><span id="sessionEmail">Sin sesión</span><span class="role-badge" id="sessionRole">Autor</span></span>
-        <button class="session-logout" type="button" onclick="logoutAssistant()" title="Cerrar la sesión actual">Cerrar sesión</button>
+        <button class="session-logout" type="button" onclick="logoutAssistant()" title="Cerrar la sesión actual" aria-label="Cerrar sesión"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 5H5v14h5M14 8l4 4-4 4M8 12h10"/></svg><span>Cerrar sesión</span></button>
       </div>
       <div class="notification-center" id="notificationCenter">
         <button class="notification-bell" type="button" aria-label="Abrir notificaciones" aria-expanded="false" onclick="toggleNotifications(event)"><svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg><span class="notification-count" id="notificationCount"></span></button>
         <div class="notification-popover" role="dialog" aria-label="Centro de notificaciones"><div class="notification-head"><b>Notificaciones</b><button type="button" onclick="markAllNotificationsRead()">Marcar todas como leídas</button></div><div class="notification-list" id="notificationList"></div></div>
       </div>
-      <div class="workflow-action" id="workflowAction"><button class="btn primary" id="sendReviewTop" type="button" onclick="handleWorkflowAction()">Enviar para revisión</button><span class="workflow-state" id="workflowState">Borrador</span></div>
-      <div class="action-menu" id="fileMenu">
-        <button class="btn action-menu-trigger" type="button" aria-haspopup="menu" aria-expanded="false" onclick="toggleFileMenu(event)">Archivo</button>
-        <div class="action-menu-popover" role="menu">
-          <button class="menu-action" role="menuitem" onclick="closeFileMenu();newProcedure()">Nuevo procedimiento<small>Iniciar un formulario vacío</small></button>
-          <button class="menu-action" role="menuitem" onclick="closeFileMenu();openBackup()">Cargar respaldo PDF o JSON<small>Recuperar la información editable del procedimiento</small></button>
-        </div>
+      <div class="quick-file-actions" role="group" aria-label="Acciones del procedimiento">
+        <button class="quick-action-button" id="newProcedureButton" type="button" onclick="newProcedure()" aria-label="Nuevo procedimiento" title="Nuevo procedimiento"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
+        <button class="quick-action-button" id="saveProcedureButton" type="button" onclick="saveLocal()" aria-label="Guardar procedimiento" title="Guardar procedimiento"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3.5h12l2 2v15H5z"/><path d="M8 3.5v6h8v-6M8 20.5v-7h8v7"/></svg></button>
+        <button class="quick-action-button" id="previewProcedureButton" type="button" onclick="previewProcedure()" aria-label="Vista previa del procedimiento" title="Vista previa del procedimiento"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6z"/><circle cx="12" cy="12" r="2.5"/></svg></button>
+        <button class="quick-action-button pdf" id="exportPdfButton" type="button" onclick="generatePDF()" aria-label="Exportar procedimiento a PDF" title="Exportar procedimiento a PDF"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3.5h9l3 3v14H6z"/><path d="M15 3.5v3h3M9 11h6M9 14h6M9 17h4"/></svg><span class="pdf-mark" aria-hidden="true">PDF</span></button>
       </div>
+      <div class="workflow-action" id="workflowAction"><button class="btn primary" id="sendReviewTop" type="button" onclick="handleWorkflowAction()">Enviar para revisión</button><span class="workflow-state" id="workflowState">Borrador</span></div>
       <div class="action-divider" aria-hidden="true"></div>
-      <div class="save-wrap" id="saveWrap"><button class="btn dark" onclick="saveLocal()">Guardar</button><span class="save-state" id="saveState">Guardado automático</span></div>
-      <div class="export-actions" id="quickExport"><button class="btn" type="button" onclick="previewProcedure()">Vista previa</button><span class="export-label">EXPORTAR</span><button class="btn primary" onclick="generatePDF()">PDF</button></div>
+      <div class="save-wrap" id="saveWrap"><span class="save-state" id="saveState">Guardado automático</span></div>
       <input id="backupInput" type="file" accept=".pdf,.json,application/pdf,application/json" hidden onchange="importBackup(this.files[0]);this.value=''">
     </div>
   </div>
-
-  <section class="panel" id="administrationPanel">
-    <div class="actions" style="justify-content:space-between;margin-bottom:14px">
-      <div><h3 style="margin:0 0 4px">Analítica administrativa</h3><div class="hint">Tablero local de prueba para uso general, productividad y alertas. Para métricas institucionales entre varios equipos se requiere backend.</div></div>
-      <button class="btn" type="button" onclick="resetAnalyticsDemo()">Reiniciar datos de prueba</button>
-    </div>
-    <div class="kpirow">
-      <div class="kpi"><b id="analyticsTotalLogins">0</b><span>Ingresos registrados</span></div>
-      <div class="kpi"><b id="analyticsRecentActive">0</b><span>Sesiones recientes</span></div>
-      <div class="kpi"><b id="analyticsSentReviews">0</b><span>Envíos a evaluación</span></div>
-      <div class="kpi"><b id="analyticsConcepts">0</b><span>Conceptos emitidos</span></div>
-    </div>
-    <div class="analytics-section">
-      <h4>Uso general</h4>
-      <div class="grid3">
-        <div class="kpi"><b id="analyticsTodayLogins">0</b><span>Ingresos de hoy</span></div>
-        <div class="kpi"><b id="analyticsWeekLogins">0</b><span>Ingresos últimos 7 días</span></div>
-        <div class="kpi"><b id="analyticsLastLogin">Sin registro</b><span>Último ingreso</span></div>
-      </div>
-      <div class="analytics-bars" id="analyticsLoginChart" aria-label="Ingresos últimos siete días"></div>
-    </div>
-    <div class="analytics-section">
-      <h4>Productividad</h4>
-      <div class="tablewrap"><table><thead><tr><th>Indicador</th><th>Conteo</th><th>Lectura administrativa</th></tr></thead><tbody id="analyticsProductivityBody"></tbody></table></div>
-    </div>
-    <div class="analytics-section">
-      <h4>Alertas administrativas</h4>
-      <div class="alert-list" id="analyticsAlerts"></div>
-    </div>
-    <div class="admin-note"><b>Alcance de la prueba:</b> estos datos se guardan solo en este navegador y no contienen documentos, claves ni información personal. La medición real de usuarios conectados requiere un backend en el VPS.</div>
-  </section>
 
   <section class="panel" id="advisorInboxPanel">
     <div class="actions" style="justify-content:space-between"><div><h3 style="margin-bottom:4px">Bandeja de evaluaciones</h3><div class="hint">Procedimientos enviados para revisión metodológica en este entorno local.</div></div><button class="btn" type="button" onclick="renderAdvisorInbox()">Actualizar bandeja</button></div>
@@ -768,6 +765,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
         <li>Actividad y punto de control<p>Los puntos de control se materializan mediante actividades orientadas a verificar, validar, revisar, comparar, autorizar o asegurar el cumplimiento de criterios previamente establecidos dentro del procedimiento.</p></li>
         <li>Decisión<p>La decisión es un elemento de bifurcación del flujo que evalúa una condición y determina la ruta que debe seguir el procedimiento de acuerdo con el resultado obtenido.</p></li>
         <li>Independencia entre decisión y punto de control<p>La decisión y el punto de control son elementos metodológicamente independientes: la decisión define rutas alternativas dentro del flujo, mientras que el punto de control incorpora una verificación crítica destinada a prevenir o detectar errores, desviaciones o incumplimientos.</p></li>
+        <li>Retorno después de una salida negativa<p>La ruta «No» debe conducir primero a una actividad que modifique, corrija o complemente la información. Solo después de ese ajuste puede repetirse el punto de control.</p></li>
       </ol>
     </div>
   </section>
@@ -796,13 +794,31 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
   </section>
 
   <section class="panel" id="anexosPanel">
-    <div class="actions" style="justify-content:space-between"><h3>6. Documentos anexos <span class="help-tip" tabindex="0" data-tip="Registre documentos que complementan, soportan o se utilizan durante el procedimiento y cuya consulta sea relevante.">i</span></h3><button class="btn" onclick="addAnexo()">+ Agregar anexo</button></div>
-    <div class="tablewrap"><table>
+    <div class="actions" style="justify-content:space-between"><h3>6. Documentos anexos <span class="help-tip" tabindex="0" data-tip="Registre documentos que complementan, soportan o se utilizan durante el procedimiento y cuya consulta sea relevante.">i</span></h3><div class="annex-applicability"><label for="annexApplicability">Aplicabilidad</label><select id="annexApplicability" onchange="setAnnexApplicability(this.value)"><option value="aplica">Aplica</option><option value="no_aplica">No aplica</option></select><button class="btn" id="addAnnexButton" onclick="addAnexo()">+ Agregar anexo</button></div></div>
+    <div class="annex-na-message" id="annexNotApplicableMessage"><b>No aplica.</b> Se confirmó que este procedimiento no contiene documentos anexos.</div>
+    <div class="tablewrap" id="annexTableWrap"><table>
       <thead><tr><th>Documento <span class="table-help" tabindex="0" data-tip="Nombre completo del documento relacionado o anexo.">i</span></th><th>Tipo <span class="table-help" tabindex="0" data-tip="Matriz: herramienta tabular estructurada para organizar, cruzar, evaluar o controlar información. Guía técnica: documento de orientación especializada. Seleccione la tipología más adecuada.">i</span></th><th>Código / referencia <span class="table-help" tabindex="0" data-tip="Código organizacional, enlace interno, número de formato o referencia para identificar el documento.">i</span></th><th>Observación <span class="table-help" tabindex="0" data-tip="Explique brevemente para qué se utiliza el documento dentro del procedimiento, cuando sea necesario.">i</span></th><th></th></tr></thead>
       <tbody id="anexosBody"></tbody>
     </table></div>
     <div class="sectionline"></div>
     <div class="actions" style="justify-content:space-between"><h3>Control de cambios <span class="help-tip" tabindex="0" data-tip="Registre cada versión, su fecha y una descripción concreta de los cambios realizados para conservar la trazabilidad documental.">i</span></h3><button class="btn" onclick="addCambio()">+ Agregar cambio</button></div>
+    <details class="version-guide" open>
+      <summary>Guía para clasificar el cambio y asignar la versión</summary>
+      <p class="version-guide-intro">Identifique el tipo de modificación realizada y utilice la clasificación indicada para asignar el siguiente número de versión.</p>
+      <div class="tablewrap"><table aria-label="Guía de clasificación de cambios y versiones">
+        <thead><tr><th>Tipo de modificación realizada</th><th>Clasificación del cambio</th><th>Nueva versión</th></tr></thead>
+        <tbody>
+          <tr><td>Corrección de errores ortográficos, tipográficos o de sintaxis.</td><td><span class="version-class">Menor</span></td><td>Siguiente decimal (p. ej., 1.1)</td></tr>
+          <tr><td>Actualización de logotipos, formatos de encabezado o códigos de referencia.</td><td><span class="version-class">Menor</span></td><td>Siguiente decimal (p. ej., 1.2)</td></tr>
+          <tr><td>Modificación del nombre de un puesto o área (sin cambio de funciones).</td><td><span class="version-class">Menor</span></td><td>Siguiente decimal (p. ej., 1.3)</td></tr>
+          <tr><td>Adición de aclaraciones, notas o advertencias para facilitar la lectura.</td><td><span class="version-class">Menor</span></td><td>Siguiente decimal (p. ej., 1.4)</td></tr>
+          <tr><td>Inclusión, eliminación o reordenamiento de pasos en el flujo de trabajo.</td><td><span class="version-class major">Mayor</span></td><td>Siguiente número entero (p. ej., 2.0)</td></tr>
+          <tr><td>Modificación de límites de control, tolerancias o criterios de aceptación.</td><td><span class="version-class major">Mayor</span></td><td>Siguiente número entero (p. ej., 2.0)</td></tr>
+          <tr><td>Asignación de nuevas responsabilidades o cambio de autoridad en una tarea.</td><td><span class="version-class major">Mayor</span></td><td>Siguiente número entero (p. ej., 3.0)</td></tr>
+          <tr><td>Actualización derivada de cambios en la normativa legal.</td><td><span class="version-class major">Mayor</span></td><td>Siguiente número entero (p. ej., 4.0)</td></tr>
+        </tbody>
+      </table></div>
+    </details>
     <div class="tablewrap"><table>
       <thead><tr><th>Versión <span class="table-help" tabindex="0" data-tip="Número de versión del documento.">i</span></th><th>Fecha <span class="table-help" tabindex="0" data-tip="Fecha de aprobación o actualización correspondiente a la versión registrada.">i</span></th><th>Razón de la actualización <span class="table-help" tabindex="0" data-tip="Describa de manera concreta qué cambió y por qué se actualizó el procedimiento.">i</span></th><th></th></tr></thead>
       <tbody id="cambiosBody"></tbody>
@@ -929,6 +945,49 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
       <div class="scale-card high"><strong>90–100%</strong><span>Nivel alto: presenta una adecuación metodológica favorable.</span></div>
     </div>
   </section>
+
+  <section class="panel" id="analyticsPanel">
+    <div class="actions" style="justify-content:space-between;margin-bottom:14px">
+      <div><h3 style="margin:0 0 4px">Analítica</h3><div class="hint">Consulta sencilla de productividad y uso del sistema.</div></div>
+      <button class="btn" type="button" onclick="resetAnalyticsDemo()">Reiniciar datos de prueba</button>
+    </div>
+    <div class="analytics-toolbar" aria-label="Filtros del cuadro de mando">
+      <div class="analytics-filter"><label for="analyticsPeriod">Periodo</label><select id="analyticsPeriod" onchange="renderUsageAnalytics()"><option value="7">Últimos 7 días</option><option value="30" selected>Últimos 30 días</option><option value="90">Últimos 90 días</option><option value="all">Todo el historial local</option></select></div>
+      <div class="analytics-filter"><label for="analyticsProcess">Proceso</label><select id="analyticsProcess" onchange="renderUsageAnalytics()"><option value="all">Todos los procesos</option></select></div>
+      <div class="analytics-filter"><label for="analyticsRole">Rol</label><select id="analyticsRole" onchange="renderUsageAnalytics()"><option value="all">Todos los roles</option><option value="autor">Elaborador</option><option value="asesor">Evaluador</option></select></div>
+      <div class="analytics-filter-summary" id="analyticsFilterSummary">Datos almacenados en este navegador</div>
+    </div>
+    <div class="dashboard-kpis">
+      <div class="dashboard-kpi info"><b id="analyticsProcedures">0</b><span>Procedimientos iniciados</span><small>Registros con actividad durante el periodo</small></div>
+      <div class="dashboard-kpi info"><b id="analyticsPending">0</b><span>Envíos a evaluación</span><small>Procedimientos remitidos al evaluador</small></div>
+      <div class="dashboard-kpi info"><b id="analyticsAdjustments">0</b><span>Evaluaciones iniciadas</span><small>Revisiones abiertas durante el periodo</small></div>
+      <div class="dashboard-kpi warn"><b id="analyticsReturns">0</b><span>Devoluciones</span><small>Procedimientos enviados para ajustes</small></div>
+      <div class="dashboard-kpi good"><b id="analyticsConcepts">0</b><span>Conceptos favorables</span><small>Evaluaciones cerradas satisfactoriamente</small></div>
+    </div>
+    <div class="analytics-section">
+      <div class="analytics-card">
+        <div class="analytics-card-head"><h4>Gráfica de productividad</h4><span>Operaciones registradas en el periodo</span></div>
+        <div class="analytics-status" id="analyticsStatusDistribution"></div>
+      </div>
+    </div>
+    <div class="analytics-section">
+      <div class="analytics-grid">
+        <div class="analytics-card">
+          <div class="analytics-card-head"><h4>Tendencia de ingresos</h4><span id="analyticsLoginSummary">Actividad de los últimos 7 días</span></div>
+          <div class="analytics-bars" id="analyticsLoginChart" aria-label="Ingresos de los últimos siete días"></div>
+        </div>
+        <div class="analytics-card">
+          <div class="analytics-card-head"><h4>Uso del sistema</h4><span>Adopción local</span></div>
+          <div class="grid3">
+            <div class="kpi"><b id="analyticsTotalLogins">0</b><span>Ingresos del periodo</span></div>
+            <div class="kpi"><b id="analyticsRecentActive">0</b><span>Sesiones recientes</span></div>
+            <div class="kpi"><b id="analyticsLastLogin">Sin registro</b><span>Último ingreso</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="analytics-note"><b>Alcance de la prueba:</b> la analítica utiliza eventos guardados únicamente en este navegador. La consolidación entre computadores se habilitará posteriormente con el backend y PostgreSQL.</div>
+  </section>
 </main>
 </div>
 
@@ -938,8 +997,9 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 
 <script>
 const $ = id => document.getElementById(id);
-let norms=[], activities=[], annexes=[], changes=[];
-let currentRole="autor", currentProfile={username:"",roleName:"Elaborador de Documentos",environment:"autor",isAdmin:false,canSwitchEnvironment:false,processes:[]}, evaluation=null, notifications=[], activeEvaluationGroupId="";
+let norms=[], activities=[], annexes=[], changes=[], annexesNotApplicable=false;
+let collapsedActivityIds=new Set();
+let currentRole="autor", currentProfile={username:"",roleName:"Elaborador",environment:"autor",canSwitchEnvironment:false,processes:[]}, evaluation=null, notifications=[], activeEvaluationGroupId="";
 
 const evaluationGroups=[
   {id:"objetivo",name:"Objetivo",weight:8,description:"Claridad, finalidad y coherencia del objetivo.",questions:[
@@ -1030,21 +1090,19 @@ const AUTH_SESSION_KEY="gestion_asistente_demo_session_v1";
 const ANALYTICS_KEY="gestion_asistente_analytics_v1";
 const ANALYTICS_SESSION_KEY="gestion_asistente_analytics_session_v1";
 const DEMO_USERS={
-  autor:{username:"constructor_prueba",roleName:"Constructor de procedimientos",environment:"autor",isAdmin:false,canSwitchEnvironment:false},
-  asesor:{username:"asesor_prueba",roleName:"Evaluador metodológico",environment:"asesor",isAdmin:false,canSwitchEnvironment:false},
-  admin:{username:"admin_analitica",roleName:"Administrador de analítica",environment:"admin",isAdmin:true,canSwitchEnvironment:false}
+  autor:{username:"elaborador_prueba",roleName:"Elaborador",environment:"autor",canSwitchEnvironment:false},
+  asesor:{username:"evaluador_prueba",roleName:"Evaluador",environment:"asesor",canSwitchEnvironment:false}
 };
 
 function allProcessCodes(){return processGroups.flatMap(group=>group.items.map(item=>item[0]))}
 function demoProfileFor(environment){
-  const key=environment==="admin"?"admin":environment==="asesor"?"asesor":"autor",template=DEMO_USERS[key];
-  return {...template,processes:key==="admin"?[]:allProcessCodes()};
+  const key=environment==="asesor"?"asesor":"autor",template=DEMO_USERS[key];
+  return {...template,processes:allProcessCodes()};
 }
 function assignedProcessCodes(profile=currentProfile){return Array.isArray(profile?.processes)?profile.processes:allProcessCodes()}
 function assignedAdvisorForProcess(code){return code&&allProcessCodes().includes(code)?DEMO_USERS.asesor.username:""}
 function canAccessCurrentProcess(){const code=val("proceso");return !!code&&assignedProcessCodes().includes(code)}
 function assignedProcessesLabel(){
-  if(currentProfile.isAdmin)return"Administración general";
   const labels=assignedProcessCodes().map(code=>`${code} — ${processName(code)||code}`);
   return labels.length?labels.join(", "):"Sin procesos asignados";
 }
@@ -1064,7 +1122,7 @@ function readAuthStore(storage,key,fallback){
 function normalizeUsername(value){return String(value||"").trim().toLowerCase()}
 function safeSessionName(value,environment){
   const cleaned=normalizeUsername(value).replace(/[^a-z0-9._-]+/g,"_").replace(/^_+|_+$/g,"");
-  return cleaned||DEMO_USERS[environment==="admin"?"admin":environment==="asesor"?"asesor":"autor"].username;
+  return cleaned||DEMO_USERS[environment==="asesor"?"asesor":"autor"].username;
 }
 function analyticsStore(){return readAuthStore(localStorage,ANALYTICS_KEY,{events:[],sessions:{},started:false})}
 function saveAnalyticsStore(store){try{localStorage.setItem(ANALYTICS_KEY,JSON.stringify(store))}catch(e){}}
@@ -1077,19 +1135,20 @@ function recordAnalytics(type,detail={}){
   const store=analyticsStore(),now=new Date().toISOString(),sessionId=analyticsSessionId();
   store.events=Array.isArray(store.events)?store.events:[];
   store.sessions=store.sessions&&typeof store.sessions==="object"?store.sessions:{};
-  store.events.push({type,role:currentRole||detail.role||"",at:now,detail});
+  const process=String(detail.process||($('proceso')?val('proceso'):"")||"");
+  const user=currentProfile?.username||"";
+  const context={process,user,status:evaluation?.status||"",iteration:Number(evaluation?.iteration||1),...detail};
+  store.events.push({type,role:currentRole||detail.role||"",process,user,at:now,detail:context});
   store.events=store.events.slice(-700);
-  store.sessions[sessionId]={role:currentRole||detail.role||"",lastSeen:now};
+  store.sessions[sessionId]={role:currentRole||detail.role||"",process,user,lastSeen:now};
   saveAnalyticsStore(store);
-  if(currentRole==="admin")renderAdminAnalytics();
 }
 function analyticsHeartbeat(){
   if(!currentProfile.username)return;
   const store=analyticsStore(),sessionId=analyticsSessionId(),now=new Date().toISOString();
   store.sessions=store.sessions&&typeof store.sessions==="object"?store.sessions:{};
-  store.sessions[sessionId]={role:currentRole,lastSeen:now};
+  store.sessions[sessionId]={role:currentRole,process:$('proceso')?val('proceso'):"",user:currentProfile.username,lastSeen:now};
   saveAnalyticsStore(store);
-  if(currentRole==="admin")renderAdminAnalytics();
 }
 function markProcedureStarted(){
   const defaultActivities=new Set(["Inicio","Nueva actividad","Fin"]);
@@ -1110,9 +1169,9 @@ function clearAuthError(){
 }
 function setAuthenticatedState(username,profile=null,preferredEnvironment=""){
   const active=!!username&&!!profile;
-  currentProfile=active?{username,...profile}:{username:"",roleName:"Elaborador de Documentos",environment:"autor",isAdmin:false,canSwitchEnvironment:false,processes:[]};
+  currentProfile=active?{username,...profile}:{username:"",roleName:"Elaborador",environment:"autor",canSwitchEnvironment:false,processes:[]};
   const allowedEnvironment=currentProfile.canSwitchEnvironment&&["autor","asesor"].includes(preferredEnvironment)?preferredEnvironment:currentProfile.environment;
-  currentRole=allowedEnvironment==="admin"?"admin":allowedEnvironment==="asesor"?"asesor":"autor";
+  currentRole=allowedEnvironment==="asesor"?"asesor":"autor";
   document.body.classList.toggle("auth-locked",!active);
   $("authGate").classList.toggle("hidden",active);
   $("sessionEmail").textContent=active?username:"Sin sesión";
@@ -1121,25 +1180,24 @@ function setAuthenticatedState(username,profile=null,preferredEnvironment=""){
   if(active){
     $("sessionRole").title=`Procesos asignados: ${assignedProcessesLabel()}`;
     analyticsHeartbeat();
-    if(currentRole==="admin")renderAdminAnalytics();
     document.querySelector(".navbtn.active")?.focus({preventScroll:true});
   }else $("sessionRole").removeAttribute("title");
 }
 function handleAuth(event){
   event.preventDefault();clearAuthError();
-  const environment=$("authMode")?.value==="admin"?"admin":$("authMode")?.value==="asesor"?"asesor":"autor",profile=demoProfileFor(environment),submit=$("authSubmit");
+  const environment=$("authMode")?.value==="asesor"?"asesor":"autor",profile=demoProfileFor(environment),submit=$("authSubmit");
   const username=safeSessionName($("authEmail").value,environment);
   submit.disabled=true;submit.textContent="Abriendo...";
   try{
     sessionStorage.setItem(AUTH_SESSION_KEY,JSON.stringify({username,environment:profile.environment,loginAt:new Date().toISOString(),demo:true}));
     setAuthenticatedState(username,profile,profile.environment);recordAnalytics("login",{role:profile.environment});
-    toast(`Modo ${profile.environment==="admin"?"Administrador":profile.environment==="asesor"?"Evaluador":"Constructor"} activado.`);
+    toast(`Modo ${profile.environment==="asesor"?"Evaluador":"Elaborador"} activado.`);
   }catch(e){
     console.error(e);showAuthError("No fue posible abrir el modo de prueba en este navegador. Intente nuevamente.");
   }finally{submit.disabled=false;submit.textContent="Entrar en modo de prueba"}
 }
 function initAuth(){
-  const session=readAuthStore(sessionStorage,AUTH_SESSION_KEY,null),environment=session?.environment==="admin"?"admin":session?.environment==="asesor"?"asesor":session?.environment==="autor"?"autor":"";
+  const session=readAuthStore(sessionStorage,AUTH_SESSION_KEY,null),environment=session?.environment==="asesor"?"asesor":session?.environment==="autor"?"autor":"";
   if(session?.demo&&environment){setAuthenticatedState(safeSessionName(session?.username,environment),demoProfileFor(environment),environment);return}
   sessionStorage.removeItem(AUTH_SESSION_KEY);setAuthenticatedState("",null);
   setTimeout(()=>$("authEmail")?.focus(),80);
@@ -1219,83 +1277,125 @@ function initProcesses(){
     processGroups.map(g=>`<optgroup label="${g.group}">${g.items.map(i=>`<option value="${i[0]}">${i[2]==="child"?"↳ ":""}${i[0]} — ${i[1]}</option>`).join("")}</optgroup>`).join("");
 }
 
-let adminEditingUsername="";
-function isAdministrator(){return currentRole==="admin"&&!!currentProfile.isAdmin}
-function requireAdministrator(){toast("La administración de usuarios requiere un backend seguro.");return false}
-function adminAssignableProcesses(){return[]}
-function selectedAdminProcesses(){return[]}
-function renderAdminProcessSelector(){}
-function resetAdminUserForm(){adminEditingUsername=""}
-function editManagedUser(){}
-function saveManagedUser(event){event?.preventDefault();requireAdministrator()}
-function toggleManagedUser(){requireAdministrator()}
-function resetManagedPassword(){requireAdministrator()}
-function deleteManagedUser(){requireAdministrator()}
-function renderAdminUsers(){renderAdminAnalytics()}
 function analyticsEvents(type=""){const events=analyticsStore().events||[];return type?events.filter(e=>e.type===type):events}
-function analyticsSince(days,type=""){
-  const threshold=Date.now()-days*86400000;
-  return analyticsEvents(type).filter(e=>new Date(e.at).getTime()>=threshold);
+function populateAnalyticsProcessFilter(){
+  const select=$("analyticsProcess");if(!select||select.options.length>1)return;
+  processGroups.forEach(group=>group.items.forEach(item=>select.add(new Option(`${item[0]} — ${item[1]}`,item[0]))));
 }
-function analyticsDateKey(date){return date.toISOString().slice(0,10)}
+function analyticsFilters(){
+  populateAnalyticsProcessFilter();
+  return {period:$("analyticsPeriod")?.value||"30",process:$("analyticsProcess")?.value||"all",role:$("analyticsRole")?.value||"all"};
+}
+function analyticsEventProcess(event){return String(event.process||event.detail?.process||"")}
+function analyticsFilteredEvents(type=""){
+  const filters=analyticsFilters(),threshold=filters.period==="all"?0:Date.now()-Number(filters.period)*86400000;
+  return analyticsEvents(type).filter(event=>(!threshold||new Date(event.at).getTime()>=threshold)&&(filters.process==="all"||analyticsEventProcess(event)===filters.process)&&(filters.role==="all"||event.role===filters.role));
+}
+function analyticsDateKey(value){
+  const parts=new Intl.DateTimeFormat("en-US",{timeZone:"America/Bogota",year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(new Date(value));
+  const fields=Object.fromEntries(parts.filter(part=>part.type!=="literal").map(part=>[part.type,part.value]));
+  return `${fields.year}-${fields.month}-${fields.day}`;
+}
 function analyticsDayLabel(date){return new Intl.DateTimeFormat("es-CO",{weekday:"short",timeZone:"America/Bogota"}).format(date).replace(".","")}
-function countEvents(type){return analyticsEvents(type).length}
-function recentSessions(minutes=10){
+function countEvents(type,events=analyticsFilteredEvents()){return events.filter(event=>event.type===type).length}
+function recentSessions(minutes=10,filters=analyticsFilters()){
   const cutoff=Date.now()-minutes*60000,store=analyticsStore(),sessions=Object.values(store.sessions||{});
-  return sessions.filter(s=>new Date(s.lastSeen).getTime()>=cutoff);
+  return sessions.filter(session=>new Date(session.lastSeen).getTime()>=cutoff&&(filters.process==="all"||session.process===filters.process)&&(filters.role==="all"||session.role===filters.role));
 }
-function renderAdminAnalytics(){
-  if(!$("analyticsTotalLogins"))return;const events=analyticsEvents(),now=new Date(),todayKey=analyticsDateKey(now);
-  const logins=events.filter(e=>e.type==="login"),todayLogins=logins.filter(e=>String(e.at).slice(0,10)===todayKey),weekLogins=analyticsSince(7,"login"),active=recentSessions(10);
+function analyticsDurationLabel(milliseconds){
+  if(!Number.isFinite(milliseconds)||milliseconds<0)return "—";
+  const minutes=Math.round(milliseconds/60000);if(minutes<60)return `${Math.max(1,minutes)} min`;
+  const hours=milliseconds/3600000;if(hours<48)return `${hours.toFixed(hours<10?1:0)} h`;
+  return `${(hours/24).toFixed(1)} días`;
+}
+function averageEvaluationWait(events){
+  const sends=events.filter(event=>["review_sent","corrections_submitted"].includes(event.type)).sort((a,b)=>new Date(a.at)-new Date(b.at));
+  const starts=events.filter(event=>event.type==="evaluation_started").sort((a,b)=>new Date(a.at)-new Date(b.at)),durations=[];
+  sends.forEach(sent=>{const match=starts.find(start=>new Date(start.at)>new Date(sent.at)&&(!analyticsEventProcess(sent)||!analyticsEventProcess(start)||analyticsEventProcess(sent)===analyticsEventProcess(start)));if(match)durations.push(new Date(match.at)-new Date(sent.at))});
+  return durations.length?durations.reduce((sum,value)=>sum+value,0)/durations.length:NaN;
+}
+function renderUsageAnalytics(){
+  if(!$("analyticsTotalLogins"))return;const filters=analyticsFilters(),events=analyticsFilteredEvents(),logins=events.filter(e=>e.type==="login"),active=recentSessions(10,filters);
+  const sent=countEvents("review_sent",events),started=countEvents("evaluation_started",events),returned=countEvents("returned_for_adjustments",events),conceptEvents=events.filter(event=>event.type==="concept_issued");
+  $("analyticsProcedures").textContent=String(countEvents("procedure_started",events));
+  $("analyticsPending").textContent=String(sent);
+  $("analyticsAdjustments").textContent=String(started);
+  $("analyticsReturns").textContent=String(returned);
+  $("analyticsConcepts").textContent=String(conceptEvents.length);
   $("analyticsTotalLogins").textContent=String(logins.length);
   $("analyticsRecentActive").textContent=String(active.length);
-  $("analyticsSentReviews").textContent=String(countEvents("review_sent")+countEvents("corrections_submitted"));
-  $("analyticsConcepts").textContent=String(countEvents("concept_issued"));
-  $("analyticsTodayLogins").textContent=String(todayLogins.length);
-  $("analyticsWeekLogins").textContent=String(weekLogins.length);
   $("analyticsLastLogin").textContent=logins.length?dateTimeLabel(logins[logins.length-1].at):"Sin registro";
-  renderAnalyticsChart(logins);renderAnalyticsProductivity();renderAnalyticsAlerts();
+  const periodLabel=filters.period==="all"?"Todo el historial local":`Últimos ${filters.period} días`,processLabel=filters.process==="all"?"todos los procesos":processName(filters.process)||filters.process,roleLabel=filters.role==="all"?"todos los roles":filters.role==="asesor"?"evaluador":"elaborador";
+  $("analyticsFilterSummary").textContent=`${periodLabel} · ${processLabel} · ${roleLabel} · ${events.length} evento(s)`;
+  renderAnalyticsDistribution(events);renderAnalyticsChart(logins);
+}
+function renderAnalyticsFlow(events){
+  const stages=[["procedure_started","Iniciados"],["review_sent","Enviados"],["evaluation_started","En evaluación"],["returned_for_adjustments","Devueltos"],["corrections_submitted","Subsanados"],["concept_issued","Aprobados"]],counts=stages.map(stage=>countEvents(stage[0],events)),max=Math.max(1,...counts);
+  $("analyticsFlowFunnel").innerHTML=stages.map((stage,index)=>`<div class="flow-stage"><b>${counts[index]}</b><span>${esc(stage[1])}</span><div class="flow-stage-meter"><i style="width:${Math.round(counts[index]/max*100)}%"></i></div></div>`).join("");
+}
+function renderAnalyticsDistribution(events){
+  const rows=[["Procedimientos iniciados",countEvents("procedure_started",events)],["Envíos",countEvents("review_sent",events)],["Evaluaciones",countEvents("evaluation_started",events)],["Devoluciones",countEvents("returned_for_adjustments",events)],["Subsanaciones",countEvents("corrections_submitted",events)],["Conceptos",countEvents("concept_issued",events)]],max=Math.max(1,...rows.map(row=>row[1]));
+  $("analyticsStatusDistribution").innerHTML=rows.map(row=>`<div class="analytics-status-row"><span>${esc(row[0])}</span><div class="analytics-status-track"><i style="width:${Math.round(row[1]/max*100)}%"></i></div><b>${row[1]}</b></div>`).join("");
 }
 function renderAnalyticsChart(logins){
   const box=$("analyticsLoginChart");if(!box)return;const days=[...Array(7)].map((_,i)=>{const d=new Date();d.setDate(d.getDate()-(6-i));return d});
-  const counts=days.map(day=>logins.filter(e=>String(e.at).slice(0,10)===analyticsDateKey(day)).length),max=Math.max(1,...counts);
+  const counts=days.map(day=>logins.filter(e=>analyticsDateKey(e.at)===analyticsDateKey(day)).length),max=Math.max(1,...counts);
   box.innerHTML=days.map((day,i)=>`<div class="analytics-day"><div class="analytics-bar" style="height:${Math.max(6,Math.round((counts[i]/max)*104))}px"></div><b>${counts[i]}</b><span>${esc(analyticsDayLabel(day))}</span></div>`).join("");
+  $("analyticsLoginSummary").textContent=`${counts.reduce((sum,value)=>sum+value,0)} ingreso(s) en los últimos 7 días`;
 }
-function renderAnalyticsProductivity(){
-  const rows=[
-    ["Procedimientos iniciados",countEvents("procedure_started"),"Cantidad de procedimientos creados o diligenciados en esta prueba."],
-    ["Envíos a evaluación",countEvents("review_sent"),"Procedimientos remitidos al modo evaluador."],
-    ["Evaluaciones iniciadas",countEvents("evaluation_started"),"Revisiones metodológicas que pasaron a estado En evaluación."],
-    ["Devoluciones para ajustes",countEvents("returned_for_adjustments"),"Casos devueltos al constructor para subsanar."],
-    ["Subsanaciones enviadas",countEvents("corrections_submitted"),"Respuestas del constructor remitidas nuevamente al evaluador."],
-    ["Conceptos emitidos",countEvents("concept_issued"),"Evaluaciones cerradas con concepto favorable."],
-    ["PDF generados",countEvents("pdf_generated"),"Reportes descargados desde el asistente."]
-  ];
-  if($("analyticsProductivityBody"))$("analyticsProductivityBody").innerHTML=rows.map(row=>`<tr><td><b>${esc(row[0])}</b></td><td>${row[1]}</td><td>${esc(row[2])}</td></tr>`).join("");
+function renderAnalyticsProcessTable(events){
+  const map=new Map();events.forEach(event=>{const process=analyticsEventProcess(event);if(!process)return;const row=map.get(process)||{process,started:0,sent:0,evaluations:0,returned:0,concepts:0,last:""};if(event.type==="procedure_started")row.started++;if(event.type==="review_sent")row.sent++;if(event.type==="evaluation_started")row.evaluations++;if(event.type==="returned_for_adjustments")row.returned++;if(event.type==="concept_issued")row.concepts++;if(!row.last||new Date(event.at)>new Date(row.last))row.last=event.at;map.set(process,row)});
+  const rows=[...map.values()].sort((a,b)=>new Date(b.last)-new Date(a.last)),body=$("analyticsProcessBody");
+  body.innerHTML=rows.length?rows.map(row=>`<tr><td>${esc(row.process)} — ${esc(processName(row.process)||"Proceso sin nombre")}</td><td>${row.started}</td><td>${row.sent}</td><td>${row.evaluations}</td><td>${row.returned}</td><td>${row.concepts}</td><td>${esc(dateTimeLabel(row.last))}</td></tr>`).join(""):'<tr><td colspan="7" class="analytics-empty">Aún no hay eventos asociados a un proceso para los filtros seleccionados.</td></tr>';
 }
-function renderAnalyticsAlerts(){
+function renderAnalyticsRoleTable(events){
+  const rows=[["autor","Elaborador"],["asesor","Evaluador"]].map(([role,label])=>{const roleEvents=events.filter(event=>event.role===role),logins=roleEvents.filter(event=>event.type==="login").length,actions=roleEvents.filter(event=>event.type!=="login"&&event.type!=="logout"&&event.type!=="module_view").length,last=roleEvents.sort((a,b)=>new Date(b.at)-new Date(a.at))[0]?.at;return [label,logins,actions,last?dateTimeLabel(last):"Sin actividad"]});
+  $("analyticsRoleBody").innerHTML=rows.map(row=>`<tr><td>${esc(row[0])}</td><td>${row[1]}</td><td>${row[2]}</td><td>${esc(row[3])}</td></tr>`).join("");
+}
+function renderAnalyticsAlerts(filters=analyticsFilters()){
   ensureEvaluation();const alerts=[],status=evaluation.status,age=evaluationAgeDays(),failures=evaluationStats().failures;
-  if(status==="Borrador"&&[val("nombre"),val("objetivo"),val("alcance")].some(Boolean))alerts.push(["Borrador activo","Existe un procedimiento en borrador con información diligenciada.","Seguimiento"]);
-  if(["Enviado a evaluación","Subsanado"].includes(status)&&age>=1)alerts.push(["Pendiente de iniciar evaluación",`El procedimiento lleva ${age} día(s) enviado sin inicio de revisión.`,"Atención"]);
-  if(status==="En evaluación"&&age>=2)alerts.push(["Evaluación abierta",`La revisión está en curso desde hace ${age} día(s) sin concepto final.`,"Atención"]);
-  if(status==="Devuelto para ajustes")alerts.push(["Ajustes pendientes","El procedimiento fue devuelto y requiere respuesta del constructor.","Ajustes"]);
-  if(failures>0)alerts.push(["Criterios no cumplidos",`Hay ${failures} criterio(s) con resultado No cumple en la evaluación actual.`,"Calidad"]);
-  if(!alerts.length)alerts.push(["Sin alertas críticas","No se identifican alertas administrativas en esta prueba local.","OK"]);
+  const currentProcess=val("proceso"),includeCurrent=filters.process==="all"||filters.process===currentProcess;
+  if(includeCurrent&&status==="Borrador"&&[val("nombre"),val("objetivo"),val("alcance")].some(Boolean))alerts.push(["Borrador activo","Existe un procedimiento en borrador con información diligenciada.","Seguimiento"]);
+  if(includeCurrent&&["Enviado a evaluación","Subsanado"].includes(status)&&age>=1)alerts.push(["Pendiente de iniciar evaluación",`El procedimiento lleva ${age} día(s) enviado sin inicio de revisión.`,"Atención"]);
+  if(includeCurrent&&status==="En evaluación"&&age>=2)alerts.push(["Evaluación abierta",`La revisión está en curso desde hace ${age} día(s) sin concepto final.`,"Atención"]);
+  if(includeCurrent&&status==="Devuelto para ajustes")alerts.push(["Ajustes pendientes","El procedimiento fue devuelto y requiere respuesta del elaborador.","Ajustes"]);
+  if(includeCurrent&&failures>0)alerts.push(["Criterios no cumplidos",`Hay ${failures} criterio(s) con resultado No cumple en la evaluación actual.`,"Calidad"]);
+  if(!alerts.length)alerts.push(["Sin alertas críticas","No se identifican alertas en esta prueba local.","OK"]);
   if($("analyticsAlerts"))$("analyticsAlerts").innerHTML=alerts.map(a=>`<div class="alert-item ${a[2]==="OK"?"ok":""}"><span class="rule-icon">${a[2]==="OK"?"✓":"!"}</span><div><b>${esc(a[0])}</b><p>${esc(a[1])}</p></div><span class="alert-tag">${esc(a[2])}</span></div>`).join("");
 }
 function resetAnalyticsDemo(){
   if(!confirm("¿Reiniciar los datos locales de analítica de prueba en este navegador?"))return;
-  localStorage.removeItem(ANALYTICS_KEY);analyticsHeartbeat();renderAdminAnalytics();toast("Analítica local reiniciada.");
+  localStorage.removeItem(ANALYTICS_KEY);analyticsHeartbeat();renderUsageAnalytics();toast("Analítica local reiniciada.");
 }
 
 document.querySelectorAll(".navbtn").forEach(btn=>btn.addEventListener("click",()=>switchTab(btn.dataset.tab)));
+
+let sidebarCollapsed=true;
+function applySidebarState(collapsed){
+  const active=Boolean(collapsed)&&window.innerWidth>1050,toggle=$("sidebarToggle");
+  document.body.classList.toggle("sidebar-collapsed",active);
+  if(toggle){
+    toggle.setAttribute("aria-expanded",String(!active));
+    toggle.setAttribute("aria-label",active?"Expandir barra lateral":"Contraer barra lateral");
+    toggle.title=active?"Expandir barra lateral":"Contraer barra lateral";
+    const label=toggle.querySelector("span");if(label)label.textContent=active?"Expandir menú":"Contraer menú";
+  }
+  document.querySelectorAll(".navbtn").forEach(btn=>{btn.title=active?(btn.querySelector(".nav-label")?.textContent.trim()||""):""});
+}
+function toggleSidebar(){
+  sidebarCollapsed=!document.body.classList.contains("sidebar-collapsed");applySidebarState(sidebarCollapsed);
+}
+function initSidebar(){
+  sidebarCollapsed=true;applySidebarState(sidebarCollapsed);
+  window.addEventListener("resize",()=>applySidebarState(sidebarCollapsed));
+}
 
 function initMenuProgress(){
   document.querySelectorAll(".navbtn").forEach(btn=>{
     if(btn.querySelector(".nav-check"))return;
     const marker=document.createElement("span");
     marker.className="nav-check";marker.setAttribute("aria-hidden","true");
-    if(["administration","guia","evaluationAnnex"].includes(btn.dataset.tab)){
+    if(["guia","evaluationAnnex","analytics"].includes(btn.dataset.tab)){
       btn.classList.add("reference");marker.textContent="i";marker.title="Sección de consulta";
     }else{
       marker.textContent="○";marker.title="Módulo pendiente";
@@ -1365,16 +1465,18 @@ function analyzeFlowGraph(){
   });
   const duplicateConnectors=[...connectorGroups.entries()].filter(([,items])=>items.length>1).map(([id,items])=>({id,items}));
 
+  const invalidNegativeControlReturns=nodes.filter(a=>a.tipo==="Decisión"&&byId.get(a.decisionNo)?.tieneControl);
+
   const divergentDecisions=[];
   nodes.filter(a=>a.tipo==="Decisión"&&byId.has(a.decisionSi)&&byId.has(a.decisionNo)&&a.decisionSi!==a.decisionNo).forEach(a=>{
     const yesReach=walk(a.decisionSi),noReach=walk(a.decisionNo);
     const convergesBeforeEnd=[...yesReach].some(id=>noReach.has(id)&&id!==end?.uid);
     if(!convergesBeforeEnd)divergentDecisions.push(a);
   });
-  return{start,end,reachable,canReachEnd,unreachable,withoutEnd,startCanReachEnd,trappedCycles,returningCycles,duplicateConnectors,divergentDecisions};
+  return{start,end,reachable,canReachEnd,unreachable,withoutEnd,startCanReachEnd,trappedCycles,returningCycles,duplicateConnectors,divergentDecisions,invalidNegativeControlReturns};
 }
 function controlIsComplete(a){
-  return !a.tieneControl||[a.controlResponsable,a.controlPeriodicidad,a.controlAccion,a.controlEjecucion,a.controlDesviacion,a.controlEvidencia].every(filled);
+  return !a.tieneControl||(controlResponsibilityIsComplete(a)&&[a.controlPeriodicidad,a.controlAccion,a.controlEjecucion,a.controlDesviacion,a.controlEvidencia].every(filled));
 }
 function activitiesAreComplete(){
   if(activities.length<2)return false;
@@ -1384,13 +1486,13 @@ function activitiesAreComplete(){
     if(!filled(a.actividad))return false;
     if(a.tipo==="Conector")return filled(a.connectorId)&&filled(a.connectorDestino)&&!!activityByUid(a.connectorDestino)&&a.connectorDestino!==a.uid;
     if(a.tipo==="Inicio"||a.tipo==="Fin")return filled(a.descripcion);
-    if(!filled(a.descripcion)||!filled(a.responsable)||!controlIsComplete(a))return false;
+    if(!filled(a.descripcion)||!activityResponsibilityIsComplete(a)||!controlIsComplete(a))return false;
     if(a.tipo==="Decisión")return filled(a.decisionSi)&&filled(a.decisionNo)&&a.decisionSi!==a.decisionNo&&!!activityByUid(a.decisionSi)&&!!activityByUid(a.decisionNo);
     return true;
   });
   if(!recordsComplete)return false;
   const graph=analyzeFlowGraph();
-  return graph.unreachable.length===0&&graph.startCanReachEnd&&graph.withoutEnd.length===0&&graph.trappedCycles.length===0&&graph.duplicateConnectors.length===0;
+  return graph.unreachable.length===0&&graph.startCanReachEnd&&graph.withoutEnd.length===0&&graph.trappedCycles.length===0&&graph.duplicateConnectors.length===0&&graph.invalidNegativeControlReturns.length===0;
 }
 function sectionCompletion(){
   const general=["proceso","consecutivo","codigo","nombre","version","fecha","responsableProcedimiento"].every(id=>filled(val(id)));
@@ -1398,7 +1500,7 @@ function sectionCompletion(){
   const normasComplete=norms.length>0&&norms.every(n=>[n.tipo,n.norma,n.anio,n.descripcion,n.articulo,n.entidad].every(filled));
   const actividadesComplete=activitiesAreComplete();
   const signatures=[val("elaboro"),val("reviso"),val("aprobo")],signaturesComplete=signatures.every(filled)&&new Set(signatures.map(x=>x.trim().toLowerCase())).size===3;
-  const annexesComplete=annexes.length>0&&annexes.every(a=>[a.documento,a.tipo,a.codigo,a.observacion].every(filled));
+  const annexesComplete=annexesNotApplicable||(annexes.length>0&&annexes.every(a=>[a.documento,a.tipo,a.codigo,a.observacion].every(filled)));
   const changesComplete=changes.length>0&&changes.every(c=>[c.version,c.fecha,c.razon].every(filled));
   const anexosComplete=annexesComplete&&changesComplete&&signaturesComplete;
   const ready=general&&contexto&&normasComplete&&actividadesComplete&&anexosComplete;
@@ -1409,7 +1511,7 @@ function sectionCompletion(){
 function updateMenuProgress(){
   const state=sectionCompletion();
   document.querySelectorAll(".navbtn").forEach(btn=>{
-    if(["administration","guia","evaluationAnnex"].includes(btn.dataset.tab))return;
+    if(["guia","evaluationAnnex","analytics"].includes(btn.dataset.tab))return;
     const complete=!!state[btn.dataset.tab],marker=btn.querySelector(".nav-check");
     btn.classList.toggle("complete",complete);
     if(marker){marker.textContent=complete?"✓":"○";marker.title=complete?(btn.dataset.tab==="preview"?"Vista previa completa":"Módulo completo"):"Módulo pendiente"}
@@ -1423,11 +1525,10 @@ function updateProcedureIdentity(){
 }
 
 function applyRoleNavigation(){
-  const advisor=currentRole==="asesor",admin=currentRole==="admin"&&!!currentProfile.isAdmin;
-  document.querySelectorAll(".author-nav").forEach(el=>el.classList.toggle("role-hidden",advisor||admin));
+  const advisor=currentRole==="asesor";
+  document.querySelectorAll(".author-nav").forEach(el=>el.classList.toggle("role-hidden",advisor));
   document.querySelectorAll(".advisor-nav").forEach(el=>el.classList.toggle("role-hidden",!advisor));
-  document.querySelectorAll(".admin-nav").forEach(el=>el.classList.toggle("role-hidden",!admin));
-  document.querySelectorAll(".shared-nav").forEach(el=>el.classList.toggle("role-hidden",admin));
+  document.querySelectorAll(".shared-nav").forEach(el=>el.classList.remove("role-hidden"));
   const evaluationNav=document.querySelector('[data-tab="evaluation"]'),previewNav=document.querySelector('[data-tab="preview"]'),guideNav=document.querySelector('[data-tab="guia"]');
   if(evaluationNav){evaluationNav.querySelector(".nav-number").textContent=advisor?"03":"08";evaluationNav.querySelector(".nav-label").textContent=advisor?"Evaluación de adecuación":"Seguimiento de revisión"}
   if(previewNav){previewNav.classList.toggle("role-hidden",advisor);previewNav.querySelector(".nav-number").textContent="09";previewNav.querySelector(".nav-label").textContent="Vista previa"}
@@ -1435,19 +1536,19 @@ function applyRoleNavigation(){
   if($("previewHeading"))$("previewHeading").textContent="9. Vista previa del procedimiento";if($("guideHeading"))$("guideHeading").textContent="Anexo A. Guía del flujograma";
   if($("evaluationHeading"))$("evaluationHeading").textContent=advisor?"3. Evaluación de adecuación del procedimiento":"8. Seguimiento de la revisión";
   if($("evaluationIntro"))$("evaluationIntro").textContent=advisor?"Califique los criterios, registre las observaciones y emita el concepto técnico.":"Consulte el estado, las observaciones y las respuestas asociadas a la revisión metodológica del procedimiento.";
-  if($("evaluationRoleContext")){$("evaluationRoleContext").classList.toggle("advisor",advisor);$("evaluationRoleContext").innerHTML=advisor?`<b>Perfil activo:</b> ${esc(currentProfile.roleName)}${admin?" · Administrador":""}. Puede calificar criterios, registrar hallazgos, devolver el procedimiento o emitir concepto.`:`<b>Perfil activo:</b> ${esc(currentProfile.roleName)}${admin?" · Administrador":""}. Puede diligenciar, enviar la versión, consultar hallazgos y responder los ajustes solicitados.`}
-  const indicator=$("environmentIndicator"),icon=$("environmentIcon");if(indicator){indicator.classList.toggle("evaluator",advisor);$("environmentTitle").textContent=admin?"Administrador":advisor?"Evaluador":"Constructor";$("environmentDescription").textContent=admin?"Consulta de uso general, productividad y alertas administrativas de la prueba.":advisor?`${currentProfile.roleName}: consulta y evaluación metodológica del procedimiento.`:`${currentProfile.roleName}: diligenciamiento, revisión y envío del procedimiento.`;icon.innerHTML=admin?'<svg viewBox="0 0 48 48"><path d="M8 39V9"/><path d="M8 39h32"/><rect x="14" y="23" width="6" height="12" rx="1"/><rect x="23" y="14" width="6" height="21" rx="1"/><rect x="32" y="19" width="6" height="16" rx="1"/></svg>':advisor?'<svg viewBox="0 0 48 48"><path d="M13 8h22v35H13z"/><path d="M18 5h12v7H18zM19 20h10M19 27h7"/><path d="m28 34 3 3 7-8"/></svg>':'<svg viewBox="0 0 48 48"><path d="M8 9h24l8 8v22H8z"/><path d="M32 9v8h8M15 23h18M15 29h18M15 35h10"/><path d="m12 12 4 4 7-8"/></svg>'}
-  const switcher=$("environmentSwitcher"),canSwitch=!!currentProfile.canSwitchEnvironment;switcher?.classList.toggle("role-hidden",!canSwitch);$("adminEnvironmentBadge")?.classList.toggle("role-hidden",!admin);$("switchConstructor")?.classList.toggle("active",!advisor);$("switchEvaluator")?.classList.toggle("active",advisor);$("switchConstructor")?.setAttribute("aria-pressed",String(!advisor));$("switchEvaluator")?.setAttribute("aria-pressed",String(advisor));
-  $("workflowAction")?.classList.toggle("role-hidden",advisor||admin);
-  $("fileMenu")?.classList.toggle("role-hidden",advisor||admin);$("saveWrap")?.classList.toggle("role-hidden",advisor||admin);$("quickExport")?.classList.toggle("role-hidden",advisor||admin);$("notificationCenter")?.classList.toggle("role-hidden",admin);document.querySelector(".procedure-pin")?.classList.toggle("role-hidden",admin);
-  const active=document.querySelector(".navbtn.active");if(admin||active?.classList.contains("role-hidden"))switchTab(admin?"administration":advisor?"advisorInbox":"general");
+  if($("evaluationRoleContext")){$("evaluationRoleContext").classList.toggle("advisor",advisor);$("evaluationRoleContext").innerHTML=advisor?`<b>Perfil activo:</b> ${esc(currentProfile.roleName)}. Puede calificar criterios, registrar hallazgos, devolver el procedimiento o emitir concepto.`:`<b>Perfil activo:</b> ${esc(currentProfile.roleName)}. Puede diligenciar, enviar la versión, consultar hallazgos y responder los ajustes solicitados.`}
+  const indicator=$("environmentIndicator"),icon=$("environmentIcon");if(indicator){indicator.classList.toggle("evaluator",advisor);$("environmentTitle").textContent=advisor?"Evaluador":"Elaborador";$("environmentDescription").textContent=advisor?`${currentProfile.roleName}: consulta y evaluación metodológica del procedimiento.`:"";icon.innerHTML=advisor?'<svg viewBox="0 0 48 48"><path d="M13 8h22v35H13z"/><path d="M18 5h12v7H18zM19 20h10M19 27h7"/><path d="m28 34 3 3 7-8"/></svg>':'<svg viewBox="0 0 48 48"><path d="M8 9h24l8 8v22H8z"/><path d="M32 9v8h8M15 23h18M15 29h18M15 35h10"/><path d="m12 12 4 4 7-8"/></svg>'}
+  const switcher=$("environmentSwitcher"),canSwitch=!!currentProfile.canSwitchEnvironment;switcher?.classList.toggle("role-hidden",!canSwitch);$("switchConstructor")?.classList.toggle("active",!advisor);$("switchEvaluator")?.classList.toggle("active",advisor);$("switchConstructor")?.setAttribute("aria-pressed",String(!advisor));$("switchEvaluator")?.setAttribute("aria-pressed",String(advisor));
+  $("workflowAction")?.classList.toggle("role-hidden",advisor);
+  document.querySelector(".quick-file-actions")?.classList.toggle("role-hidden",advisor);$("saveWrap")?.classList.toggle("role-hidden",advisor);$("notificationCenter")?.classList.remove("role-hidden");document.querySelector(".procedure-pin")?.classList.remove("role-hidden");
+  const active=document.querySelector(".navbtn.active");if(active?.classList.contains("role-hidden"))switchTab(advisor?"advisorInbox":"general");
 }
 function switchEnvironment(environment){
   if(!currentProfile.canSwitchEnvironment||!["autor","asesor"].includes(environment)||currentRole===environment)return;
   saveLocal(true);currentRole=environment;
   const session=readAuthStore(sessionStorage,AUTH_SESSION_KEY,{username:currentProfile.username,loginAt:new Date().toISOString()});session.environment=environment;sessionStorage.setItem(AUTH_SESSION_KEY,JSON.stringify(session));
   applyRoleNavigation();updateEvaluationUI();updateNotificationsUI();updateWorkflowAction();switchTab(environment==="asesor"?"advisorInbox":"general");
-  toast(`Ambiente ${environment==="asesor"?"Evaluador":"Constructor"} activado.`);
+  toast(`Ambiente ${environment==="asesor"?"Evaluador":"Elaborador"} activado.`);
 }
 function notificationId(){return`ntf_${Date.now().toString(36)}_${Math.random().toString(36).slice(2,7)}`}
 function addNotification(role,title,message,type="info"){
@@ -1503,37 +1604,20 @@ function renderEvaluationAnnex(){
 }
 
 function switchTab(tab){
-  if(tab==="administration"&&!isAdministrator()){toast("El módulo de administración es exclusivo para el administrador.");return}
-  if(currentRole==="admin"&&tab!=="administration"){toast("Este perfil solo tiene acceso al módulo de analítica.");tab="administration"}
   document.querySelectorAll(".navbtn").forEach(b=>b.classList.toggle("active",b.dataset.tab===tab));
   const activeNav=document.querySelector(`.navbtn[data-tab="${tab}"]`);if(window.innerWidth<=1050)activeNav?.scrollIntoView({behavior:"smooth",block:"nearest",inline:"center"});
   document.querySelectorAll(".panel").forEach(p=>p.classList.remove("active"));
   $(tab+"Panel").classList.add("active");
-  const titles={
-    administration:"Analítica administrativa",advisorInbox:"Bandeja de evaluaciones",advisorProcedure:"Procedimiento recibido",
-    general:"Identificación del procedimiento",contexto:"Marco contextual",normas:"Normatividad",
-    actividades:"Descripción de actividades",flujograma:"Flujograma automático",anexos:"Anexos y control de cambios",
-    revision:"Revisión final de consistencia",evaluation:"Evaluación de adecuación",preview:"Vista previa del procedimiento",guia:"Guía del flujograma",evaluationAnnex:"Criterios de evaluación"
-  };
-  $("pageTitle").textContent=titles[tab]||"Constructor de Procedimientos";
   if(tab==="flujograma") renderFlow();
-  if(tab==="administration") renderAdminUsers();
   if(tab==="revision") runQualityRules();
   if(tab==="evaluation") updateEvaluationUI();
   if(tab==="advisorInbox") renderAdvisorInbox();
   if(tab==="advisorProcedure") buildAdvisorProcedurePreview();
   if(tab==="preview") buildPreview();
   if(tab==="evaluationAnnex") renderEvaluationAnnex();
+  if(tab==="analytics") renderUsageAnalytics();
   if(currentProfile.username)recordAnalytics("module_view",{module:tab});
 }
-
-function toggleFileMenu(event){
-  event.stopPropagation();const menu=$("fileMenu"),open=menu.classList.toggle("open");
-  menu.querySelector(".action-menu-trigger").setAttribute("aria-expanded",String(open));
-}
-function closeFileMenu(){const menu=$("fileMenu");if(!menu)return;menu.classList.remove("open");menu.querySelector(".action-menu-trigger").setAttribute("aria-expanded","false")}
-document.addEventListener("click",event=>{if(!event.target.closest("#fileMenu"))closeFileMenu()});
-document.addEventListener("keydown",event=>{if(event.key==="Escape")closeFileMenu()});
 
 function toast(msg){
   const t=$("toast");t.textContent=msg;t.style.display="block";
@@ -1597,6 +1681,51 @@ function normalizeResponsibilityRole(value,levels){
 function responsibilityRoleSelectOptions(selected="",levels){
   const roles=responsibilityRolesByLevels(levels),current=normalizeResponsibilityRole(selected,levels),groups=[...new Set(roles.map(role=>role.level))];
   return `<option value="">Seleccione un cargo</option>`+groups.map(level=>`<optgroup label="${esc(level)}">${roles.filter(role=>role.level===level).map(role=>`<option value="${esc(role.cargo)}" ${current===role.cargo?"selected":""}>${esc(role.cargo)}</option>`).join("")}</optgroup>`).join("");
+}
+function activityResponsibilitySelectOptions(activity){
+  return responsibilityRoleSelectOptions(activity.responsableOtro?"":activity.responsable)+`<option value="__otro__" ${activity.responsableOtro?"selected":""}>Otro — ¿Cuál?</option>`;
+}
+function controlResponsibilitySelectOptions(activity){
+  return responsibilityRoleSelectOptions(activity.controlResponsableOtro?"":activity.controlResponsable)+`<option value="__otro__" ${activity.controlResponsableOtro?"selected":""}>Otro — ¿Cuál?</option>`;
+}
+function vagueOtherResponsibility(value){
+  return /^(varios|todos|quien corresponda|n\/?a|no aplica)$/i.test(normalizeText(value));
+}
+function activityResponsibilityIsComplete(activity){
+  return filled(activity?.responsable)&&(!activity.responsableOtro||!vagueOtherResponsibility(activity.responsable));
+}
+function controlResponsibilityIsComplete(activity){
+  return filled(activity?.controlResponsable)&&(!activity.controlResponsableOtro||!vagueOtherResponsibility(activity.controlResponsable));
+}
+function setActivityResponsibility(index,value){
+  const activity=activities[index];if(!activity)return;
+  if(value==="__otro__"){
+    activity.responsableOtro=true;activity.responsable="";renderActivities();
+    toast("Especifique claramente quién es responsable de la actividad.");
+  }else{
+    activity.responsableOtro=false;activity.responsable=value;renderActivities();
+  }
+}
+function updateOtherActivityResponsibility(index,value,input){
+  const activity=activities[index];if(!activity)return;activity.responsable=value;
+  const invalid=vagueOtherResponsibility(value);
+  input?.setCustomValidity(invalid?'Indique un cargo, dependencia o actor específico; no use expresiones genéricas.':"");
+  input?.setAttribute("aria-invalid",String(invalid));
+}
+function setControlResponsibility(index,value){
+  const activity=activities[index];if(!activity)return;
+  if(value==="__otro__"){
+    activity.controlResponsableOtro=true;activity.controlResponsable="";renderActivities();
+    toast("Especifique claramente quién es responsable de ejecutar o verificar el control.");
+  }else{
+    activity.controlResponsableOtro=false;activity.controlResponsable=value;renderActivities();
+  }
+}
+function updateOtherControlResponsibility(index,value,input){
+  const activity=activities[index];if(!activity)return;activity.controlResponsable=value;
+  const invalid=vagueOtherResponsibility(value);
+  input?.setCustomValidity(invalid?'Indique un cargo, dependencia o actor específico; no use expresiones genéricas.':"");
+  input?.setAttribute("aria-invalid",String(invalid));
 }
 function today(){
   const parts=new Intl.DateTimeFormat("en-US",{timeZone:"America/Bogota",year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(new Date());
@@ -1697,8 +1826,8 @@ function uid(){
 }
 function addActivity(data={}){
   const record={
-    uid:uid(),n:activities.length+1,tipo:"Actividad",actividad:"",descripcion:"",responsable:"",
-    decisionSi:"",decisionNo:"",tieneControl:false,controlResponsable:"",controlPeriodicidad:"",controlAccion:"",controlProposito:"",
+    uid:uid(),n:activities.length+1,tipo:"Actividad",actividad:"",descripcion:"",responsable:"",responsableOtro:false,
+    decisionSi:"",decisionNo:"",tieneControl:false,controlResponsable:"",controlResponsableOtro:false,controlPeriodicidad:"",controlAccion:"",controlProposito:"",
     controlEjecucion:"",controlDesviacion:"",controlEvidencia:"",evidencia:"",sistema:"",
     connectorId:"",connectorDestino:"",...data
   };
@@ -1723,6 +1852,10 @@ function renumber(){
 function displayedActivityNumber(a){return a?.tipo==="Actividad"?String(a.n||""):""}
 function normalizeActivity(a){
   if(!a.uid)a.uid=uid();
+  const normalizedResponsible=normalizeResponsibilityRole(a.responsable);
+  if(a.responsableOtro===undefined)a.responsableOtro=filled(a.responsable)&&!normalizedResponsible;
+  a.responsableOtro=!!a.responsableOtro;
+  if(!a.responsableOtro&&normalizedResponsible)a.responsable=normalizedResponsible;
   if(a.tipo==="Control"){a.tipo="Actividad";a.tieneControl=true}
   if(a.control!==undefined&&a.tieneControl===undefined)a.tieneControl=!!String(a.control||"").trim();
   if(a.tipo==="Inicio"&&String(a.descripcion||"").trim().toLowerCase()==="inicio del procedimiento")a.descripcion="";
@@ -1733,6 +1866,10 @@ function normalizeActivity(a){
   if(a.connectorId===undefined)a.connectorId="";
   if(a.connectorDestino===undefined)a.connectorDestino="";
   if(a.controlResponsable===undefined)a.controlResponsable="";
+  const normalizedControlResponsible=normalizeResponsibilityRole(a.controlResponsable);
+  if(a.controlResponsableOtro===undefined)a.controlResponsableOtro=filled(a.controlResponsable)&&!normalizedControlResponsible;
+  a.controlResponsableOtro=!!a.controlResponsableOtro;
+  if(!a.controlResponsableOtro&&normalizedControlResponsible)a.controlResponsable=normalizedControlResponsible;
   if(a.controlPeriodicidad===undefined)a.controlPeriodicidad="";
   if(a.controlAccion===undefined)a.controlAccion="";
   if(a.controlProposito===undefined)a.controlProposito="";
@@ -1740,7 +1877,9 @@ function normalizeActivity(a){
   if(a.controlDesviacion===undefined)a.controlDesviacion="";
   if(a.controlEvidencia===undefined)a.controlEvidencia="";
   if(a.tipo==="Decisión"){
-    a.tieneControl=false;a.controlResponsable="";a.controlPeriodicidad="";a.controlAccion="";a.controlProposito="";
+    if(!filled(a.descripcion)&&filled(a.actividad)&&a.actividad!=="Decisión")a.descripcion=a.actividad;
+    a.actividad=a.descripcion||"";a.evidencia="";a.sistema="";
+    a.tieneControl=false;a.controlResponsable="";a.controlResponsableOtro=false;a.controlPeriodicidad="";a.controlAccion="";a.controlProposito="";
     a.controlEjecucion="";a.controlDesviacion="";a.controlEvidencia="";
   }
   delete a.control;return a;
@@ -1783,12 +1922,13 @@ function changeActivityType(index,type){
   if(type!=="Decisión"){a.decisionSi="";a.decisionNo=""}
   if(type!=="Conector"){a.connectorId="";a.connectorDestino=""}
   if(["Inicio","Decisión","Conector","Fin"].includes(type)){
-    a.tieneControl=false;a.controlResponsable="";a.controlPeriodicidad="";a.controlAccion="";a.controlProposito="";
-    a.controlEjecucion="";a.controlDesviacion="";a.controlEvidencia="";a.responsable="";a.evidencia="";a.sistema="";
+    a.tieneControl=false;a.controlResponsable="";a.controlResponsableOtro=false;a.controlPeriodicidad="";a.controlAccion="";a.controlProposito="";
+    a.controlEjecucion="";a.controlDesviacion="";a.controlEvidencia="";a.responsable="";a.responsableOtro=false;a.evidencia="";a.sistema="";
   }
   if(type==="Conector"){
     a.connectorId=nextConnectorId();a.actividad=`Conector ${a.connectorId}`;a.descripcion="";
   }
+  if(type==="Decisión")a.actividad=a.descripcion||"";
   if(type==="Inicio"&&String(a.descripcion||"").trim().toLowerCase()==="inicio del procedimiento")a.descripcion="";
   if(type==="Fin"&&String(a.descripcion||"").trim().toLowerCase()==="fin del procedimiento")a.descripcion="";
   renderActivities();
@@ -1808,6 +1948,7 @@ function removeActivity(index){
     ?`¿Está seguro de eliminar la actividad “${label}”? Esta acción no se puede deshacer.`
     :"¿Está seguro de eliminar este registro de actividad? Esta acción no se puede deshacer.";
   if(!confirm(message))return;
+  collapsedActivityIds.delete(removed.uid);
   activities.splice(index,1);
   activities.forEach(a=>{
     if(a.decisionSi===removed.uid)a.decisionSi="";
@@ -1816,22 +1957,47 @@ function removeActivity(index){
   });
   renderActivities();
 }
+function activityRowIsComplete(activity){
+  if(!activity)return false;
+  if(activity.tipo==="Inicio"||activity.tipo==="Fin")return filled(activity.descripcion);
+  if(activity.tipo==="Conector")return filled(activity.connectorId)&&filled(activity.connectorDestino);
+  if(activity.tipo==="Decisión")return filled(activity.descripcion)&&activityResponsibilityIsComplete(activity)&&filled(activity.decisionSi)&&filled(activity.decisionNo)&&activity.decisionSi!==activity.decisionNo;
+  return filled(activity.actividad)&&filled(activity.descripcion)&&activityResponsibilityIsComplete(activity)&&controlIsComplete(activity);
+}
+function toggleActivityCollapse(uid){
+  if(currentRole!=="autor")return;
+  if(collapsedActivityIds.has(uid))collapsedActivityIds.delete(uid);else collapsedActivityIds.add(uid);
+  renderActivities();
+}
+function updateDecisionQuestion(index,value){
+  const activity=activities[index];if(!activity)return;
+  activity.descripcion=value;activity.actividad=value;
+}
 function renderActivities(){
   ensureBoundaryActivities();renumber();
   $("activitiesBody").innerHTML=activities.map((a,i)=>{
     const special=["Inicio","Conector","Fin"].includes(a.tipo),noControl=["Inicio","Decisión","Conector","Fin"].includes(a.tipo),fixedBoundary=a.tipo==="Inicio"||a.tipo==="Fin";
     const help=activityDescriptionHelp(a.tipo);
     const rowClasses=["activity-row",a.tipo==="Decisión"?"decision-row":"",a.tipo==="Conector"?"connector-row":"",a.tieneControl?"control-row":""].filter(Boolean).join(" ");
+    if(!fixedBoundary&&currentRole==="autor"&&collapsedActivityIds.has(a.uid)){
+      const complete=activityRowIsComplete(a),summary=a.descripcion||a.actividad||"Sin descripción",responsible=a.responsable||"Responsable pendiente";
+      return `<tr class="${rowClasses} activity-collapsed"><td>${displayedActivityNumber(a)||'<span class="control-none">—</span>'}</td><td><span class="fixed-type">${esc(a.tipo)}</span></td><td colspan="6"><div class="activity-collapsed-summary"><b>${esc(summary)}</b><span>${esc(responsible)}</span><span class="activity-completion-tag ${complete?"":"pending"}">${complete?"Completa":"Pendiente"}</span></div></td><td><button class="smallbtn" type="button" onclick="toggleActivityCollapse('${esc(a.uid)}')">Expandir</button></td></tr>`;
+    }
+    if(a.tipo==="Decisión"){
+      const responsible=`<select aria-label="Responsable de la actividad" onchange="setActivityResponsibility(${i},this.value)">${activityResponsibilitySelectOptions(a)}</select>${a.responsableOtro?`<div class="other-responsible-wrap"><input required aria-label="¿Cuál responsable?" aria-invalid="${vagueOtherResponsibility(a.responsable)}" value="${esc(a.responsable)}" placeholder="Ej. Supervisor del contrato" oninput="updateOtherActivityResponsibility(${i},this.value,this)"><div class="other-responsible-note"><b>Importante:</b> especifique claramente el cargo, dependencia o actor encargado.</div></div>`:""}`;
+      return `<tr class="${rowClasses}"><td><span class="control-none">—</span></td><td><select class="type-select decision-select" onchange="changeActivityType(${i},this.value)">${["Actividad","Decisión","Conector"].map(x=>`<option ${x==="Decisión"?"selected":""}>${x}</option>`).join("")}</select><div><span class="decision-chip">◆ Decisión</span></div></td><td colspan="2"><label class="decision-question-label">Pregunta de decisión <span class="required-star">*</span></label><textarea class="decision-question" required aria-label="Pregunta de decisión" placeholder="Ej. ¿La información cumple los criterios establecidos?" oninput="updateDecisionQuestion(${i},this.value)">${esc(a.descripcion)}</textarea></td><td>${responsible}</td><td colspan="3" class="decision-unused"></td><td><button class="smallbtn" onclick="moveActivity(${i},-1)" title="Subir">↑</button> <button class="smallbtn" onclick="moveActivity(${i},1)" title="Bajar">↓</button> <button class="smallbtn" onclick="removeActivity(${i})" title="Eliminar">×</button><button class="smallbtn activity-collapse-btn" type="button" onclick="toggleActivityCollapse('${esc(a.uid)}')">Contraer</button></td></tr>
+      <tr class="decision-details-row"><td colspan="9"><div class="decision-details"><div class="route-box"><label>Ruta SÍ <span class="help-tip" tabindex="0" data-tip="Seleccione la actividad a la que debe dirigirse el flujo cuando la respuesta sea positiva.">i</span></label><select onchange="activities[${i}].decisionSi=this.value">${activityOptions(i,a.decisionSi)}</select><div class="route-note">Ejemplo: Sí → Continuar con la aprobación.</div></div><div class="route-box"><label>Ruta NO <span class="help-tip" tabindex="0" data-tip="La salida negativa debe conducir primero a una actividad que corrija, modifique o complemente la información antes de repetir un control.">i</span></label><select onchange="activities[${i}].decisionNo=this.value">${activityOptions(i,a.decisionNo)}</select><div class="route-note">No dirija esta ruta directamente a un punto de control; incluya primero una actividad de ajuste.</div></div></div></td></tr>`;
+    }
     return `<tr class="${rowClasses}">
     <td>${displayedActivityNumber(a)||'<span class="control-none">—</span>'}</td>
     <td>${fixedBoundary?`<span class="fixed-type" title="Elemento fijo">🔒 ${a.tipo}</span>`:`<select class="type-select ${a.tipo==="Decisión"?"decision-select":a.tipo==="Conector"?"connector-select":""}" onchange="changeActivityType(${i},this.value)">${["Actividad","Decisión","Conector"].map(x=>`<option ${a.tipo===x?"selected":""}>${x}</option>`).join("")}</select>`}${a.tipo==="Decisión"?'<div><span class="decision-chip">◆ Decisión</span></div>':a.tipo==="Conector"?'<div><span class="connector-chip">○ Conector</span></div>':""}</td>
     <td><textarea class="activity-name" rows="3" placeholder="${a.tipo==="Inicio"?"Ej. Recepción de la solicitud":a.tipo==="Fin"?"Ej. Informe final comunicado":a.tipo==="Conector"?"Ej. Conector A":"Nombre corto"}" oninput="activities[${i}].actividad=this.value">${esc(a.actividad)}</textarea></td>
     <td><textarea class="activity-description" rows="4" placeholder="${esc(help)}" oninput="activities[${i}].descripcion=this.value">${esc(a.descripcion)}</textarea><div class="row-help">${esc(help)}</div></td>
-    <td>${special?'<span class="control-none">No aplica</span>':`<select onchange="activities[${i}].responsable=this.value">${responsibilityRoleSelectOptions(a.responsable)}</select>`}</td>
+    <td>${special?'<span class="control-none">No aplica</span>':`<select aria-label="Responsable de la actividad" onchange="setActivityResponsibility(${i},this.value)">${activityResponsibilitySelectOptions(a)}</select>${a.responsableOtro?`<div class="other-responsible-wrap"><input required aria-label="¿Cuál responsable?" aria-invalid="${vagueOtherResponsibility(a.responsable)}" value="${esc(a.responsable)}" placeholder="Ej. Supervisor del contrato" oninput="updateOtherActivityResponsibility(${i},this.value,this)"><div class="other-responsible-note"><b>Importante:</b> especifique claramente el cargo, dependencia o actor encargado. La responsabilidad de toda actividad debe estar claramente establecida para asegurar su ejecución, control y trazabilidad.</div></div>`:""}`}</td>
     <td>${noControl?'<span class="control-none">No aplica</span>':`<select class="control-select ${a.tieneControl?"control-yes":""}" onchange="activities[${i}].tieneControl=this.value===\'Si\';renderActivities()"><option value="No" ${!a.tieneControl?"selected":""}>No</option><option value="Si" ${a.tieneControl?"selected":""}>Sí</option></select>${a.tieneControl?'<div><span class="control-chip">✓ Punto de control</span></div>':""}`}</td>
     <td>${special?'<span class="control-none">No aplica</span>':`<textarea placeholder="Opcional" oninput="activities[${i}].evidencia=this.value">${esc(a.evidencia)}</textarea>`}</td>
     <td>${special?'<span class="control-none">No aplica</span>':`<input value="${esc(a.sistema)}" placeholder="Opcional" oninput="activities[${i}].sistema=this.value">`}</td>
-    <td>${fixedBoundary?'<span class="fixed-actions">Fijo</span>':`<button class="smallbtn" onclick="moveActivity(${i},-1)" title="Subir">↑</button> <button class="smallbtn" onclick="moveActivity(${i},1)" title="Bajar">↓</button> <button class="smallbtn" onclick="removeActivity(${i})" title="Eliminar">×</button>`}</td>
+    <td>${fixedBoundary?'<span class="fixed-actions">Fijo</span>':`<button class="smallbtn" onclick="moveActivity(${i},-1)" title="Subir">↑</button> <button class="smallbtn" onclick="moveActivity(${i},1)" title="Bajar">↓</button> <button class="smallbtn" onclick="removeActivity(${i})" title="Eliminar">×</button>${currentRole==="autor"?`<button class="smallbtn activity-collapse-btn" type="button" onclick="toggleActivityCollapse('${esc(a.uid)}')">Contraer</button>`:""}`}</td>
   </tr>
   ${a.tipo==="Decisión"?`<tr class="decision-details-row"><td colspan="9"><div class="decision-details">
     <div class="route-box"><label>Ruta SÍ <span class="help-tip" tabindex="0" data-tip="Seleccione la actividad a la que debe dirigirse el flujo cuando la respuesta a la decisión sea positiva.">i</span></label><select onchange="activities[${i}].decisionSi=this.value">${activityOptions(i,a.decisionSi)}</select><div class="route-note">Ejemplo: Sí → Realizar comunicación de inicio.</div></div>
@@ -1842,7 +2008,7 @@ function renderActivities(){
     <div class="field"><label>Continuar el flujo en <span class="required-star">*</span> <span class="help-tip" tabindex="0" data-tip="Seleccione la actividad o conector donde debe continuar la secuencia.">i</span></label><select required onchange="activities[${i}].connectorDestino=this.value">${activityOptions(i,a.connectorDestino,true)}</select><div class="route-note">El conector dirige el flujo al destino seleccionado y evita una línea secuencial innecesaria.</div></div>
   </div></td></tr>`:""}
   ${a.tieneControl?`<tr class="control-details-row"><td colspan="9"><div class="control-details">
-    <div class="field"><label>Responsable del control <span class="required-star">*</span> <span class="help-tip" tabindex="0" data-tip="Rol que ejecuta o verifica el control. Puede coincidir con el responsable de la actividad.">i</span></label><select required onchange="activities[${i}].controlResponsable=this.value">${responsibilityRoleSelectOptions(a.controlResponsable)}</select></div>
+    <div class="field"><label>Responsable del control <span class="required-star">*</span> <span class="help-tip" tabindex="0" data-tip="Rol que ejecuta o verifica el control. Puede coincidir con el responsable de la actividad.">i</span></label><select required aria-label="Responsable del control" onchange="setControlResponsibility(${i},this.value)">${controlResponsibilitySelectOptions(a)}</select>${a.controlResponsableOtro?`<div class="other-responsible-wrap"><input required aria-label="¿Cuál responsable del control?" aria-invalid="${vagueOtherResponsibility(a.controlResponsable)}" value="${esc(a.controlResponsable)}" placeholder="Ej. Supervisor del contrato" oninput="updateOtherControlResponsibility(${i},this.value,this)"><div class="other-responsible-note"><b>Importante:</b> especifique claramente el cargo, dependencia o actor encargado de ejecutar o verificar el control. Esta responsabilidad debe quedar definida para asegurar la ejecución, evidencia y trazabilidad del control.</div></div>`:""}</div>
     <div class="field"><label>Periodicidad <span class="required-star">*</span> <span class="help-tip" tabindex="0" data-tip="Frecuencia con la que se ejecuta el control: por cada trámite, diariamente, mensual, por cada auditoría, etc.">i</span></label><input required value="${esc(a.controlPeriodicidad)}" placeholder="Ej. por cada trabajo" oninput="activities[${i}].controlPeriodicidad=this.value"></div>
     <div class="field"><label>Propósito del Control <span class="required-star">*</span> <span class="help-tip" tabindex="0" data-tip="Seleccione la acción que mejor representa el propósito del control. El verbo orienta su identificación, pero no determina por sí solo que la actividad constituya un punto de control.">i</span></label><select required aria-label="Propósito del Control" onchange="activities[${i}].controlAccion=this.value">${controlActionOptions(a.controlAccion)}</select></div>
     <div class="field"><label>Ejecución del control <span class="required-star">*</span> <span class="help-tip" tabindex="0" data-tip="Describa cómo se realiza la verificación: qué se revisa, contra qué criterio y qué acción ejecuta el responsable.">i</span></label><textarea required oninput="activities[${i}].controlEjecucion=this.value">${esc(a.controlEjecucion)}</textarea></div>
@@ -1857,8 +2023,20 @@ function moveActivity(i,d){
   [activities[i],activities[j]]=[activities[j],activities[i]];renderActivities();
 }
 
-function addAnexo(data={}){annexes.push({documento:"",tipo:"Formato",codigo:"",observacion:"",...data});renderAnnexes();}
+function setAnnexApplicability(value){
+  if(value==="no_aplica"){
+    const confirmed=confirm("Confirme que este procedimiento no contiene documentos anexos. Los anexos registrados se eliminarán de esta sección.");
+    if(!confirmed){$("annexApplicability").value=annexesNotApplicable?"no_aplica":"aplica";return}
+    annexesNotApplicable=true;annexes=[];renderAnnexes();scheduleAutosave();toast("Se confirmó que los documentos anexos no aplican para este procedimiento.");return;
+  }
+  annexesNotApplicable=false;renderAnnexes();scheduleAutosave();
+}
+function addAnexo(data={}){if(annexesNotApplicable){toast("Cambie la aplicabilidad a “Aplica” antes de agregar documentos anexos.");return}annexes.push({documento:"",tipo:"Formato",codigo:"",observacion:"",...data});renderAnnexes();}
 function renderAnnexes(){
+  if($("annexApplicability"))$("annexApplicability").value=annexesNotApplicable?"no_aplica":"aplica";
+  if($("addAnnexButton"))$("addAnnexButton").disabled=annexesNotApplicable;
+  if($("annexTableWrap"))$("annexTableWrap").hidden=annexesNotApplicable;
+  if($("annexNotApplicableMessage"))$("annexNotApplicableMessage").classList.toggle("visible",annexesNotApplicable);
   $("anexosBody").innerHTML=annexes.map((a,i)=>`
   <tr>
     <td><input value="${esc(a.documento)}" oninput="annexes[${i}].documento=this.value"></td>
@@ -1909,11 +2087,15 @@ function runQualityRules(){
   if(val("definiciones"))add(definitionsInAlphabeticalOrder(),"Términos y definiciones registrados en orden alfabético.","warn",{guidance:"Ordene los términos de la A a la Z para facilitar su consulta."});
   add(!!val("condiciones"),"Condiciones generales diligenciadas.","warn");
   add(changes.every(c=>c.fecha>="2025-01-01"&&c.fecha<=today()),"Fechas del control de cambios dentro del rango permitido: desde el 1 de enero de 2025 hasta hoy.","danger");
-  add(annexes.some(a=>String(a.documento||"").trim()),"Documentos relacionados / anexos identificados.","warn");
+  add(annexesNotApplicable||annexes.some(a=>String(a.documento||"").trim()),annexesNotApplicable?"Se confirmó que los documentos anexos no aplican.":"Documentos relacionados / anexos identificados.","warn");
   add(activities.length>=2,"Desarrollo del procedimiento registrado.","danger");
 
   const withoutResponsible=activities.filter(a=>!["Inicio","Conector","Fin"].includes(a.tipo)&&!String(a.responsable||"").trim());
   add(withoutResponsible.length===0,withoutResponsible.length?`${withoutResponsible.length} actividad(es) sin responsable.`:"Todas las actividades operativas tienen responsable.","danger",{id:"responsables",uids:withoutResponsible.map(a=>a.uid),guidance:"Asigne un rol responsable a cada actividad operativa."});
+  const vagueOtherResponsibles=activities.filter(a=>!["Inicio","Conector","Fin"].includes(a.tipo)&&a.responsableOtro&&vagueOtherResponsibility(a.responsable));
+  add(vagueOtherResponsibles.length===0,vagueOtherResponsibles.length?`${vagueOtherResponsibles.length} responsable(s) definido(s) con expresiones ambiguas.`:"Los responsables personalizados están definidos de forma específica.","danger",{id:"responsables_otro",uids:vagueOtherResponsibles.map(a=>a.uid),guidance:"Indique un cargo, dependencia o actor concreto. Evite “Varios”, “Todos”, “Quien corresponda” o “N/A”."});
+  const vagueOtherControlResponsibles=activities.filter(a=>a.tieneControl&&a.controlResponsableOtro&&vagueOtherResponsibility(a.controlResponsable));
+  add(vagueOtherControlResponsibles.length===0,vagueOtherControlResponsibles.length?`${vagueOtherControlResponsibles.length} responsable(s) de control definido(s) con expresiones ambiguas.`:"Los responsables personalizados de los controles están definidos de forma específica.","danger",{id:"responsables_control_otro",uids:vagueOtherControlResponsibles.map(a=>a.uid),guidance:"Identifique el cargo, dependencia o actor concreto que ejecuta o verifica el control."});
   const decisions=activities.filter(a=>a.tipo==="Decisión"),unclearDecisions=decisions.filter(a=>!String(a.descripcion||a.actividad||"").trim());
   add(unclearDecisions.length===0,"Las decisiones registradas están descritas de forma comprensible.","warn",{id:"decisiones_descripcion",uids:unclearDecisions.map(a=>a.uid),guidance:"Describa la condición que determina las rutas Sí y No."});
   const incompleteDecisionList=decisions.filter(a=>!a.decisionSi||!a.decisionNo||a.decisionSi===a.decisionNo||!activityByUid(a.decisionSi)||!activityByUid(a.decisionNo));
@@ -1923,7 +2105,7 @@ function runQualityRules(){
   const controlsInFlow=activities.filter(a=>a.tieneControl).length;
   add(controlsInFlow>0,"Se identificó al menos un punto de control en el procedimiento.","warn");
   const incompleteControls=activities.filter(a=>a.tieneControl && (
-    !String(a.controlResponsable||"").trim() || !String(a.controlPeriodicidad||"").trim() || !String(a.controlAccion||"").trim() ||
+    !controlResponsibilityIsComplete(a) || !String(a.controlPeriodicidad||"").trim() || !String(a.controlAccion||"").trim() ||
     !String(a.controlEjecucion||"").trim() || !String(a.controlDesviacion||"").trim() || !String(a.controlEvidencia||"").trim()
   ));
   add(incompleteControls.length===0,incompleteControls.length?`${incompleteControls.length} punto(s) de control tienen atributos incompletos.`:"Los puntos de control configurados cuentan con sus atributos completos.","danger",{id:"controles_incompletos",uids:incompleteControls.map(a=>a.uid),guidance:"Complete responsable, periodicidad, propósito, ejecución, desviación y evidencia."});
@@ -1936,10 +2118,13 @@ function runQualityRules(){
   const graph=analyzeFlowGraph(),names=items=>items.slice(0,3).map(flowNodeLabel).join(", ")+(items.length>3?", …":"");
   const cycleNodes=groups=>groups.flatMap(group=>group.map(a=>a.uid));
   add(graph.unreachable.length===0,graph.unreachable.length?`${graph.unreachable.length} elemento(s) no pueden alcanzarse desde Inicio: ${names(graph.unreachable)}.`:"Todas las actividades pueden alcanzarse desde Inicio.","danger",{id:"grafo_inaccesibles",uids:graph.unreachable.map(a=>a.uid),guidance:"Conecte estos elementos desde una ruta alcanzable o elimínelos."});
-  add(graph.startCanReachEnd&&graph.withoutEnd.length===0,!graph.startCanReachEnd?"No existe una ruta efectiva desde Inicio hasta Fin.":`${graph.withoutEnd.length} elemento(s) alcanzables no tienen una ruta hacia Fin: ${names(graph.withoutEnd)}.`,"danger",{id:"grafo_sin_fin",uids:graph.withoutEnd.map(a=>a.uid),guidance:"Defina cómo continúa, se devuelve, se escala o finaliza cada ruta."});
+  const allRoutesReachEnd=graph.startCanReachEnd&&graph.withoutEnd.length===0;
+  add(allRoutesReachEnd,allRoutesReachEnd?"Todas las rutas alcanzables pueden llegar hasta Fin.":!graph.startCanReachEnd?"No existe una ruta efectiva desde Inicio hasta Fin.":`${graph.withoutEnd.length} elemento(s) alcanzables no tienen una ruta hacia Fin: ${names(graph.withoutEnd)}.`,"danger",{id:"grafo_sin_fin",uids:graph.withoutEnd.map(a=>a.uid),guidance:"Defina cómo continúa, se devuelve, se escala o finaliza cada ruta."});
   add(graph.trappedCycles.length===0,graph.trappedCycles.length?`${graph.trappedCycles.length} ciclo(s) no tienen salida hacia Fin: ${graph.trappedCycles.slice(0,2).map(group=>names(group)).join(" | ")}.`:"No se identificaron ciclos sin salida.","danger",{id:"grafo_ciclos_cerrados",uids:cycleNodes(graph.trappedCycles),guidance:"Agregue una condición de salida hacia aprobación, rechazo, escalamiento o cierre."});
   const duplicateItems=graph.duplicateConnectors.flatMap(group=>group.items);
   add(graph.duplicateConnectors.length===0,graph.duplicateConnectors.length?`Identificadores de conector duplicados: ${graph.duplicateConnectors.map(group=>group.id).join(", ")}.`:"Los identificadores de conectores son únicos.","danger",{id:"grafo_conectores_duplicados",uids:duplicateItems.map(a=>a.uid),guidance:"Asigne un identificador único a cada conector."});
+  const invalidNegativeTargets=graph.invalidNegativeControlReturns.map(decision=>activityByUid(decision.decisionNo)).filter(Boolean);
+  add(graph.invalidNegativeControlReturns.length===0,graph.invalidNegativeControlReturns.length?`${graph.invalidNegativeControlReturns.length} salida(s) negativa(s) conducen directamente a un punto de control.`:"Las salidas negativas incluyen una actividad de ajuste antes de repetir un control.","danger",{id:"grafo_retorno_directo_control",uids:[...graph.invalidNegativeControlReturns,...invalidNegativeTargets].map(a=>a.uid),guidance:"Dirija la ruta No a una actividad que modifique, corrija o complemente la información; después de esa actividad puede repetirse el control."});
   add(graph.divergentDecisions.length===0,graph.divergentDecisions.length?`${graph.divergentDecisions.length} decisión(es) no reconvergen antes de Fin: ${names(graph.divergentDecisions)}.`:"Las bifurcaciones vuelven a un punto común antes de Fin.","warn",{id:"grafo_bifurcaciones",uids:graph.divergentDecisions.map(a=>a.uid),guidance:"Confirme que las ramas representan resultados independientes; si no, defina un punto de convergencia."});
   add(graph.returningCycles.length===0,graph.returningCycles.length?`${graph.returningCycles.length} ruta(s) regresan a actividades anteriores: ${graph.returningCycles.slice(0,2).map(group=>names(group)).join(" | ")}.`:"No se identificaron rutas de retorno que puedan repetirse indefinidamente.","info",{id:"grafo_retornos",uids:cycleNodes(graph.returningCycles),guidance:"Documente la condición de salida, el límite de intentos o el mecanismo de escalamiento."});
 
@@ -2273,7 +2458,7 @@ function renderFlow(){
 
     const visualH=a.tipo==="Decisión"?decisionH:a.tipo==="Conector"?connectorH:nodeH;
     const lineGap=16,startText=y+visualH/2-(label.length-1)*lineGap/2+5;
-    label.forEach((ln,j)=>parts.push(`<text x="${p.cx}" y="${startText+j*lineGap}" text-anchor="middle" fill="${a.tipo==="Conector"?"#3F6178":"#004488"}" font-size="${a.tipo==="Conector"?18:12.5}" font-weight="${j===0?700:500}">${esc(ln)}</text>`));
+    label.forEach((ln,j)=>parts.push(`<text x="${p.cx}" y="${startText+j*lineGap}" text-anchor="middle" fill="${a.tipo==="Conector"?"#3F6178":"#004488"}" font-size="${a.tipo==="Conector"?18:12.5}" font-weight="${["Actividad","Decisión"].includes(a.tipo)?400:(j===0?700:500)}">${esc(ln)}</text>`));
     if(a.tipo==="Actividad")parts.push(`<circle cx="${p.cx-p.w/2+12}" cy="${y+10}" r="13" fill="#004488" stroke="#fff" stroke-width="2"/><text x="${p.cx-p.w/2+12}" y="${y+14}" text-anchor="middle" fill="#fff" font-size="10" font-weight="700">${displayedActivityNumber(a)}</text>`);
     parts.push(`<text x="${p.cx}" y="${y+visualH+16}" text-anchor="middle" fill="#777777" font-size="9" font-weight="700" letter-spacing=".7">${esc(String(a.tipo||"").toUpperCase())}</text>`);
 
@@ -2317,7 +2502,7 @@ function currentUserEmail(){return normalizeUsername($("sessionEmail")?.textCont
 function dateTimeLabel(value){if(!value)return"Sin registro";const d=new Date(value);return Number.isNaN(d.getTime())?String(value):d.toLocaleString("es-CO",{dateStyle:"medium",timeStyle:"short"})}
 function evaluationSnapshot(){
   const fields={};fieldIds.forEach(id=>fields[id]=$(id)?.value||"");
-  return{capturedAt:new Date().toISOString(),fields,norms:JSON.parse(JSON.stringify(norms)),activities:JSON.parse(JSON.stringify(activities)),annexes:JSON.parse(JSON.stringify(annexes)),changes:JSON.parse(JSON.stringify(changes)),settings:{showEvidenceFlow:!!$("showEvidenceFlow")?.checked}};
+  return{capturedAt:new Date().toISOString(),fields,norms:JSON.parse(JSON.stringify(norms)),activities:JSON.parse(JSON.stringify(activities)),annexes:JSON.parse(JSON.stringify(annexes)),changes:JSON.parse(JSON.stringify(changes)),settings:{showEvidenceFlow:!!$("showEvidenceFlow")?.checked,annexesNotApplicable}};
 }
 function addEvaluationHistory(action,note=""){
   ensureEvaluation();evaluation.history.push({at:new Date().toISOString(),by:currentUserEmail(),role:currentRole,action,note:String(note||"").trim()});
@@ -2482,7 +2667,7 @@ function exportEvaluationPDF(){
 
 function data(){
   const fields={};fieldIds.forEach(id=>fields[id]=$(id).value);
-  return{fields,norms,activities,annexes,changes,evaluation:ensureEvaluation(),notifications,settings:{showEvidenceFlow:!!$("showEvidenceFlow")?.checked}};
+  return{fields,norms,activities,annexes,changes,evaluation:ensureEvaluation(),notifications,settings:{showEvidenceFlow:!!$("showEvidenceFlow")?.checked,annexesNotApplicable}};
 }
 function applyData(d){
   fieldIds.forEach(id=>{
@@ -2490,7 +2675,7 @@ function applyData(d){
     const roleLevels=id==="aprobo"?["Directivo"]:null;
     $(id).value=["responsableProcedimiento","elaboro","reviso","aprobo"].includes(id)?normalizeResponsibilityRole(d.fields[id],roleLevels):d.fields[id];
   });
-  norms=d.norms||[];activities=(d.activities||[]).map(a=>({...a,responsable:normalizeResponsibilityRole(a.responsable),controlResponsable:normalizeResponsibilityRole(a.controlResponsable)}));annexes=d.annexes||[];changes=d.changes||[];evaluation=d.evaluation||newEvaluationState();notifications=Array.isArray(d.notifications)?d.notifications:[];
+  norms=d.norms||[];activities=(d.activities||[]).map(a=>normalizeActivity({...a}));collapsedActivityIds=new Set();annexes=d.annexes||[];annexesNotApplicable=!!d.settings?.annexesNotApplicable;if(annexesNotApplicable)annexes=[];changes=d.changes||[];evaluation=d.evaluation||newEvaluationState();notifications=Array.isArray(d.notifications)?d.notifications:[];
   if($("showEvidenceFlow"))$("showEvidenceFlow").checked=!!d.settings?.showEvidenceFlow;
   renderNorms();renderActivities();renderAnnexes();renderChanges();updateCode();validateName();validateCurrentDate();renderFlow();runQualityRules();updateProcedureIdentity();updateEvaluationUI();updateMenuProgress();
 }
@@ -2500,7 +2685,7 @@ function saveLocal(silent=false){
     localStorage.setItem("procedimiento_baq_v8",JSON.stringify({...data(),savedAt:new Date().toISOString()}));
     const state=$("saveState");if(state)state.textContent=silent?"Guardado automático":"Guardado ahora";
     if(!silent)toast("Procedimiento guardado localmente.");
-  }catch(e){if(!silent)toast("No fue posible guardar en este navegador. Descargue un respaldo.")}
+  }catch(e){if(!silent)toast("No fue posible guardar en este navegador. Intente nuevamente.")}
 }
 let autosaveTimer;
 function scheduleAutosave(){updateProcedureIdentity();renderEvaluationSummary();updateWorkflowAction();updateMenuProgress();const state=$("saveState");if(state)state.textContent="Guardando…";clearTimeout(autosaveTimer);autosaveTimer=setTimeout(()=>saveLocal(true),650)}
@@ -2514,7 +2699,7 @@ function newProcedure(){
   if(!confirm("¿Crear un procedimiento nuevo? Se limpiará la información en pantalla."))return;
   fieldIds.forEach(id=>{if($(id))$(id).value=""});$("version").value="1.0";setDateRules();
   if($("showEvidenceFlow"))$("showEvidenceFlow").checked=false;
-  norms=[];activities=[];annexes=[];changes=[];evaluation=newEvaluationState();notifications=[];
+  norms=[];activities=[];annexes=[];annexesNotApplicable=false;collapsedActivityIds=new Set();changes=[];evaluation=newEvaluationState();notifications=[];
   addNorma();addActivity({tipo:"Inicio",actividad:"Inicio",descripcion:""});addActivity({tipo:"Actividad",actividad:"Nueva actividad",descripcion:""});addActivity({tipo:"Fin",actividad:"Fin",descripcion:""});addAnexo();addCambio({razon:"Creación inicial del procedimiento"});
   applyProcessAccess();updateCode();validateName();renderFlow();runQualityRules();updateEvaluationUI();switchTab("general");
 }
@@ -2537,7 +2722,7 @@ function buildPreview(){
   ensureEvaluation();const evalStats=evaluationStats(),evaluationPreview=evaluation.status!=="Borrador"?`<h2>7. EVALUACIÓN DE ADECUACIÓN</h2><div class="dochead"><div><b>ESTADO:</b> ${esc(evaluation.status)}</div><div><b>RESULTADO:</b> ${evalStats.score.toFixed(1)}% — ${esc(evalStats.level)}</div><div><b>ASESOR:</b> ${esc(evaluation.evaluatorEmail||evaluation.assignedEvaluator||"Sin asignar")}</div><div><b>FECHA:</b> ${esc(dateTimeLabel(evaluation.evaluationDate))}</div></div><p class="context-item"><b>Concepto técnico:</b> ${esc(evaluation.concept||"Sin concepto registrado.")}</p>`:"";
   const showEvidenceColumn=activities.some(a=>String(a.evidencia||a.controlEvidencia||"").trim()),showSystem=activities.some(a=>String(a.sistema||"").trim()),defs=parseDefinitions(val("definiciones"));
   const controlText=a=>{if(!a.tieneControl)return"";const items=[["Responsable",a.controlResponsable],["Periodicidad",a.controlPeriodicidad],["Propósito del Control",a.controlAccion],["Ejecución",a.controlEjecucion],["Desviación",a.controlDesviacion],["Evidencia",a.controlEvidencia]].filter(x=>String(x[1]||"").trim());return items.map(x=>`<b>${x[0]}:</b> ${esc(x[1])}`).join("<br>")};
-  const actRows=activities.map(a=>`<tr><td>${displayedActivityNumber(a)||"—"}</td><td>${esc(a.tipo)}</td><td>${esc(a.actividad||"")}</td><td>${esc(a.descripcion)}${a.tipo==="Decisión"?`<div class="decision-route-note"><b>Sí →</b> ${esc(routeLabel(a.decisionSi))}<br><b>No →</b> ${esc(routeLabel(a.decisionNo))}</div>`:a.tipo==="Conector"?`<div class="decision-route-note"><b>Conector ${esc(a.connectorId||"")} →</b> ${esc(routeLabel(a.connectorDestino))}</div>`:""}</td><td>${esc(a.responsable)}</td><td>${controlText(a)}</td>${showEvidenceColumn?`<td>${esc(a.evidencia||a.controlEvidencia||"")}</td>`:""}${showSystem?`<td>${esc(a.sistema||"")}</td>`:""}</tr>`).join("");
+  const actRows=activities.map(a=>`<tr><td>${displayedActivityNumber(a)||"—"}</td><td>${esc(a.tipo)}</td><td>${a.tipo==="Decisión"?"—":esc(a.actividad||"")}</td><td>${esc(a.descripcion)}${a.tipo==="Decisión"?`<div class="decision-route-note"><b>Sí →</b> ${esc(routeLabel(a.decisionSi))}<br><b>No →</b> ${esc(routeLabel(a.decisionNo))}</div>`:a.tipo==="Conector"?`<div class="decision-route-note"><b>Conector ${esc(a.connectorId||"")} →</b> ${esc(routeLabel(a.connectorDestino))}</div>`:""}</td><td>${esc(a.responsable)}</td><td>${controlText(a)}</td>${showEvidenceColumn?`<td>${esc(a.evidencia||a.controlEvidencia||"")}</td>`:""}${showSystem?`<td>${esc(a.sistema||"")}</td>`:""}</tr>`).join("");
   const defHtml=defs.length?`<table class="def-table"><thead><tr><th>Término</th><th>Definición</th></tr></thead><tbody>${defs.map(d=>`<tr><td>${esc(d.term||"Definición")}</td><td>${esc(d.definition)}</td></tr>`).join("")}</tbody></table>`:'<p>Sin definiciones registradas.</p>';
   $("previewDoc").innerHTML=`<div class="document-brand">VALIDADOR Y ESTRUCTURADOR METODOLÓGICO<span>DE PROCEDIMIENTOS</span></div><h1 style="text-align:center;font-size:20px">PROCEDIMIENTO</h1>
   <div class="dochead"><div><b>CÓDIGO:</b> ${esc(val("codigo"))}</div><div><b>VERSIÓN:</b> ${esc(val("version"))}</div><div><b>NOMBRE:</b> ${esc(val("nombre"))}</div><div><b>FECHA:</b> ${esc(val("fecha"))}</div><div style="grid-column:1/-1"><b>PROCESO:</b> ${esc(val("proceso"))} — ${esc(processName(val("proceso")))}</div><div style="grid-column:1/-1"><b>RESPONSABLE:</b> ${esc(val("responsableProcedimiento"))}</div></div>
@@ -2548,10 +2733,9 @@ function buildPreview(){
   <h2>2. NORMATIVIDAD</h2><table><thead><tr><th>Tipo</th><th>Norma</th><th>Año</th><th>Descripción de la norma</th><th>Artículo / sección</th><th>Entidad emisora</th></tr></thead><tbody>${tableRows(norms,["tipo","norma","anio","descripcion","articulo","entidad"])}</tbody></table>
   <h2>3. DESCRIPCIÓN DEL PROCEDIMIENTO</h2>
   <table><thead><tr><th>N.º</th><th>Tipo</th><th>Actividad</th><th>Descripción de la actividad</th><th>Responsable</th><th>Punto de control</th>${showEvidenceColumn?"<th>Registro / Evidencia</th>":""}${showSystem?"<th>Sistema / Herramienta</th>":""}</tr></thead><tbody>${actRows||`<tr><td colspan="${6+(showEvidenceColumn?1:0)+(showSystem?1:0)}">Sin actividades.</td></tr>`}</tbody></table>
-  <h2>4. DOCUMENTOS ANEXOS</h2><table><thead><tr><th>Documento</th><th>Tipo</th><th>Código / referencia</th><th>Observación</th></tr></thead><tbody>${tableRows(annexes,["documento","tipo","codigo","observacion"])}</tbody></table>
+  <h2>4. DOCUMENTOS ANEXOS</h2><table><thead><tr><th>Documento</th><th>Tipo</th><th>Código / referencia</th><th>Observación</th></tr></thead><tbody>${annexesNotApplicable?'<tr><td colspan="4">No aplica. El procedimiento no contiene documentos anexos.</td></tr>':tableRows(annexes,["documento","tipo","codigo","observacion"])}</tbody></table>
   <h2>5. CONTROL DE CAMBIOS</h2><table><thead><tr><th>Versión</th><th>Fecha</th><th>Razón de la actualización</th></tr></thead><tbody>${tableRows(changes,["version","fecha","razon"])}</tbody></table><br><table><tr><th>Elaboró</th><th>Revisó</th><th>Aprobó</th></tr><tr><td>${esc(val("elaboro"))}${val("elaboroNombre")?`<br><small>Nombre: ${esc(val("elaboroNombre"))}</small>`:""}</td><td>${esc(val("reviso"))}${val("revisoNombre")?`<br><small>Nombre: ${esc(val("revisoNombre"))}</small>`:""}</td><td>${esc(val("aprobo"))}${val("aproboNombre")?`<br><small>Nombre: ${esc(val("aproboNombre"))}</small>`:""}</td></tr></table><h2>6. FLUJOGRAMA</h2><div class="report-flow">${flow}</div>${evaluationPreview}`;
 }
-function procedureBackup(){return{format:"BAQ-PROCEDIMIENTO",formatVersion:6,exportedAt:new Date().toISOString(),...data()}}
 function pdfWrapText(value,maxChars){
   const paragraphs=String(value??"").replace(/\r/g,"").split("\n"),lines=[];
   paragraphs.forEach(paragraph=>{
@@ -2578,11 +2762,10 @@ function pdfReportEntries(){
     if(a.evidencia)field("Registro / Evidencia",a.evidencia);if(a.sistema)field("Sistema / Herramienta",a.sistema);
   });
   add("4. DOCUMENTOS ANEXOS",{size:13,bold:true,spaceBefore:10});
-  if(!annexes.length)add("Sin documentos anexos registrados.");else annexes.forEach((a,i)=>add(`${i+1}. ${a.documento||""} · ${a.tipo||""} · ${a.codigo||""} · ${a.observacion||""}`));
+  if(annexesNotApplicable)add("No aplica. El procedimiento no contiene documentos anexos.");else if(!annexes.length)add("Sin documentos anexos registrados.");else annexes.forEach((a,i)=>add(`${i+1}. ${a.documento||""} · ${a.tipo||""} · ${a.codigo||""} · ${a.observacion||""}`));
   add("5. CONTROL DE CAMBIOS",{size:13,bold:true,spaceBefore:10});
   if(!changes.length)add("Sin cambios registrados.");else changes.forEach((c,i)=>add(`${i+1}. Versión ${c.version||""} · ${c.fecha||""} · ${c.razon||""}`));
   field("Elaboró",`${val("elaboro")}${val("elaboroNombre")?` · Nombre: ${val("elaboroNombre")}`:""}`);field("Revisó",`${val("reviso")}${val("revisoNombre")?` · Nombre: ${val("revisoNombre")}`:""}`);field("Aprobó",`${val("aprobo")}${val("aproboNombre")?` · Nombre: ${val("aproboNombre")}`:""}`);
-  add("RESPALDO EDITABLE",{size:11,bold:true,spaceBefore:10});add("Este PDF contiene el respaldo JSON del procedimiento como archivo adjunto interno y puede cargarse nuevamente en el Validador y Estructurador Metodológico de Procedimientos.");
   add("6. FLUJOGRAMA",{size:13,bold:true,spaceBefore:10});add("La representación gráfica se presenta en la página siguiente, inmediatamente después del control de cambios y los datos de elaboración, revisión y aprobación.");
   return entries;
 }
@@ -2603,19 +2786,17 @@ function composePdfTextPages(entries){
 function pdfObject(id,body){return joinBytes([binaryBytes(`${id} 0 obj\n`),body,binaryBytes("\nendobj\n")])}
 function pdfStreamObject(id,dictionary,bytes){return pdfObject(id,joinBytes([binaryBytes(`<< ${dictionary} /Length ${bytes.length} >>\nstream\n`),bytes,binaryBytes("\nendstream")]))}
 function buildProcedurePdf(flowImage){
-  const jsonBytes=new TextEncoder().encode(JSON.stringify(procedureBackup(),null,2)),textPages=composePdfTextPages(pdfReportEntries());
-  const imageId=flowImage?7:0,firstPageId=flowImage?8:7,pageCount=textPages.length+(flowImage?1:0),kids=[];for(let i=0;i<pageCount;i++)kids.push(`${firstPageId+i*2} 0 R`);
+  const textPages=composePdfTextPages(pdfReportEntries());
+  const imageId=flowImage?5:0,firstPageId=flowImage?6:5,pageCount=textPages.length+(flowImage?1:0),kids=[];for(let i=0;i<pageCount;i++)kids.push(`${firstPageId+i*2} 0 R`);
   const objects=[];
-  objects[1]=pdfObject(1,binaryBytes(`<< /Type /Catalog /Pages 2 0 R /Names << /EmbeddedFiles << /Names [(respaldo_procedimiento.json) 6 0 R] >> >> /AF [6 0 R] >>`));
+  objects[1]=pdfObject(1,binaryBytes("<< /Type /Catalog /Pages 2 0 R >>"));
   objects[2]=pdfObject(2,binaryBytes(`<< /Type /Pages /Kids [${kids.join(" ")}] /Count ${pageCount} >>`));
   objects[3]=pdfObject(3,binaryBytes("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>"));
   objects[4]=pdfObject(4,binaryBytes("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>"));
-  objects[5]=pdfStreamObject(5,"/Type /EmbeddedFile /Subtype /application#2Fjson /BAQBackup true",jsonBytes);
-  objects[6]=pdfObject(6,binaryBytes("<< /Type /Filespec /F (respaldo_procedimiento.json) /UF (respaldo_procedimiento.json) /Desc (Respaldo JSON editable del procedimiento) /EF << /F 5 0 R >> /AFRelationship /Data >>"));
-  if(flowImage)objects[7]=pdfStreamObject(7,`/Type /XObject /Subtype /Image /Width ${flowImage.width} /Height ${flowImage.height} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode`,flowImage.bytes);
+  if(flowImage)objects[imageId]=pdfStreamObject(imageId,`/Type /XObject /Subtype /Image /Width ${flowImage.width} /Height ${flowImage.height} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode`,flowImage.bytes);
   let pageIndex=0;
   textPages.forEach(content=>{const pageId=firstPageId+pageIndex*2,contentId=pageId+1;objects[pageId]=pdfObject(pageId,binaryBytes(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 842 595] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents ${contentId} 0 R >>`));objects[contentId]=pdfStreamObject(contentId,"",content);pageIndex++});
-  if(flowImage){const pageId=firstPageId+pageIndex*2,contentId=pageId+1,maxW=758,maxH=500,scale=Math.min(maxW/flowImage.width,maxH/flowImage.height),w=Math.round(flowImage.width*scale),h=Math.round(flowImage.height*scale),x=Math.round((842-w)/2),y=Math.round((540-h)/2);const content=binaryBytes(`BT /F2 14 Tf 42 560 Td (FLUJOGRAMA DEL PROCEDIMIENTO) Tj ET\nq ${w} 0 0 ${h} ${x} ${y} cm /Im1 Do Q\nBT /F1 8 Tf 42 20 Td (Página ${pageIndex+1}) Tj ET`);objects[pageId]=pdfObject(pageId,binaryBytes(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 842 595] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> /XObject << /Im1 7 0 R >> >> /Contents ${contentId} 0 R >>`));objects[contentId]=pdfStreamObject(contentId,"",content)}
+  if(flowImage){const pageId=firstPageId+pageIndex*2,contentId=pageId+1,maxW=758,maxH=500,scale=Math.min(maxW/flowImage.width,maxH/flowImage.height),w=Math.round(flowImage.width*scale),h=Math.round(flowImage.height*scale),x=Math.round((842-w)/2),y=Math.round((540-h)/2);const content=binaryBytes(`BT /F2 14 Tf 42 560 Td (FLUJOGRAMA DEL PROCEDIMIENTO) Tj ET\nq ${w} 0 0 ${h} ${x} ${y} cm /Im1 Do Q\nBT /F1 8 Tf 42 20 Td (Página ${pageIndex+1}) Tj ET`);objects[pageId]=pdfObject(pageId,binaryBytes(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 842 595] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> /XObject << /Im1 ${imageId} 0 R >> >> /Contents ${contentId} 0 R >>`));objects[contentId]=pdfStreamObject(contentId,"",content)}
   const maxId=objects.length-1,header=binaryBytes("%PDF-1.7\n%âãÏÓ\n"),parts=[header],offsets=[0];let offset=header.length;
   for(let id=1;id<=maxId;id++){offsets[id]=offset;parts.push(objects[id]);offset+=objects[id].length}
   const xrefOffset=offset,xref=[`xref\n0 ${maxId+1}\n0000000000 65535 f \n`];for(let id=1;id<=maxId;id++)xref.push(`${String(offsets[id]).padStart(10,"0")} 00000 n \n`);xref.push(`trailer\n<< /Size ${maxId+1} /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`);parts.push(binaryBytes(xref.join("")));return joinBytes(parts);
@@ -2624,8 +2805,8 @@ function previewProcedure(){
   runQualityRules();switchTab("preview");recordAnalytics("preview_viewed");saveLocal(true);toast("Vista previa actualizada. No se descargó ningún archivo.");
 }
 async function generatePDF(){
-  const score=runQualityRules();buildPreview();switchTab("preview");toast("Preparando PDF con respaldo JSON…");
-  try{const flowImage=await flowJpeg().catch(()=>null),bytes=buildProcedurePdf(flowImage);downloadBlob(new Blob([bytes],{type:"application/pdf"}),safeFileName(val("codigo")||val("nombre"))+".pdf");recordAnalytics("pdf_generated");saveLocal(true);toast(score<100?"PDF generado con observaciones pendientes y respaldo JSON incluido.":"PDF generado con respaldo JSON incluido.")}catch(e){console.error(e);toast("No fue posible generar el PDF. Intente nuevamente.")}
+  const score=runQualityRules();buildPreview();switchTab("preview");toast("Preparando PDF…");
+  try{const flowImage=await flowJpeg().catch(()=>null),bytes=buildProcedurePdf(flowImage);downloadBlob(new Blob([bytes],{type:"application/pdf"}),safeFileName(val("codigo")||val("nombre"))+".pdf");recordAnalytics("pdf_generated");saveLocal(true);toast(score<100?"PDF generado con observaciones pendientes.":"PDF generado correctamente.")}catch(e){console.error(e);toast("No fue posible generar el PDF. Intente nuevamente.")}
 }
 
 function safeFileName(value){
@@ -2635,13 +2816,6 @@ function downloadBlob(blob,name){
   const url=URL.createObjectURL(blob),a=document.createElement("a");
   a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);
 }
-function downloadJSON(){
-  const payload=procedureBackup();
-  downloadBlob(new Blob([JSON.stringify(payload,null,2)],{type:"application/json"}),safeFileName(val("codigo")||val("nombre"))+"_respaldo.json");
-  toast("Respaldo JSON descargado.");
-}
-function openBackup(){$("backupInput").click()}
-
 async function flowJpeg(){
   renderFlow();
   const source=$("flowSvg"),clone=source.cloneNode(true),box=source.viewBox.baseVal;
@@ -2664,35 +2838,17 @@ function exportFlowPDF(){
   setTimeout(()=>{popup.print();popup.close()},350);
 }
 function joinBytes(parts){const size=parts.reduce((n,p)=>n+p.length,0),out=new Uint8Array(size);let at=0;parts.forEach(p=>{out.set(p,at);at+=p.length});return out}
-async function importBackup(file){
-  if(!file)return;
-  try{
-    let payload;const name=file.name.toLowerCase();
-    if(name.endsWith(".json"))payload=JSON.parse(await file.text());
-    else if(name.endsWith(".pdf")){
-      const bytes=new Uint8Array(await file.arrayBuffer()),text=new TextDecoder("latin1").decode(bytes),flag=text.indexOf("/BAQBackup true");
-      if(flag<0)throw new Error("Este PDF no contiene un respaldo JSON editable.");
-      const dictStart=text.lastIndexOf("<<",flag),streamAt=text.indexOf("stream",flag),lengthMatch=text.slice(dictStart,streamAt).match(/\/Length\s+(\d+)/);
-      if(streamAt<0||!lengthMatch)throw new Error("No fue posible localizar el respaldo JSON del PDF.");
-      let start=streamAt+6;if(bytes[start]===13&&bytes[start+1]===10)start+=2;else if(bytes[start]===10||bytes[start]===13)start+=1;
-      payload=JSON.parse(new TextDecoder().decode(bytes.slice(start,start+Number(lengthMatch[1]))));
-    }else throw new Error("Seleccione un archivo .pdf o .json.");
-    if(payload.format&&!['GESTION-PROCEDIMIENTO','BAQ-PROCEDIMIENTO'].includes(payload.format))throw new Error("El archivo no corresponde a este asistente.");
-    applyData(payload);saveLocal(true);switchTab("general");toast("Información recuperada correctamente.");
-  }catch(e){console.error(e);toast(e.message||"No fue posible cargar el respaldo.")}
-}
-
 initProcesses();setDateRules();initMenuProgress();initResponsibilityRoleOptions();
 addNorma();
 addActivity({tipo:"Inicio",actividad:"Inicio",descripcion:""});
 addActivity({tipo:"Actividad",actividad:"Nueva actividad",descripcion:""});
 addActivity({tipo:"Fin",actividad:"Fin",descripcion:""});
 addAnexo();addCambio({razon:"Creación inicial del procedimiento"});
-updateCode();renderFlow();runQualityRules();loadLocal();updateProcedureIdentity();updateMenuProgress();initAuth();
+updateCode();renderFlow();runQualityRules();loadLocal();updateProcedureIdentity();updateMenuProgress();initSidebar();initAuth();
 setInterval(analyticsHeartbeat,30000);
 document.addEventListener("input",scheduleAutosave);
 document.addEventListener("change",scheduleAutosave);
-document.addEventListener("click",e=>{if(e.target.closest("button"))scheduleAutosave()});
+document.addEventListener("click",e=>{if(e.target.closest("button")&&!e.target.closest("#saveProcedureButton"))scheduleAutosave()});
 window.addEventListener("beforeunload",()=>saveLocal(true));
 </script>
 </body>
