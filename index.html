@@ -111,6 +111,13 @@ button{cursor:pointer}
 .name-plus{color:#777777;font-weight:700}
 .name-examples{margin:0;padding-left:18px}.name-examples li{margin:3px 0}
 .name-avoid{border-left:4px solid #B42318;background:#FFF7F6}
+.method-guide{margin:12px 0 14px;border:1px solid #C9D6DC;border-left:5px solid var(--green);border-radius:9px;background:#F8FAFA;padding:13px 14px;color:#4D5F6C;font-size:12px;line-height:1.48}
+.method-guide>strong{display:block;color:var(--navy);font-size:13px;margin-bottom:7px}
+.norm-hierarchy{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:10px}
+.norm-hierarchy section{border:1px solid #D9E1E4;border-radius:8px;background:#fff;padding:11px}
+.norm-hierarchy h4{margin:0 0 6px;color:var(--navy);font-size:12px}
+.norm-hierarchy ol{margin:0;padding-left:19px}.norm-hierarchy li{margin:3px 0}
+@media(max-width:800px){.norm-hierarchy{grid-template-columns:1fr}}
 .help-tip{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;background:#E7F2EA;color:var(--green);font-weight:700;font-size:12px;position:relative;cursor:help;outline:none}
 .help-tip:focus-visible,.table-help:focus-visible{box-shadow:0 0 0 3px rgba(93,124,148,.55);outline:none}
 .method-tooltip{position:fixed;display:none;width:min(340px,calc(100vw - 24px));z-index:10000;background:#fff;color:#004488;border:2px solid #1D9A7C;border-left-width:6px;padding:12px 13px;border-radius:9px;font-size:13px;font-weight:400;line-height:1.48;text-align:left;white-space:normal;box-shadow:0 16px 42px rgba(0,68,136,.28);pointer-events:none}
@@ -135,6 +142,8 @@ th,td{padding:9px 8px;border-bottom:1px solid #E2E8EB;vertical-align:top}
 th{background:var(--navy);color:#fff;font-size:12px;position:sticky;top:0;z-index:1}
 td input,td textarea,td select{width:100%;border:1px solid #C7D1D6;background:#fff;color:var(--text);border-radius:7px;padding:7px}
 td textarea{min-height:66px}
+#actividadesPanel .activity-name{min-height:72px;min-width:190px;resize:both;overflow:auto}
+#actividadesPanel .activity-description{min-height:96px;min-width:290px;resize:both;overflow:auto}
 .smallbtn{padding:5px 8px;border-radius:7px;border:1px solid #BBC7CD;background:#fff;color:var(--navy)}
 .smallbtn:hover{border-color:var(--green);color:var(--green)}
 .kpirow{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:14px}
@@ -600,7 +609,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
     <button class="navbtn author-nav" data-tab="anexos"><span class="nav-number">06</span><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6.5h6l2 2h8v11H4z"/><path d="M8 13h8M8 16h5"/></svg><span class="nav-label">Documentos y cambios</span></button>
     <button class="navbtn author-nav" data-tab="revision"><span class="nav-number">07</span><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5 19 6v5.3c0 4.2-2.7 7.5-7 9.2-4.3-1.7-7-5-7-9.2V6z"/><path d="m8.5 12 2.2 2.2 4.8-5"/></svg><span class="nav-label">Revisión final</span></button>
     <button class="navbtn shared-nav" data-tab="evaluation"><span class="nav-number">08</span><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3.5h12v17H6z"/><path d="M9 8h6M9 12h3M9 16h3"/><path d="m14.5 15.5 1.5 1.5 3-3"/></svg><span class="nav-label">Seguimiento de revisión</span></button>
-    <button class="navbtn shared-nav" data-tab="preview"><span class="nav-number">09</span><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3.5h9l3 3v14H6z"/><path d="M15 3.5v3h3M9 11h6M9 14h6M9 17h4"/><path d="M3.5 8.5v10"/></svg><span class="nav-label">Exportar PDF</span></button>
+    <button class="navbtn shared-nav" data-tab="preview"><span class="nav-number">09</span><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6z"/><circle cx="12" cy="12" r="2.5"/></svg><span class="nav-label">Vista previa</span></button>
     <div class="nav-section-label">Anexos de consulta</div>
     <button class="navbtn shared-nav" data-tab="guia"><span class="nav-number">A1</span><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6.5h6l2 2h8v11H4z"/><path d="M8 13h8M8 16h5"/></svg><span class="nav-label">Guía del flujograma</span></button>
     <button class="navbtn shared-nav" data-tab="evaluationAnnex"><span class="nav-number">A2</span><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3.5h12v17H6z"/><path d="M9 8h6M9 12h3M9 16h3"/><path d="m14.5 15.5 1.5 1.5 3-3"/></svg><span class="nav-label">Criterios de evaluación</span></button>
@@ -640,11 +649,13 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
       <div class="quick-file-actions" role="group" aria-label="Acciones del procedimiento">
         <button class="quick-action-button" id="newProcedureButton" type="button" onclick="newProcedure()" aria-label="Nuevo procedimiento" title="Nuevo procedimiento"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
         <button class="quick-action-button" id="saveProcedureButton" type="button" onclick="saveLocal()" aria-label="Guardar procedimiento" title="Guardar procedimiento"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3.5h12l2 2v15H5z"/><path d="M8 3.5v6h8v-6M8 20.5v-7h8v7"/></svg></button>
+        <button class="quick-action-button" id="previewProcedureButton" type="button" onclick="previewProcedure()" aria-label="Vista previa del procedimiento" title="Vista previa del procedimiento"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6z"/><circle cx="12" cy="12" r="2.5"/></svg></button>
         <button class="quick-action-button pdf" id="exportPdfButton" type="button" onclick="generatePDF()" aria-label="Exportar procedimiento a PDF" title="Exportar procedimiento a PDF"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3.5h9l3 3v14H6z"/><path d="M15 3.5v3h3M9 11h6M9 14h6M9 17h4"/></svg><span class="pdf-mark" aria-hidden="true">PDF</span></button>
       </div>
       <div class="workflow-action" id="workflowAction"><button class="btn primary" id="sendReviewTop" type="button" onclick="handleWorkflowAction()">Enviar para revisión</button><span class="workflow-state" id="workflowState">Borrador</span></div>
       <div class="action-divider" aria-hidden="true"></div>
       <div class="save-wrap" id="saveWrap"><span class="save-state" id="saveState">Guardado automático</span></div>
+      <input id="backupInput" type="file" accept=".pdf,.json,application/pdf,application/json" hidden onchange="importBackup(this.files[0]);this.value=''">
     </div>
   </div>
 
@@ -685,16 +696,16 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
       </div>
 
       <div class="field full">
-        <label>Nombre del procedimiento <span class="help-tip" tabindex="0" data-tip="Formule el nombre con un verbo en infinitivo, el objeto sobre el que recae la acción y, solo si es necesario, un complemento que delimite el alcance. Ejemplo: Gestionar la adquisición de bienes y servicios.">i</span></label>
-        <input id="nombre" oninput="validateName()" placeholder="Ej. Gestionar la adquisición de bienes y servicios">
+        <label>Nombre del procedimiento <span class="help-tip" tabindex="0" data-tip="Use un verbo de acción específico y verificable, un solo objeto y, cuando sea necesario, un complemento que precise el alcance. Máximo 12 palabras, mayúscula solo en la primera letra y sin punto final.">i</span></label>
+        <input id="nombre" maxlength="140" oninput="validateName()" placeholder="Ej. Formular el plan anual de adquisiciones">
         <div id="nameStatus" class="inline-status"></div>
         <details class="name-guide">
           <summary>Cómo formular correctamente el nombre</summary>
           <div class="name-guide-body">
-            <div class="name-rule full"><b>Estructura estándar recomendada</b>El nombre debe responder claramente qué se hace y sobre qué recae la acción.<div class="name-formula"><span class="name-part">Verbo en infinitivo</span><span class="name-plus">+</span><span class="name-part">Objeto</span><span class="name-plus">+</span><span class="name-part">Complemento opcional</span></div></div>
-            <div class="name-rule"><b>Componentes</b><strong>Verbo:</strong> acción principal, como Gestionar, Elaborar, Adquirir, Evaluar o Controlar.<br><strong>Objeto:</strong> elemento o recurso sobre el que se actúa.<br><strong>Complemento:</strong> alcance o contexto específico, cuando sea necesario.</div>
-            <div class="name-rule"><b>Ejemplos correctos</b><ul class="name-examples"><li>Gestionar la adquisición de bienes y servicios.</li><li>Evaluar el desempeño del equipo consultor.</li><li>Desarrollar el diagnóstico organizacional del cliente.</li><li>Administrar el archivo y la correspondencia corporativa.</li><li>Monitorear los riesgos de los proyectos de consultoría.</li></ul></div>
-            <div class="name-rule name-avoid full"><b>Evite ambigüedades</b>No utilice nombres vagos como “Trámites varios” o “Gestión general”. Tampoco incluya la palabra “Procedimiento”, porque el tipo documental ya está implícito. Use “Elaborar informes”, no “Procedimiento para elaborar informes”.</div>
+            <div class="name-rule full"><b>Estructura recomendada</b>El nombre debe expresar una sola acción y un solo propósito.<div class="name-formula"><span class="name-part">Verbo específico</span><span class="name-plus">+</span><span class="name-part">Objeto</span><span class="name-plus">+</span><span class="name-part">Complemento, cuando aplique</span></div></div>
+            <div class="name-rule"><b>Componentes</b><strong>Verbo:</strong> acción específica y verificable, como Formular, Elaborar, Adquirir, Supervisar, Liquidar, Atender, Evaluar o Archivar.<br><strong>Objeto:</strong> producto, servicio, documento o recurso público sobre el que se actúa. Debe corresponder a un solo propósito.<br><strong>Complemento:</strong> alcance o contexto que distingue este procedimiento de otros similares. Es obligatorio cuando el objeto es genérico, como informes, contratos o solicitudes.</div>
+            <div class="name-rule"><b>Ejemplos correctos</b><ul class="name-examples"><li>Formular el plan anual de adquisiciones</li><li>Supervisar la ejecución de los contratos de prestación de servicios</li><li>Atender las peticiones, quejas y reclamos de la ciudadanía</li><li>Liquidar la nómina de los servidores públicos</li><li>Elaborar los informes de auditoría interna</li><li>Archivar la correspondencia recibida y enviada</li></ul></div>
+            <div class="name-rule name-avoid full"><b>Evite ambigüedades</b>No utilice nombres vagos como “Trámites varios” ni verbos genéricos como “Gestionar”, “Administrar” o “Realizar”. Tampoco use “Elaborar informes” sin indicar cuáles.<ul class="name-examples"><li><strong>No incluya el tipo documental</strong> (“Procedimiento”, “Proceso”, “Trámite”, “Instructivo” o “Formato”), porque se registra en el código.</li><li><strong>Varios propósitos:</strong> si necesita unir dos actividades distintas con “y”, probablemente son dos procedimientos.</li><li><strong>Siglas:</strong> úselas solo si están definidas en el glosario institucional.</li><li><strong>Trámites y servicios para la ciudadanía:</strong> use el nombre oficial registrado ante la autoridad competente.</li><li><strong>Formato:</strong> mayúscula solo en la primera letra, sin punto final, máximo 12 palabras y sin repetir el nombre de otro documento vigente.</li></ul></div>
           </div>
         </details>
       </div>
@@ -717,13 +728,19 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
     <div class="grid">
       <div class="field full"><label>Objetivo <span class="help-tip" tabindex="0" data-tip="Explique para qué existe el procedimiento y qué resultado pretende lograr. Debe ser claro, específico y coherente con el proceso. Ejemplo: Establecer los lineamientos para planificar un trabajo de auditoría basado en riesgos.">i</span></label><textarea id="objetivo" placeholder="Finalidad del procedimiento."></textarea></div>
       <div class="field full"><label>Alcance <span class="help-tip" tabindex="0" data-tip="Delimite el procedimiento indicando dónde inicia y dónde finaliza. Puede incluir áreas, usuarios, límites, exclusiones, ámbito territorial o temporal.">i</span></label><textarea id="alcance" placeholder="Inicio, fin y límites del procedimiento."></textarea></div>
-      <div class="field"><label>Definiciones <span class="help-tip" tabindex="0" data-tip="Incluya términos, siglas o conceptos técnicos necesarios para comprender el procedimiento. Se recomienda escribir cada término seguido de dos puntos y su definición. Ejemplo: PAA: Plan Anual de Auditoría.">i</span></label><textarea id="definiciones" placeholder="TÉRMINO: definición.&#10;SIGLA: significado."></textarea></div>
+      <div class="field"><label>Definiciones <span class="help-tip" tabindex="0" data-tip="Registre los términos, siglas y conceptos en orden alfabético. Escriba cada término seguido de dos puntos y su definición. Ejemplo: PAA: Plan Anual de Auditoría.">i</span></label><textarea id="definiciones" placeholder="Registre en orden alfabético:&#10;ACTA: definición.&#10;PAA: Plan Anual de Auditoría."></textarea><div class="hint">Registre los términos y sus definiciones en orden alfabético.</div></div>
       <div class="field"><label>Condiciones generales <span class="help-tip" tabindex="0" data-tip="Reglas, políticas operativas, restricciones, condiciones previas o criterios que aplican transversalmente al procedimiento y no corresponden a una actividad específica.">i</span></label><textarea id="condiciones" placeholder="Reglas o condiciones que deben observarse durante el procedimiento."></textarea></div>
     </div>
   </section>
 
   <section class="panel" id="normasPanel">
     <div class="actions" style="justify-content:space-between"><h3>3. Normatividad <span class="help-tip" tabindex="0" data-tip="Registre normas, lineamientos o disposiciones con relación directa al procedimiento. Identifique, cuando sea posible, el artículo o sección específica que sustenta la actividad.">i</span></h3><button class="btn" onclick="addNorma()">+ Agregar norma</button></div>
+    <div class="method-guide"><strong>Orientación para entidades públicas según la jerarquía normativa</strong>Registre únicamente disposiciones vigentes y directamente relacionadas con el procedimiento. Una disposición interna debe desarrollar y respetar las normas externas superiores, así como la competencia de la autoridad que la expide.
+      <div class="norm-hierarchy">
+        <section><h4>Normatividad externa, de mayor a menor jerarquía</h4><ol><li>Constitución Política y bloque de constitucionalidad aplicable.</li><li>Leyes estatutarias, orgánicas, marco y ordinarias; decretos con fuerza de ley.</li><li>Decretos reglamentarios nacionales.</li><li>Actos de autoridades competentes: resoluciones, circulares e instrucciones externas.</li><li>En el nivel territorial: ordenanzas departamentales, acuerdos municipales o distritales y sus decretos y resoluciones reglamentarias, dentro de sus competencias.</li></ol></section>
+        <section><h4>Normatividad interna de la entidad</h4><ol><li>Actos del órgano de dirección o gobierno, cuando exista.</li><li>Resoluciones y demás actos administrativos expedidos por el representante legal.</li><li>Políticas, reglamentos y manuales institucionales formalmente adoptados.</li><li>Procesos, procedimientos, guías, protocolos, instructivos y circulares internas.</li></ol></section>
+      </div><div class="hint"><b>Criterio de aplicación:</b> verifique jerarquía, competencia, especialidad y vigencia. Entre actos administrativos no siempre existe un orden automático; importa la autoridad que los expide y la materia regulada.</div>
+    </div>
     <div class="tablewrap"><table>
       <thead><tr><th>Tipo <span class="table-help" tabindex="0" data-tip="Seleccione Interna cuando la norma o lineamiento sea expedido por la organización, y Externa cuando provenga de una autoridad u organismo externo.">i</span></th><th>Norma <span class="table-help" tabindex="0" data-tip="Nombre y número completo de la norma, resolución, decreto, acuerdo, circular, política, guía o estándar aplicable.">i</span></th><th>Año <span class="table-help" tabindex="0" data-tip="Año de expedición o versión vigente del documento normativo.">i</span></th><th>Descripción de la norma <span class="table-help" tabindex="0" data-tip="Describa brevemente el objeto o asunto regulado. Ejemplo: Por el cual se actualiza el Modelo Integrado de Planeación y Gestión.">i</span></th><th>Artículo / sección <span class="table-help" tabindex="0" data-tip="Artículo, numeral, capítulo o sección específica que soporta el procedimiento.">i</span></th><th>Entidad emisora <span class="table-help" tabindex="0" data-tip="Autoridad, entidad, dependencia u organismo que expide la norma o lineamiento.">i</span></th><th></th></tr></thead>
       <tbody id="normasBody"></tbody>
@@ -876,8 +893,8 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 
   <section class="panel" id="previewPanel">
     <div class="actions screen-only" style="justify-content:space-between;margin-bottom:12px">
-      <div><h3 id="previewHeading" style="margin:0">9. Reporte del procedimiento</h3><div class="hint">Revise la presentación del procedimiento y descargue el reporte en formato PDF.</div></div>
-      <div class="actions"><button class="btn primary" onclick="generatePDF()">Descargar PDF</button></div>
+      <div><h3 id="previewHeading" style="margin:0">9. Vista previa del procedimiento</h3><div class="hint">Revise aquí el avance completo antes de descargar. La vista previa no genera ni descarga archivos.</div></div>
+      <div class="actions"><button class="btn" type="button" onclick="previewProcedure()">Actualizar vista previa</button><button class="btn primary" onclick="generatePDF()">Descargar PDF con respaldo JSON</button></div>
     </div>
     <div id="previewDoc" class="preview"></div>
   </section>
@@ -1497,7 +1514,7 @@ function updateMenuProgress(){
     if(["guia","evaluationAnnex","analytics"].includes(btn.dataset.tab))return;
     const complete=!!state[btn.dataset.tab],marker=btn.querySelector(".nav-check");
     btn.classList.toggle("complete",complete);
-    if(marker){marker.textContent=complete?"✓":"○";marker.title=complete?(btn.dataset.tab==="preview"?"Listo para exportar":"Módulo completo"):"Módulo pendiente"}
+    if(marker){marker.textContent=complete?"✓":"○";marker.title=complete?(btn.dataset.tab==="preview"?"Vista previa completa":"Módulo completo"):"Módulo pendiente"}
   });
 }
 function updateProcedureIdentity(){
@@ -1514,9 +1531,9 @@ function applyRoleNavigation(){
   document.querySelectorAll(".shared-nav").forEach(el=>el.classList.remove("role-hidden"));
   const evaluationNav=document.querySelector('[data-tab="evaluation"]'),previewNav=document.querySelector('[data-tab="preview"]'),guideNav=document.querySelector('[data-tab="guia"]');
   if(evaluationNav){evaluationNav.querySelector(".nav-number").textContent=advisor?"03":"08";evaluationNav.querySelector(".nav-label").textContent=advisor?"Evaluación de adecuación":"Seguimiento de revisión"}
-  if(previewNav){previewNav.classList.toggle("role-hidden",advisor);previewNav.querySelector(".nav-number").textContent="09";previewNav.querySelector(".nav-label").textContent="Exportar PDF"}
+  if(previewNav){previewNav.classList.toggle("role-hidden",advisor);previewNav.querySelector(".nav-number").textContent="09";previewNav.querySelector(".nav-label").textContent="Vista previa"}
   if(guideNav){guideNav.querySelector(".nav-number").textContent="A1";guideNav.querySelector(".nav-label").textContent="Guía del flujograma"}
-  if($("previewHeading"))$("previewHeading").textContent="9. Reporte del procedimiento";if($("guideHeading"))$("guideHeading").textContent="Anexo A. Guía del flujograma";
+  if($("previewHeading"))$("previewHeading").textContent="9. Vista previa del procedimiento";if($("guideHeading"))$("guideHeading").textContent="Anexo A. Guía del flujograma";
   if($("evaluationHeading"))$("evaluationHeading").textContent=advisor?"3. Evaluación de adecuación del procedimiento":"8. Seguimiento de la revisión";
   if($("evaluationIntro"))$("evaluationIntro").textContent=advisor?"Califique los criterios, registre las observaciones y emita el concepto técnico.":"Consulte el estado, las observaciones y las respuestas asociadas a la revisión metodológica del procedimiento.";
   if($("evaluationRoleContext")){$("evaluationRoleContext").classList.toggle("advisor",advisor);$("evaluationRoleContext").innerHTML=advisor?`<b>Perfil activo:</b> ${esc(currentProfile.roleName)}. Puede calificar criterios, registrar hallazgos, devolver el procedimiento o emitir concepto.`:`<b>Perfil activo:</b> ${esc(currentProfile.roleName)}. Puede diligenciar, enviar la versión, consultar hallazgos y responder los ajustes solicitados.`}
@@ -1742,18 +1759,29 @@ function validateName(){
   if(!s){st.className="inline-status";st.textContent="";return}
   const normalized=s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[.,;:]+$/g,"").trim();
   const words=normalized.split(/\s+/).filter(Boolean),first=(words[0]||"").replace(/[^a-zñ]/g,"");
-  const actionVerb=/(ar|er|ir)$/.test(first),includesDocumentType=/(^|\s)procedimiento(s)?(\s|$)/.test(normalized);
-  const vague=/^(tramites varios|gestion general|asuntos varios|actividades varias|procesos varios)$/.test(normalized);
+  const actionVerb=/(ar|er|ir)$/.test(first),includesDocumentType=/(^|\s)(procedimiento|proceso|tramite|instructivo|formato)(s)?(\s|$)/.test(normalized);
+  const vague=/^(tramites varios|gestion general|asuntos varios|actividades varias|procesos varios)$/.test(normalized),genericVerb=/^(gestionar|administrar|realizar)$/.test(first);
+  const genericObject=/^(elaborar|formular|preparar)\s+(los\s+|las\s+|un\s+|una\s+)?(informes|contratos|solicitudes)$/.test(normalized);
   if(includesDocumentType){
-    st.className="inline-status warn";st.textContent="Retire la palabra “Procedimiento”: el tipo documental ya está implícito. Ejemplo: use “Elaborar informes”.";
+    st.className="inline-status warn";st.textContent="Retire el tipo documental (Procedimiento, Proceso, Trámite, Instructivo o Formato): ya se registra en el código.";
   }else if(vague){
     st.className="inline-status warn";st.textContent="El nombre es ambiguo. Indique una acción concreta y el objeto sobre el que recae.";
+  }else if(genericVerb){
+    st.className="inline-status warn";st.textContent="Use un verbo más específico y verificable. Evite Gestionar, Administrar o Realizar.";
   }else if(!actionVerb){
-    st.className="inline-status warn";st.textContent="Inicie con un verbo en infinitivo: Gestionar, Elaborar, Evaluar, Controlar, Atender, Administrar o Monitorear.";
+    st.className="inline-status warn";st.textContent="Inicie con un verbo específico en infinitivo, como Formular, Elaborar, Adquirir, Supervisar, Liquidar, Atender, Evaluar o Archivar.";
   }else if(words.length<3){
     st.className="inline-status warn";st.textContent="El verbo es correcto, pero falta precisar el objeto o alcance de la acción.";
+  }else if(genericObject){
+    st.className="inline-status warn";st.textContent="El objeto es genérico. Agregue un complemento que precise cuáles informes, contratos o solicitudes.";
+  }else if(words.length>12){
+    st.className="inline-status warn";st.textContent="Reduzca el nombre a un máximo de 12 palabras.";
+  }else if(/[.!?;:]\s*$/.test(s)){
+    st.className="inline-status warn";st.textContent="Retire el signo de puntuación final del nombre.";
+  }else if(s.charAt(0)!==s.charAt(0).toUpperCase()){
+    st.className="inline-status warn";st.textContent="Escriba la primera letra en mayúscula.";
   }else{
-    st.className="inline-status ok";st.textContent="Nombre bien formulado: inicia con verbo en infinitivo y expresa el objeto de la acción.";
+    st.className="inline-status ok";st.textContent="Nombre bien formulado: expresa una acción verificable, un objeto y el alcance necesario.";
   }
 }
 
@@ -1783,11 +1811,11 @@ function renderNorms(){
   $("normasBody").innerHTML=norms.map((n,i)=>`
   <tr>
     <td><select onchange="norms[${i}].tipo=this.value"><option value="Interna" ${n.tipo==="Interna"?"selected":""}>Norma interna</option><option value="Externa" ${n.tipo==="Externa"?"selected":""}>Norma externa</option></select></td>
-    <td><input value="${esc(n.norma)}" oninput="norms[${i}].norma=this.value"></td>
-    <td><input value="${esc(n.anio)}" oninput="norms[${i}].anio=this.value"></td>
+    <td><input value="${esc(n.norma)}" placeholder="Ej. Ley 1437 de 2011" oninput="norms[${i}].norma=this.value"></td>
+    <td><input value="${esc(n.anio)}" inputmode="numeric" maxlength="4" placeholder="AAAA" oninput="norms[${i}].anio=this.value"></td>
     <td><textarea placeholder="Objeto o asunto regulado" oninput="norms[${i}].descripcion=this.value">${esc(n.descripcion)}</textarea></td>
-    <td><input value="${esc(n.articulo)}" oninput="norms[${i}].articulo=this.value"></td>
-    <td><input value="${esc(n.entidad)}" oninput="norms[${i}].entidad=this.value"></td>
+    <td><input value="${esc(n.articulo)}" placeholder="Artículo o numeral" oninput="norms[${i}].articulo=this.value"></td>
+    <td><input value="${esc(n.entidad)}" placeholder="Autoridad competente" oninput="norms[${i}].entidad=this.value"></td>
     <td><button class="smallbtn" onclick="removeNorma(${i})">Eliminar</button></td>
   </tr>`).join("")||'<tr><td colspan="7" class="empty">No hay normas registradas.</td></tr>';
 }
@@ -1963,8 +1991,8 @@ function renderActivities(){
     return `<tr class="${rowClasses}">
     <td>${displayedActivityNumber(a)||'<span class="control-none">—</span>'}</td>
     <td>${fixedBoundary?`<span class="fixed-type" title="Elemento fijo">🔒 ${a.tipo}</span>`:`<select class="type-select ${a.tipo==="Decisión"?"decision-select":a.tipo==="Conector"?"connector-select":""}" onchange="changeActivityType(${i},this.value)">${["Actividad","Decisión","Conector"].map(x=>`<option ${a.tipo===x?"selected":""}>${x}</option>`).join("")}</select>`}${a.tipo==="Decisión"?'<div><span class="decision-chip">◆ Decisión</span></div>':a.tipo==="Conector"?'<div><span class="connector-chip">○ Conector</span></div>':""}</td>
-    <td><input value="${esc(a.actividad)}" placeholder="${a.tipo==="Inicio"?"Ej. Recepción de la solicitud":a.tipo==="Fin"?"Ej. Informe final comunicado":a.tipo==="Conector"?"Ej. Conector A":"Nombre corto"}" oninput="activities[${i}].actividad=this.value"></td>
-    <td><textarea placeholder="${esc(help)}" oninput="activities[${i}].descripcion=this.value">${esc(a.descripcion)}</textarea><div class="row-help">${esc(help)}</div></td>
+    <td><textarea class="activity-name" rows="3" placeholder="${a.tipo==="Inicio"?"Ej. Recepción de la solicitud":a.tipo==="Fin"?"Ej. Informe final comunicado":a.tipo==="Conector"?"Ej. Conector A":"Nombre corto"}" oninput="activities[${i}].actividad=this.value">${esc(a.actividad)}</textarea></td>
+    <td><textarea class="activity-description" rows="4" placeholder="${esc(help)}" oninput="activities[${i}].descripcion=this.value">${esc(a.descripcion)}</textarea><div class="row-help">${esc(help)}</div></td>
     <td>${special?'<span class="control-none">No aplica</span>':`<select aria-label="Responsable de la actividad" onchange="setActivityResponsibility(${i},this.value)">${activityResponsibilitySelectOptions(a)}</select>${a.responsableOtro?`<div class="other-responsible-wrap"><input required aria-label="¿Cuál responsable?" aria-invalid="${vagueOtherResponsibility(a.responsable)}" value="${esc(a.responsable)}" placeholder="Ej. Supervisor del contrato" oninput="updateOtherActivityResponsibility(${i},this.value,this)"><div class="other-responsible-note"><b>Importante:</b> especifique claramente el cargo, dependencia o actor encargado. La responsabilidad de toda actividad debe estar claramente establecida para asegurar su ejecución, control y trazabilidad.</div></div>`:""}`}</td>
     <td>${noControl?'<span class="control-none">No aplica</span>':`<select class="control-select ${a.tieneControl?"control-yes":""}" onchange="activities[${i}].tieneControl=this.value===\'Si\';renderActivities()"><option value="No" ${!a.tieneControl?"selected":""}>No</option><option value="Si" ${a.tieneControl?"selected":""}>Sí</option></select>${a.tieneControl?'<div><span class="control-chip">✓ Punto de control</span></div>':""}`}</td>
     <td>${special?'<span class="control-none">No aplica</span>':`<textarea placeholder="Opcional" oninput="activities[${i}].evidencia=this.value">${esc(a.evidencia)}</textarea>`}</td>
@@ -2019,14 +2047,31 @@ function renderAnnexes(){
   </tr>`).join("")||'<tr><td colspan="5" class="empty">No hay anexos registrados.</td></tr>';
 }
 function addCambio(data={}){changes.push({version:val("version")||"1.0",fecha:today(),razon:"",...data});renderChanges();}
+function normalizeChangeDate(value,notify=false){
+  const minimum="2025-01-01",maximum=today(),date=String(value||"");
+  if(!date)return maximum;
+  if(date<minimum){if(notify)toast("La fecha del cambio no puede ser anterior al 1 de enero de 2025.");return minimum}
+  if(date>maximum){if(notify)toast("La fecha del cambio no puede ser posterior a la fecha actual.");return maximum}
+  return date;
+}
+function updateChangeDate(index,value){
+  if(!changes[index])return;
+  changes[index].fecha=normalizeChangeDate(value,true);renderChanges();scheduleAutosave();
+}
 function renderChanges(){
+  changes.forEach(c=>{c.fecha=normalizeChangeDate(c.fecha)});
   $("cambiosBody").innerHTML=changes.map((c,i)=>`
   <tr>
     <td><input value="${esc(c.version)}" oninput="changes[${i}].version=this.value"></td>
-    <td><input type="date" value="${esc(c.fecha)}" oninput="changes[${i}].fecha=this.value"></td>
+    <td><input type="date" min="2025-01-01" max="${today()}" value="${esc(c.fecha)}" onchange="updateChangeDate(${i},this.value)"></td>
     <td><textarea oninput="changes[${i}].razon=this.value">${esc(c.razon)}</textarea></td>
     <td><button class="smallbtn" onclick="changes.splice(${i},1);renderChanges()">Eliminar</button></td>
   </tr>`).join("")||'<tr><td colspan="4" class="empty">No hay cambios registrados.</td></tr>';
+}
+
+function definitionsInAlphabeticalOrder(){
+  const terms=parseDefinitions(val("definiciones")).map(item=>normalizeText(item.term)).filter(Boolean);
+  return terms.length<2||terms.every((term,index)=>index===0||terms[index-1].localeCompare(term,"es",{sensitivity:"base"})<=0);
 }
 
 function runQualityRules(){
@@ -2039,7 +2084,9 @@ function runQualityRules(){
   add(!!val("alcance"),"Alcance definido.","danger");
   add(!!val("responsableProcedimiento"),"Responsable del procedimiento identificado.","danger");
   add(!!val("definiciones"),"Definiciones diligenciadas.","warn");
+  if(val("definiciones"))add(definitionsInAlphabeticalOrder(),"Términos y definiciones registrados en orden alfabético.","warn",{guidance:"Ordene los términos de la A a la Z para facilitar su consulta."});
   add(!!val("condiciones"),"Condiciones generales diligenciadas.","warn");
+  add(changes.every(c=>c.fecha>="2025-01-01"&&c.fecha<=today()),"Fechas del control de cambios dentro del rango permitido: desde el 1 de enero de 2025 hasta hoy.","danger");
   add(annexesNotApplicable||annexes.some(a=>String(a.documento||"").trim()),annexesNotApplicable?"Se confirmó que los documentos anexos no aplican.":"Documentos relacionados / anexos identificados.","warn");
   add(activities.length>=2,"Desarrollo del procedimiento registrado.","danger");
 
@@ -2753,6 +2800,9 @@ function buildProcedurePdf(flowImage){
   const maxId=objects.length-1,header=binaryBytes("%PDF-1.7\n%âãÏÓ\n"),parts=[header],offsets=[0];let offset=header.length;
   for(let id=1;id<=maxId;id++){offsets[id]=offset;parts.push(objects[id]);offset+=objects[id].length}
   const xrefOffset=offset,xref=[`xref\n0 ${maxId+1}\n0000000000 65535 f \n`];for(let id=1;id<=maxId;id++)xref.push(`${String(offsets[id]).padStart(10,"0")} 00000 n \n`);xref.push(`trailer\n<< /Size ${maxId+1} /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`);parts.push(binaryBytes(xref.join("")));return joinBytes(parts);
+}
+function previewProcedure(){
+  runQualityRules();switchTab("preview");recordAnalytics("preview_viewed");saveLocal(true);toast("Vista previa actualizada. No se descargó ningún archivo.");
 }
 async function generatePDF(){
   const score=runQualityRules();buildPreview();switchTab("preview");toast("Preparando PDF…");
