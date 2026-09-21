@@ -547,6 +547,40 @@ body{font-family:"Inter","Aptos","Segoe UI",Arial,sans-serif;letter-spacing:-.00
 .auth-gate{background:radial-gradient(circle at 15% 10%,rgba(14,158,120,.28),transparent 31rem),radial-gradient(circle at 88% 100%,rgba(31,111,208,.24),transparent 35rem),linear-gradient(135deg,#063B4A 0%,#052F40 46%,#06283A 100%)}
 .auth-card{border:1px solid rgba(220,228,237,.92);border-radius:24px;box-shadow:0 8px 18px rgba(1,18,29,.18),0 34px 90px rgba(1,18,29,.34)}.auth-brand{padding:31px 30px 25px;background:linear-gradient(180deg,#FFFFFF,#F7F9FC);border-bottom-color:#DCE4ED}.auth-mark{width:56px;height:56px;border-radius:16px;background:linear-gradient(145deg,#17B88E,#1F6FD0);box-shadow:0 9px 24px rgba(31,111,208,.24),inset 0 1px 0 rgba(255,255,255,.25)}.auth-brand h1{font-family:"Inter","Aptos","Segoe UI",Arial,sans-serif;color:#101E2E;font-weight:800;letter-spacing:-.025em}.auth-form{padding:27px 30px 30px}.auth-form h2{color:#101E2E;font-size:19px;font-weight:800;letter-spacing:-.02em}.auth-intro{color:#5A6B7A;font-size:12.5px}.auth-field label{color:#3A4C5E}.auth-input-wrap input,.auth-input-wrap select{height:48px;border-color:#DCE4ED;border-radius:10px;background:#F7F9FC}.auth-input-wrap input:focus,.auth-input-wrap select:focus{background:#fff;border-color:#0E9E78;box-shadow:0 0 0 3px rgba(14,158,120,.22)}.auth-submit{height:47px;border-radius:11px;background:linear-gradient(135deg,#0E9E78,#08785D);box-shadow:0 8px 20px rgba(14,158,120,.25);transition:transform 150ms var(--ease),box-shadow 150ms var(--ease)}.auth-submit:hover{filter:none;transform:translateY(-1px);box-shadow:0 11px 26px rgba(14,158,120,.3)}.auth-local-note{border:1px solid #E7ECF2;border-radius:10px;background:#F3F6F9;color:#5A6B7A}
 button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible,summary:focus-visible{outline:2px solid var(--green);outline-offset:2px}
+/* Respuesta visual uniforme para las acciones operativas. */
+.btn:not(:disabled):hover,
+.btn:not(:disabled):focus-visible,
+.quick-action-button:not(:disabled):hover,
+.quick-action-button:not(:disabled):focus-visible,
+.notification-bell:not(:disabled):hover,
+.notification-bell:not(:disabled):focus-visible,
+.menu-action:not(:disabled):hover,
+.menu-action:not(:disabled):focus-visible,
+.smallbtn:not(:disabled):hover,
+.smallbtn:not(:disabled):focus-visible,
+.flow-tool:not(:disabled):hover,
+.flow-tool:not(:disabled):focus-visible,
+.environment-switcher button:not(:disabled):hover,
+.environment-switcher button:not(:disabled):focus-visible,
+.auth-submit:not(:disabled):hover,
+.auth-submit:not(:disabled):focus-visible{
+  border-color:#A9440D;
+  background:#C65313;
+  color:#fff;
+  box-shadow:0 7px 18px rgba(169,68,13,.28);
+}
+.quick-action-button.pdf:not(:disabled):hover,
+.quick-action-button.pdf:not(:disabled):focus-visible{border-color:#A9440D;background:#C65313;color:#fff}
+.quick-action-button.pdf:not(:disabled):hover .pdf-mark,
+.quick-action-button.pdf:not(:disabled):focus-visible .pdf-mark{color:#A9440D}
+.btn:not(:disabled):focus-visible,
+.quick-action-button:not(:disabled):focus-visible,
+.notification-bell:not(:disabled):focus-visible,
+.menu-action:not(:disabled):focus-visible,
+.smallbtn:not(:disabled):focus-visible,
+.flow-tool:not(:disabled):focus-visible,
+.environment-switcher button:not(:disabled):focus-visible,
+.auth-submit:not(:disabled):focus-visible{outline-color:#A9440D}
 @media(min-width:1051px){.sidebar,.main{transition:width 220ms var(--ease),margin-left 220ms var(--ease),padding 220ms var(--ease)}body.sidebar-collapsed .sidebar{width:82px;padding-left:10px;padding-right:10px}body.sidebar-collapsed .main{width:calc(100% - 82px);margin-left:82px}body.sidebar-collapsed .brand{padding-bottom:8px}body.sidebar-collapsed .brand-product{padding:0}body.sidebar-collapsed .brand-mark{width:44px;height:44px;margin-bottom:0;border-radius:13px}body.sidebar-collapsed .brand-product h1,body.sidebar-collapsed .brand-product small,body.sidebar-collapsed .brand-rule,body.sidebar-collapsed .sidebar-toggle span,body.sidebar-collapsed .nav-section-label,body.sidebar-collapsed .nav-number,body.sidebar-collapsed .nav-label,body.sidebar-collapsed .nav-check{display:none}body.sidebar-collapsed .sidebar-toggle{width:44px;margin:10px auto 12px;padding:8px}body.sidebar-collapsed .sidebar-toggle svg{transform:rotate(180deg)}body.sidebar-collapsed .navbtn{display:grid;grid-template-columns:1fr;justify-items:center;min-width:0;padding:8px}body.sidebar-collapsed .nav-icon{width:21px;height:21px}}
 @media(max-width:1050px){.app{display:block}.sidebar{position:sticky;inset:auto;top:0;width:100%;height:auto;padding:9px 14px}.brand,.sidebar-toggle{display:none}.nav{display:flex;overflow:auto}.main{width:100%;margin-left:0;padding:18px 20px 48px}.navbtn:hover{transform:translateY(-1px)}}
 @media(max-width:760px){.sidebar{padding:max(8px,env(safe-area-inset-top)) 8px 8px}.main{padding:10px max(10px,env(safe-area-inset-right)) calc(36px + env(safe-area-inset-bottom)) max(10px,env(safe-area-inset-left))}.panel{padding:18px;border-radius:18px}.topbar{padding:13px;border-radius:16px}.btn,.smallbtn,.flow-tool{min-height:44px}.field input,.field textarea,.field select,td input,td textarea,td select{font-size:16px}}
@@ -894,7 +928,6 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
   <section class="panel" id="previewPanel">
     <div class="actions screen-only" style="justify-content:space-between;margin-bottom:12px">
       <div><h3 id="previewHeading" style="margin:0">9. Vista previa del procedimiento</h3><div class="hint">Revise aquí el avance completo antes de descargar. La vista previa no genera ni descarga archivos.</div></div>
-      <div class="actions"><button class="btn" type="button" onclick="previewProcedure()">Actualizar vista previa</button><button class="btn primary" onclick="generatePDF()">Descargar PDF con respaldo JSON</button></div>
     </div>
     <div id="previewDoc" class="preview"></div>
   </section>
