@@ -644,7 +644,6 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
     <button class="navbtn author-nav" data-tab="anexos"><span class="nav-number">06</span><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6.5h6l2 2h8v11H4z"/><path d="M8 13h8M8 16h5"/></svg><span class="nav-label">Documentos y cambios</span></button>
     <button class="navbtn author-nav" data-tab="revision"><span class="nav-number">07</span><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5 19 6v5.3c0 4.2-2.7 7.5-7 9.2-4.3-1.7-7-5-7-9.2V6z"/><path d="m8.5 12 2.2 2.2 4.8-5"/></svg><span class="nav-label">Revisión final</span></button>
     <button class="navbtn shared-nav" data-tab="evaluation"><span class="nav-number">08</span><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3.5h12v17H6z"/><path d="M9 8h6M9 12h3M9 16h3"/><path d="m14.5 15.5 1.5 1.5 3-3"/></svg><span class="nav-label">Seguimiento de revisión</span></button>
-    <button class="navbtn shared-nav" data-tab="preview"><span class="nav-number">09</span><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6z"/><circle cx="12" cy="12" r="2.5"/></svg><span class="nav-label">Vista previa</span></button>
     <div class="nav-section-label">Anexos de consulta</div>
     <button class="navbtn shared-nav" data-tab="guia"><span class="nav-number">A1</span><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6.5h6l2 2h8v11H4z"/><path d="M8 13h8M8 16h5"/></svg><span class="nav-label">Guía del flujograma</span></button>
     <button class="navbtn shared-nav" data-tab="evaluationAnnex"><span class="nav-number">A2</span><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3.5h12v17H6z"/><path d="M9 8h6M9 12h3M9 16h3"/><path d="m14.5 15.5 1.5 1.5 3-3"/></svg><span class="nav-label">Criterios de evaluación</span></button>
@@ -1569,9 +1568,8 @@ function applyRoleNavigation(){
   document.querySelectorAll(".author-nav").forEach(el=>el.classList.toggle("role-hidden",advisor));
   document.querySelectorAll(".advisor-nav").forEach(el=>el.classList.toggle("role-hidden",!advisor));
   document.querySelectorAll(".shared-nav").forEach(el=>el.classList.remove("role-hidden"));
-  const evaluationNav=document.querySelector('[data-tab="evaluation"]'),previewNav=document.querySelector('[data-tab="preview"]'),guideNav=document.querySelector('[data-tab="guia"]');
+  const evaluationNav=document.querySelector('[data-tab="evaluation"]'),guideNav=document.querySelector('[data-tab="guia"]');
   if(evaluationNav){evaluationNav.querySelector(".nav-number").textContent=advisor?"03":"08";evaluationNav.querySelector(".nav-label").textContent=advisor?"Evaluación de adecuación":"Seguimiento de revisión"}
-  if(previewNav){previewNav.classList.toggle("role-hidden",advisor);previewNav.querySelector(".nav-number").textContent="09";previewNav.querySelector(".nav-label").textContent="Vista previa"}
   if(guideNav){guideNav.querySelector(".nav-number").textContent="A1";guideNav.querySelector(".nav-label").textContent="Guía del flujograma"}
   if($("previewHeading"))$("previewHeading").textContent="9. Vista previa del procedimiento";if($("guideHeading"))$("guideHeading").textContent="Anexo A. Guía del flujograma";
   if($("evaluationHeading"))$("evaluationHeading").textContent=advisor?"3. Evaluación de adecuación del procedimiento":"8. Seguimiento de la revisión";
