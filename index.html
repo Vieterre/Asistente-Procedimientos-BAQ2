@@ -414,6 +414,13 @@ body.auth-locked>.app{filter:blur(5px);pointer-events:none;user-select:none}
 .analytics-note{margin-top:12px;padding:10px;border-radius:9px;background:#FFF8E6;border:1px solid #E7D39A;color:#6E571B;font-size:10px;line-height:1.45}
 .analytics-section{margin-top:18px}
 .analytics-section h4{margin:0 0 10px;color:var(--navy)}
+.analytics-block{margin-top:20px;padding-top:18px;border-top:1px solid var(--line)}
+.analytics-block-heading{display:flex;align-items:center;gap:10px;margin:0 0 14px;color:var(--navy)}
+.analytics-block-number{width:30px;height:30px;display:grid;place-items:center;flex:none;border-radius:9px;background:#123A60;color:#fff;font-size:13px;font-weight:900;box-shadow:0 5px 12px rgba(18,58,96,.18)}
+.analytics-block-title{margin:0;font-size:17px;font-weight:850;letter-spacing:0}
+.analytics-block.productivity .analytics-block-number{background:#1F6FD0}
+.analytics-block.usability .analytics-block-number{background:#0A8264}
+.analytics-block .analytics-section{margin-top:14px}
 .analytics-bars{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px;align-items:end;min-height:150px;padding:14px;border:1px solid var(--line);border-radius:12px;background:#fff}
 .analytics-day{display:grid;align-items:end;gap:7px;min-height:120px;text-align:center}
 .analytics-bar{width:100%;min-height:6px;border-radius:7px 7px 3px 3px;background:linear-gradient(180deg,var(--green),#14755F)}
@@ -995,35 +1002,41 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
       <div class="analytics-filter"><label for="analyticsRole">Rol</label><select id="analyticsRole" onchange="renderUsageAnalytics()"><option value="all">Todos los roles</option><option value="autor">Elaborador</option><option value="asesor">Evaluador</option></select></div>
       <div class="analytics-filter-summary" id="analyticsFilterSummary">Datos almacenados en este navegador</div>
     </div>
-    <div class="dashboard-kpis">
-      <div class="dashboard-kpi info"><b id="analyticsProcedures">0</b><span>Procedimientos iniciados</span><small>Registros con actividad durante el periodo</small></div>
-      <div class="dashboard-kpi info"><b id="analyticsPending">0</b><span>Envíos a evaluación</span><small>Procedimientos remitidos al evaluador</small></div>
-      <div class="dashboard-kpi info"><b id="analyticsAdjustments">0</b><span>Evaluaciones iniciadas</span><small>Revisiones abiertas durante el periodo</small></div>
-      <div class="dashboard-kpi warn"><b id="analyticsReturns">0</b><span>Devoluciones</span><small>Procedimientos enviados para ajustes</small></div>
-      <div class="dashboard-kpi good"><b id="analyticsConcepts">0</b><span>Conceptos favorables</span><small>Evaluaciones cerradas satisfactoriamente</small></div>
-    </div>
-    <div class="analytics-section">
-      <div class="analytics-card">
-        <div class="analytics-card-head"><h4>Gráfica de productividad</h4><span>Operaciones registradas en el periodo</span></div>
-        <div class="analytics-status" id="analyticsStatusDistribution"></div>
+    <section class="analytics-block productivity" aria-labelledby="productivityHeading">
+      <div class="analytics-block-heading"><span class="analytics-block-number" aria-hidden="true">1</span><h4 class="analytics-block-title" id="productivityHeading">Productividad</h4></div>
+      <div class="dashboard-kpis">
+        <div class="dashboard-kpi info"><b id="analyticsProcedures">0</b><span>Procedimientos iniciados</span><small>Registros con actividad durante el periodo</small></div>
+        <div class="dashboard-kpi info"><b id="analyticsPending">0</b><span>Envíos a evaluación</span><small>Procedimientos remitidos al evaluador</small></div>
+        <div class="dashboard-kpi info"><b id="analyticsAdjustments">0</b><span>Evaluaciones iniciadas</span><small>Revisiones abiertas durante el periodo</small></div>
+        <div class="dashboard-kpi warn"><b id="analyticsReturns">0</b><span>Devoluciones</span><small>Procedimientos enviados para ajustes</small></div>
+        <div class="dashboard-kpi good"><b id="analyticsConcepts">0</b><span>Conceptos favorables</span><small>Evaluaciones cerradas satisfactoriamente</small></div>
       </div>
-    </div>
-    <div class="analytics-section">
-      <div class="analytics-grid">
+      <div class="analytics-section">
         <div class="analytics-card">
-          <div class="analytics-card-head"><h4>Tendencia de ingresos</h4><span id="analyticsLoginSummary">Actividad de los últimos 7 días</span></div>
-          <div class="analytics-bars" id="analyticsLoginChart" aria-label="Ingresos de los últimos siete días"></div>
+          <div class="analytics-card-head"><h4>Gráfica de productividad</h4><span>Operaciones registradas en el periodo</span></div>
+          <div class="analytics-status" id="analyticsStatusDistribution"></div>
         </div>
-        <div class="analytics-card">
-          <div class="analytics-card-head"><h4>Uso del sistema</h4><span>Adopción local</span></div>
-          <div class="grid3">
-            <div class="kpi"><b id="analyticsTotalLogins">0</b><span>Ingresos del periodo</span></div>
-            <div class="kpi"><b id="analyticsRecentActive">0</b><span>Sesiones recientes</span></div>
-            <div class="kpi"><b id="analyticsLastLogin">Sin registro</b><span>Último ingreso</span></div>
+      </div>
+    </section>
+    <section class="analytics-block usability" aria-labelledby="usabilityHeading">
+      <div class="analytics-block-heading"><span class="analytics-block-number" aria-hidden="true">2</span><h4 class="analytics-block-title" id="usabilityHeading">Usabilidad</h4></div>
+      <div class="analytics-section">
+        <div class="analytics-grid">
+          <div class="analytics-card">
+            <div class="analytics-card-head"><h4>Tendencia de ingresos</h4><span id="analyticsLoginSummary">Actividad de los últimos 7 días</span></div>
+            <div class="analytics-bars" id="analyticsLoginChart" aria-label="Ingresos de los últimos siete días"></div>
+          </div>
+          <div class="analytics-card">
+            <div class="analytics-card-head"><h4>Uso del sistema</h4><span>Adopción local</span></div>
+            <div class="grid3">
+              <div class="kpi"><b id="analyticsTotalLogins">0</b><span>Ingresos del periodo</span></div>
+              <div class="kpi"><b id="analyticsRecentActive">0</b><span>Sesiones recientes</span></div>
+              <div class="kpi"><b id="analyticsLastLogin">Sin registro</b><span>Último ingreso</span></div>
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </section>
     <div class="analytics-note"><b>Alcance de la prueba:</b> la analítica utiliza eventos guardados únicamente en este navegador. La consolidación entre computadores se habilitará posteriormente con el backend y PostgreSQL.</div>
   </section>
 </main>
