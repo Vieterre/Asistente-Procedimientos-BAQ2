@@ -261,17 +261,6 @@ td textarea{min-height:66px}
   .annex-overview,.evaluation-scale{grid-template-columns:1fr}
   .toast{left:12px;right:12px;bottom:68px;text-align:center}.callout{padding:10px 11px}
 }
-@media print{.preview table{min-width:0!important}.preview .dochead{min-width:0!important}}
-@media print{
-  @page{size:A4 landscape;margin:10mm}
-  body{background:#fff} .sidebar,.topbar,.procedure-pin,.environment-indicator,.panel:not(#previewPanel),#previewPanel .screen-only{display:none!important}
-  .app,.main{display:block;padding:0;margin:0} #previewPanel{display:block!important;border:0;box-shadow:none;padding:0}
-  .preview{padding:0;box-shadow:none}
-  .preview h2{break-after:avoid-page}.preview table{break-inside:auto}.preview tr{break-inside:avoid;break-after:auto}
-  .report-flow{break-inside:avoid;page-break-inside:avoid;padding:4mm!important;border-radius:0!important}
-  .report-flow svg{display:block!important;width:100%!important;height:auto!important;max-height:170mm!important;box-shadow:none!important}
-}
-
 .control-details-row td{
   background:#F8FBF9;
   padding:12px 14px;
@@ -591,7 +580,20 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 @media(max-width:1050px){.app{display:block}.sidebar{position:sticky;inset:auto;top:0;width:100%;height:auto;padding:9px 14px}.brand,.sidebar-toggle{display:none}.nav{display:flex;overflow:auto}.main{width:100%;margin-left:0;padding:18px 20px 48px}.navbtn:hover{transform:translateY(-1px)}}
 @media(max-width:760px){.sidebar{padding:max(8px,env(safe-area-inset-top)) 8px 8px}.main{padding:10px max(10px,env(safe-area-inset-right)) calc(36px + env(safe-area-inset-bottom)) max(10px,env(safe-area-inset-left))}.panel{padding:18px;border-radius:18px}.topbar{padding:13px;border-radius:16px}.btn,.smallbtn,.flow-tool{min-height:44px}.field input,.field textarea,.field select,td input,td textarea,td select{font-size:16px}}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
-@media print{.main{width:auto;margin-left:0}.sidebar{position:static;width:auto;height:auto}}
+@media print{
+  @page{size:A4 landscape;margin:10mm}
+  html,body{min-height:0!important;background:#fff!important;background-image:none!important;overflow:visible!important}
+  .sidebar,.topbar,.procedure-pin,.environment-indicator,.panel:not(#previewPanel),#previewPanel .screen-only,.auth-gate,.toast{display:none!important}
+  .app,.main{display:block!important;width:100%!important;max-width:none!important;min-height:0!important;margin:0!important;padding:0!important}
+  #previewPanel{display:block!important;border:0!important;box-shadow:none!important;padding:0!important;animation:none!important;opacity:1!important;transform:none!important}
+  #previewPanel:before{display:none!important}
+  .preview{min-height:0!important;padding:0!important;overflow:visible!important;box-shadow:none!important;print-color-adjust:exact;-webkit-print-color-adjust:exact}
+  .preview table,.preview .dochead{min-width:0!important}
+  .preview h2{break-after:avoid-page}.preview table{break-inside:auto}.preview tr{break-inside:avoid;break-after:auto}
+  .flow-report-section{break-before:page;break-inside:avoid}
+  .report-flow{break-inside:avoid;page-break-inside:avoid;margin:8px 0!important;padding:2mm!important;border-radius:0!important}
+  .report-flow svg{display:block!important;width:auto!important;height:auto!important;max-width:100%!important;max-height:145mm!important;margin:auto;box-shadow:none!important}
+}
 
 </style>
 </head>
@@ -689,7 +691,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
         <button class="quick-action-button" id="newProcedureButton" type="button" onclick="newProcedure()" aria-label="Nuevo procedimiento" title="Nuevo procedimiento"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
         <button class="quick-action-button" id="saveProcedureButton" type="button" onclick="saveLocal()" aria-label="Guardar procedimiento" title="Guardar procedimiento"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3.5h12l2 2v15H5z"/><path d="M8 3.5v6h8v-6M8 20.5v-7h8v7"/></svg></button>
         <button class="quick-action-button" id="previewProcedureButton" type="button" onclick="previewProcedure()" aria-label="Vista previa del procedimiento" title="Vista previa del procedimiento"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6z"/><circle cx="12" cy="12" r="2.5"/></svg></button>
-        <button class="quick-action-button pdf" id="exportPdfButton" type="button" onclick="generatePDF()" aria-label="Exportar procedimiento a PDF" title="Exportar procedimiento a PDF"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3.5h9l3 3v14H6z"/><path d="M15 3.5v3h3M9 11h6M9 14h6M9 17h4"/></svg><span class="pdf-mark" aria-hidden="true">PDF</span></button>
+        <button class="quick-action-button pdf" id="exportPdfButton" type="button" onclick="generatePDF()" aria-label="Guardar procedimiento como PDF" title="Guardar procedimiento como PDF"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3.5h9l3 3v14H6z"/><path d="M15 3.5v3h3M9 11h6M9 14h6M9 17h4"/></svg><span class="pdf-mark" aria-hidden="true">PDF</span></button>
       </div>
       <div class="workflow-action" id="workflowAction"><button class="btn primary" id="sendReviewTop" type="button" onclick="handleWorkflowAction()">Enviar para revisión</button><span class="workflow-state" id="workflowState">Borrador</span></div>
       <div class="action-divider" aria-hidden="true"></div>
@@ -2768,7 +2770,6 @@ function routeLabel(id){const a=activityByUid(id);if(!a)return"Por definir";cons
 
 function buildPreview(){
   renderFlow();const flow=$("flowSvg").outerHTML;
-  ensureEvaluation();const evalStats=evaluationStats(),evaluationPreview=evaluation.status!=="Borrador"?`<h2>9. EVALUACIÓN DE ADECUACIÓN</h2><div class="dochead"><div><b>ESTADO:</b> ${esc(evaluation.status)}</div><div><b>RESULTADO:</b> ${evalStats.score.toFixed(1)}% — ${esc(evalStats.level)}</div><div><b>ASESOR:</b> ${esc(evaluation.evaluatorEmail||evaluation.assignedEvaluator||"Sin asignar")}</div><div><b>FECHA:</b> ${esc(dateTimeLabel(evaluation.evaluationDate))}</div></div><p class="context-item"><b>Concepto técnico:</b> ${esc(evaluation.concept||"Sin concepto registrado.")}</p>`:"";
   const showEvidenceColumn=activities.some(a=>String(a.evidencia||a.controlEvidencia||"").trim()),showSystem=activities.some(a=>String(a.sistema||"").trim()),defs=parseDefinitions(val("definiciones"));
   const controlText=a=>{if(!a.tieneControl)return"";const items=[["Responsable",a.controlResponsable],["Periodicidad",a.controlPeriodicidad],["Propósito del Control",a.controlAccion],["Ejecución",a.controlEjecucion],["Desviación",a.controlDesviacion],["Evidencia",a.controlEvidencia]].filter(x=>String(x[1]||"").trim());return items.map(x=>`<b>${x[0]}:</b> ${esc(x[1])}`).join("<br>")};
   const actRows=activities.map(a=>`<tr><td>${displayedActivityNumber(a)||"—"}</td><td>${esc(a.tipo)}</td><td>${a.tipo==="Decisión"?"—":esc(a.actividad||"")}</td><td>${esc(a.descripcion)}${a.tipo==="Decisión"?`<div class="decision-route-note"><b>Sí →</b> ${esc(routeLabel(a.decisionSi))}<br><b>No →</b> ${esc(routeLabel(a.decisionNo))}</div>`:a.tipo==="Conector"?`<div class="decision-route-note"><b>Conector ${esc(a.connectorId||"")} →</b> ${esc(routeLabel(a.connectorDestino))}</div>`:""}</td><td>${esc(a.responsable)}</td><td>${controlText(a)}</td>${showEvidenceColumn?`<td>${esc(a.evidencia||a.controlEvidencia||"")}</td>`:""}${showSystem?`<td>${esc(a.sistema||"")}</td>`:""}</tr>`).join("");
@@ -2781,9 +2782,9 @@ function buildPreview(){
   <h2>2. NORMATIVIDAD</h2><table><thead><tr><th>Tipo</th><th>Norma</th><th>Año</th><th>Descripción de la norma</th><th>Artículo / sección</th><th>Entidad emisora</th></tr></thead><tbody>${tableRows(norms,["tipo","norma","anio","descripcion","articulo","entidad"])}</tbody></table>
   <h2>3. DESCRIPCIÓN DEL PROCEDIMIENTO</h2>
   <table><thead><tr><th>N.º</th><th>Tipo</th><th>Actividad</th><th>Descripción de la actividad</th><th>Responsable</th><th>Punto de control</th>${showEvidenceColumn?"<th>Registro / Evidencia</th>":""}${showSystem?"<th>Sistema / Herramienta</th>":""}</tr></thead><tbody>${actRows||`<tr><td colspan="${6+(showEvidenceColumn?1:0)+(showSystem?1:0)}">Sin actividades.</td></tr>`}</tbody></table>
-  <h2>6. FLUJOGRAMA</h2><div class="report-flow">${flow}</div>
+  <section class="flow-report-section"><h2>6. FLUJOGRAMA</h2><div class="report-flow">${flow}</div></section>
   <h2>7. DOCUMENTOS ANEXOS</h2><table><thead><tr><th>Documento</th><th>Tipo</th><th>Código / referencia</th><th>Observación</th></tr></thead><tbody>${annexesNotApplicable?'<tr><td colspan="4">No aplica. El procedimiento no contiene documentos anexos.</td></tr>':tableRows(annexes,["documento","tipo","codigo","observacion"])}</tbody></table>
-  <h2>8. CONTROL DE CAMBIOS</h2><table><thead><tr><th>Versión</th><th>Fecha</th><th>Razón de la actualización</th></tr></thead><tbody>${tableRows(changes,["version","fecha","razon"])}</tbody></table><br><table><tr><th>Elaboró</th><th>Revisó</th><th>Aprobó</th></tr><tr><td>${esc(val("elaboro"))}${val("elaboroNombre")?`<br><small>Nombre: ${esc(val("elaboroNombre"))}</small>`:""}</td><td>${esc(val("reviso"))}${val("revisoNombre")?`<br><small>Nombre: ${esc(val("revisoNombre"))}</small>`:""}</td><td>${esc(val("aprobo"))}${val("aproboNombre")?`<br><small>Nombre: ${esc(val("aproboNombre"))}</small>`:""}</td></tr></table>${evaluationPreview}`;
+  <h2>8. CONTROL DE CAMBIOS</h2><table><thead><tr><th>Versión</th><th>Fecha</th><th>Razón de la actualización</th></tr></thead><tbody>${tableRows(changes,["version","fecha","razon"])}</tbody></table><br><table><tr><th>Elaboró</th><th>Revisó</th><th>Aprobó</th></tr><tr><td>${esc(val("elaboro"))}${val("elaboroNombre")?`<br><small>Nombre: ${esc(val("elaboroNombre"))}</small>`:""}</td><td>${esc(val("reviso"))}${val("revisoNombre")?`<br><small>Nombre: ${esc(val("revisoNombre"))}</small>`:""}</td><td>${esc(val("aprobo"))}${val("aproboNombre")?`<br><small>Nombre: ${esc(val("aproboNombre"))}</small>`:""}</td></tr></table>`;
 }
 function pdfWrapText(value,maxChars){
   const paragraphs=String(value??"").replace(/\r/g,"").split("\n"),lines=[];
@@ -2896,9 +2897,9 @@ function buildProcedurePdf(flowImage){
 function previewProcedure(){
   runQualityRules();switchTab("preview");recordAnalytics("preview_viewed");saveLocal(true);toast("Vista previa actualizada. No se descargó ningún archivo.");
 }
-async function generatePDF(){
-  const score=runQualityRules();buildPreview();switchTab("preview");toast("Preparando PDF…");
-  try{const flowImage=await flowJpeg(),bytes=buildProcedurePdf(flowImage);downloadBlob(new Blob([bytes],{type:"application/pdf"}),safeFileName(val("codigo")||val("nombre"))+".pdf");recordAnalytics("pdf_generated");saveLocal(true);toast(score<100?"PDF generado con observaciones pendientes.":"PDF generado correctamente.")}catch(e){console.error(e);toast("No fue posible generar el PDF. Intente nuevamente.")}
+function generatePDF(){
+  runQualityRules();switchTab("preview");buildPreview();saveLocal(true);
+  recordAnalytics("pdf_generated");window.print();
 }
 
 function safeFileName(value){
