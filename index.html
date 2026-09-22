@@ -581,7 +581,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 @media(max-width:760px){.sidebar{padding:max(8px,env(safe-area-inset-top)) 8px 8px}.main{padding:10px max(10px,env(safe-area-inset-right)) calc(36px + env(safe-area-inset-bottom)) max(10px,env(safe-area-inset-left))}.panel{padding:18px;border-radius:18px}.topbar{padding:13px;border-radius:16px}.btn,.smallbtn,.flow-tool{min-height:44px}.field input,.field textarea,.field select,td input,td textarea,td select{font-size:16px}}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
 @media print{
-  @page{size:A4 landscape;margin:10mm}
+  @page{size:297mm 240mm;margin:10mm}
   html,body{min-height:0!important;background:#fff!important;background-image:none!important;overflow:visible!important}
   .sidebar,.topbar,.procedure-pin,.environment-indicator,.panel:not(#previewPanel),#previewPanel .screen-only,.auth-gate,.toast{display:none!important}
   .app,.main{display:block!important;width:100%!important;max-width:none!important;min-height:0!important;margin:0!important;padding:0!important}
@@ -590,9 +590,9 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
   .preview{min-height:0!important;padding:0!important;overflow:visible!important;box-shadow:none!important;print-color-adjust:exact;-webkit-print-color-adjust:exact}
   .preview table,.preview .dochead{min-width:0!important}
   .preview h2{break-after:avoid-page}.preview table{break-inside:auto}.preview tr{break-inside:avoid;break-after:auto}
-  .flow-report-section{break-before:page;break-inside:avoid}
-  .report-flow{break-inside:avoid;page-break-inside:avoid;margin:8px 0!important;padding:2mm!important;border-radius:0!important}
-  .report-flow svg{display:block!important;width:auto!important;height:auto!important;max-width:100%!important;max-height:145mm!important;margin:auto;box-shadow:none!important}
+  .flow-report-section{page:flow;break-before:page;break-inside:avoid}
+  .report-flow{break-inside:avoid;page-break-inside:avoid;margin:16px 0!important;padding:10px!important;border-radius:8px!important}
+  .report-flow svg{display:block!important;width:100%!important;height:auto!important;max-width:100%!important;max-height:none!important;box-shadow:none!important}
 }
 
 </style>
@@ -2785,6 +2785,13 @@ function buildPreview(){
   <section class="flow-report-section"><h2>6. FLUJOGRAMA</h2><div class="report-flow">${flow}</div></section>
   <h2>7. DOCUMENTOS ANEXOS</h2><table><thead><tr><th>Documento</th><th>Tipo</th><th>Código / referencia</th><th>Observación</th></tr></thead><tbody>${annexesNotApplicable?'<tr><td colspan="4">No aplica. El procedimiento no contiene documentos anexos.</td></tr>':tableRows(annexes,["documento","tipo","codigo","observacion"])}</tbody></table>
   <h2>8. CONTROL DE CAMBIOS</h2><table><thead><tr><th>Versión</th><th>Fecha</th><th>Razón de la actualización</th></tr></thead><tbody>${tableRows(changes,["version","fecha","razon"])}</tbody></table><br><table><tr><th>Elaboró</th><th>Revisó</th><th>Aprobó</th></tr><tr><td>${esc(val("elaboro"))}${val("elaboroNombre")?`<br><small>Nombre: ${esc(val("elaboroNombre"))}</small>`:""}</td><td>${esc(val("reviso"))}${val("revisoNombre")?`<br><small>Nombre: ${esc(val("revisoNombre"))}</small>`:""}</td><td>${esc(val("aprobo"))}${val("aproboNombre")?`<br><small>Nombre: ${esc(val("aproboNombre"))}</small>`:""}</td></tr></table>`;
+  updateFlowPrintPageSize();
+}
+function updateFlowPrintPageSize(){
+  const box=$("previewDoc").querySelector(".report-flow svg")?.viewBox.baseVal;
+  const height=box?.width>0?Math.max(240,Math.ceil(277*box.height/box.width+65)):240;
+  let style=$("flowPrintPageSize");if(!style){style=document.createElement("style");style.id="flowPrintPageSize";document.head.appendChild(style)}
+  style.textContent=`@page flow{size:297mm ${height}mm;margin:10mm}`;
 }
 function pdfWrapText(value,maxChars){
   const paragraphs=String(value??"").replace(/\r/g,"").split("\n"),lines=[];
