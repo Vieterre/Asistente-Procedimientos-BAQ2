@@ -175,8 +175,6 @@ td textarea{min-height:66px}
 .legend-line{width:18px;height:0;border-top:3px solid currentColor;display:inline-block}
 .legend-line.yes{color:#23883E}.legend-line.no{color:#B42318}.legend-line.record{color:#777777;border-top-style:dashed}
 .preview{background:#fff;color:#111;border-radius:10px;padding:30px;min-height:700px;font-family:"Estrategia Sans","Aptos","Segoe UI",Arial,sans-serif}
-.preview .document-brand{text-align:center;color:var(--navy);font-size:22px;font-weight:800;letter-spacing:1px;margin-bottom:3px}
-.preview .document-brand span{display:block;color:var(--gray);font-size:9px;letter-spacing:.7px;margin-top:2px}
 .preview h1,.preview h2,.preview h3{color:var(--navy)} .preview h2{border-bottom:2px solid var(--green);padding-bottom:5px}
 .preview table{min-width:0;color:#111} .preview th,.preview td{border:1px solid #B8C2C8} .preview th{background:var(--navy);color:#fff}
 .preview .dochead{display:grid;grid-template-columns:1fr 1fr;gap:0;font-size:12px;margin-bottom:15px}
@@ -2770,84 +2768,127 @@ function routeLabel(id){const a=activityByUid(id);if(!a)return"Por definir";cons
 
 function buildPreview(){
   renderFlow();const flow=$("flowSvg").outerHTML;
-  ensureEvaluation();const evalStats=evaluationStats(),evaluationPreview=evaluation.status!=="Borrador"?`<h2>7. EVALUACIÓN DE ADECUACIÓN</h2><div class="dochead"><div><b>ESTADO:</b> ${esc(evaluation.status)}</div><div><b>RESULTADO:</b> ${evalStats.score.toFixed(1)}% — ${esc(evalStats.level)}</div><div><b>ASESOR:</b> ${esc(evaluation.evaluatorEmail||evaluation.assignedEvaluator||"Sin asignar")}</div><div><b>FECHA:</b> ${esc(dateTimeLabel(evaluation.evaluationDate))}</div></div><p class="context-item"><b>Concepto técnico:</b> ${esc(evaluation.concept||"Sin concepto registrado.")}</p>`:"";
+  ensureEvaluation();const evalStats=evaluationStats(),evaluationPreview=evaluation.status!=="Borrador"?`<h2>9. EVALUACIÓN DE ADECUACIÓN</h2><div class="dochead"><div><b>ESTADO:</b> ${esc(evaluation.status)}</div><div><b>RESULTADO:</b> ${evalStats.score.toFixed(1)}% — ${esc(evalStats.level)}</div><div><b>ASESOR:</b> ${esc(evaluation.evaluatorEmail||evaluation.assignedEvaluator||"Sin asignar")}</div><div><b>FECHA:</b> ${esc(dateTimeLabel(evaluation.evaluationDate))}</div></div><p class="context-item"><b>Concepto técnico:</b> ${esc(evaluation.concept||"Sin concepto registrado.")}</p>`:"";
   const showEvidenceColumn=activities.some(a=>String(a.evidencia||a.controlEvidencia||"").trim()),showSystem=activities.some(a=>String(a.sistema||"").trim()),defs=parseDefinitions(val("definiciones"));
   const controlText=a=>{if(!a.tieneControl)return"";const items=[["Responsable",a.controlResponsable],["Periodicidad",a.controlPeriodicidad],["Propósito del Control",a.controlAccion],["Ejecución",a.controlEjecucion],["Desviación",a.controlDesviacion],["Evidencia",a.controlEvidencia]].filter(x=>String(x[1]||"").trim());return items.map(x=>`<b>${x[0]}:</b> ${esc(x[1])}`).join("<br>")};
   const actRows=activities.map(a=>`<tr><td>${displayedActivityNumber(a)||"—"}</td><td>${esc(a.tipo)}</td><td>${a.tipo==="Decisión"?"—":esc(a.actividad||"")}</td><td>${esc(a.descripcion)}${a.tipo==="Decisión"?`<div class="decision-route-note"><b>Sí →</b> ${esc(routeLabel(a.decisionSi))}<br><b>No →</b> ${esc(routeLabel(a.decisionNo))}</div>`:a.tipo==="Conector"?`<div class="decision-route-note"><b>Conector ${esc(a.connectorId||"")} →</b> ${esc(routeLabel(a.connectorDestino))}</div>`:""}</td><td>${esc(a.responsable)}</td><td>${controlText(a)}</td>${showEvidenceColumn?`<td>${esc(a.evidencia||a.controlEvidencia||"")}</td>`:""}${showSystem?`<td>${esc(a.sistema||"")}</td>`:""}</tr>`).join("");
   const defHtml=defs.length?`<table class="def-table"><thead><tr><th>Término</th><th>Definición</th></tr></thead><tbody>${defs.map(d=>`<tr><td>${esc(d.term||"Definición")}</td><td>${esc(d.definition)}</td></tr>`).join("")}</tbody></table>`:'<p>Sin definiciones registradas.</p>';
-  $("previewDoc").innerHTML=`<div class="document-brand">VALIDADOR Y ESTRUCTURADOR METODOLÓGICO<span>DE PROCEDIMIENTOS</span></div><h1 style="text-align:center;font-size:20px">PROCEDIMIENTO</h1>
-  <div class="dochead"><div><b>CÓDIGO:</b> ${esc(val("codigo"))}</div><div><b>VERSIÓN:</b> ${esc(val("version"))}</div><div><b>NOMBRE:</b> ${esc(val("nombre"))}</div><div><b>FECHA:</b> ${esc(val("fecha"))}</div><div style="grid-column:1/-1"><b>PROCESO:</b> ${esc(val("proceso"))} — ${esc(processName(val("proceso")))}</div><div style="grid-column:1/-1"><b>RESPONSABLE:</b> ${esc(val("responsableProcedimiento"))}</div></div>
+  $("previewDoc").innerHTML=`<div class="dochead"><div><b>CÓDIGO:</b> ${esc(val("codigo"))}</div><div><b>VERSIÓN:</b> ${esc(val("version"))}</div><div><b>NOMBRE:</b> ${esc(val("nombre"))}</div><div><b>FECHA:</b> ${esc(val("fecha"))}</div><div style="grid-column:1/-1"><b>PROCESO:</b> ${esc(val("proceso"))} — ${esc(processName(val("proceso")))}</div><div style="grid-column:1/-1"><b>RESPONSABLE:</b> ${esc(val("responsableProcedimiento"))}</div></div>
   <h2>1. MARCO CONTEXTUAL</h2>
   <p class="context-item"><b>Objetivo:</b> ${esc(val("objetivo"))}</p><p class="context-item"><b>Alcance:</b> ${esc(val("alcance"))}</p>
-  <h3>Definiciones</h3>${defHtml}
+  <p class="context-item"><b>Definiciones:</b></p>${defHtml}
   <p class="context-item"><b>Condiciones generales:</b> ${esc(val("condiciones"))}</p>
   <h2>2. NORMATIVIDAD</h2><table><thead><tr><th>Tipo</th><th>Norma</th><th>Año</th><th>Descripción de la norma</th><th>Artículo / sección</th><th>Entidad emisora</th></tr></thead><tbody>${tableRows(norms,["tipo","norma","anio","descripcion","articulo","entidad"])}</tbody></table>
   <h2>3. DESCRIPCIÓN DEL PROCEDIMIENTO</h2>
   <table><thead><tr><th>N.º</th><th>Tipo</th><th>Actividad</th><th>Descripción de la actividad</th><th>Responsable</th><th>Punto de control</th>${showEvidenceColumn?"<th>Registro / Evidencia</th>":""}${showSystem?"<th>Sistema / Herramienta</th>":""}</tr></thead><tbody>${actRows||`<tr><td colspan="${6+(showEvidenceColumn?1:0)+(showSystem?1:0)}">Sin actividades.</td></tr>`}</tbody></table>
-  <h2>4. DOCUMENTOS ANEXOS</h2><table><thead><tr><th>Documento</th><th>Tipo</th><th>Código / referencia</th><th>Observación</th></tr></thead><tbody>${annexesNotApplicable?'<tr><td colspan="4">No aplica. El procedimiento no contiene documentos anexos.</td></tr>':tableRows(annexes,["documento","tipo","codigo","observacion"])}</tbody></table>
-  <h2>5. CONTROL DE CAMBIOS</h2><table><thead><tr><th>Versión</th><th>Fecha</th><th>Razón de la actualización</th></tr></thead><tbody>${tableRows(changes,["version","fecha","razon"])}</tbody></table><br><table><tr><th>Elaboró</th><th>Revisó</th><th>Aprobó</th></tr><tr><td>${esc(val("elaboro"))}${val("elaboroNombre")?`<br><small>Nombre: ${esc(val("elaboroNombre"))}</small>`:""}</td><td>${esc(val("reviso"))}${val("revisoNombre")?`<br><small>Nombre: ${esc(val("revisoNombre"))}</small>`:""}</td><td>${esc(val("aprobo"))}${val("aproboNombre")?`<br><small>Nombre: ${esc(val("aproboNombre"))}</small>`:""}</td></tr></table><h2>6. FLUJOGRAMA</h2><div class="report-flow">${flow}</div>${evaluationPreview}`;
+  <h2>6. FLUJOGRAMA</h2><div class="report-flow">${flow}</div>
+  <h2>7. DOCUMENTOS ANEXOS</h2><table><thead><tr><th>Documento</th><th>Tipo</th><th>Código / referencia</th><th>Observación</th></tr></thead><tbody>${annexesNotApplicable?'<tr><td colspan="4">No aplica. El procedimiento no contiene documentos anexos.</td></tr>':tableRows(annexes,["documento","tipo","codigo","observacion"])}</tbody></table>
+  <h2>8. CONTROL DE CAMBIOS</h2><table><thead><tr><th>Versión</th><th>Fecha</th><th>Razón de la actualización</th></tr></thead><tbody>${tableRows(changes,["version","fecha","razon"])}</tbody></table><br><table><tr><th>Elaboró</th><th>Revisó</th><th>Aprobó</th></tr><tr><td>${esc(val("elaboro"))}${val("elaboroNombre")?`<br><small>Nombre: ${esc(val("elaboroNombre"))}</small>`:""}</td><td>${esc(val("reviso"))}${val("revisoNombre")?`<br><small>Nombre: ${esc(val("revisoNombre"))}</small>`:""}</td><td>${esc(val("aprobo"))}${val("aproboNombre")?`<br><small>Nombre: ${esc(val("aproboNombre"))}</small>`:""}</td></tr></table>${evaluationPreview}`;
 }
 function pdfWrapText(value,maxChars){
   const paragraphs=String(value??"").replace(/\r/g,"").split("\n"),lines=[];
   paragraphs.forEach(paragraph=>{
     const words=paragraph.trim().split(/\s+/).filter(Boolean);if(!words.length){lines.push("");return}
-    let line="";words.forEach(word=>{if(!line)line=word;else if((line+" "+word).length<=maxChars)line+=" "+word;else{lines.push(line);line=word}});if(line)lines.push(line);
+    let line="";words.forEach(word=>{
+      while(word.length>maxChars){if(line){lines.push(line);line=""}lines.push(word.slice(0,maxChars));word=word.slice(maxChars)}
+      if(!line)line=word;else if((line+" "+word).length<=maxChars)line+=" "+word;else{lines.push(line);line=word}
+    });if(line)lines.push(line);
   });return lines;
-}
-function pdfReportEntries(){
-  const entries=[],add=(text,opts={})=>entries.push({text:String(text??""),size:opts.size||10,bold:!!opts.bold,spaceBefore:opts.spaceBefore||0});
-  const field=(label,value)=>add(`${label}: ${String(value||"").trim()||"Sin información registrada."}`);
-  add("VALIDADOR Y ESTRUCTURADOR METODOLÓGICO DE PROCEDIMIENTOS",{size:16,bold:true});add("PROCEDIMIENTO",{size:18,bold:true});
-  field("Código",val("codigo"));field("Nombre",val("nombre"));field("Proceso",`${val("proceso")} — ${processName(val("proceso"))}`);field("Versión",val("version"));field("Fecha",val("fecha"));field("Responsable",val("responsableProcedimiento"));
-  add("1. MARCO CONTEXTUAL",{size:13,bold:true,spaceBefore:10});field("Objetivo",val("objetivo"));field("Alcance",val("alcance"));field("Definiciones",val("definiciones"));field("Condiciones generales",val("condiciones"));
-  add("2. NORMATIVIDAD",{size:13,bold:true,spaceBefore:10});
-  if(!norms.length)add("Sin normas registradas.");else norms.forEach((n,i)=>add(`${i+1}. ${n.tipo||""} · ${n.norma||""} · ${n.anio||""} · ${n.descripcion||""} · ${n.articulo||""} · ${n.entidad||""}`));
-  add("3. DESCRIPCIÓN DEL PROCEDIMIENTO",{size:13,bold:true,spaceBefore:10});
-  activities.forEach(a=>{
-    const number=displayedActivityNumber(a),label=`${number?number+". ":""}[${a.tipo}] ${a.actividad||a.descripcion||a.tipo}`;
-    add(label,{bold:true,spaceBefore:5});if(a.descripcion&&a.descripcion!==a.actividad)add(a.descripcion);
-    if(a.responsable)field("Responsable",a.responsable);
-    if(a.tipo==="Decisión"){field("Ruta Sí",routeLabel(a.decisionSi));field("Ruta No",routeLabel(a.decisionNo))}
-    if(a.tipo==="Conector")field(`Conector ${a.connectorId||""}`,routeLabel(a.connectorDestino));
-    if(a.tieneControl){field("Punto de control",`${a.controlAccion||""}; responsable: ${a.controlResponsable||""}; periodicidad: ${a.controlPeriodicidad||""}; ejecución: ${a.controlEjecucion||""}; desviación: ${a.controlDesviacion||""}; evidencia: ${a.controlEvidencia||""}`)}
-    if(a.evidencia)field("Registro / Evidencia",a.evidencia);if(a.sistema)field("Sistema / Herramienta",a.sistema);
-  });
-  add("4. DOCUMENTOS ANEXOS",{size:13,bold:true,spaceBefore:10});
-  if(annexesNotApplicable)add("No aplica. El procedimiento no contiene documentos anexos.");else if(!annexes.length)add("Sin documentos anexos registrados.");else annexes.forEach((a,i)=>add(`${i+1}. ${a.documento||""} · ${a.tipo||""} · ${a.codigo||""} · ${a.observacion||""}`));
-  add("5. CONTROL DE CAMBIOS",{size:13,bold:true,spaceBefore:10});
-  if(!changes.length)add("Sin cambios registrados.");else changes.forEach((c,i)=>add(`${i+1}. Versión ${c.version||""} · ${c.fecha||""} · ${c.razon||""}`));
-  field("Elaboró",`${val("elaboro")}${val("elaboroNombre")?` · Nombre: ${val("elaboroNombre")}`:""}`);field("Revisó",`${val("reviso")}${val("revisoNombre")?` · Nombre: ${val("revisoNombre")}`:""}`);field("Aprobó",`${val("aprobo")}${val("aproboNombre")?` · Nombre: ${val("aproboNombre")}`:""}`);
-  add("6. FLUJOGRAMA",{size:13,bold:true,spaceBefore:10});add("La representación gráfica se presenta en la página siguiente, inmediatamente después del control de cambios y los datos de elaboración, revisión y aprobación.");
-  return entries;
 }
 function pdfWinAnsi(value){
   const replacements={"—":"-","–":"-","“":"\"","”":"\"","‘":"'","’":"'","•":"-","→":"->","✓":"OK"};
   let out="";for(const ch of String(value??"")){const r=replacements[ch]??ch,code=r.charCodeAt(0);out+=code<=255?r:"?"}return out.replace(/\\/g,"\\\\").replace(/\(/g,"\\(").replace(/\)/g,"\\)");
 }
 function binaryBytes(value){const s=String(value),out=new Uint8Array(s.length);for(let i=0;i<s.length;i++)out[i]=s.charCodeAt(i)&255;return out}
-function composePdfTextPages(entries){
-  const pages=[];let commands=[],y=548,pageNo=1;const left=42,bottom=42,width=758;
-  const finish=()=>{commands.push(`BT /F1 8 Tf ${left} 20 Td (Página ${pageNo}) Tj ET`);pages.push(binaryBytes(commands.join("\n")));commands=[];y=548;pageNo++};
-  entries.forEach(entry=>{
-    const size=entry.size||10,lineH=Math.max(13,Math.round(size*1.35)),maxChars=Math.max(38,Math.floor(width/(size*.52))),lines=pdfWrapText(entry.text,maxChars);
-    if(y-entry.spaceBefore-lines.length*lineH<bottom)finish();y-=entry.spaceBefore;
-    lines.forEach(line=>{if(y-lineH<bottom)finish();commands.push(`BT /${entry.bold?"F2":"F1"} ${size} Tf ${left} ${y} Td (${pdfWinAnsi(line)}) Tj ET`);y-=lineH});
-  });if(commands.length||!pages.length)finish();return pages;
+function composePdfTextPages(part="before",startPage=1){
+  const pages=[];let commands=[],y=552,pageNo=startPage;const left=42,bottom=42,width=758;
+  const ink="0.13 0.24 0.35",muted="0.33 0.40 0.47",line="0.75 0.80 0.84",pale="0.94 0.97 0.98";
+  const text=(value,x,baseline,size=8,bold=false,color=ink)=>commands.push(`${color} rg BT /${bold?"F2":"F1"} ${size} Tf ${x} ${baseline} Td (${pdfWinAnsi(value)}) Tj ET`);
+  const rect=(x,top,w,h,fill,stroke=line)=>commands.push(`${fill} rg ${stroke} RG 0.6 w ${x} ${top-h} ${w} ${h} re B`);
+  const finish=()=>{commands.push(`${line} RG 0.6 w ${left} 31 m ${left+width} 31 l S`);text(`Página ${pageNo}`,left,19,7,false,muted);pages.push(binaryBytes(commands.join("\n")));commands=[];y=552;pageNo++};
+  const ensure=height=>{if(y-height<bottom)finish()};
+  const section=title=>{ensure(36);y-=10;text(title,left,y,12,true);y-=7;commands.push(`0.11 0.59 0.47 RG 1.5 w ${left} ${y} m ${left+width} ${y} l S`);y-=13};
+  const table=(headers,widths,rows,size=8)=>{
+    const lineH=Math.max(10,size+2),headerH=22;
+    const header=()=>{ensure(headerH+lineH+10);let x=left;headers.forEach((label,i)=>{rect(x,y,widths[i],headerH,"0.09 0.23 0.38","0.09 0.23 0.38");text(label,x+6,y-14,Math.min(size,8),true,"1 1 1");x+=widths[i]});y-=headerH};
+    header();
+    rows.forEach((row,rowIndex)=>{
+      const cells=row.map((value,i)=>pdfWrapText(String(value??"").trim()||" ",Math.max(4,Math.floor((widths[i]-12)/(size*.53)))));
+      let offset=0,maxLines=Math.max(...cells.map(lines=>lines.length));
+      while(offset<maxLines){
+        if(y-(lineH+10)<bottom){finish();header()}
+        const fit=Math.max(1,Math.floor((y-bottom-10)/lineH));
+        const count=Math.min(fit,maxLines-offset),height=count*lineH+10;
+        let x=left;cells.forEach((lines,i)=>{
+          rect(x,y,widths[i],height,rowIndex%2?pale:"1 1 1");
+          lines.slice(offset,offset+count).forEach((part,j)=>text(part,x+6,y-8-size-j*lineH,size,false,ink));x+=widths[i]
+        });
+        y-=height;offset+=count;
+      }
+    });y-=10;
+  };
+  const detail=(label,value)=>table(["Campo","Información"],[145,613],[[label,value||"Sin información registrada."]],8);
+  if(part==="before"){
+  table(["Dato","Información"],[125,633],[
+    ["Código",val("codigo")],["Versión",val("version")],["Nombre",val("nombre")],["Fecha",val("fecha")],
+    ["Proceso",`${val("proceso")} — ${processName(val("proceso"))}`],["Responsable",val("responsableProcedimiento")]
+  ]);
+  section("1. MARCO CONTEXTUAL");
+  detail("Objetivo",val("objetivo"));detail("Alcance",val("alcance"));
+  const definitions=parseDefinitions(val("definiciones"));
+  table(["Término","Definición"],[205,553],definitions.length?definitions.map(d=>[d.term||"Definición",d.definition]):[["", "Sin definiciones registradas."]]);
+  detail("Condiciones generales",val("condiciones"));
+  section("2. NORMATIVIDAD");
+  table(["Tipo","Norma","Año","Descripción","Artículo / sección","Entidad emisora"],[72,126,44,234,142,140],norms.length?norms.map(n=>[n.tipo,n.norma,n.anio,n.descripcion,n.articulo,n.entidad]):[["Sin normas registradas.","","","","",""]],7);
+  section("3. DESCRIPCIÓN DEL PROCEDIMIENTO");
+  if(!activities.length)detail("Actividades","Sin actividades registradas.");
+  activities.forEach(a=>{
+    const control=a.tieneControl?[["Responsable",a.controlResponsable],["Periodicidad",a.controlPeriodicidad],["Propósito del control",a.controlAccion],["Ejecución",a.controlEjecucion],["Desviación",a.controlDesviacion],["Evidencia",a.controlEvidencia]].filter(pair=>String(pair[1]||"").trim()).map(pair=>pair.join(": ")).join("\n"):"";
+    table(["N.º","Tipo","Actividad","Responsable"],[52,120,398,188],[[displayedActivityNumber(a)||"—",a.tipo,a.tipo==="Decisión"?"—":a.actividad,a.responsable]]);
+    detail("Descripción",a.descripcion);
+    if(a.tipo==="Decisión"){detail("Ruta Sí",routeLabel(a.decisionSi));detail("Ruta No",routeLabel(a.decisionNo))}
+    if(a.tipo==="Conector")detail(`Conector ${a.connectorId||""}`,routeLabel(a.connectorDestino));
+    if(a.tieneControl)detail("Punto de control",control);
+    if(a.evidencia||a.controlEvidencia)detail("Registro / Evidencia",a.evidencia||a.controlEvidencia);
+    if(a.sistema)detail("Sistema / Herramienta",a.sistema);
+  });
+  }else{
+  section("7. DOCUMENTOS ANEXOS");
+  table(["Documento","Tipo","Código / referencia","Observación"],[218,125,150,265],annexesNotApplicable?[["No aplica. El procedimiento no contiene documentos anexos.","","",""]]:annexes.length?annexes.map(a=>[a.documento,a.tipo,a.codigo,a.observacion]):[["Sin documentos anexos registrados.","","",""]]);
+  section("8. CONTROL DE CAMBIOS");
+  table(["Versión","Fecha","Razón de la actualización"],[100,120,538],changes.length?changes.map(c=>[c.version,c.fecha,c.razon]):[["","","Sin cambios registrados."]]);
+  table(["Elaboró","Revisó","Aprobó"],[253,252,253],[[`${val("elaboro")}\n${val("elaboroNombre")}`,`${val("reviso")}\n${val("revisoNombre")}`,`${val("aprobo")}\n${val("aproboNombre")}`]]);
+  if(evaluation.status!=="Borrador"){
+    const stats=evaluationStats();section("9. EVALUACIÓN DE ADECUACIÓN");
+    table(["Dato","Información"],[145,613],[["Estado",evaluation.status],["Resultado",`${stats.score.toFixed(1)}% — ${stats.level}`],["Asesor",evaluation.evaluatorEmail||evaluation.assignedEvaluator||"Sin asignar"],["Fecha",dateTimeLabel(evaluation.evaluationDate)],["Concepto técnico",evaluation.concept||"Sin concepto registrado."]]);
+  }
+  }
+  if(commands.length||!pages.length)finish();return pages;
 }
 function pdfObject(id,body){return joinBytes([binaryBytes(`${id} 0 obj\n`),body,binaryBytes("\nendobj\n")])}
 function pdfStreamObject(id,dictionary,bytes){return pdfObject(id,joinBytes([binaryBytes(`<< ${dictionary} /Length ${bytes.length} >>\nstream\n`),bytes,binaryBytes("\nendstream")]))}
 function buildProcedurePdf(flowImage){
-  const textPages=composePdfTextPages(pdfReportEntries());
-  const imageId=flowImage?5:0,firstPageId=flowImage?6:5,pageCount=textPages.length+(flowImage?1:0),kids=[];for(let i=0;i<pageCount;i++)kids.push(`${firstPageId+i*2} 0 R`);
+  const beforePages=composePdfTextPages("before"),afterPages=composePdfTextPages("after",beforePages.length+2);
+  const pageItems=[...beforePages,{image:flowImage},...afterPages],imageId=5,firstPageId=6,pageCount=pageItems.length,kids=[];
+  for(let i=0;i<pageCount;i++)kids.push(`${firstPageId+i*2} 0 R`);
   const objects=[];
   objects[1]=pdfObject(1,binaryBytes("<< /Type /Catalog /Pages 2 0 R >>"));
   objects[2]=pdfObject(2,binaryBytes(`<< /Type /Pages /Kids [${kids.join(" ")}] /Count ${pageCount} >>`));
   objects[3]=pdfObject(3,binaryBytes("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>"));
   objects[4]=pdfObject(4,binaryBytes("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>"));
-  if(flowImage)objects[imageId]=pdfStreamObject(imageId,`/Type /XObject /Subtype /Image /Width ${flowImage.width} /Height ${flowImage.height} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode`,flowImage.bytes);
-  let pageIndex=0;
-  textPages.forEach(content=>{const pageId=firstPageId+pageIndex*2,contentId=pageId+1;objects[pageId]=pdfObject(pageId,binaryBytes(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 842 595] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents ${contentId} 0 R >>`));objects[contentId]=pdfStreamObject(contentId,"",content);pageIndex++});
-  if(flowImage){const pageId=firstPageId+pageIndex*2,contentId=pageId+1,maxW=758,maxH=500,scale=Math.min(maxW/flowImage.width,maxH/flowImage.height),w=Math.round(flowImage.width*scale),h=Math.round(flowImage.height*scale),x=Math.round((842-w)/2),y=Math.round((540-h)/2);const content=binaryBytes(`BT /F2 14 Tf 42 560 Td (FLUJOGRAMA DEL PROCEDIMIENTO) Tj ET\nq ${w} 0 0 ${h} ${x} ${y} cm /Im1 Do Q\nBT /F1 8 Tf 42 20 Td (Página ${pageIndex+1}) Tj ET`);objects[pageId]=pdfObject(pageId,binaryBytes(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 842 595] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> /XObject << /Im1 ${imageId} 0 R >> >> /Contents ${contentId} 0 R >>`));objects[contentId]=pdfStreamObject(contentId,"",content)}
+  objects[imageId]=pdfStreamObject(imageId,`/Type /XObject /Subtype /Image /Width ${flowImage.width} /Height ${flowImage.height} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode`,flowImage.bytes);
+  pageItems.forEach((item,pageIndex)=>{
+    const pageId=firstPageId+pageIndex*2,contentId=pageId+1;
+    if(item.image){
+      const maxW=758,maxH=500,scale=Math.min(maxW/flowImage.width,maxH/flowImage.height),w=Math.round(flowImage.width*scale),h=Math.round(flowImage.height*scale),x=Math.round((842-w)/2),y=Math.round((540-h)/2);
+      const content=binaryBytes(`0.13 0.24 0.35 rg BT /F2 14 Tf 42 560 Td (6. FLUJOGRAMA) Tj ET\nq ${w} 0 0 ${h} ${x} ${y} cm /Im1 Do Q\nBT /F1 7 Tf 42 19 Td (Página ${pageIndex+1}) Tj ET`);
+      objects[pageId]=pdfObject(pageId,binaryBytes(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 842 595] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> /XObject << /Im1 ${imageId} 0 R >> >> /Contents ${contentId} 0 R >>`));
+      objects[contentId]=pdfStreamObject(contentId,"",content);
+    }else{
+      objects[pageId]=pdfObject(pageId,binaryBytes(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 842 595] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents ${contentId} 0 R >>`));
+      objects[contentId]=pdfStreamObject(contentId,"",item);
+    }
+  });
   const maxId=objects.length-1,header=binaryBytes("%PDF-1.7\n%âãÏÓ\n"),parts=[header],offsets=[0];let offset=header.length;
   for(let id=1;id<=maxId;id++){offsets[id]=offset;parts.push(objects[id]);offset+=objects[id].length}
   const xrefOffset=offset,xref=[`xref\n0 ${maxId+1}\n0000000000 65535 f \n`];for(let id=1;id<=maxId;id++)xref.push(`${String(offsets[id]).padStart(10,"0")} 00000 n \n`);xref.push(`trailer\n<< /Size ${maxId+1} /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`);parts.push(binaryBytes(xref.join("")));return joinBytes(parts);
@@ -2857,7 +2898,7 @@ function previewProcedure(){
 }
 async function generatePDF(){
   const score=runQualityRules();buildPreview();switchTab("preview");toast("Preparando PDF…");
-  try{const flowImage=await flowJpeg().catch(()=>null),bytes=buildProcedurePdf(flowImage);downloadBlob(new Blob([bytes],{type:"application/pdf"}),safeFileName(val("codigo")||val("nombre"))+".pdf");recordAnalytics("pdf_generated");saveLocal(true);toast(score<100?"PDF generado con observaciones pendientes.":"PDF generado correctamente.")}catch(e){console.error(e);toast("No fue posible generar el PDF. Intente nuevamente.")}
+  try{const flowImage=await flowJpeg(),bytes=buildProcedurePdf(flowImage);downloadBlob(new Blob([bytes],{type:"application/pdf"}),safeFileName(val("codigo")||val("nombre"))+".pdf");recordAnalytics("pdf_generated");saveLocal(true);toast(score<100?"PDF generado con observaciones pendientes.":"PDF generado correctamente.")}catch(e){console.error(e);toast("No fue posible generar el PDF. Intente nuevamente.")}
 }
 
 function safeFileName(value){
