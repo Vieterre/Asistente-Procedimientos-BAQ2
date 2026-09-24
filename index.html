@@ -1274,44 +1274,22 @@ function logoutAssistant(){
 }
 
 const processGroups = [
-  {group:"MACROPROCESOS – PROCESOS ESTRATÉGICOS",items:[
-    ["DE","Direccionamiento Estratégico y Planeación"],
-    ["TIC","Gestión de las Tecnologías e Información"],
-    ["GF","Gestión de Recursos Financieros"],
-    ["GC","Gestión de la Comunicación"]
-  ]},
-  {group:"MACROPROCESOS – PROCESOS DE APOYO",items:[
-    ["GCT","Gestión de la Contratación"],
-    ["GI","Gestión de la Infraestructura Física"],
-    ["GH","Gestión Humana y SST"],
-    ["GD","Gestión Documental"],
-    ["GJ","Gestión Jurídica"]
-  ]},
-  {group:"MACROPROCESOS – PROCESOS MISIONALES · DESARROLLO SOCIAL",items:[
-    ["SS","Gestión de la Salud"],
-    ["SE","Gestión del Servicio Educativo"],
-    ["RD","Gestión de Recreación y Deporte"],
-    ["GP","Gestión Cultural y Patrimonio"],
-    ["PE","Gestión y Desarrollo Social"]
-  ]},
-  {group:"MACROPROCESOS – PROCESOS MISIONALES · GESTIÓN DEL TERRITORIO",items:[
-    ["OD","Ordenamiento y Desarrollo Físico"],
-    ["GO","Gestión del Diseño y Control de Obras"],
-    ["TS","Gestión de Tránsito y Seguridad Vial"],
-    ["HT","Hábitat"]
-  ]},
-  {group:"MACROPROCESOS – PROCESOS MISIONALES · SEGURIDAD Y CONVIVENCIA",items:[
-    ["GS","Gestión de la Seguridad"],
-    ["FJ","Fortalecimiento a la Justicia"],
-    ["GR","Gestión del Riesgo de Emergencias y Desastres"]
-  ]},
   {group:"MACROPROCESOS – PROCESOS MISIONALES · DESARROLLO ECONÓMICO",items:[
     ["PD","Gestión del Desarrollo Económico"],
     ["GT","Gestión del Turismo"]
   ]},
-  {group:"MACROPROCESOS – PROCESOS MISIONALES · RELACIÓN CON EL CIUDADANO",items:[
-    ["AC","Atención al Ciudadano"],
-    ["PC","Participación Ciudadana"]
+  {group:"MACROPROCESOS – PROCESOS ESTRATÉGICOS",items:[
+    ["DE","Direccionamiento Estratégico y Planeación"],
+    ["GC","Gestión de la Comunicación"],
+    ["TIC","Gestión de las Tecnologías e Información"],
+    ["GF","Gestión de Recursos Financieros"]
+  ]},
+  {group:"MACROPROCESOS – PROCESOS DE APOYO",items:[
+    ["GCT","Gestión de la Contratación"],
+    ["GI","Gestión de la Infraestructura Física"],
+    ["GD","Gestión Documental"],
+    ["GH","Gestión Humana y SST"],
+    ["GJ","Gestión Jurídica"]
   ]},
   {group:"MACROPROCESOS – PROCESOS DE EVALUACIÓN",items:[
     ["EI","Evaluación Independiente"],
@@ -1646,7 +1624,13 @@ function renderAdvisorInbox(){
   const statusClassName=["Enviado a evaluación","Subsanado"].includes(status)?"new":evaluationAgeDays()>5&&!status.startsWith("Concepto")?"urgent":"";
   $("advisorInboxBody").innerHTML=`<tr><td class="inbox-code">${esc(val("codigo")||"Pendiente")}</td><td>${esc(val("nombre")||"Sin nombre")}</td><td>${esc(processName(val("proceso"))||val("proceso"))}</td><td>${esc(val("version")||"—")}</td><td>${esc(evaluation.authorEmail||"Sin identificar")}</td><td>${esc(dateTimeLabel(evaluation.submittedAt))}</td><td>${evaluationAgeDays()}</td><td><span class="inbox-status ${statusClassName}">${esc(status)}</span></td><td><button class="btn primary" type="button" onclick="switchTab('${["Enviado a evaluación","Subsanado","En evaluación"].includes(status)?"evaluation":"advisorProcedure"}')">${["Enviado a evaluación","Subsanado"].includes(status)?"Iniciar revisión":status==="En evaluación"?"Continuar evaluación":"Consultar"}</button></td></tr>`;
 }
-function buildAdvisorProcedurePreview(){buildPreview();if($("advisorProcedureDoc"))$("advisorProcedureDoc").innerHTML=$("previewDoc").innerHTML}
+function buildAdvisorProcedurePreview(){
+  buildPreview();
+  if(!$("advisorProcedureDoc"))return;
+  $("advisorProcedureDoc").innerHTML=$("previewDoc").innerHTML;
+  const flow=$("advisorProcedureDoc").querySelector(".report-flow svg");
+  if(flow)rekeyFlowMarkers(flow,"advisor");
+}
 function workflowButtonState(){
   ensureEvaluation();const status=evaluation.status,complete=sectionCompletion().revision;let text="Enviar para revisión",disabled=false,title="Enviar la versión actual al asesor metodológico";
   if(["Borrador","Concepto no favorable"].includes(status)){disabled=!complete;if(disabled)title="Complete los módulos obligatorios y la revisión final para habilitar el envío."}
@@ -2302,20 +2286,20 @@ function renderFlow(){
   svg.setAttribute("height",height);
 
   const defs=`<defs>
-    <marker id="arrow" markerWidth="11" markerHeight="11" refX="9" refY="4" orient="auto" markerUnits="strokeWidth">
-      <path d="M0,0 L0,8 L11,4 z" fill="#004488"/>
+    <marker id="arrow" markerWidth="16" markerHeight="16" refX="13" refY="8" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M1,1 L15,8 L1,15 z" fill="#004488"/>
     </marker>
-    <marker id="arrowYes" markerWidth="12" markerHeight="12" refX="10" refY="4" orient="auto" markerUnits="strokeWidth">
-      <path d="M0,0 L0,8 L11,4 z" fill="#1D9A7C"/>
+    <marker id="arrowYes" markerWidth="16" markerHeight="16" refX="13" refY="8" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M1,1 L15,8 L1,15 z" fill="#1D9A7C"/>
     </marker>
-    <marker id="arrowNo" markerWidth="12" markerHeight="12" refX="10" refY="4" orient="auto" markerUnits="strokeWidth">
-      <path d="M0,0 L0,8 L11,4 z" fill="#B42318"/>
+    <marker id="arrowNo" markerWidth="16" markerHeight="16" refX="13" refY="8" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M1,1 L15,8 L1,15 z" fill="#B42318"/>
     </marker>
-    <marker id="arrowRecord" markerWidth="10" markerHeight="10" refX="8" refY="3.5" orient="auto" markerUnits="strokeWidth">
-      <path d="M0,0 L0,7 L9,3.5 z" fill="#777777"/>
+    <marker id="arrowRecord" markerWidth="14" markerHeight="14" refX="11" refY="7" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M1,1 L13,7 L1,13 z" fill="#555555"/>
     </marker>
-    <marker id="arrowConnector" markerWidth="11" markerHeight="11" refX="9" refY="4" orient="auto" markerUnits="strokeWidth">
-      <path d="M0,0 L0,8 L11,4 z" fill="#5D7C94"/>
+    <marker id="arrowConnector" markerWidth="16" markerHeight="16" refX="13" refY="8" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M1,1 L15,8 L1,15 z" fill="#5D7C94"/>
     </marker>
   </defs>`;
 
@@ -2435,7 +2419,7 @@ function renderFlow(){
           );
         }else{
           const outerX=b.side>0?width-34:34;
-          const targetSideX=target.cx+b.side*Math.min(target.w/2,95);
+          const targetSideX=target.cx+b.side*(target.w/2+12);
           const targetType=activities[targetIndex]?.tipo;
           const targetSideY=target.y+(targetType==="Decisión"?decisionH/2:targetType==="Conector"?connectorH/2:nodeH/2);
           parts.push(
@@ -2466,7 +2450,7 @@ function renderFlow(){
         const targetIndex=activities.findIndex(x=>x.uid===a.connectorDestino);
         const targetType=activities[targetIndex]?.tipo;
         const side=targetIndex>i?1:-1,sourceX=p.cx+side*connectorH/2,sourceY=p.y+connectorH/2,outerX=side>0?width-48:48;
-        const targetSideX=target.cx+side*Math.min(target.w/2,95);
+        const targetSideX=target.cx+side*(target.w/2+12);
         const targetSideY=target.y+(targetType==="Decisión"?decisionH/2:targetType==="Conector"?connectorH/2:nodeH/2);
         parts.push(
           `<path d="M ${sourceX} ${sourceY} L ${outerX} ${sourceY} L ${outerX} ${targetSideY} L ${targetSideX} ${targetSideY}" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>`,
@@ -2752,7 +2736,9 @@ function applyData(d){
   });
   norms=d.norms||[];activities=(d.activities||[]).map(a=>normalizeActivity({...a}));collapsedActivityIds=new Set();annexes=d.annexes||[];annexesNotApplicable=!!d.settings?.annexesNotApplicable;if(annexesNotApplicable)annexes=[];changes=d.changes||[];evaluation=d.evaluation||newEvaluationState();notifications=Array.isArray(d.notifications)?d.notifications:[];
   if($("showEvidenceFlow"))$("showEvidenceFlow").checked=!!d.settings?.showEvidenceFlow;
-  renderNorms();renderActivities();renderAnnexes();renderChanges();updateCode();validateName();validateCurrentDate();renderFlow();runQualityRules();updateProcedureIdentity();updateEvaluationUI();updateMenuProgress();
+  renderNorms();renderActivities();renderAnnexes();renderChanges();updateCode();
+  if(d.fields?.codigo)$("codigo").value=d.fields.codigo;
+  validateName();validateCurrentDate();renderFlow();runQualityRules();updateProcedureIdentity();updateEvaluationUI();updateMenuProgress();
 }
 function saveLocal(silent=false){
   try{
@@ -2818,8 +2804,21 @@ function evaluatorProcedureHeader(){
 }
 function procedureReportHeader(){return currentRole==="asesor"?evaluatorProcedureHeader():standardProcedureHeader()}
 
+function rekeyFlowMarkers(svg,prefix){
+  svg.querySelectorAll("marker[id]").forEach(marker=>{
+    const original=marker.id,uniqueId=`${prefix}-${original}`;
+    marker.id=uniqueId;
+    svg.querySelectorAll(`[marker-end="url(#${original})"]`).forEach(path=>path.setAttribute("marker-end",`url(#${uniqueId})`));
+  });
+}
+function reportFlowSvgMarkup(){
+  const clone=$("flowSvg").cloneNode(true);
+  clone.removeAttribute("id");
+  rekeyFlowMarkers(clone,"report");
+  return clone.outerHTML;
+}
 function buildPreview(){
-  renderFlow();const flow=$("flowSvg").outerHTML;
+  renderFlow();const flow=reportFlowSvgMarkup();
   const showEvidenceColumn=activities.some(a=>String(a.evidencia||a.controlEvidencia||"").trim()),showSystem=activities.some(a=>String(a.sistema||"").trim()),defs=parseDefinitions(val("definiciones"));
   const controlText=a=>{if(!a.tieneControl)return"";const items=[["Responsable",a.controlResponsable],["Periodicidad",a.controlPeriodicidad],["Propósito del Control",a.controlAccion],["Ejecución",a.controlEjecucion],["Desviación",a.controlDesviacion],["Evidencia",a.controlEvidencia]].filter(x=>String(x[1]||"").trim());return items.map(x=>`<b>${x[0]}:</b> ${esc(x[1])}`).join("<br>")};
   const actRows=activities.map(a=>`<tr><td>${displayedActivityNumber(a)||"—"}</td><td>${esc(a.tipo)}</td><td>${a.tipo==="Decisión"?"—":esc(a.actividad||"")}</td><td>${esc(a.descripcion)}${a.tipo==="Decisión"?`<div class="decision-route-note"><b>Sí →</b> ${esc(routeLabel(a.decisionSi))}<br><b>No →</b> ${esc(routeLabel(a.decisionNo))}</div>`:a.tipo==="Conector"?`<div class="decision-route-note"><b>Conector ${esc(a.connectorId||"")} →</b> ${esc(routeLabel(a.connectorDestino))}</div>`:""}</td><td>${esc(a.responsable)}</td><td>${controlText(a)}</td>${showEvidenceColumn?`<td>${esc(a.evidencia||a.controlEvidencia||"")}</td>`:""}${showSystem?`<td>${esc(a.sistema||"")}</td>`:""}</tr>`).join("");
