@@ -179,6 +179,18 @@ td textarea{min-height:66px}
 .preview table{min-width:0;color:#111} .preview th,.preview td{border:1px solid #B8C2C8} .preview th{background:var(--navy);color:#fff}
 .preview .dochead{display:grid;grid-template-columns:1fr 1fr;gap:0;font-size:12px;margin-bottom:15px}
 .preview .dochead div{border:1px solid #AEBCC3;padding:8px}
+.evaluator-dochead{display:grid;grid-template-columns:minmax(120px,15%) minmax(380px,58%) minmax(180px,27%);grid-template-rows:repeat(3,minmax(58px,auto));grid-template-areas:"logo title code" "logo name version" "logo process date";min-width:760px;margin:0 0 18px;border-top:1.5px solid #111;border-left:1.5px solid #111;background:#fff;color:#000;font-family:Arial,Helvetica,sans-serif}
+.evaluator-dochead.no-logo{grid-template-columns:minmax(520px,73%) minmax(180px,27%);grid-template-areas:"title code" "name version" "process date"}
+.evaluator-dochead>div{display:flex;align-items:center;border-right:1.5px solid #111;border-bottom:1.5px solid #111;padding:8px 14px}
+.evaluator-dochead .evaluator-header-logo{grid-area:logo;justify-content:center;padding:8px}
+.evaluator-dochead .evaluator-header-logo img{display:block;width:auto;max-width:130px;max-height:140px;object-fit:contain}
+.evaluator-dochead .evaluator-header-title{grid-area:title;justify-content:center;font-size:24px;font-weight:800}
+.evaluator-dochead .evaluator-header-name{grid-area:name;justify-content:center;text-align:center;font-size:21px;font-weight:800;text-transform:uppercase}
+.evaluator-dochead .evaluator-header-process{grid-area:process;justify-content:center;text-align:center;font-size:18px;font-weight:800}
+.evaluator-dochead .evaluator-header-code{grid-area:code}
+.evaluator-dochead .evaluator-header-version{grid-area:version}
+.evaluator-dochead .evaluator-header-date{grid-area:date}
+.evaluator-dochead .evaluator-header-meta{font-size:18px;font-weight:800}
 .guide-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
 .symbol-card{border:1px solid var(--line);border-radius:12px;padding:16px;background:#FAFBFB}
 .symbol-card h4{margin:10px 0 5px;color:var(--navy)} .symbol-card p{font-size:13px;line-height:1.45;color:#5D6C75;margin:0}
@@ -714,7 +726,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
   </section>
 
   <section class="panel" id="advisorProcedurePanel">
-    <div class="actions" style="justify-content:space-between;margin-bottom:12px"><div><h3 style="margin:0">Procedimiento recibido</h3><div class="hint">Vista integral de la versión enviada por el autor. La información se presenta en modo de solo lectura.</div></div><button class="btn primary" type="button" onclick="switchTab('evaluation')">Abrir evaluación</button></div>
+    <div class="actions" style="justify-content:space-between;margin-bottom:12px"><div><h3 style="margin:0">Procedimiento recibido</h3><div class="hint">Vista integral de la versión enviada por el autor. La información se presenta en modo de solo lectura.</div></div><div class="actions"><button class="btn" type="button" onclick="previewProcedure()">Vista previa</button><button class="btn" type="button" onclick="generatePDF()">Reporte PDF</button><button class="btn primary" type="button" onclick="switchTab('evaluation')">Abrir evaluación</button></div></div>
     <div class="role-context advisor"><b>Solo lectura.</b> Para formular observaciones, calificar criterios o emitir concepto utilice Evaluación de adecuación.</div>
     <div id="advisorProcedureDoc" class="preview"></div>
   </section>
@@ -731,7 +743,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
         <input id="consecutivo" type="number" min="1" max="999" placeholder="Ej. 6" oninput="updateCode()">
       </div>
       <div class="field">
-        <label>Código <span class="help-tip" tabindex="0" data-tip="Se genera con la estructura: CÓDIGO DEL PROCESO + P (Procedimiento) + CONSECUTIVO. Ejemplo: MM-GD-SE-P-006.">i</span></label>
+        <label>Código <span class="help-tip" tabindex="0" data-tip="Se genera con la estructura: CÓDIGO DEL PROCESO + PC (Procedimiento) + CONSECUTIVO. Ejemplo: GD-PC-006.">i</span></label>
         <input id="codigo" readonly placeholder="Se genera automáticamente">
         <div id="codeStatus" class="inline-status"></div>
       </div>
@@ -1263,54 +1275,60 @@ function logoutAssistant(){
 
 const processGroups = [
   {group:"MACROPROCESOS – PROCESOS ESTRATÉGICOS",items:[
-    ["ME-DE","Direccionamiento Estratégico y Planeación"],
-    ["ME-TIC","Gestión de las Tecnologías e Información"],
-    ["ME-GF","Gestión de Recursos Financieros"],
-    ["ME-GC","Gestión de la Comunicación"]
+    ["DE","Direccionamiento Estratégico y Planeación"],
+    ["TIC","Gestión de las Tecnologías e Información"],
+    ["GF","Gestión de Recursos Financieros"],
+    ["GC","Gestión de la Comunicación"]
   ]},
   {group:"MACROPROCESOS – PROCESOS DE APOYO",items:[
-    ["MA-GC","Gestión de la Contratación"],
-    ["MA-GI","Gestión de la Infraestructura Física"],
-    ["MA-GH","Gestión Humana y SST"],
-    ["MA-GD","Gestión Documental"],
-    ["MA-GJ","Gestión Jurídica"]
+    ["GCT","Gestión de la Contratación"],
+    ["GI","Gestión de la Infraestructura Física"],
+    ["GH","Gestión Humana y SST"],
+    ["GD","Gestión Documental"],
+    ["GJ","Gestión Jurídica"]
   ]},
-  {group:"MACROPROCESOS – PROCESOS MISIONALES · MM-GD – GESTIÓN DEL DESARROLLO SOCIAL",items:[
-    ["MM-GD","Gestión del Desarrollo Social"],
-    ["MM-GD-SS","Gestión de la Salud","child"],
-    ["MM-GD-SE","Gestión del Servicio Educativo","child"],
-    ["MM-GD-RD","Gestión de Recreación y Deporte","child"],
-    ["MM-GD-CT","Gestión Cultural y Patrimonio","child"],
-    ["MM-GD-PE","Gestión y Desarrollo Social","child"]
+  {group:"MACROPROCESOS – PROCESOS MISIONALES · DESARROLLO SOCIAL",items:[
+    ["SS","Gestión de la Salud"],
+    ["SE","Gestión del Servicio Educativo"],
+    ["RD","Gestión de Recreación y Deporte"],
+    ["GP","Gestión Cultural y Patrimonio"],
+    ["PE","Gestión y Desarrollo Social"]
   ]},
-  {group:"MACROPROCESOS – PROCESOS MISIONALES · MM-GI – GESTIÓN INTEGRAL DEL TERRITORIO",items:[
-    ["MM-GI","Gestión Integral del Territorio"],
-    ["MM-GI-OD","Ordenamiento y Desarrollo Físico","child"],
-    ["MM-GI-DO","Gestión del Diseño y Control de Obras","child"],
-    ["MM-GI-TS","Gestión de Tránsito y Seguridad Vial","child"],
-    ["MM-GI-HT","Hábitat","child"]
+  {group:"MACROPROCESOS – PROCESOS MISIONALES · GESTIÓN DEL TERRITORIO",items:[
+    ["OD","Ordenamiento y Desarrollo Físico"],
+    ["GO","Gestión del Diseño y Control de Obras"],
+    ["TS","Gestión de Tránsito y Seguridad Vial"],
+    ["HT","Hábitat"]
   ]},
-  {group:"MACROPROCESOS – PROCESOS MISIONALES · MM-SE – GESTIÓN DE LA SEGURIDAD Y CONVIVENCIA",items:[
-    ["MM-SE","Gestión de la Seguridad y Convivencia"],
-    ["MM-SE-GS","Gestión de la Seguridad","child"],
-    ["MM-SE-FJ","Fortalecimiento a la Justicia","child"],
-    ["MM-SE-GR","Gestión del Riesgo de Emergencias y Desastres","child"]
+  {group:"MACROPROCESOS – PROCESOS MISIONALES · SEGURIDAD Y CONVIVENCIA",items:[
+    ["GS","Gestión de la Seguridad"],
+    ["FJ","Fortalecimiento a la Justicia"],
+    ["GR","Gestión del Riesgo de Emergencias y Desastres"]
   ]},
-  {group:"MACROPROCESOS – PROCESOS MISIONALES · MM-PD – GESTIÓN DEL DESARROLLO ECONÓMICO",items:[
-    ["MM-PD","Gestión del Desarrollo Económico"],
-    ["MM-PD-GT","Gestión del Turismo","child"],
-    ["MM-PD-CO","Gestión del Desarrollo Económico","child"]
+  {group:"MACROPROCESOS – PROCESOS MISIONALES · DESARROLLO ECONÓMICO",items:[
+    ["PD","Gestión del Desarrollo Económico"],
+    ["GT","Gestión del Turismo"]
   ]},
-  {group:"MACROPROCESOS – PROCESOS MISIONALES · MM-RC – RELACIÓN CON EL CIUDADANO",items:[
-    ["MM-RC","Relación con el Ciudadano"],
-    ["MM-RC-AC","Atención al Ciudadano","child"],
-    ["MM-RC-PC","Participación Ciudadana","child"]
+  {group:"MACROPROCESOS – PROCESOS MISIONALES · RELACIÓN CON EL CIUDADANO",items:[
+    ["AC","Atención al Ciudadano"],
+    ["PC","Participación Ciudadana"]
   ]},
   {group:"MACROPROCESOS – PROCESOS DE EVALUACIÓN",items:[
-    ["EC-EC","Evaluación Independiente"],
-    ["EC-GD","Gestión Disciplinaria"]
+    ["EI","Evaluación Independiente"],
+    ["GDI","Gestión Disciplinaria"]
   ]}
 ];
+
+const legacyProcessCodes={
+  "ME-DE":"DE","ME-TIC":"TIC","ME-GF":"GF","ME-GC":"GC",
+  "MA-GC":"GCT","MA-GI":"GI","MA-GH":"GH","MA-GD":"GD","MA-GJ":"GJ",
+  "MM-GD":"PE","MM-GD-SS":"SS","MM-GD-SE":"SE","MM-GD-RD":"RD","MM-GD-CT":"GP","MM-GD-PE":"PE",
+  "MM-GI":"OD","MM-GI-OD":"OD","MM-GI-DO":"GO","MM-GI-TS":"TS","MM-GI-HT":"HT",
+  "MM-SE":"GS","MM-SE-GS":"GS","MM-SE-FJ":"FJ","MM-SE-GR":"GR",
+  "MM-PD":"PD","MM-PD-GT":"GT","MM-PD-CO":"PD",
+  "MM-RC":"AC","MM-RC-AC":"AC","MM-RC-PC":"PC","EC-EC":"EI","EC-GD":"GDI"
+};
+function normalizeProcessCode(code){const value=String(code||"").trim();return legacyProcessCodes[value]||value}
 
 const fieldIds = [
   "codigo","consecutivo","version","fecha","nombre","proceso","responsableProcedimiento",
@@ -1591,7 +1609,12 @@ function applyRoleNavigation(){
   const indicator=$("environmentIndicator"),icon=$("environmentIcon");if(indicator){indicator.classList.toggle("evaluator",advisor);$("environmentTitle").textContent=advisor?"Evaluador":"Elaborador";$("environmentDescription").textContent=advisor?`${currentProfile.roleName}: consulta y evaluación metodológica del procedimiento.`:"";icon.innerHTML=advisor?'<svg viewBox="0 0 48 48"><path d="M13 8h22v35H13z"/><path d="M18 5h12v7H18zM19 20h10M19 27h7"/><path d="m28 34 3 3 7-8"/></svg>':'<svg viewBox="0 0 48 48"><path d="M8 9h24l8 8v22H8z"/><path d="M32 9v8h8M15 23h18M15 29h18M15 35h10"/><path d="m12 12 4 4 7-8"/></svg>'}
   const switcher=$("environmentSwitcher"),canSwitch=!!currentProfile.canSwitchEnvironment;switcher?.classList.toggle("role-hidden",!canSwitch);$("switchConstructor")?.classList.toggle("active",!advisor);$("switchEvaluator")?.classList.toggle("active",advisor);$("switchConstructor")?.setAttribute("aria-pressed",String(!advisor));$("switchEvaluator")?.setAttribute("aria-pressed",String(advisor));
   $("workflowAction")?.classList.toggle("role-hidden",advisor);
-  document.querySelector(".quick-file-actions")?.classList.toggle("role-hidden",advisor);$("saveWrap")?.classList.toggle("role-hidden",advisor);$("notificationCenter")?.classList.remove("role-hidden");document.querySelector(".procedure-pin")?.classList.remove("role-hidden");
+  document.querySelector(".quick-file-actions")?.classList.remove("role-hidden");
+  $("newProcedureButton")?.classList.toggle("role-hidden",advisor);
+  $("saveProcedureButton")?.classList.toggle("role-hidden",advisor);
+  $("previewProcedureButton")?.classList.remove("role-hidden");
+  $("exportPdfButton")?.classList.remove("role-hidden");
+  $("saveWrap")?.classList.toggle("role-hidden",advisor);$("notificationCenter")?.classList.remove("role-hidden");document.querySelector(".procedure-pin")?.classList.remove("role-hidden");
   const active=document.querySelector(".navbtn.active");if(active?.classList.contains("role-hidden"))switchTab(advisor?"advisorInbox":"general");
 }
 function switchEnvironment(environment){
@@ -1795,9 +1818,9 @@ function validateCurrentDate(){
 function updateCode(){
   const p=val("proceso"), n=parseInt(val("consecutivo"),10), status=$("codeStatus");
   if(p && Number.isInteger(n) && n>=1 && n<=999){
-    $("codigo").value=`${p}-P-${String(n).padStart(3,"0")}`;
+    $("codigo").value=`${p}-PC-${String(n).padStart(3,"0")}`;
     status.className="inline-status ok";
-    status.textContent="Código validado según proceso + tipología P + consecutivo.";
+    status.textContent="Código validado según proceso + tipología PC + consecutivo.";
   } else {
     $("codigo").value="";
     status.className="inline-status warn";
@@ -2129,7 +2152,7 @@ function runQualityRules(){
   qualityIssueTargets={};flowIssueUids=new Set();
   const rules=[];const add=(ok,msg,level="warn",options={})=>rules.push({ok,msg,level,id:options.id||`rule_${rules.length+1}`,guidance:options.guidance||"",uids:[...new Set((options.uids||[]).filter(Boolean))]});
   add(!!val("proceso"),"Proceso organizacional seleccionado.","danger");
-  add(/^([A-Z]{2}(?:-[A-Z]{2,3}){1,2})-P-\d{3}$/.test(val("codigo")),"Código generado y consistente con la tipología Procedimiento (P).","danger");
+  add(/^[A-Z]{2,3}-PC-\d{3}$/.test(val("codigo")),"Código generado y consistente con la tipología Procedimiento (PC).","danger");
   add(!!val("nombre"),"Nombre del procedimiento diligenciado.","danger");
   add(!!val("objetivo"),"Objetivo diligenciado.","danger");
   add(!!val("alcance"),"Alcance definido.","danger");
@@ -2724,7 +2747,8 @@ function applyData(d){
   fieldIds.forEach(id=>{
     if(!d.fields||d.fields[id]===undefined)return;
     const roleLevels=id==="aprobo"?["Directivo"]:null;
-    $(id).value=["responsableProcedimiento","elaboro","reviso","aprobo"].includes(id)?normalizeResponsibilityRole(d.fields[id],roleLevels):d.fields[id];
+    const storedValue=id==="proceso"?normalizeProcessCode(d.fields[id]):d.fields[id];
+    $(id).value=["responsableProcedimiento","elaboro","reviso","aprobo"].includes(id)?normalizeResponsibilityRole(storedValue,roleLevels):storedValue;
   });
   norms=d.norms||[];activities=(d.activities||[]).map(a=>normalizeActivity({...a}));collapsedActivityIds=new Set();annexes=d.annexes||[];annexesNotApplicable=!!d.settings?.annexesNotApplicable;if(annexesNotApplicable)annexes=[];changes=d.changes||[];evaluation=d.evaluation||newEvaluationState();notifications=Array.isArray(d.notifications)?d.notifications:[];
   if($("showEvidenceFlow"))$("showEvidenceFlow").checked=!!d.settings?.showEvidenceFlow;
@@ -2768,23 +2792,49 @@ function parseDefinitions(text){
 }
 function routeLabel(id){const a=activityByUid(id);if(!a)return"Por definir";const n=displayedActivityNumber(a);return`${n?n+". ":""}${a.actividad||a.descripcion||a.tipo}`}
 
+const EVALUATOR_REPORT_LOGO="data:image/png;base64,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";
+function standardProcedureHeader(){
+  const process=[val("proceso"),processName(val("proceso"))].filter(Boolean).join(" — ");
+  return `<div class="evaluator-dochead no-logo" aria-label="Encabezado del procedimiento">
+    <div class="evaluator-header-title">Procedimiento</div>
+    <div class="evaluator-header-name">${esc(val("nombre")||"Nombre del procedimiento")}</div>
+    <div class="evaluator-header-process">Proceso: ${esc(process||"Sin definir")}</div>
+    <div class="evaluator-header-code evaluator-header-meta">Código: ${esc(val("codigo")||"—")}</div>
+    <div class="evaluator-header-version evaluator-header-meta">Versión: ${esc(val("version")||"—")}</div>
+    <div class="evaluator-header-date evaluator-header-meta">Fecha: ${esc(val("fecha")||"—")}</div>
+  </div>`;
+}
+function evaluatorProcedureHeader(){
+  const process=[val("proceso"),processName(val("proceso"))].filter(Boolean).join(" — ");
+  return `<div class="evaluator-dochead" aria-label="Encabezado institucional del procedimiento">
+    <div class="evaluator-header-logo"><img src="${EVALUATOR_REPORT_LOGO}" alt="Alcaldía de Barranquilla"></div>
+    <div class="evaluator-header-title">Procedimiento</div>
+    <div class="evaluator-header-name">${esc(val("nombre")||"Nombre del procedimiento")}</div>
+    <div class="evaluator-header-process">Proceso: ${esc(process||"Sin definir")}</div>
+    <div class="evaluator-header-code evaluator-header-meta">Código: ${esc(val("codigo")||"—")}</div>
+    <div class="evaluator-header-version evaluator-header-meta">Versión: ${esc(val("version")||"—")}</div>
+    <div class="evaluator-header-date evaluator-header-meta">Fecha: ${esc(val("fecha")||"—")}</div>
+  </div>`;
+}
+function procedureReportHeader(){return currentRole==="asesor"?evaluatorProcedureHeader():standardProcedureHeader()}
+
 function buildPreview(){
   renderFlow();const flow=$("flowSvg").outerHTML;
   const showEvidenceColumn=activities.some(a=>String(a.evidencia||a.controlEvidencia||"").trim()),showSystem=activities.some(a=>String(a.sistema||"").trim()),defs=parseDefinitions(val("definiciones"));
   const controlText=a=>{if(!a.tieneControl)return"";const items=[["Responsable",a.controlResponsable],["Periodicidad",a.controlPeriodicidad],["Propósito del Control",a.controlAccion],["Ejecución",a.controlEjecucion],["Desviación",a.controlDesviacion],["Evidencia",a.controlEvidencia]].filter(x=>String(x[1]||"").trim());return items.map(x=>`<b>${x[0]}:</b> ${esc(x[1])}`).join("<br>")};
   const actRows=activities.map(a=>`<tr><td>${displayedActivityNumber(a)||"—"}</td><td>${esc(a.tipo)}</td><td>${a.tipo==="Decisión"?"—":esc(a.actividad||"")}</td><td>${esc(a.descripcion)}${a.tipo==="Decisión"?`<div class="decision-route-note"><b>Sí →</b> ${esc(routeLabel(a.decisionSi))}<br><b>No →</b> ${esc(routeLabel(a.decisionNo))}</div>`:a.tipo==="Conector"?`<div class="decision-route-note"><b>Conector ${esc(a.connectorId||"")} →</b> ${esc(routeLabel(a.connectorDestino))}</div>`:""}</td><td>${esc(a.responsable)}</td><td>${controlText(a)}</td>${showEvidenceColumn?`<td>${esc(a.evidencia||a.controlEvidencia||"")}</td>`:""}${showSystem?`<td>${esc(a.sistema||"")}</td>`:""}</tr>`).join("");
   const defHtml=defs.length?`<table class="def-table"><thead><tr><th>Término</th><th>Definición</th></tr></thead><tbody>${defs.map(d=>`<tr><td>${esc(d.term||"Definición")}</td><td>${esc(d.definition)}</td></tr>`).join("")}</tbody></table>`:'<p>Sin definiciones registradas.</p>';
-  $("previewDoc").innerHTML=`<div class="dochead"><div><b>CÓDIGO:</b> ${esc(val("codigo"))}</div><div><b>VERSIÓN:</b> ${esc(val("version"))}</div><div><b>NOMBRE:</b> ${esc(val("nombre"))}</div><div><b>FECHA:</b> ${esc(val("fecha"))}</div><div style="grid-column:1/-1"><b>PROCESO:</b> ${esc(val("proceso"))} — ${esc(processName(val("proceso")))}</div><div style="grid-column:1/-1"><b>RESPONSABLE:</b> ${esc(val("responsableProcedimiento"))}</div></div>
-  <h2>1. MARCO CONTEXTUAL</h2>
-  <p class="context-item"><b>Objetivo:</b> ${esc(val("objetivo"))}</p><p class="context-item"><b>Alcance:</b> ${esc(val("alcance"))}</p>
-  <p class="context-item"><b>Definiciones:</b></p>${defHtml}
-  <p class="context-item"><b>Condiciones generales:</b> ${esc(val("condiciones"))}</p>
-  <h2>2. NORMATIVIDAD</h2><table><thead><tr><th>Tipo</th><th>Norma</th><th>Año</th><th>Descripción de la norma</th><th>Artículo / sección</th><th>Entidad emisora</th></tr></thead><tbody>${tableRows(norms,["tipo","norma","anio","descripcion","articulo","entidad"])}</tbody></table>
-  <h2>3. DESCRIPCIÓN DEL PROCEDIMIENTO</h2>
+  $("previewDoc").innerHTML=`${procedureReportHeader()}
+  <h2>1. OBJETIVO</h2><p class="context-item">${esc(val("objetivo"))||"Sin información registrada."}</p>
+  <h2>2. ALCANCE</h2><p class="context-item">${esc(val("alcance"))||"Sin información registrada."}</p>
+  <h2>3. TÉRMINOS Y DEFINICIONES</h2>${defHtml}
+  <h2>4. CONDICIONES GENERALES</h2><p class="context-item">${esc(val("condiciones"))||"Sin información registrada."}</p>
+  <h2>5. NORMATIVIDAD</h2><table><thead><tr><th>Tipo</th><th>Norma</th><th>Año</th><th>Descripción de la norma</th><th>Artículo / sección</th><th>Entidad emisora</th></tr></thead><tbody>${tableRows(norms,["tipo","norma","anio","descripcion","articulo","entidad"])}</tbody></table>
+  <h2>6. DESCRIPCIÓN DEL PROCEDIMIENTO</h2>
   <table><thead><tr><th>N.º</th><th>Tipo</th><th>Actividad</th><th>Descripción de la actividad</th><th>Responsable</th><th>Punto de control</th>${showEvidenceColumn?"<th>Registro / Evidencia</th>":""}${showSystem?"<th>Sistema / Herramienta</th>":""}</tr></thead><tbody>${actRows||`<tr><td colspan="${6+(showEvidenceColumn?1:0)+(showSystem?1:0)}">Sin actividades.</td></tr>`}</tbody></table>
-  <section class="flow-report-section"><h2>6. FLUJOGRAMA</h2><div class="report-flow">${flow}</div></section>
-  <h2>7. DOCUMENTOS ANEXOS</h2><table><thead><tr><th>Documento</th><th>Tipo</th><th>Código / referencia</th><th>Observación</th></tr></thead><tbody>${annexesNotApplicable?'<tr><td colspan="4">No aplica. El procedimiento no contiene documentos anexos.</td></tr>':tableRows(annexes,["documento","tipo","codigo","observacion"])}</tbody></table>
-  <h2>8. CONTROL DE CAMBIOS</h2><table><thead><tr><th>Versión</th><th>Fecha</th><th>Razón de la actualización</th></tr></thead><tbody>${tableRows(changes,["version","fecha","razon"])}</tbody></table><br><table><tr><th>Elaboró</th><th>Revisó</th><th>Aprobó</th></tr><tr><td>${esc(val("elaboro"))}${val("elaboroNombre")?`<br><small>Nombre: ${esc(val("elaboroNombre"))}</small>`:""}</td><td>${esc(val("reviso"))}${val("revisoNombre")?`<br><small>Nombre: ${esc(val("revisoNombre"))}</small>`:""}</td><td>${esc(val("aprobo"))}${val("aproboNombre")?`<br><small>Nombre: ${esc(val("aproboNombre"))}</small>`:""}</td></tr></table>`;
+  <section class="flow-report-section"><h2>7. FLUJOGRAMA</h2><div class="report-flow">${flow}</div></section>
+  <h2>8. DOCUMENTOS ANEXOS</h2><table><thead><tr><th>Documento</th><th>Tipo</th><th>Código / referencia</th><th>Observación</th></tr></thead><tbody>${annexesNotApplicable?'<tr><td colspan="4">No aplica. El procedimiento no contiene documentos anexos.</td></tr>':tableRows(annexes,["documento","tipo","codigo","observacion"])}</tbody></table>
+  <h2>9. CONTROL DE CAMBIOS</h2><table><thead><tr><th>Versión</th><th>Fecha</th><th>Razón de la actualización</th></tr></thead><tbody>${tableRows(changes,["version","fecha","razon"])}</tbody></table><br><table><tr><th>Elaboró</th><th>Revisó</th><th>Aprobó</th></tr><tr><td>${esc(val("elaboro"))}${val("elaboroNombre")?`<br><small>Nombre: ${esc(val("elaboroNombre"))}</small>`:""}</td><td>${esc(val("reviso"))}${val("revisoNombre")?`<br><small>Nombre: ${esc(val("revisoNombre"))}</small>`:""}</td><td>${esc(val("aprobo"))}${val("aproboNombre")?`<br><small>Nombre: ${esc(val("aproboNombre"))}</small>`:""}</td></tr></table>`;
   updateFlowPrintPageSize();
 }
 function updateFlowPrintPageSize(){
