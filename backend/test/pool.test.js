@@ -1,6 +1,24 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { checkDatabase } from "../src/db/pool.js";
+import { checkDatabase, createPool } from "../src/db/pool.js";
+
+test("database pool accepts separate PostgreSQL credentials", async () => {
+  const pool = createPool({
+    connectionString: "",
+    host: "127.0.0.1",
+    port: 5432,
+    database: "asistente_procedimientos",
+    user: "asistente_user",
+    password: "test-only-secret"
+  });
+  try {
+    assert.equal(pool.options.host, "127.0.0.1");
+    assert.equal(pool.options.database, "asistente_procedimientos");
+    assert.equal(pool.options.user, "asistente_user");
+  } finally {
+    await pool.end();
+  }
+});
 
 test("database check requires tables and the initial migration", async () => {
   const pool = {

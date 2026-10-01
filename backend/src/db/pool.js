@@ -8,12 +8,19 @@ export function databaseUrl() {
 
 export function createPool(options = {}) {
   const connectionString = options.connectionString ?? databaseUrl();
-  if (!connectionString) {
-    throw new Error("DATABASE_URL no esta configurada.");
+  const connection = connectionString ? { connectionString } : {
+    host: options.host ?? process.env.PGHOST ?? "127.0.0.1",
+    port: Number(options.port ?? process.env.PGPORT ?? 5432),
+    database: options.database ?? process.env.PGDATABASE,
+    user: options.user ?? process.env.PGUSER,
+    password: options.password ?? process.env.PGPASSWORD
+  };
+  if (!connectionString && (!connection.database || !connection.user || !connection.password)) {
+    throw new Error("Configure DATABASE_URL o PGDATABASE, PGUSER y PGPASSWORD.");
   }
 
   return new Pool({
-    connectionString,
+    ...connection,
     max: Number(process.env.PG_POOL_MAX || 10),
     idleTimeoutMillis: Number(process.env.PG_IDLE_TIMEOUT_MS || 30000),
     connectionTimeoutMillis: Number(process.env.PG_CONNECT_TIMEOUT_MS || 5000)

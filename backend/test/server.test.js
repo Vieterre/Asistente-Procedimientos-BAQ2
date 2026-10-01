@@ -18,9 +18,15 @@ test("health endpoint returns service status", async () => {
   }
 });
 
-test("database health endpoint fails safely when DATABASE_URL is missing", async () => {
+test("database health endpoint fails safely when database credentials are missing", async () => {
   const previousDatabaseUrl = process.env.DATABASE_URL;
+  const previousPgUser = process.env.PGUSER;
+  const previousPgPassword = process.env.PGPASSWORD;
+  const previousPgDatabase = process.env.PGDATABASE;
   delete process.env.DATABASE_URL;
+  delete process.env.PGUSER;
+  delete process.env.PGPASSWORD;
+  delete process.env.PGDATABASE;
 
   const server = createAppServer();
   await new Promise(resolve => server.listen(0, "127.0.0.1", resolve));
@@ -34,6 +40,9 @@ test("database health endpoint fails safely when DATABASE_URL is missing", async
     assert.equal(payload.error, "database_unavailable");
   } finally {
     if (previousDatabaseUrl) process.env.DATABASE_URL = previousDatabaseUrl;
+    if (previousPgUser) process.env.PGUSER = previousPgUser;
+    if (previousPgPassword) process.env.PGPASSWORD = previousPgPassword;
+    if (previousPgDatabase) process.env.PGDATABASE = previousPgDatabase;
     await new Promise(resolve => server.close(resolve));
   }
 });
