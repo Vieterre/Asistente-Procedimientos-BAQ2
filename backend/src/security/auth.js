@@ -55,7 +55,7 @@ async function createSession(pool, row, request) {
   return { token, csrfToken };
 }
 
-export async function loginUser(pool, { email, password, otp, request }) {
+export async function loginUser(pool, { email, password, otp, request, mfaEncryptionKey = process.env.MFA_ENCRYPTION_KEY }) {
   const normalizedEmail = String(email || "").trim().toLowerCase();
   const result = await pool.query(
     `SELECT id, email, display_name, role, password_hash, active, mfa_enabled, mfa_secret_ciphertext
@@ -70,7 +70,7 @@ export async function loginUser(pool, { email, password, otp, request }) {
     if (!row.mfa_enabled || !row.mfa_secret_ciphertext) throw new AuthError("mfa_not_configured", 503);
     let secret;
     try {
-      secret = decryptSecret(row.mfa_secret_ciphertext);
+      secret = decryptSecret(row.mfa_secret_ciphertext, mfaEncryptionKey);
     } catch {
       throw new AuthError("mfa_not_configured", 503);
     }

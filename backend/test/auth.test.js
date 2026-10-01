@@ -2,7 +2,8 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { createAppServer } from "../src/server.js";
 import { hashPassword } from "../src/security/passwords.js";
-import { hashToken, SESSION_COOKIE } from "../src/security/auth.js";
+import { hashToken, loginUser } from "../src/security/auth.js";
+import { encryptSecret, generateTotpSecret, totpCode } from "../src/security/mfa.js";
 
 test("login, session lookup, and logout are protected", async () => {
   const passwordHash = hashPassword("una-clave-segura-para-prueba");
@@ -87,4 +88,42 @@ test("login, session lookup, and logout are protected", async () => {
   } finally {
     await new Promise(resolve => server.close(resolve));
   }
+});
+
+test("administrator login requires the matching MFA code before creating a session", async () => {
+  const mfaEncryptionKey = "test-only-mfa-encryption-key-with-enough-length";
+  const secret = generateTotpSecret();
+  const password = "una-clave-segura-para-prueba";
+  const user = {
+    id: "33333333-3333-4333-8333-333333333333",
+    email: "admin@entidad.gov.co",
+    display_name: "Administrador",
+    role: "administrador",
+    password_hash: hashPassword(password),
+    active: true,
+    mfa_enabled: true,
+    mfa_secret_ciphertext: encryptSecret(secret, mfaEncryptionKey)
+  };
+  const calls = [];
+  const pool = {
+    async query(sql) {
+      calls.push(sql);
+      if (sql.includes("FROM app_users WHERE email")) return { rows: [user] };
+      if (sql.startsWith("INSERT INTO app_sessions")) return { rows: [] };
+      throw new Error(`Unexpected SQL: ${sql}`);
+    }
+  };
+  const details = {
+    email: user.email,
+    password,
+    request: { headers: {}, socket: { remoteAddress: "127.0.0.1" } },
+    mfaEncryptionKey
+  };
+
+  await assert.rejects(loginUser(pool, { ...details, otp: "not-a-code" }), { code: "mfa_required" });
+  assert.equal(calls.filter(sql => sql.startsWith("INSERT INTO app_sessions")).length, 0);
+
+  const result = await loginUser(pool, { ...details, otp: totpCode(secret) });
+  assert.equal(result.user.role, "administrador");
+  assert.equal(calls.filter(sql => sql.startsWith("INSERT INTO app_sessions")).length, 1);
 });
