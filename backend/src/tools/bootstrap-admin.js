@@ -1,6 +1,6 @@
 import { createPool } from "../db/pool.js";
 import { bootstrapAdmin } from "../security/bootstrap-admin.js";
-import { generateTotpSecret, makeOtpAuthUri } from "../security/mfa.js";
+import { generateTotpSecret } from "../security/mfa.js";
 import { createInterface } from "node:readline/promises";
 
 const email = process.env.ADMIN_EMAIL;
@@ -18,8 +18,10 @@ if (!process.stdin.isTTY) {
 }
 
 const mfaSecret = generateTotpSecret();
-console.log("Configure este URI en una aplicacion autenticadora. No lo comparta ni capture esta pantalla:");
-console.log(makeOtpAuthUri({ secret: mfaSecret, email, issuer: "Asistente de Procedimientos" }));
+console.log("En el autenticador, agregue una cuenta con clave de configuracion manual (basada en tiempo).");
+console.log(`Nombre de la cuenta: Asistente de Procedimientos (${email})`);
+console.log("Clave secreta: no la comparta ni capture esta pantalla.");
+console.log(mfaSecret);
 const prompt = createInterface({ input: process.stdin, output: process.stdout });
 let mfaCode;
 try {
