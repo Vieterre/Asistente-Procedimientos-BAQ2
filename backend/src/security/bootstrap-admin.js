@@ -1,8 +1,8 @@
 import { randomUUID } from "node:crypto";
 import { hashPassword } from "./passwords.js";
-import { encryptSecret, generateTotpSecret, makeOtpAuthUri } from "./mfa.js";
+import { encryptSecret, verifyTotp } from "./mfa.js";
 
-export async function bootstrapAdmin(pool, { email, displayName, password, mfaEncryptionKey, mfaIssuer = "Asistente de Procedimientos" }) {
+export async function bootstrapAdmin(pool, { email, displayName, password, mfaEncryptionKey, mfaSecret, mfaCode }) {
   const normalizedEmail = String(email || "").trim().toLowerCase();
   const normalizedName = String(displayName || "").trim();
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail) || normalizedEmail.length > 254) {
@@ -11,7 +11,9 @@ export async function bootstrapAdmin(pool, { email, displayName, password, mfaEn
   if (!normalizedName) {
     throw new Error("El nombre del administrador es obligatorio.");
   }
-  const mfaSecret = generateTotpSecret();
+  if (!mfaSecret || !verifyTotp(mfaSecret, mfaCode)) {
+    throw new Error("El codigo de la aplicacion autenticadora no es valido. No se creo el administrador.");
+  }
   const mfaSecretCiphertext = encryptSecret(mfaSecret, mfaEncryptionKey);
   const passwordHash = hashPassword(password);
   const client = await pool.connect();
@@ -42,8 +44,7 @@ export async function bootstrapAdmin(pool, { email, displayName, password, mfaEn
     return {
       id: userId,
       email: normalizedEmail,
-      displayName: normalizedName,
-      mfaSetupUri: makeOtpAuthUri({ secret: mfaSecret, email: normalizedEmail, issuer: mfaIssuer })
+      displayName: normalizedName
     };
   } catch (error) {
     await client.query("ROLLBACK");
