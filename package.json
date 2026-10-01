@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "admin:bootstrap": "node backend/src/tools/bootstrap-admin.js",
+    "admin:check-login": "node backend/src/tools/check-admin-login.js",
     "db:check": "node backend/src/tools/check-db.js",
     "db:migrate": "node backend/src/tools/migrate.js",
     "test": "node --test backend/test/*.test.js",

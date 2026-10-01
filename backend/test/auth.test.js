@@ -127,3 +127,93 @@ test("administrator login requires the matching MFA code before creating a sessi
   assert.equal(result.user.role, "administrador");
   assert.equal(calls.filter(sql => sql.startsWith("INSERT INTO app_sessions")).length, 1);
 });
+
+test("administrator HTTP login, session lookup, and logout require MFA", async () => {
+  const previousKey = process.env.MFA_ENCRYPTION_KEY;
+  const mfaEncryptionKey = "test-only-mfa-encryption-key-with-enough-length";
+  process.env.MFA_ENCRYPTION_KEY = mfaEncryptionKey;
+  const secret = generateTotpSecret();
+  const password = "una-clave-segura-para-prueba";
+  const user = {
+    id: "44444444-4444-4444-8444-444444444444",
+    email: "admin@entidad.gov.co",
+    display_name: "Administrador",
+    role: "administrador",
+    password_hash: hashPassword(password),
+    active: true,
+    mfa_enabled: true,
+    mfa_secret_ciphertext: encryptSecret(secret, mfaEncryptionKey)
+  };
+  const state = { tokenHash: "", csrfHash: "", revoked: false, sessionsCreated: 0 };
+  const poolFactory = () => ({
+    async query(sql, params) {
+      if (sql.includes("FROM app_users WHERE email")) return { rows: [user] };
+      if (sql.startsWith("INSERT INTO app_sessions")) {
+        state.tokenHash = params[2];
+        state.csrfHash = params[3];
+        state.sessionsCreated += 1;
+        return { rows: [] };
+      }
+      if (sql.includes("FROM app_sessions s")) {
+        return { rows: state.revoked || params[0] !== state.tokenHash ? [] : [{
+          session_id: "55555555-5555-4555-8555-555555555555",
+          csrf_token_hash: state.csrfHash,
+          id: user.id,
+          email: user.email,
+          display_name: user.display_name,
+          role: user.role
+        }] };
+      }
+      if (sql.startsWith("UPDATE app_sessions SET last_seen_at")) return { rows: [] };
+      if (sql.startsWith("UPDATE app_sessions SET revoked_at")) {
+        state.revoked = true;
+        return { rows: [] };
+      }
+      throw new Error(`Unexpected SQL: ${sql}`);
+    },
+    async end() {}
+  });
+  const server = createAppServer({ poolFactory, secureCookies: false });
+  await new Promise(resolve => server.listen(0, "127.0.0.1", resolve));
+  const baseUrl = `http://127.0.0.1:${server.address().port}`;
+
+  try {
+    const validCode = totpCode(secret);
+    const invalidCode = validCode === "000000" ? "111111" : "000000";
+    const rejected = await fetch(`${baseUrl}/api/auth/login`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ email: user.email, password, otp: invalidCode })
+    });
+    assert.equal(rejected.status, 401);
+    assert.equal(state.sessionsCreated, 0);
+
+    const accepted = await fetch(`${baseUrl}/api/auth/login`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ email: user.email, password, otp: validCode })
+    });
+    assert.equal(accepted.status, 200);
+    const loginBody = await accepted.json();
+    const cookie = accepted.headers.get("set-cookie").split(";")[0];
+    assert.equal(state.sessionsCreated, 1);
+    assert.equal(loginBody.user.role, "administrador");
+
+    const me = await fetch(`${baseUrl}/api/auth/me`, { headers: { cookie } });
+    assert.equal(me.status, 200);
+    assert.equal((await me.json()).user.email, user.email);
+
+    const logout = await fetch(`${baseUrl}/api/auth/logout`, {
+      method: "POST",
+      headers: { cookie, "x-csrf-token": loginBody.csrfToken }
+    });
+    assert.equal(logout.status, 200);
+
+    const afterLogout = await fetch(`${baseUrl}/api/auth/me`, { headers: { cookie } });
+    assert.equal(afterLogout.status, 401);
+  } finally {
+    if (previousKey === undefined) delete process.env.MFA_ENCRYPTION_KEY;
+    else process.env.MFA_ENCRYPTION_KEY = previousKey;
+    await new Promise(resolve => server.close(resolve));
+  }
+});
