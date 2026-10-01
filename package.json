@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "create-admin-sql": "node backend/src/tools/create-admin-sql.js",
+    "admin:bootstrap": "node backend/src/tools/bootstrap-admin.js",
     "db:check": "node backend/src/tools/check-db.js",
     "db:migrate": "node backend/src/tools/migrate.js",
     "test": "node --test backend/test/*.test.js",
