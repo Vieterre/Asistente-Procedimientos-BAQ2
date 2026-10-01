@@ -5,7 +5,7 @@ const pool = createPool();
 
 try {
   const applied = await runMigrations(pool);
-  console.log(applied ? "Migracion aplicada correctamente." : "Migracion ya aplicada; esquema sin cambios.");
+  console.log(applied ? "Migraciones aplicadas correctamente." : "Migraciones ya aplicadas; esquema sin cambios.");
 } finally {
   await pool.end();
 }

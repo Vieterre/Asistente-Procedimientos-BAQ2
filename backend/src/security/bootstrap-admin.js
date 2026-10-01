@@ -1,7 +1,8 @@
 import { randomUUID } from "node:crypto";
 import { hashPassword } from "./passwords.js";
+import { encryptSecret, generateTotpSecret, makeOtpAuthUri } from "./mfa.js";
 
-export async function bootstrapAdmin(pool, { email, displayName, password }) {
+export async function bootstrapAdmin(pool, { email, displayName, password, mfaEncryptionKey, mfaIssuer = "Asistente de Procedimientos" }) {
   const normalizedEmail = String(email || "").trim().toLowerCase();
   const normalizedName = String(displayName || "").trim();
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail) || normalizedEmail.length > 254) {
@@ -10,6 +11,8 @@ export async function bootstrapAdmin(pool, { email, displayName, password }) {
   if (!normalizedName) {
     throw new Error("El nombre del administrador es obligatorio.");
   }
+  const mfaSecret = generateTotpSecret();
+  const mfaSecretCiphertext = encryptSecret(mfaSecret, mfaEncryptionKey);
   const passwordHash = hashPassword(password);
   const client = await pool.connect();
 
@@ -26,9 +29,9 @@ export async function bootstrapAdmin(pool, { email, displayName, password }) {
 
     const userId = randomUUID();
     await client.query(
-      `INSERT INTO app_users (id, email, display_name, role, password_hash, active, mfa_enabled)
-       VALUES ($1, $2, $3, 'administrador', $4, TRUE, FALSE)`,
-      [userId, normalizedEmail, normalizedName, passwordHash]
+      `INSERT INTO app_users (id, email, display_name, role, password_hash, active, mfa_enabled, mfa_secret_ciphertext)
+       VALUES ($1, $2, $3, 'administrador', $4, TRUE, TRUE, $5)`,
+      [userId, normalizedEmail, normalizedName, passwordHash, mfaSecretCiphertext]
     );
     await client.query(
       `INSERT INTO audit_events (id, event_type, entity_type, entity_id, reason)
@@ -36,7 +39,12 @@ export async function bootstrapAdmin(pool, { email, displayName, password }) {
       [randomUUID(), userId]
     );
     await client.query("COMMIT");
-    return { id: userId, email: normalizedEmail, displayName: normalizedName };
+    return {
+      id: userId,
+      email: normalizedEmail,
+      displayName: normalizedName,
+      mfaSetupUri: makeOtpAuthUri({ secret: mfaSecret, email: normalizedEmail, issuer: mfaIssuer })
+    };
   } catch (error) {
     await client.query("ROLLBACK");
     throw error;

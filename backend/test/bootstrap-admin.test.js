@@ -2,6 +2,9 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { bootstrapAdmin } from "../src/security/bootstrap-admin.js";
 import { verifyPassword } from "../src/security/passwords.js";
+import { decryptSecret, totpCode, verifyTotp } from "../src/security/mfa.js";
+
+const mfaEncryptionKey = "test-only-mfa-encryption-key-with-enough-length";
 
 function fakePool(existingAdmin = false) {
   const calls = [];
@@ -25,12 +28,16 @@ test("first administrator is inserted with a hash and an audit event", async () 
   const admin = await bootstrapAdmin(pool, {
     email: " Admin@Entidad.gov.co ",
     displayName: " Administrador ",
-    password: "una-clave-segura-para-prueba"
+    password: "una-clave-segura-para-prueba",
+    mfaEncryptionKey
   });
   assert.equal(admin.email, "admin@entidad.gov.co");
   const userInsert = pool.calls.find(call => call.sql.startsWith("INSERT INTO app_users"));
   assert.equal(userInsert.params[1], admin.email);
   assert.equal(verifyPassword("una-clave-segura-para-prueba", userInsert.params[3]), true);
+  const mfaSecret = decryptSecret(userInsert.params[4], mfaEncryptionKey);
+  assert.equal(verifyTotp(mfaSecret, totpCode(mfaSecret)), true);
+  assert.match(admin.mfaSetupUri, /^otpauth:\/\/totp\//u);
   assert.ok(pool.calls.some(call => call.sql.startsWith("INSERT INTO audit_events")));
   assert.deepEqual(pool.calls.slice(-2).map(call => call.sql), ["COMMIT", "RELEASE"]);
 });
@@ -41,7 +48,8 @@ test("bootstrap refuses a second administrator and rolls back", async () => {
     bootstrapAdmin(pool, {
       email: "segundo@entidad.gov.co",
       displayName: "Segundo",
-      password: "una-clave-segura-para-prueba"
+      password: "una-clave-segura-para-prueba",
+      mfaEncryptionKey
     }),
     /solo se permite una vez/
   );

@@ -32,15 +32,20 @@ export async function checkDatabase(pool) {
     SELECT
       to_regclass('app_users') IS NOT NULL AS users_ready,
       to_regclass('procedures') IS NOT NULL AS procedures_ready,
-      to_regclass('schema_migrations') IS NOT NULL AS migrations_ready
+      to_regclass('schema_migrations') IS NOT NULL AS migrations_ready,
+      to_regclass('app_sessions') IS NOT NULL AS sessions_ready
   `);
   const row = result.rows[0];
-  if (!row?.users_ready || !row?.procedures_ready || !row?.migrations_ready) {
+  if (!row?.users_ready || !row?.procedures_ready || !row?.migrations_ready || !row?.sessions_ready) {
     return false;
   }
   const migration = await pool.query(
     "SELECT 1 FROM schema_migrations WHERE version = $1",
     ["001_initial_schema"]
   );
-  return migration.rows.length === 1;
+  const secondMigration = await pool.query(
+    "SELECT 1 FROM schema_migrations WHERE version = $1",
+    ["002_sessions"]
+  );
+  return migration.rows.length === 1 && secondMigration.rows.length === 1;
 }

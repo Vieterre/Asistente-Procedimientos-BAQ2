@@ -6,10 +6,17 @@ import { createPool } from "./pool.js";
 
 const currentDir = dirname(fileURLToPath(import.meta.url));
 const schemaPath = join(currentDir, "../../db/schema.sql");
+const migrationsDir = join(currentDir, "../../db/migrations");
 
 export async function runMigrations(pool = createPool()) {
   const schema = await readFile(schemaPath, "utf8");
-  const checksum = createHash("sha256").update(schema).digest("hex");
+  const secondMigration = await readFile(join(migrationsDir, "002_sessions.sql"), "utf8");
+  const thirdMigration = await readFile(join(migrationsDir, "003_admin_mfa.sql"), "utf8");
+  const migrations = [
+    ["001_initial_schema", schema],
+    ["002_sessions", secondMigration],
+    ["003_admin_mfa", thirdMigration]
+  ];
   const client = await pool.connect();
 
   try {
@@ -23,25 +30,29 @@ export async function runMigrations(pool = createPool()) {
       )
     `);
 
-    const applied = await client.query(
-      "SELECT checksum FROM schema_migrations WHERE version = $1",
-      ["001_initial_schema"]
-    );
-    if (applied.rows.length) {
-      if (applied.rows[0].checksum !== checksum) {
-        throw new Error("La migracion 001 ya se aplico con un contenido diferente.");
+    let appliedAny = false;
+    for (const [version, sql] of migrations) {
+      const checksum = createHash("sha256").update(sql).digest("hex");
+      const applied = await client.query(
+        "SELECT checksum FROM schema_migrations WHERE version = $1",
+        [version]
+      );
+      if (applied.rows.length) {
+        if (applied.rows[0].checksum !== checksum) {
+          throw new Error(`La migracion ${version} ya se aplico con un contenido diferente.`);
+        }
+        continue;
       }
-      await client.query("COMMIT");
-      return false;
-    }
 
-    await client.query(schema);
-    await client.query(
-      "INSERT INTO schema_migrations (version, checksum) VALUES ($1, $2)",
-      ["001_initial_schema", checksum]
-    );
+      await client.query(sql);
+      await client.query(
+        "INSERT INTO schema_migrations (version, checksum) VALUES ($1, $2)",
+        [version, checksum]
+      );
+      appliedAny = true;
+    }
     await client.query("COMMIT");
-    return true;
+    return appliedAny;
   } catch (error) {
     await client.query("ROLLBACK");
     throw error;

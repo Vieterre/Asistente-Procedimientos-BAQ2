@@ -24,7 +24,7 @@ test("database check requires tables and the initial migration", async () => {
   const pool = {
     async query(sql) {
       if (sql.includes("to_regclass")) {
-        return { rows: [{ users_ready: true, procedures_ready: true, migrations_ready: true }] };
+        return { rows: [{ users_ready: true, procedures_ready: true, migrations_ready: true, sessions_ready: true }] };
       }
       return { rows: [{ "?column?": 1 }] };
     }
@@ -35,7 +35,7 @@ test("database check requires tables and the initial migration", async () => {
 test("database check rejects an incomplete schema", async () => {
   const pool = {
     async query() {
-      return { rows: [{ users_ready: true, procedures_ready: false, migrations_ready: true }] };
+      return { rows: [{ users_ready: true, procedures_ready: false, migrations_ready: true, sessions_ready: true }] };
     }
   };
   assert.equal(await checkDatabase(pool), false);
