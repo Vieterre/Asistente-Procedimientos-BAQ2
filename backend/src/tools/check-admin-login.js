@@ -37,7 +37,16 @@ try {
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ email, password, otp })
   });
-  if (!login.ok) throw new Error(`Inicio de sesion rechazado (HTTP ${login.status}).`);
+  if (!login.ok) {
+    const failure = await login.json().catch(() => ({}));
+    if (login.status === 401 && failure.error === "invalid_credentials") {
+      throw new Error("Contraseña o correo del Administrador incorrectos.");
+    }
+    if (login.status === 401 && failure.error === "mfa_required") {
+      throw new Error("El codigo del autenticador no coincide o ya vencio.");
+    }
+    throw new Error(`Inicio de sesion rechazado (HTTP ${login.status}).`);
+  }
 
   const body = await login.json();
   cookie = login.headers.get("set-cookie")?.split(";")[0];
