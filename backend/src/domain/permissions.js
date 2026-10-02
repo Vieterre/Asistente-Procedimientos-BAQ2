@@ -28,7 +28,7 @@ export const ACTIONS = Object.freeze({
 });
 
 function active(user) {
-  return Boolean(user && user.active !== false);
+  return Boolean(user && user.active !== false && user.mustChangePassword !== true);
 }
 
 function ownsProcedure(user, procedure) {

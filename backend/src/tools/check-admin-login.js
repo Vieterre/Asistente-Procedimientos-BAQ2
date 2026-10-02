@@ -2,10 +2,11 @@ import { createInterface } from "node:readline/promises";
 import { createAppServer } from "../server.js";
 
 const email = String(process.env.ADMIN_EMAIL || "").trim().toLowerCase();
+const username = String(process.env.ADMIN_USERNAME || "").trim().toLowerCase();
 const password = process.env.ADMIN_PASSWORD;
 
-if (!process.stdin.isTTY || !email || !password || !process.env.MFA_ENCRYPTION_KEY) {
-  console.error("Se requiere una consola interactiva y ADMIN_EMAIL, ADMIN_PASSWORD y MFA_ENCRYPTION_KEY.");
+if (!process.stdin.isTTY || !(username || email) || !password || !process.env.MFA_ENCRYPTION_KEY) {
+  console.error("Se requiere una consola interactiva, ADMIN_USERNAME o ADMIN_EMAIL, ADMIN_PASSWORD y MFA_ENCRYPTION_KEY.");
   process.exit(1);
 }
 
@@ -35,12 +36,12 @@ try {
   const login = await fetch(`${baseUrl}/api/auth/login`, {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ email, password, otp })
+    body: JSON.stringify({ username: username || undefined, email: username ? undefined : email, password, otp })
   });
   if (!login.ok) {
     const failure = await login.json().catch(() => ({}));
     if (login.status === 401 && failure.error === "invalid_credentials") {
-      throw new Error("Contraseña o correo del Administrador incorrectos.");
+      throw new Error("Usuario o contraseña del Administrador incorrectos.");
     }
     if (login.status === 401 && failure.error === "mfa_required") {
       throw new Error("El codigo del autenticador no coincide o ya vencio.");
@@ -51,12 +52,13 @@ try {
   const body = await login.json();
   cookie = login.headers.get("set-cookie")?.split(";")[0];
   csrfToken = body.csrfToken;
-  if (!cookie || !csrfToken || body.user?.email !== email || body.user?.role !== "administrador") {
+  if (!cookie || !csrfToken || body.user?.role !== "administrador" ||
+      (username ? body.user.username !== username : body.user.email !== email)) {
     throw new Error("La respuesta de inicio de sesion esta incompleta.");
   }
 
   const me = await fetch(`${baseUrl}/api/auth/me`, { headers: { cookie } });
-  if (!me.ok || (await me.json()).user?.email !== email) {
+  if (!me.ok || (username ? (await me.json()).user?.username !== username : (await me.json()).user?.email !== email)) {
     throw new Error("No se pudo consultar la sesion.");
   }
 

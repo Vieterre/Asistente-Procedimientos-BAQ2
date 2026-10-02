@@ -10,11 +10,13 @@ const targetId = "22222222-2222-4222-8222-222222222222";
 function account(overrides = {}) {
   return {
     id: targetId,
+    username: "usuario001",
     email: "usuario@entidad.gov.co",
     display_name: "Usuario de prueba",
     role: "elaborador",
     active: true,
     mfa_enabled: false,
+    must_change_password: false,
     mfa_secret_ciphertext: null,
     password_hash: "never-expose-this",
     ...overrides
@@ -64,11 +66,13 @@ test("account listing never returns password hashes or MFA secrets", async () =>
   });
   assert.deepEqual(users, [{
     id: targetId,
+    username: "usuario001",
     email: "usuario@entidad.gov.co",
     displayName: "Usuario de prueba",
     role: "elaborador",
     active: true,
-    mfaEnabled: false
+    mfaEnabled: false,
+    mustChangePassword: false
   }]);
 });
 

@@ -3,9 +3,9 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { checkDatabase, createPool } from "./db/pool.js";
-import { AuthError, SESSION_COOKIE, cookieOptions, getSession, hashToken, loginUser, parseCookies, revokeSession } from "./security/auth.js";
+import { AuthError, SESSION_COOKIE, changePassword, cookieOptions, getSession, hashToken, loginUser, parseCookies, revokeSession } from "./security/auth.js";
 import { ACTIONS, canPerform } from "./domain/permissions.js";
-import { UserManagementError, listAccounts, setAccountActive } from "./security/admin-users.js";
+import { UserManagementError, createAccount, listAccounts, resetAccountPassword, setAccountActive } from "./security/admin-users.js";
 
 const rootDir = join(fileURLToPath(new URL("../..", import.meta.url)));
 const port = Number(process.env.PORT || 3000);
@@ -155,9 +155,7 @@ export function createAppServer({ poolFactory = createPool, secureCookies } = {}
         return;
       }
 
-      const accountAction = /^\/api\/admin\/users\/([0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12})\/(deactivate|reactivate)$/.exec(url.pathname);
-      if ((url.pathname === "/api/admin/users" && req.method === "GET") ||
-          (accountAction && req.method === "POST")) {
+      if (url.pathname === "/api/auth/password" && req.method === "POST") {
         let pool;
         try {
           pool = poolFactory();
@@ -166,27 +164,88 @@ export function createAppServer({ poolFactory = createPool, secureCookies } = {}
             sendJson(res, 401, { ok: false, error: "unauthenticated" });
             return;
           }
+          const csrfToken = String(req.headers["x-csrf-token"] || "");
+          if (!csrfToken || hashToken(csrfToken) !== session.csrfTokenHash) {
+            sendJson(res, 403, { ok: false, error: "csrf_failed" });
+            return;
+          }
+          const body = await readJson(req);
+          await changePassword(pool, {
+            userId: session.user.id,
+            currentPassword: body.currentPassword,
+            newPassword: body.newPassword
+          });
+          sendJson(res, 200, { ok: true }, {
+            "Set-Cookie": `${SESSION_COOKIE}=; ${cookieOptions({ secure: cookiesAreSecure, maxAge: 0 })}`
+          });
+        } catch (error) {
+          if (error.message === "request_too_large" || error.message === "invalid_json") {
+            sendJson(res, 400, { ok: false, error: error.message });
+          } else if (error instanceof AuthError) {
+            sendJson(res, error.status, { ok: false, error: error.code });
+          } else {
+            sendJson(res, 503, { ok: false, error: "password_change_unavailable" });
+          }
+        } finally {
+          await pool?.end();
+        }
+        return;
+      }
+
+      const accountAction = /^\/api\/admin\/users\/([0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12})\/(deactivate|reactivate|reset-password)$/.exec(url.pathname);
+      const accountCreation = url.pathname === "/api/admin/users" && req.method === "POST";
+      if ((url.pathname === "/api/admin/users" && req.method === "GET") ||
+          accountCreation || (accountAction && req.method === "POST")) {
+        let pool;
+        try {
+          pool = poolFactory();
+          const session = await getSession(pool, parseCookies(req.headers.cookie)[SESSION_COOKIE]);
+          if (!session) {
+            sendJson(res, 401, { ok: false, error: "unauthenticated" });
+            return;
+          }
+          if (session.user.mustChangePassword) {
+            sendJson(res, 403, { ok: false, error: "password_change_required" });
+            return;
+          }
           if (!canPerform(session.user, ACTIONS.MANAGE_USERS)) {
             sendJson(res, 403, { ok: false, error: "forbidden" });
             return;
           }
-          if (accountAction) {
+          if (accountAction || accountCreation) {
             const csrfToken = String(req.headers["x-csrf-token"] || "");
             if (!csrfToken || hashToken(csrfToken) !== session.csrfTokenHash) {
               sendJson(res, 403, { ok: false, error: "csrf_failed" });
               return;
             }
-            const user = await setAccountActive(pool, {
-              actor: session.user,
-              targetId: accountAction[1],
-              active: accountAction[2] === "reactivate"
-            });
-            sendJson(res, 200, { ok: true, user });
+            if (accountCreation) {
+              const body = await readJson(req);
+              sendJson(res, 201, { ok: true, ...await createAccount(pool, {
+                actor: session.user,
+                username: body.username,
+                displayName: body.displayName,
+                role: body.role
+              }) });
+            } else if (accountAction[2] === "reset-password") {
+              sendJson(res, 200, { ok: true, ...await resetAccountPassword(pool, {
+                actor: session.user,
+                targetId: accountAction[1]
+              }) });
+            } else {
+              const user = await setAccountActive(pool, {
+                actor: session.user,
+                targetId: accountAction[1],
+                active: accountAction[2] === "reactivate"
+              });
+              sendJson(res, 200, { ok: true, user });
+            }
           } else {
             sendJson(res, 200, { ok: true, users: await listAccounts(pool) });
           }
         } catch (error) {
-          if (error instanceof UserManagementError) {
+          if (error.message === "request_too_large" || error.message === "invalid_json") {
+            sendJson(res, 400, { ok: false, error: error.message });
+          } else if (error instanceof UserManagementError) {
             sendJson(res, error.status, { ok: false, error: error.code });
           } else {
             sendJson(res, 503, { ok: false, error: "user_management_unavailable" });

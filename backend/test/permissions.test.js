@@ -13,6 +13,11 @@ test("inactive users cannot perform any protected action", () => {
   assert.equal(canPerform(inactiveAdmin, ACTIONS.MANAGE_USERS), false);
 });
 
+test("users with a temporary password cannot perform protected actions", () => {
+  assert.equal(canPerform({ ...admin, mustChangePassword: true }, ACTIONS.MANAGE_USERS), false);
+  assert.equal(canPerform({ ...author, mustChangePassword: true }, ACTIONS.CREATE_PROCEDURE), false);
+});
+
 test("administrator cannot deactivate the last active administrator", () => {
   assert.equal(
     canPerform(admin, ACTIONS.DEACTIVATE_USER, {

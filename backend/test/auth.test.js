@@ -22,7 +22,7 @@ test("login, session lookup, and logout are protected", async () => {
   function poolFactory() {
     return {
       async query(sql, params) {
-        if (sql.includes("FROM app_users WHERE email")) return { rows: [user] };
+        if (sql.includes("FROM app_users WHERE username")) return { rows: [user] };
         if (sql.startsWith("INSERT INTO app_sessions")) {
           state.tokenHash = params[2];
           state.csrfHash = params[3];
@@ -108,7 +108,7 @@ test("administrator login requires the matching MFA code before creating a sessi
   const pool = {
     async query(sql) {
       calls.push(sql);
-      if (sql.includes("FROM app_users WHERE email")) return { rows: [user] };
+      if (sql.includes("FROM app_users WHERE username")) return { rows: [user] };
       if (sql.startsWith("INSERT INTO app_sessions")) return { rows: [] };
       throw new Error(`Unexpected SQL: ${sql}`);
     }
@@ -147,7 +147,7 @@ test("administrator HTTP login, session lookup, and logout require MFA", async (
   const state = { tokenHash: "", csrfHash: "", revoked: false, sessionsCreated: 0 };
   const poolFactory = () => ({
     async query(sql, params) {
-      if (sql.includes("FROM app_users WHERE email")) return { rows: [user] };
+      if (sql.includes("FROM app_users WHERE username")) return { rows: [user] };
       if (sql.startsWith("INSERT INTO app_sessions")) {
         state.tokenHash = params[2];
         state.csrfHash = params[3];

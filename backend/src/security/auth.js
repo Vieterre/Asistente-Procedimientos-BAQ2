@@ -1,5 +1,5 @@
 import { createHash, randomBytes, randomUUID } from "node:crypto";
-import { verifyPassword } from "./passwords.js";
+import { hashPassword, verifyPassword } from "./passwords.js";
 import { decryptSecret, verifyTotp } from "./mfa.js";
 
 export const SESSION_COOKIE = "__Host-asistente_session";
@@ -30,9 +30,11 @@ export function cookieOptions({ secure = process.env.NODE_ENV === "production", 
 function publicUser(row) {
   return {
     id: row.id,
+    username: row.username,
     email: row.email,
     displayName: row.display_name,
-    role: row.role
+    role: row.role,
+    mustChangePassword: row.must_change_password
   };
 }
 
@@ -55,12 +57,14 @@ async function createSession(pool, row, request) {
   return { token, csrfToken };
 }
 
-export async function loginUser(pool, { email, password, otp, request, mfaEncryptionKey = process.env.MFA_ENCRYPTION_KEY }) {
-  const normalizedEmail = String(email || "").trim().toLowerCase();
+export async function loginUser(pool, { username, email, password, otp, request, mfaEncryptionKey = process.env.MFA_ENCRYPTION_KEY }) {
+  const identifier = String(username ?? email ?? "").trim().toLowerCase();
+  const allowLegacyEmail = process.env.ALLOW_LEGACY_EMAIL_LOGIN !== "0";
   const result = await pool.query(
-    `SELECT id, email, display_name, role, password_hash, active, mfa_enabled, mfa_secret_ciphertext
-     FROM app_users WHERE email = $1 LIMIT 1`,
-    [normalizedEmail]
+    `SELECT id, username, email, display_name, role, password_hash, active,
+            must_change_password, mfa_enabled, mfa_secret_ciphertext
+     FROM app_users WHERE username = $1 OR (email = $1 AND $2) LIMIT 1`,
+    [identifier, allowLegacyEmail]
   );
   const row = result.rows[0];
   if (!row || row.active !== true || !verifyPassword(password, row.password_hash)) {
@@ -83,7 +87,8 @@ export async function loginUser(pool, { email, password, otp, request, mfaEncryp
 export async function getSession(pool, token) {
   if (!token) return null;
   const result = await pool.query(
-    `SELECT s.id AS session_id, s.csrf_token_hash, u.id, u.email, u.display_name, u.role
+    `SELECT s.id AS session_id, s.csrf_token_hash, u.id, u.username, u.email,
+            u.display_name, u.role, u.must_change_password
      FROM app_sessions s
      JOIN app_users u ON u.id = s.user_id
      WHERE s.token_hash = $1
@@ -109,4 +114,43 @@ export async function revokeSession(pool, token) {
     "UPDATE app_sessions SET revoked_at = now() WHERE token_hash = $1 AND revoked_at IS NULL",
     [hashToken(token)]
   );
+}
+
+export async function changePassword(pool, { userId, currentPassword, newPassword }) {
+  if (typeof newPassword !== "string" || newPassword.length < 15 || newPassword.length > 256) {
+    throw new AuthError("password_length_invalid", 400);
+  }
+  if (currentPassword === newPassword) throw new AuthError("password_unchanged", 400);
+
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    const result = await client.query(
+      "SELECT password_hash, active FROM app_users WHERE id = $1 FOR UPDATE",
+      [userId]
+    );
+    const user = result.rows[0];
+    if (!user?.active || !verifyPassword(currentPassword, user.password_hash)) {
+      throw new AuthError();
+    }
+    await client.query(
+      "UPDATE app_users SET password_hash = $2, must_change_password = FALSE, updated_at = now() WHERE id = $1",
+      [userId, hashPassword(newPassword)]
+    );
+    await client.query(
+      "UPDATE app_sessions SET revoked_at = now() WHERE user_id = $1 AND revoked_at IS NULL",
+      [userId]
+    );
+    await client.query(
+      `INSERT INTO audit_events (id, actor_user_id, event_type, entity_type, entity_id)
+       VALUES ($1, $2, 'password_changed', 'app_user', $2)`,
+      [randomUUID(), userId]
+    );
+    await client.query("COMMIT");
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
 }

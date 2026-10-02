@@ -43,11 +43,14 @@ test("repeated migration leaves an applied schema alone", async () => {
     .filter(call => call.sql.startsWith("INSERT INTO schema_migrations"))[1].params[1];
   const thirdMigrationChecksum = first.calls
     .filter(call => call.sql.startsWith("INSERT INTO schema_migrations"))[2].params[1];
+  const fourthMigrationChecksum = first.calls
+    .filter(call => call.sql.startsWith("INSERT INTO schema_migrations"))[3].params[1];
   const second = fakePool({
     appliedChecksums: {
       "001_initial_schema": checksum,
       "002_sessions": secondMigrationChecksum,
-      "003_admin_mfa": thirdMigrationChecksum
+      "003_admin_mfa": thirdMigrationChecksum,
+      "004_usernames": fourthMigrationChecksum
     }
   });
   assert.equal(await runMigrations(second), false);

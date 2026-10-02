@@ -47,5 +47,13 @@ export async function checkDatabase(pool) {
     "SELECT 1 FROM schema_migrations WHERE version = $1",
     ["002_sessions"]
   );
-  return migration.rows.length === 1 && secondMigration.rows.length === 1;
+  const thirdMigration = await pool.query(
+    "SELECT 1 FROM schema_migrations WHERE version = $1",
+    ["003_admin_mfa"]
+  );
+  const fourthMigration = await pool.query(
+    "SELECT 1 FROM schema_migrations WHERE version = $1",
+    ["004_usernames"]
+  );
+  return [migration, secondMigration, thirdMigration, fourthMigration].every(result => result.rows.length === 1);
 }
