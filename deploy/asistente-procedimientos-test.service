@@ -1,0 +1,34 @@
+[Unit]
+Description=Asistente de Procedimientos (prueba privada)
+After=network-online.target postgresql.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+DynamicUser=yes
+User=asistente-app
+WorkingDirectory=/opt/asistente-backend-test
+Environment=NODE_ENV=production
+Environment=HOST=127.0.0.1
+Environment=PORT=3000
+Environment=PGHOST=127.0.0.1
+Environment=PGPORT=5432
+Environment=PGDATABASE=asistente_procedimientos
+Environment=PGUSER=asistente_user
+LoadCredential=pg_password:/etc/asistente-procedimientos/pg.password
+LoadCredential=mfa_key:/etc/asistente-procedimientos/mfa.key
+ExecStart=/usr/bin/env node backend/src/server.js
+Restart=on-failure
+RestartSec=5s
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectHome=yes
+ProtectSystem=strict
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+CapabilityBoundingSet=
+
+[Install]
+WantedBy=multi-user.target

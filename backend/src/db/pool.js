@@ -1,4 +1,5 @@
 import pg from "pg";
+import { readServiceCredential } from "../security/service-credentials.js";
 
 const { Pool } = pg;
 
@@ -13,7 +14,7 @@ export function createPool(options = {}) {
     port: Number(options.port ?? process.env.PGPORT ?? 5432),
     database: options.database ?? process.env.PGDATABASE,
     user: options.user ?? process.env.PGUSER,
-    password: options.password ?? process.env.PGPASSWORD
+    password: options.password ?? (process.env.PGPASSWORD || readServiceCredential("pg_password"))
   };
   if (!connectionString && (!connection.database || !connection.user || !connection.password)) {
     throw new Error("Configure DATABASE_URL o PGDATABASE, PGUSER y PGPASSWORD.");

@@ -1,6 +1,7 @@
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { hashPassword, verifyPassword } from "./passwords.js";
 import { decryptSecret, verifyTotp } from "./mfa.js";
+import { readServiceCredential } from "./service-credentials.js";
 
 export const SESSION_COOKIE = "__Host-asistente_session";
 export const SESSION_TTL_MS = 8 * 60 * 60 * 1000;
@@ -57,7 +58,7 @@ async function createSession(pool, row, request) {
   return { token, csrfToken };
 }
 
-export async function loginUser(pool, { username, email, password, otp, request, mfaEncryptionKey = process.env.MFA_ENCRYPTION_KEY }) {
+export async function loginUser(pool, { username, email, password, otp, request, mfaEncryptionKey = process.env.MFA_ENCRYPTION_KEY || readServiceCredential("mfa_key") }) {
   const identifier = String(username ?? email ?? "").trim().toLowerCase();
   const allowLegacyEmail = process.env.ALLOW_LEGACY_EMAIL_LOGIN === "1";
   const result = await pool.query(
