@@ -59,7 +59,7 @@ async function createSession(pool, row, request) {
 
 export async function loginUser(pool, { username, email, password, otp, request, mfaEncryptionKey = process.env.MFA_ENCRYPTION_KEY }) {
   const identifier = String(username ?? email ?? "").trim().toLowerCase();
-  const allowLegacyEmail = process.env.ALLOW_LEGACY_EMAIL_LOGIN !== "0";
+  const allowLegacyEmail = process.env.ALLOW_LEGACY_EMAIL_LOGIN === "1";
   const result = await pool.query(
     `SELECT id, username, email, display_name, role, password_hash, active,
             must_change_password, mfa_enabled, mfa_secret_ciphertext

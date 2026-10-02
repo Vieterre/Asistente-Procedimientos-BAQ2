@@ -10,6 +10,7 @@ test("login, session lookup, and logout are protected", async () => {
   const state = { tokenHash: "", csrfHash: "", revoked: false };
   const user = {
     id: "11111111-1111-4111-8111-111111111111",
+    username: "elaborador001",
     email: "elaborador@entidad.gov.co",
     display_name: "Elaborador de prueba",
     role: "elaborador",
@@ -59,7 +60,7 @@ test("login, session lookup, and logout are protected", async () => {
     const login = await fetch(`http://127.0.0.1:${port}/api/auth/login`, {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ email: user.email, password: "una-clave-segura-para-prueba" })
+      body: JSON.stringify({ username: user.username, password: "una-clave-segura-para-prueba" })
     });
     const loginPayload = await login.json();
     const cookie = login.headers.get("set-cookie").split(";")[0];
@@ -96,6 +97,7 @@ test("administrator login requires the matching MFA code before creating a sessi
   const password = "una-clave-segura-para-prueba";
   const user = {
     id: "33333333-3333-4333-8333-333333333333",
+    username: "admin001",
     email: "admin@entidad.gov.co",
     display_name: "Administrador",
     role: "administrador",
@@ -114,7 +116,7 @@ test("administrator login requires the matching MFA code before creating a sessi
     }
   };
   const details = {
-    email: user.email,
+    username: user.username,
     password,
     request: { headers: {}, socket: { remoteAddress: "127.0.0.1" } },
     mfaEncryptionKey
@@ -136,6 +138,7 @@ test("administrator HTTP login, session lookup, and logout require MFA", async (
   const password = "una-clave-segura-para-prueba";
   const user = {
     id: "44444444-4444-4444-8444-444444444444",
+    username: "admin001",
     email: "admin@entidad.gov.co",
     display_name: "Administrador",
     role: "administrador",
@@ -183,7 +186,7 @@ test("administrator HTTP login, session lookup, and logout require MFA", async (
     const rejected = await fetch(`${baseUrl}/api/auth/login`, {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ email: user.email, password, otp: invalidCode })
+      body: JSON.stringify({ username: user.username, password, otp: invalidCode })
     });
     assert.equal(rejected.status, 401);
     assert.equal(state.sessionsCreated, 0);
@@ -191,7 +194,7 @@ test("administrator HTTP login, session lookup, and logout require MFA", async (
     const accepted = await fetch(`${baseUrl}/api/auth/login`, {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ email: user.email, password, otp: validCode })
+      body: JSON.stringify({ username: user.username, password, otp: validCode })
     });
     assert.equal(accepted.status, 200);
     const loginBody = await accepted.json();

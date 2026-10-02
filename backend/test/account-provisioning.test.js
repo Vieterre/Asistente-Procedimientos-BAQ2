@@ -173,9 +173,9 @@ test("HTTP account creation requires administrator and CSRF, and returns the ini
   }
 });
 
-test("username login works without email fallback after cutover", async () => {
+test("username login works and email login is disabled by default", async () => {
   const previous = process.env.ALLOW_LEGACY_EMAIL_LOGIN;
-  process.env.ALLOW_LEGACY_EMAIL_LOGIN = "0";
+  delete process.env.ALLOW_LEGACY_EMAIL_LOGIN;
   const password = "clave-de-prueba-larga";
   const user = {
     id: newUserId,
@@ -201,6 +201,9 @@ test("username login works without email fallback after cutover", async () => {
     const result = await loginUser(pool, { ...details, username: user.username });
     assert.equal(result.user.username, user.username);
     await assert.rejects(loginUser(pool, { ...details, email: user.email }), { code: "invalid_credentials" });
+    process.env.ALLOW_LEGACY_EMAIL_LOGIN = "1";
+    const legacy = await loginUser(pool, { ...details, email: user.email });
+    assert.equal(legacy.user.username, user.username);
   } finally {
     if (previous === undefined) delete process.env.ALLOW_LEGACY_EMAIL_LOGIN;
     else process.env.ALLOW_LEGACY_EMAIL_LOGIN = previous;
