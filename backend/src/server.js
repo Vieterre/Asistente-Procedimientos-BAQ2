@@ -15,6 +15,11 @@ const accountAssets = {
   "/accounts.css": ["accounts.css", "text/css; charset=utf-8"],
   "/accounts.js": ["accounts.js", "text/javascript; charset=utf-8"]
 };
+const draftAssets = {
+  "/drafts": ["drafts.html", "text/html; charset=utf-8"],
+  "/drafts.css": ["drafts.css", "text/css; charset=utf-8"],
+  "/drafts.js": ["drafts.js", "text/javascript; charset=utf-8"]
+};
 const port = Number(process.env.PORT || 3000);
 const host = process.env.HOST || "127.0.0.1";
 
@@ -200,6 +205,34 @@ export function createAppServer({ poolFactory = createPool, secureCookies, trust
         return;
       }
 
+      if (url.pathname === "/api/processes" && req.method === "GET") {
+        let pool;
+        try {
+          pool = poolFactory();
+          const session = await getSession(pool, parseCookies(req.headers.cookie)[SESSION_COOKIE]);
+          if (!session) {
+            sendJson(res, 401, { ok: false, error: "unauthenticated" });
+            return;
+          }
+          if (session.user.mustChangePassword) {
+            sendJson(res, 403, { ok: false, error: "password_change_required" });
+            return;
+          }
+          if (!canPerform(session.user, ACTIONS.CREATE_PROCEDURE)) {
+            sendJson(res, 403, { ok: false, error: "forbidden" });
+            return;
+          }
+          const result = await pool.query("SELECT code, name FROM processes WHERE active = TRUE ORDER BY name, code");
+          sendJson(res, 200, { ok: true, processes: result.rows });
+        } catch (error) {
+          if (error instanceof DraftError) sendJson(res, error.status, { ok: false, error: error.code });
+          else sendJson(res, 503, { ok: false, error: "processes_unavailable" });
+        } finally {
+          await pool?.end();
+        }
+        return;
+      }
+
       const draftId = /^\/api\/procedures\/([0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12})$/.exec(url.pathname)?.[1];
       if ((url.pathname === "/api/procedures" && ["GET", "POST"].includes(req.method)) ||
           (draftId && ["GET", "PUT"].includes(req.method))) {
@@ -318,8 +351,9 @@ export function createAppServer({ poolFactory = createPool, secureCookies, trust
         return;
       }
 
-      if (req.method === "GET" && Object.hasOwn(accountAssets, url.pathname)) {
-        const [filename, contentType] = accountAssets[url.pathname];
+      const privateAssets = { ...accountAssets, ...draftAssets };
+      if (req.method === "GET" && Object.hasOwn(privateAssets, url.pathname)) {
+        const [filename, contentType] = privateAssets[url.pathname];
         const body = await readFile(join(rootDir, "backend/public", filename));
         res.writeHead(200, securityHeaders({
           "Content-Type": contentType,

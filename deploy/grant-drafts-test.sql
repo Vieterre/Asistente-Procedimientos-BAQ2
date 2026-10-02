@@ -1,4 +1,4 @@
-GRANT SELECT (code, active) ON public.processes TO asistente_app_test;
+GRANT SELECT (code, name, active) ON public.processes TO asistente_app_test;
 
 GRANT SELECT (
   id, code, name, process_code, version, status, revision, updated_at,

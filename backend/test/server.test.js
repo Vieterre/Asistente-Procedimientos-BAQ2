@@ -65,7 +65,7 @@ test("server does not expose project files", async () => {
   }
 });
 
-test("account console serves only its own assets with a restrictive policy", async () => {
+test("private consoles serve only their own assets with a restrictive policy", async () => {
   const server = createAppServer();
   await new Promise(resolve => server.listen(0, "127.0.0.1", resolve));
   const base = `http://127.0.0.1:${server.address().port}`;
@@ -74,7 +74,10 @@ test("account console serves only its own assets with a restrictive policy", asy
     for (const [path, type] of [
       ["/accounts", "text/html"],
       ["/accounts.css", "text/css"],
-      ["/accounts.js", "text/javascript"]
+      ["/accounts.js", "text/javascript"],
+      ["/drafts", "text/html"],
+      ["/drafts.css", "text/css"],
+      ["/drafts.js", "text/javascript"]
     ]) {
       const response = await fetch(base + path);
       assert.equal(response.status, 200);
@@ -83,7 +86,7 @@ test("account console serves only its own assets with a restrictive policy", asy
       assert.match(response.headers.get("content-security-policy"), /default-src 'none'/);
       assert.ok((await response.text()).length > 100);
     }
-    for (const path of ["/accounts.map", "/backend/public/accounts.js"]) {
+    for (const path of ["/accounts.map", "/backend/public/accounts.js", "/drafts.map", "/backend/public/drafts.js"]) {
       assert.equal((await fetch(base + path)).status, 404);
     }
   } finally {

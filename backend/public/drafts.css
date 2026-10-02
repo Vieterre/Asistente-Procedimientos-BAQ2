@@ -1,0 +1,35 @@
+:root{font-family:Inter,"Segoe UI",Arial,sans-serif;color:#22313a;background:#f5f7f8;font-size:14px}
+*{box-sizing:border-box}[hidden]{display:none!important}body{margin:0;min-width:320px}
+button,input,select,textarea{font:inherit}button,a{cursor:pointer}button:disabled{cursor:wait;opacity:.55}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,a:focus-visible{outline:3px solid #94d1ba;outline-offset:2px}
+.site-header{background:#173c42;color:#fff;border-bottom:3px solid #319a75}
+.header-inner{max-width:1160px;min-height:68px;margin:auto;padding:12px 24px;display:flex;align-items:center;justify-content:space-between;gap:20px}
+.brand{display:flex;align-items:center;gap:12px;font-size:16px;font-weight:750;line-height:1.2}.brand small{display:block;color:#b6d4ce;font-size:11px;font-weight:500;margin-top:3px}
+.brand-mark{width:36px;height:36px;display:grid;place-items:center;border:1px solid #7ebbad;color:#fff;font-size:12px;flex:none}
+.session-controls{display:flex;align-items:center;gap:18px;font-size:13px}.session-controls span{overflow-wrap:anywhere;text-align:right}
+main{max-width:1160px;margin:auto;padding:0 24px 60px}h1,h2,p{margin-top:0}
+.login-wrap{min-height:calc(100vh - 70px);display:grid;place-items:center;padding:32px 0}
+.login-panel{width:min(410px,100%);background:#fff;border:1px solid #d8e1e2;border-radius:8px;padding:28px;box-shadow:0 10px 30px rgba(18,40,45,.09)}
+.login-panel h1{font-size:24px;margin-bottom:24px}.login-panel form{display:grid}
+label{display:block;font-weight:650;color:#294349;margin:0 0 6px}
+input,select,textarea{width:100%;padding:9px 10px;border:1px solid #b6c7cb;border-radius:5px;background:#fff;color:#1e2e36}
+input,select{height:41px}textarea{resize:vertical;min-height:120px;line-height:1.5}.login-panel input{margin-bottom:17px}
+.optional{font-size:11px;font-weight:450;color:#667a80}
+.primary-button,.secondary-button,.quiet-button{display:inline-flex;align-items:center;justify-content:center;min-height:38px;padding:8px 13px;border-radius:5px;font-weight:650;text-decoration:none;white-space:nowrap}
+.primary-button{background:#176d56;border:1px solid #176d56;color:#fff}.primary-button:hover{background:#115942}
+.secondary-button{background:#fff;border:1px solid #9db2b8;color:#24454d}.secondary-button:hover{background:#eff5f4}
+.quiet-button{background:transparent;border:1px solid #86a8a8;color:#fff}.quiet-button:hover{background:#275259}.full{width:100%}
+.page-heading{padding:26px 0 20px;border-bottom:1px solid #cbd8db;display:flex;align-items:center;justify-content:space-between;gap:18px}
+.page-heading h1{font-size:25px;margin-bottom:5px}.page-heading p,.section-heading p{margin:0;color:#5a6e75;line-height:1.45}
+.work-layout{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(290px,1fr);gap:34px}
+.editor-section,.list-section{padding:23px 0 28px;min-width:0}.editor-section{border-right:1px solid #cbd8db;padding-right:28px}
+.section-heading{display:flex;align-items:center;justify-content:space-between;gap:15px;margin-bottom:22px}
+.section-heading h2{font-size:18px;margin:0 0 4px}.field{margin-bottom:17px}
+.form-actions{display:flex;align-items:center;gap:14px;min-height:40px;flex-wrap:wrap}
+.form-message{color:#a63223;font-size:12px;line-height:1.45;margin:0}.form-message.success{color:#176d56}.login-panel .form-message{margin:0 0 14px}
+.notice{margin:20px 0 0;padding:14px 16px;background:#fff8e9;border-left:4px solid #bf8a22;color:#35464a;line-height:1.5}.notice a{color:#176d56;font-weight:650}
+.draft-list{list-style:none;margin:0;padding:0}.draft-item{border-top:1px solid #d7e0e2}.draft-item:last-child{border-bottom:1px solid #d7e0e2}
+.draft-open{display:flex;width:100%;align-items:flex-start;justify-content:space-between;gap:14px;padding:13px 4px;border:0;background:transparent;text-align:left;color:#22313a}
+.draft-open:hover{background:#edf3f3}.draft-info{display:grid;gap:4px;min-width:0}.draft-info strong{font-size:13px;overflow-wrap:anywhere}.draft-info small{color:#5a6e75;font-size:12px}
+.draft-status{font-size:11px;font-weight:650;color:#176d56;white-space:nowrap}.empty-state{color:#61747b;font-size:13px;padding:12px 0}
+@media(max-width:760px){.header-inner{padding:11px 16px}.session-controls{gap:7px;flex-direction:column;align-items:flex-end}.brand{font-size:14px}main{padding:0 16px 40px}.work-layout{grid-template-columns:1fr;gap:0}.editor-section{border-right:0;border-bottom:1px solid #cbd8db;padding-right:0}.page-heading{align-items:flex-start}.login-panel{padding:22px}}

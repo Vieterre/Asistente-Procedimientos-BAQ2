@@ -189,3 +189,46 @@ test("draft HTTP routes create, read, and update with a live author session", as
     await new Promise(resolve => server.close(resolve));
   }
 });
+
+
+test("active process catalog requires an authenticated procedure author", async () => {
+  const token = "process-session";
+  const userId = "11111111-1111-4111-8111-111111111111";
+  let role = "elaborador";
+  let mustChangePassword = false;
+  let catalogReads = 0;
+  const poolFactory = () => ({
+    async query(sql, params) {
+      if (sql.includes("FROM app_sessions s")) return { rows: params[0] === hashToken(token) ? [{
+        session_id: draftId, csrf_token_hash: hashToken("csrf"), id: userId,
+        username: "author1", email: null, display_name: "Author", role,
+        must_change_password: mustChangePassword
+      }] : [] };
+      if (sql.startsWith("UPDATE app_sessions SET last_seen_at")) return { rows: [] };
+      if (sql.startsWith("SELECT code, name FROM processes")) {
+        catalogReads += 1;
+        return { rows: [{ code: "DE", name: "Desarrollo economico" }] };
+      }
+      throw new Error("Unexpected SQL: " + sql);
+    },
+    async end() {}
+  });
+  const server = createAppServer({ poolFactory, secureCookies: false });
+  await new Promise(resolve => server.listen(0, "127.0.0.1", resolve));
+  const url = "http://127.0.0.1:" + server.address().port + "/api/processes";
+  const cookie = "__Host-asistente_session=" + token;
+  try {
+    assert.equal((await fetch(url)).status, 401);
+    mustChangePassword = true;
+    assert.equal((await fetch(url, { headers: { cookie } })).status, 403);
+    mustChangePassword = false;
+    const response = await fetch(url, { headers: { cookie } });
+    assert.equal(response.status, 200);
+    assert.deepEqual((await response.json()).processes, [{ code: "DE", name: "Desarrollo economico" }]);
+    role = "evaluador";
+    assert.equal((await fetch(url, { headers: { cookie } })).status, 403);
+    assert.equal(catalogReads, 1);
+  } finally {
+    await new Promise(resolve => server.close(resolve));
+  }
+});

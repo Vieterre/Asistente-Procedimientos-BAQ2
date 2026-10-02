@@ -1,11 +1,12 @@
 # Borradores en el entorno de pruebas
 
-La API de borradores se activa solo despues de aplicar la migracion
+La pantalla privada `/drafts` usa la sesion real para crear, listar, abrir y actualizar borradores propios. La API se activa solo despues de aplicar la migracion
 `005_draft_revision` y los permisos de `grant-drafts-test.sql`. La consola de
 cuentas no cambia y el prototipo publico continua guardando localmente.
 
 ## Contrato
 
+- `GET /api/processes`: lista codigo y nombre de los procesos activos para el formulario.
 - `GET /api/procedures`: lista los procedimientos propios sin el contenido.
 - `POST /api/procedures`: crea un borrador con `name`, `processCode` y `payload`.
 - `GET /api/procedures/:id`: devuelve un borrador propio con su contenido.
@@ -27,6 +28,5 @@ hasta que exista una API de evaluacion independiente.
 4. Reinicie solo `asistente-procedimientos-test.service` y verifique
    `/health/db`, la consola de cuentas, y los rechazos `401` sin sesion y
    `403` sin CSRF para `POST /api/procedures`.
-5. Pruebe creacion, lectura y actualizacion con un Elaborador de prueba. No
-   use datos reales de procedimientos hasta conectar el frontend y validar
-   el flujo completo.
+5. Abra `/drafts` e inicie sesion con un Elaborador de prueba. Pruebe crear,
+   abrir y actualizar un borrador. No use datos reales hasta validar el flujo.
