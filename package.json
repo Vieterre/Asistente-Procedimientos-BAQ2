@@ -7,6 +7,7 @@
     "admin:bootstrap": "node backend/src/tools/bootstrap-admin.js",
     "admin:set-username": "node backend/src/tools/set-admin-username.js",
     "admin:check-login": "node backend/src/tools/check-admin-login.js",
+    "admin:check-service-login": "node backend/src/tools/check-admin-login.js --running-service",
     "db:check": "node backend/src/tools/check-db.js",
     "db:migrate": "node backend/src/tools/migrate.js",
     "test": "node --test backend/test/*.test.js",

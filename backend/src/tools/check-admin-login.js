@@ -1,12 +1,18 @@
 import { createInterface } from "node:readline/promises";
 import { createAppServer } from "../server.js";
 
+const useRunningService = process.argv.length === 3 && process.argv[2] === "--running-service";
+if (process.argv.length > 2 && !useRunningService) {
+  console.error("Uso: check-admin-login.js [--running-service]");
+  process.exit(1);
+}
+
 const email = String(process.env.ADMIN_EMAIL || "").trim().toLowerCase();
 const username = String(process.env.ADMIN_USERNAME || "").trim().toLowerCase();
 const password = process.env.ADMIN_PASSWORD;
 
-if (!process.stdin.isTTY || !(username || email) || !password || !process.env.MFA_ENCRYPTION_KEY) {
-  console.error("Se requiere una consola interactiva, ADMIN_USERNAME o ADMIN_EMAIL, ADMIN_PASSWORD y MFA_ENCRYPTION_KEY.");
+if (!process.stdin.isTTY || !(username || email) || !password || (!useRunningService && !process.env.MFA_ENCRYPTION_KEY)) {
+  console.error("Se requiere una consola interactiva, ADMIN_USERNAME o ADMIN_EMAIL, ADMIN_PASSWORD y, para la prueba local, MFA_ENCRYPTION_KEY.");
   process.exit(1);
 }
 
@@ -23,16 +29,19 @@ if (!/^\d{6}$/.test(otp)) {
   process.exit(1);
 }
 
-const server = createAppServer({ secureCookies: false });
+const server = useRunningService ? null : createAppServer({ secureCookies: false });
 let cookie;
 let csrfToken;
 let loggedOut = false;
+let baseUrl;
 try {
-  await new Promise((resolve, reject) => {
-    server.once("error", reject);
-    server.listen(0, "127.0.0.1", resolve);
-  });
-  const baseUrl = `http://127.0.0.1:${server.address().port}`;
+  if (server) {
+    await new Promise((resolve, reject) => {
+      server.once("error", reject);
+      server.listen(0, "127.0.0.1", resolve);
+    });
+  }
+  baseUrl = server ? `http://127.0.0.1:${server.address().port}` : "http://127.0.0.1:3000";
   const login = await fetch(`${baseUrl}/api/auth/login`, {
     method: "POST",
     headers: { "content-type": "application/json" },
@@ -79,7 +88,7 @@ try {
 } finally {
   if (!loggedOut && cookie && csrfToken) {
     try {
-      await fetch(`http://127.0.0.1:${server.address().port}/api/auth/logout`, {
+      await fetch(`${baseUrl}/api/auth/logout`, {
         method: "POST",
         headers: { cookie, "x-csrf-token": csrfToken }
       });
@@ -87,5 +96,5 @@ try {
       console.error("No se pudo confirmar el cierre de la sesion de prueba.");
     }
   }
-  if (server.listening) await new Promise(resolve => server.close(resolve));
+  if (server?.listening) await new Promise(resolve => server.close(resolve));
 }
