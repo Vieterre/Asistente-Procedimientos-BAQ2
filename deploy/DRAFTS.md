@@ -16,7 +16,7 @@ cuentas no cambia y el prototipo publico continua guardando localmente.
 Todas las rutas requieren una sesion activa y una contrasena ya cambiada. Las
 escrituras requieren `X-CSRF-Token`. La API no cambia estados de evaluacion ni
 interpreta `payload` como una aprobacion. No usarla para el flujo de conceptos
-hasta que exista una API de evaluacion independiente.
+hasta que exista una API de evaluacion independiente. El catalogo no filtra asignaciones de `user_processes`, por lo que esta pantalla no debe usarse con datos reales ni como control de acceso a procesos.
 
 ## Activacion
 
