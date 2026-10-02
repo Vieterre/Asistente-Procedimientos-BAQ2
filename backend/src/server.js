@@ -6,6 +6,7 @@ import { checkDatabase, createPool } from "./db/pool.js";
 import { AuthError, SESSION_COOKIE, changePassword, cookieOptions, getSession, hashToken, loginUser, parseCookies, revokeSession } from "./security/auth.js";
 import { ACTIONS, canPerform } from "./domain/permissions.js";
 import { UserManagementError, createAccount, listAccounts, resetAccountPassword, setAccountActive } from "./security/admin-users.js";
+import { clientIp } from "./security/client-ip.js";
 
 const rootDir = join(fileURLToPath(new URL("../..", import.meta.url)));
 const accountAssets = {
@@ -51,7 +52,7 @@ async function readJson(req, maxBytes = 16_384) {
   }
 }
 
-export function createAppServer({ poolFactory = createPool, secureCookies } = {}) {
+export function createAppServer({ poolFactory = createPool, secureCookies, trustLoopbackProxy = process.env.TRUST_LOOPBACK_PROXY === "1" } = {}) {
   const loginAttempts = new Map();
   const cookiesAreSecure = secureCookies ?? process.env.NODE_ENV === "production";
 
@@ -82,7 +83,7 @@ export function createAppServer({ poolFactory = createPool, secureCookies } = {}
       }
 
       if (url.pathname === "/api/auth/login" && req.method === "POST") {
-        const attemptKey = req.socket.remoteAddress || "unknown";
+        const attemptKey = clientIp(req, { trustLoopbackProxy }) || "unknown";
         const now = Date.now();
         const previous = loginAttempts.get(attemptKey) || { count: 0, startedAt: now };
         if (now - previous.startedAt > 15 * 60 * 1000) {
@@ -98,7 +99,7 @@ export function createAppServer({ poolFactory = createPool, secureCookies } = {}
         try {
           const body = await readJson(req);
           pool = poolFactory();
-          const session = await loginUser(pool, { ...body, request: req });
+          const session = await loginUser(pool, { ...body, request: req, clientAddress: attemptKey });
           loginAttempts.delete(attemptKey);
           sendJson(res, 200, { ok: true, user: session.user, csrfToken: session.csrfToken }, {
             "Set-Cookie": `${SESSION_COOKIE}=${session.token}; ${cookieOptions({ secure: cookiesAreSecure })}`

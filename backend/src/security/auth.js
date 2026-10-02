@@ -39,7 +39,7 @@ function publicUser(row) {
   };
 }
 
-async function createSession(pool, row, request) {
+async function createSession(pool, row, request, ipAddress) {
   const token = randomBytes(32).toString("base64url");
   const csrfToken = randomBytes(32).toString("base64url");
   await pool.query(
@@ -52,13 +52,13 @@ async function createSession(pool, row, request) {
       hashToken(csrfToken),
       new Date(Date.now() + SESSION_TTL_MS),
       String(request.headers["user-agent"] || "").slice(0, 500),
-      request.socket.remoteAddress || ""
+      ipAddress ?? request.socket.remoteAddress ?? ""
     ]
   );
   return { token, csrfToken };
 }
 
-export async function loginUser(pool, { username, email, password, otp, request, mfaEncryptionKey = process.env.MFA_ENCRYPTION_KEY || readServiceCredential("mfa_key") }) {
+export async function loginUser(pool, { username, email, password, otp, request, clientAddress, mfaEncryptionKey = process.env.MFA_ENCRYPTION_KEY || readServiceCredential("mfa_key") }) {
   const identifier = String(username ?? email ?? "").trim().toLowerCase();
   const allowLegacyEmail = process.env.ALLOW_LEGACY_EMAIL_LOGIN === "1";
   const result = await pool.query(
@@ -81,7 +81,7 @@ export async function loginUser(pool, { username, email, password, otp, request,
     }
     if (!verifyTotp(secret, otp)) throw new AuthError("mfa_required", 401);
   }
-  const session = await createSession(pool, row, request);
+  const session = await createSession(pool, row, request, clientAddress);
   return { user: publicUser(row), ...session };
 }
 
