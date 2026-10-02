@@ -11,6 +11,7 @@ WorkingDirectory=/opt/asistente-backend-test
 Environment=NODE_ENV=production
 Environment=HOST=127.0.0.1
 Environment=PORT=3000
+Environment=TRUST_LOOPBACK_PROXY=1
 Environment=PGHOST=127.0.0.1
 Environment=PGPORT=5432
 Environment=PGDATABASE=asistente_procedimientos
