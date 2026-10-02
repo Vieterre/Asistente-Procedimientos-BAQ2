@@ -38,20 +38,11 @@ test("initial migration is transactional and records its checksum", async () => 
 test("repeated migration leaves an applied schema alone", async () => {
   const first = fakePool();
   await runMigrations(first);
-  const checksum = first.calls.find(call => call.sql.startsWith("INSERT INTO schema_migrations")).params[1];
-  const secondMigrationChecksum = first.calls
-    .filter(call => call.sql.startsWith("INSERT INTO schema_migrations"))[1].params[1];
-  const thirdMigrationChecksum = first.calls
-    .filter(call => call.sql.startsWith("INSERT INTO schema_migrations"))[2].params[1];
-  const fourthMigrationChecksum = first.calls
-    .filter(call => call.sql.startsWith("INSERT INTO schema_migrations"))[3].params[1];
+  const appliedChecksums = Object.fromEntries(first.calls
+    .filter(call => call.sql.startsWith("INSERT INTO schema_migrations"))
+    .map(call => call.params));
   const second = fakePool({
-    appliedChecksums: {
-      "001_initial_schema": checksum,
-      "002_sessions": secondMigrationChecksum,
-      "003_admin_mfa": thirdMigrationChecksum,
-      "004_usernames": fourthMigrationChecksum
-    }
+    appliedChecksums
   });
   assert.equal(await runMigrations(second), false);
   assert.ok(!second.calls.some(call => call.sql.startsWith("CREATE TABLE app_users")));

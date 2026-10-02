@@ -7,6 +7,7 @@ import { AuthError, SESSION_COOKIE, changePassword, cookieOptions, getSession, h
 import { ACTIONS, canPerform } from "./domain/permissions.js";
 import { UserManagementError, createAccount, listAccounts, resetAccountPassword, setAccountActive } from "./security/admin-users.js";
 import { clientIp } from "./security/client-ip.js";
+import { DraftError, createDraft, getOwnDraft, listOwnDrafts, updateOwnDraft } from "./domain/drafts.js";
 
 const rootDir = join(fileURLToPath(new URL("../..", import.meta.url)));
 const accountAssets = {
@@ -192,6 +193,53 @@ export function createAppServer({ poolFactory = createPool, secureCookies, trust
             sendJson(res, error.status, { ok: false, error: error.code });
           } else {
             sendJson(res, 503, { ok: false, error: "password_change_unavailable" });
+          }
+        } finally {
+          await pool?.end();
+        }
+        return;
+      }
+
+      const draftId = /^\/api\/procedures\/([0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12})$/.exec(url.pathname)?.[1];
+      if ((url.pathname === "/api/procedures" && ["GET", "POST"].includes(req.method)) ||
+          (draftId && ["GET", "PUT"].includes(req.method))) {
+        let pool;
+        try {
+          pool = poolFactory();
+          const session = await getSession(pool, parseCookies(req.headers.cookie)[SESSION_COOKIE]);
+          if (!session) {
+            sendJson(res, 401, { ok: false, error: "unauthenticated" });
+            return;
+          }
+          if (session.user.mustChangePassword) {
+            sendJson(res, 403, { ok: false, error: "password_change_required" });
+            return;
+          }
+          if (req.method !== "GET") {
+            const csrfToken = String(req.headers["x-csrf-token"] || "");
+            if (!csrfToken || hashToken(csrfToken) !== session.csrfTokenHash) {
+              sendJson(res, 403, { ok: false, error: "csrf_failed" });
+              return;
+            }
+          }
+          if (url.pathname === "/api/procedures" && req.method === "GET") {
+            sendJson(res, 200, { ok: true, procedures: await listOwnDrafts(pool, session.user) });
+          } else if (url.pathname === "/api/procedures") {
+            const body = await readJson(req, 1_048_576);
+            sendJson(res, 201, { ok: true, procedure: await createDraft(pool, session.user, body || {}) });
+          } else if (req.method === "GET") {
+            sendJson(res, 200, { ok: true, procedure: await getOwnDraft(pool, session.user, draftId) });
+          } else {
+            const body = await readJson(req, 1_048_576);
+            sendJson(res, 200, { ok: true, procedure: await updateOwnDraft(pool, session.user, draftId, body || {}) });
+          }
+        } catch (error) {
+          if (error.message === "request_too_large" || error.message === "invalid_json") {
+            sendJson(res, 400, { ok: false, error: error.message });
+          } else if (error instanceof DraftError) {
+            sendJson(res, error.status, { ok: false, error: error.code });
+          } else {
+            sendJson(res, 503, { ok: false, error: "procedure_unavailable" });
           }
         } finally {
           await pool?.end();
