@@ -4,6 +4,8 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { checkDatabase, createPool } from "./db/pool.js";
 import { AuthError, SESSION_COOKIE, cookieOptions, getSession, hashToken, loginUser, parseCookies, revokeSession } from "./security/auth.js";
+import { ACTIONS, canPerform } from "./domain/permissions.js";
+import { UserManagementError, listAccounts, setAccountActive } from "./security/admin-users.js";
 
 const rootDir = join(fileURLToPath(new URL("../..", import.meta.url)));
 const port = Number(process.env.PORT || 3000);
@@ -147,6 +149,48 @@ export function createAppServer({ poolFactory = createPool, secureCookies } = {}
           });
         } catch {
           sendJson(res, 503, { ok: false, error: "authentication_unavailable" });
+        } finally {
+          await pool?.end();
+        }
+        return;
+      }
+
+      const accountAction = /^\/api\/admin\/users\/([0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12})\/(deactivate|reactivate)$/.exec(url.pathname);
+      if ((url.pathname === "/api/admin/users" && req.method === "GET") ||
+          (accountAction && req.method === "POST")) {
+        let pool;
+        try {
+          pool = poolFactory();
+          const session = await getSession(pool, parseCookies(req.headers.cookie)[SESSION_COOKIE]);
+          if (!session) {
+            sendJson(res, 401, { ok: false, error: "unauthenticated" });
+            return;
+          }
+          if (!canPerform(session.user, ACTIONS.MANAGE_USERS)) {
+            sendJson(res, 403, { ok: false, error: "forbidden" });
+            return;
+          }
+          if (accountAction) {
+            const csrfToken = String(req.headers["x-csrf-token"] || "");
+            if (!csrfToken || hashToken(csrfToken) !== session.csrfTokenHash) {
+              sendJson(res, 403, { ok: false, error: "csrf_failed" });
+              return;
+            }
+            const user = await setAccountActive(pool, {
+              actor: session.user,
+              targetId: accountAction[1],
+              active: accountAction[2] === "reactivate"
+            });
+            sendJson(res, 200, { ok: true, user });
+          } else {
+            sendJson(res, 200, { ok: true, users: await listAccounts(pool) });
+          }
+        } catch (error) {
+          if (error instanceof UserManagementError) {
+            sendJson(res, error.status, { ok: false, error: error.code });
+          } else {
+            sendJson(res, 503, { ok: false, error: "user_management_unavailable" });
+          }
         } finally {
           await pool?.end();
         }
