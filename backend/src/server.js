@@ -8,7 +8,13 @@ import { ACTIONS, canPerform } from "./domain/permissions.js";
 import { UserManagementError, createAccount, listAccounts, resetAccountPassword, setAccountActive } from "./security/admin-users.js";
 
 const rootDir = join(fileURLToPath(new URL("../..", import.meta.url)));
+const accountAssets = {
+  "/accounts": ["accounts.html", "text/html; charset=utf-8"],
+  "/accounts.css": ["accounts.css", "text/css; charset=utf-8"],
+  "/accounts.js": ["accounts.js", "text/javascript; charset=utf-8"]
+};
 const port = Number(process.env.PORT || 3000);
+const host = process.env.HOST || "127.0.0.1";
 
 function securityHeaders(extra = {}) {
   return {
@@ -263,6 +269,18 @@ export function createAppServer({ poolFactory = createPool, secureCookies } = {}
         return;
       }
 
+      if (req.method === "GET" && Object.hasOwn(accountAssets, url.pathname)) {
+        const [filename, contentType] = accountAssets[url.pathname];
+        const body = await readFile(join(rootDir, "backend/public", filename));
+        res.writeHead(200, securityHeaders({
+          "Content-Type": contentType,
+          "Cache-Control": "no-store",
+          "Content-Security-Policy": "default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; form-action 'self'; base-uri 'none'; frame-ancestors 'none'"
+        }));
+        res.end(body);
+        return;
+      }
+
       res.writeHead(404, securityHeaders({ "Content-Type": "text/plain; charset=utf-8" }));
       res.end("No encontrado");
     } catch (error) {
@@ -273,7 +291,7 @@ export function createAppServer({ poolFactory = createPool, secureCookies } = {}
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  createAppServer().listen(port, () => {
-    console.log(`Asistente disponible en http://localhost:${port}`);
+  createAppServer().listen(port, host, () => {
+    console.log(`Asistente disponible en http://${host}:${port}`);
   });
 }

@@ -64,3 +64,29 @@ test("server does not expose project files", async () => {
     await new Promise(resolve => server.close(resolve));
   }
 });
+
+test("account console serves only its own assets with a restrictive policy", async () => {
+  const server = createAppServer();
+  await new Promise(resolve => server.listen(0, "127.0.0.1", resolve));
+  const base = `http://127.0.0.1:${server.address().port}`;
+
+  try {
+    for (const [path, type] of [
+      ["/accounts", "text/html"],
+      ["/accounts.css", "text/css"],
+      ["/accounts.js", "text/javascript"]
+    ]) {
+      const response = await fetch(base + path);
+      assert.equal(response.status, 200);
+      assert.match(response.headers.get("content-type"), new RegExp(type));
+      assert.equal(response.headers.get("cache-control"), "no-store");
+      assert.match(response.headers.get("content-security-policy"), /default-src 'none'/);
+      assert.ok((await response.text()).length > 100);
+    }
+    for (const path of ["/accounts.map", "/backend/public/accounts.js"]) {
+      assert.equal((await fetch(base + path)).status, 404);
+    }
+  } finally {
+    await new Promise(resolve => server.close(resolve));
+  }
+});

@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cuentas | Asistente de Procedimientos</title>
+  <link rel="stylesheet" href="/accounts.css">
+  <script src="/accounts.js" defer></script>
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="brand"><span class="brand-mark" aria-hidden="true">AP</span><span>Asistente de Procedimientos<small>Gestión de cuentas</small></span></div>
+      <div class="session-controls" id="sessionControls" hidden>
+        <span id="sessionIdentity"></span>
+        <button class="quiet-button" id="logoutButton" type="button">Cerrar sesión</button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="login-wrap" id="loginView" aria-labelledby="loginTitle">
+      <div class="login-panel">
+        <h1 id="loginTitle">Ingresar</h1>
+        <form id="loginForm" autocomplete="on">
+          <label for="loginUsername">Nombre de usuario</label>
+          <input id="loginUsername" name="username" autocomplete="username" required maxlength="32" spellcheck="false">
+          <label for="loginPassword">Contraseña</label>
+          <input id="loginPassword" name="password" type="password" autocomplete="current-password" required>
+          <label for="loginOtp">Código del autenticador <span class="optional">solo administrador</span></label>
+          <input id="loginOtp" name="otp" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" spellcheck="false">
+          <p class="form-message" id="loginMessage" role="alert" hidden></p>
+          <button class="primary-button full" type="submit">Ingresar</button>
+        </form>
+      </div>
+    </section>
+
+    <div id="workspace" hidden>
+      <div class="page-heading">
+        <h1>Cuentas</h1>
+        <p id="welcomeText"></p>
+      </div>
+
+      <section class="section password-section" id="passwordSection" aria-labelledby="passwordTitle">
+        <div class="section-heading">
+          <div><h2 id="passwordTitle">Cambiar contraseña</h2><p id="passwordIntro">La nueva contraseña debe tener al menos 15 caracteres.</p></div>
+        </div>
+        <form id="passwordForm" class="form-grid">
+          <div class="field"><label for="currentPassword">Contraseña actual</label><input id="currentPassword" type="password" autocomplete="current-password" required></div>
+          <div class="field"><label for="newPassword">Nueva contraseña</label><input id="newPassword" type="password" autocomplete="new-password" minlength="15" maxlength="256" required></div>
+          <div class="field"><label for="confirmPassword">Confirmar nueva contraseña</label><input id="confirmPassword" type="password" autocomplete="new-password" minlength="15" maxlength="256" required></div>
+          <div class="form-actions"><button class="primary-button" type="submit">Cambiar contraseña</button><span class="form-message" id="passwordMessage" role="status" hidden></span></div>
+        </form>
+      </section>
+
+      <div id="adminWorkspace" hidden>
+        <section class="section" aria-labelledby="createTitle">
+          <div class="section-heading"><div><h2 id="createTitle">Crear usuario</h2><p>El usuario recibirá una contraseña temporal y deberá cambiarla al ingresar.</p></div></div>
+          <form id="createForm" class="form-grid">
+            <div class="field"><label for="newUsername">Nombre de usuario</label><input id="newUsername" autocomplete="off" pattern="[A-Za-z][A-Za-z0-9]{3,31}" maxlength="32" required spellcheck="false"><small>Entre 4 y 32 letras o números. Debe empezar por una letra.</small></div>
+            <div class="field"><label for="displayName">Nombre completo</label><input id="displayName" autocomplete="off" maxlength="120" required></div>
+            <div class="field"><label for="newRole">Rol</label><select id="newRole" required><option value="elaborador">Elaborador</option><option value="evaluador">Evaluador</option></select></div>
+            <div class="form-actions"><button class="primary-button" type="submit">Crear usuario</button><span class="form-message" id="createMessage" role="status" hidden></span></div>
+          </form>
+        </section>
+
+        <section class="section" aria-labelledby="usersTitle">
+          <div class="section-heading"><div><h2 id="usersTitle">Usuarios</h2><p id="usersCount"></p></div><button class="secondary-button" id="refreshUsersButton" type="button">Actualizar</button></div>
+          <p class="form-message" id="usersMessage" role="status" hidden></p>
+          <div class="table-scroll"><table><thead><tr><th scope="col">Usuario</th><th scope="col">Nombre</th><th scope="col">Rol</th><th scope="col">Estado</th><th scope="col">Contraseña</th><th scope="col">Acciones</th></tr></thead><tbody id="usersBody"></tbody></table></div>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <dialog id="credentialDialog" aria-labelledby="credentialTitle">
+    <div class="dialog-heading"><h2 id="credentialTitle">Contraseña temporal</h2><button class="icon-close" type="button" id="closeCredentialButton" aria-label="Cerrar" title="Cerrar">&times;</button></div>
+    <p>Entrégala al usuario por un canal seguro. No se volverá a mostrar.</p>
+    <dl class="credential-list"><div><dt>Usuario</dt><dd id="issuedUsername"></dd></div><div><dt>Contraseña</dt><dd class="secret" id="issuedPassword"></dd></div></dl>
+    <div class="dialog-actions"><button class="secondary-button" id="copyPasswordButton" type="button">Copiar contraseña</button><button class="primary-button" id="doneCredentialButton" type="button">Listo</button></div>
+    <p class="form-message" id="credentialMessage" role="status" hidden></p>
+  </dialog>
+</body>
+</html>
