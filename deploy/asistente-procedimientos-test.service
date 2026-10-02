@@ -14,7 +14,7 @@ Environment=PORT=3000
 Environment=PGHOST=127.0.0.1
 Environment=PGPORT=5432
 Environment=PGDATABASE=asistente_procedimientos
-Environment=PGUSER=asistente_user
+Environment=PGUSER=asistente_app_test
 LoadCredential=pg_password:/etc/asistente-procedimientos/pg.password
 LoadCredential=mfa_key:/etc/asistente-procedimientos/mfa.key
 ExecStart=/usr/bin/env node backend/src/server.js

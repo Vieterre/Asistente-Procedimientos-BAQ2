@@ -75,6 +75,7 @@ test("private service listens on loopback and receives secrets as credentials", 
   const unit = readFileSync(new URL("../../deploy/asistente-procedimientos-test.service", import.meta.url), "utf8");
   assert.match(unit, /^DynamicUser=yes$/m);
   assert.match(unit, /^Environment=HOST=127\.0\.0\.1$/m);
+  assert.match(unit, /^Environment=PGUSER=asistente_app_test$/m);
   assert.match(unit, /^LoadCredential=pg_password:/m);
   assert.match(unit, /^LoadCredential=mfa_key:/m);
   assert.doesNotMatch(unit, /^Environment=.*(?:PASSWORD|ENCRYPTION_KEY)/m);
