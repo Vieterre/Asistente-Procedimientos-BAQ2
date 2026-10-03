@@ -214,6 +214,7 @@ test("draft HTTP routes create, read, and update with a live author session", as
           { uid: "start", tipo: "Inicio", actividad: "Inicio" },
           { uid: "step", tipo: "Actividad", n: 1, actividad: "Revisar solicitud", descripcion: "Texto de prueba", responsable: "Profesional", evidencia: "Formato de prueba", sistema: "Sistema de prueba", tieneControl: false },
           { uid: "decision", tipo: "Decisión", actividad: "¿Está completo?", descripcion: "¿Está completo?", responsable: "Profesional", decisionSi: "end", decisionNo: "step", tieneControl: false },
+          { uid: "connector", tipo: "Conector", connectorId: "A", actividad: "Conector A", connectorDestino: "step", tieneControl: false },
           { uid: "end", tipo: "Fin", actividad: "Fin" }
         ]
       },
@@ -224,12 +225,14 @@ test("draft HTTP routes create, read, and update with a live author session", as
     const reopened = await fetch(`${base}/${procedure.id}`, { headers });
     const reopenedPayload = (await reopened.json()).procedure.payload;
     assert.deepEqual(reopenedPayload.fields, { nombre: "Nuevo", objetivo: "Objetivo", alcance: "Alcance", definiciones: "Definiciones", condiciones: "Condiciones" });
-    assert.equal(reopenedPayload.activities.length, 4);
+    assert.equal(reopenedPayload.activities.length, 5);
     assert.equal(reopenedPayload.activities[1].responsable, "Profesional");
     assert.equal(reopenedPayload.activities[1].evidencia, "Formato de prueba");
     assert.equal(reopenedPayload.activities[2].decisionSi, "end");
     assert.equal(reopenedPayload.activities[2].decisionNo, "step");
-    assert.deepEqual(reopenedPayload.activities[3], { uid: "end", tipo: "Fin", actividad: "Fin" });
+    assert.equal(reopenedPayload.activities[3].connectorId, "A");
+    assert.equal(reopenedPayload.activities[3].connectorDestino, "step");
+    assert.deepEqual(reopenedPayload.activities[4], { uid: "end", tipo: "Fin", actividad: "Fin" });
     assert.equal(reopenedPayload.norms.length, 2);
     assert.equal(reopenedPayload.norms[0].norma, "Norma de prueba");
     assert.equal(reopenedPayload.norms[1].tipo, "Interna");

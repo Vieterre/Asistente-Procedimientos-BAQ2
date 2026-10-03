@@ -3,7 +3,7 @@ const ids = [
   "workspace", "sessionControls", "sessionIdentity", "logoutButton", "welcomeText",
   "passwordRequired", "draftWorkspace", "draftForm", "editorTitle", "editorStatus",
   "draftName", "processCode", "draftObjective", "draftScope", "draftDefinitions", "draftConditions", "saveDraftButton", "editorMessage",
-  "newDraftButton", "addNormButton", "normsList", "emptyNorms", "addActivityButton", "addDecisionButton", "activitiesList", "emptyActivities", "refreshDraftsButton", "draftCount", "listMessage", "emptyDrafts",
+  "newDraftButton", "addNormButton", "normsList", "emptyNorms", "addActivityButton", "addDecisionButton", "addConnectorButton", "activitiesList", "emptyActivities", "refreshDraftsButton", "draftCount", "listMessage", "emptyDrafts",
   "draftList"
 ];
 const ui = Object.fromEntries(ids.map(id => [id, document.getElementById(id)]));
@@ -119,6 +119,43 @@ function renderNorms() {
   }));
 }
 
+function destinationField(activity, index, key, labelText) {
+  const field = document.createElement("div");
+  field.className = "field";
+  const label = document.createElement("label");
+  const select = document.createElement("select");
+  select.id = key + index;
+  label.htmlFor = select.id;
+  label.textContent = labelText;
+  const placeholder = document.createElement("option");
+  placeholder.value = "";
+  placeholder.textContent = "Selecciona un destino";
+  select.append(placeholder);
+  for (const target of activityRows) {
+    if (target === activity || target.tipo === "Inicio") continue;
+    const option = document.createElement("option");
+    option.value = target.uid;
+    option.textContent = target.actividad || target.descripcion || target.tipo;
+    select.append(option);
+  }
+  select.value = activity[key] || "";
+  select.addEventListener("change", () => { activity[key] = select.value; markDirty(); });
+  field.append(label, select);
+  return field;
+}
+
+function nextConnectorId() {
+  const used = new Set(activityRows.filter(activity => activity.tipo === "Conector")
+    .map(activity => String(activity.connectorId || "").toUpperCase()));
+  for (let code = 65; code <= 90; code += 1) {
+    const letter = String.fromCharCode(code);
+    if (!used.has(letter)) return letter;
+  }
+  let number = 1;
+  while (used.has("C" + number)) number += 1;
+  return "C" + number;
+}
+
 function renderActivities() {
   ui.emptyActivities.hidden = activityRows.length > 0;
   ui.activitiesList.replaceChildren(...activityRows.map((activity, index) => {
@@ -127,9 +164,11 @@ function renderActivities() {
     const heading = document.createElement("div");
     heading.className = "activity-heading";
     const title = document.createElement("h4");
-    title.textContent = activity.tipo === "Actividad" ? "Actividad " + (index + 1) : String(activity.tipo || "Elemento del flujo");
+    title.textContent = activity.tipo === "Actividad" ? "Actividad " + (index + 1)
+      : activity.tipo === "Conector" ? "Conector " + String(activity.connectorId || "")
+      : String(activity.tipo || "Elemento del flujo");
     heading.append(title);
-    const editable = ["Actividad", "Decisión"].includes(activity.tipo) && !activity.tieneControl;
+    const editable = ["Actividad", "Decisión", "Conector"].includes(activity.tipo) && !activity.tieneControl;
     if (editable) {
       const remove = document.createElement("button");
       remove.type = "button";
@@ -154,6 +193,20 @@ function renderActivities() {
       summary.className = "activity-summary";
       summary.textContent = String(activity.actividad || activity.descripcion || "Sin nombre");
       row.append(summary);
+      return row;
+    }
+    if (activity.tipo === "Conector") {
+      const idField = document.createElement("div");
+      idField.className = "field";
+      const idLabel = document.createElement("label");
+      const idInput = document.createElement("input");
+      idInput.id = "connectorId" + index;
+      idInput.value = String(activity.connectorId || "");
+      idInput.readOnly = true;
+      idLabel.htmlFor = idInput.id;
+      idLabel.textContent = "Identificador";
+      idField.append(idLabel, idInput);
+      row.append(idField, destinationField(activity, index, "connectorDestino", "Continuar el flujo en"));
       return row;
     }
     if (activity.tipo === "Decisión") {
@@ -187,30 +240,8 @@ function renderActivities() {
       row.append(responsibleField);
       const routes = document.createElement("div");
       routes.className = "activity-grid";
-      for (const [key, labelText] of [["decisionSi", "Ruta Sí"], ["decisionNo", "Ruta No"]]) {
-        const field = document.createElement("div");
-        field.className = "field";
-        const label = document.createElement("label");
-        const select = document.createElement("select");
-        select.id = key + index;
-        label.htmlFor = select.id;
-        label.textContent = labelText;
-        const placeholder = document.createElement("option");
-        placeholder.value = "";
-        placeholder.textContent = "Selecciona un destino";
-        select.append(placeholder);
-        for (const target of activityRows) {
-          if (target === activity || target.tipo === "Inicio") continue;
-          const option = document.createElement("option");
-          option.value = target.uid;
-          option.textContent = target.actividad || target.descripcion || target.tipo;
-          select.append(option);
-        }
-        select.value = activity[key] || "";
-        select.addEventListener("change", () => { activity[key] = select.value; markDirty(); });
-        field.append(label, select);
-        routes.append(field);
-      }
+      routes.append(destinationField(activity, index, "decisionSi", "Ruta Sí"));
+      routes.append(destinationField(activity, index, "decisionNo", "Ruta No"));
       row.append(routes);
       return row;
     }
@@ -485,6 +516,13 @@ ui.addDecisionButton.addEventListener("click", () => addFlowItem({
   uid: crypto.randomUUID(), tipo: "Decisión", actividad: "", descripcion: "", responsable: "",
   decisionSi: "", decisionNo: "", tieneControl: false
 }));
+ui.addConnectorButton.addEventListener("click", () => {
+  const connectorId = nextConnectorId();
+  addFlowItem({
+    uid: crypto.randomUUID(), tipo: "Conector", connectorId, actividad: "Conector " + connectorId,
+    descripcion: "", connectorDestino: "", tieneControl: false
+  });
+});
 
 ui.draftForm.addEventListener("submit", async event => {
   event.preventDefault();

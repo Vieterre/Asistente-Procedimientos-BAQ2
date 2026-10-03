@@ -37,9 +37,11 @@ Actividades permite agregar y editar actividades ordinarias (nombre,
 descripcion, responsable, evidencia y sistema) en `payload.activities`.
 Las decisiones permiten registrar pregunta, responsable y rutas Si/No por
 identificador de actividad. No se puede eliminar un destino mientras otra
-ruta lo referencie. Conectores, puntos de control, Inicio y Fin se muestran
-sin edicion y se conservan en el contenido. El formulario completo sigue sin
-conectarse; no usar estas rutas como validacion de un flujo publicable.
+ruta lo referencie. Los conectores reciben un identificador automatico y
+permiten elegir un destino; sus identificadores existentes no se editan en
+esta pantalla. Puntos de control, Inicio y Fin se muestran sin edicion y se
+conservan en el contenido. El formulario completo sigue sin conectarse; no
+usar estas rutas como validacion de un flujo publicable.
 
 ## Activacion
 
