@@ -47,6 +47,10 @@ function submissionIssues(name, payload) {
       issues.push(`Completa todos los datos del cambio ${index + 1}.`);
     }
   });
+  const changeVersions = changes.map(change => String(change?.version || "").trim()).filter(Boolean);
+  if (new Set(changeVersions.map(version => version.toLocaleLowerCase("es-CO"))).size !== changeVersions.length) {
+    issues.push("Cada versión del control de cambios debe ser única.");
+  }
   const roles = [fields.elaboro, fields.reviso, fields.aprobo];
   if (roles.some(role => typeof role !== "string" || !role.trim()) || new Set(roles.map(role => String(role).trim().toLocaleLowerCase("es-CO"))).size !== roles.length) {
     issues.push("Completa Elaboró, Revisó y Aprobó con cargos distintos.");

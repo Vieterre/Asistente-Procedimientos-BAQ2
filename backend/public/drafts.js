@@ -186,6 +186,40 @@ function showRoleSeparation() {
   setMessage(ui.roleSeparationMessage, repeated ? "Elaboró, Revisó y Aprobó deben corresponder a cargos distintos." : "");
 }
 
+function populateApprovalRoleSelect(select, selected = "", allowedLevels = null) {
+  const placeholder = document.createElement("option");
+  placeholder.value = "";
+  placeholder.textContent = "Seleccione un cargo";
+  const options = [placeholder];
+  const groups = responsibilityRoleGroups.filter(group => !allowedLevels || allowedLevels.includes(group.level));
+  const allowedRoles = new Set(groups.flatMap(group => group.cargos));
+  for (const group of groups) {
+    const optgroup = document.createElement("optgroup");
+    optgroup.label = group.level;
+    for (const cargo of group.cargos) optgroup.append(new Option(cargo, cargo));
+    options.push(optgroup);
+  }
+  if (selected && !allowedRoles.has(selected)) {
+    const savedGroup = document.createElement("optgroup");
+    savedGroup.label = "Valor guardado anteriormente";
+    savedGroup.append(new Option("Conservar: " + selected, selected));
+    options.push(savedGroup);
+  }
+  select.replaceChildren(...options);
+  select.value = selected;
+}
+
+function suggestNextChangeVersion(changes, fallback = "1.0") {
+  const validVersion = /^\d+\.\d+$/;
+  const latest = [...(Array.isArray(changes) ? changes : [])].reverse()
+    .map(change => String(change?.version || "").trim())
+    .find(version => validVersion.test(version));
+  const fallbackVersion = String(fallback || "").trim();
+  const base = latest || (validVersion.test(fallbackVersion) ? fallbackVersion : "1.0");
+  const [major, minor] = base.split(".").map(Number);
+  return `${major}.${minor + 1}`;
+}
+
 function markDirty() {
   dirty = true;
   flowReviewVersion += 1;
@@ -1347,7 +1381,12 @@ function populateDraft(procedure) {
   renderChanges();
   setMessage(ui.documentsMessage, "");
   ui.draftName.value = procedure.name;
-  for (const [inputId, fieldId] of textFields) ui[inputId].value = typeof currentPayload.fields?.[fieldId] === "string" ? currentPayload.fields[fieldId] : "";
+  for (const [inputId, fieldId] of textFields) {
+    const value = typeof currentPayload.fields?.[fieldId] === "string" ? currentPayload.fields[fieldId] : "";
+    if (inputId === "draftPreparedBy" || inputId === "draftReviewedBy") populateApprovalRoleSelect(ui[inputId], value);
+    else if (inputId === "draftApprovedBy") populateApprovalRoleSelect(ui[inputId], value, ["Directivo"]);
+    else ui[inputId].value = value;
+  }
   showRoleSeparation();
   const option = document.createElement("option");
   option.value = procedure.processCode;
@@ -1412,6 +1451,9 @@ function newDraft() {
   renderChanges();
   setMessage(ui.documentsMessage, "");
   ui.draftForm.reset();
+  populateApprovalRoleSelect(ui.draftPreparedBy);
+  populateApprovalRoleSelect(ui.draftReviewedBy);
+  populateApprovalRoleSelect(ui.draftApprovedBy, "", ["Directivo"]);
   for (const [inputId] of textFields) ui[inputId].value = "";
   showRoleSeparation();
   ui.processCode.disabled = false;
@@ -1457,11 +1499,8 @@ ui.loginForm.addEventListener("submit", async event => {
 
 ui.draftForm.addEventListener("input", markDirty);
 ui.draftForm.addEventListener("change", markDirty);
-for (const inputId of ["draftPreparedBy", "draftPreparedName", "draftReviewedBy", "draftReviewedName", "draftApprovedBy", "draftApprovedName"]) {
-  ui[inputId].addEventListener("input", markDirty);
-}
 for (const inputId of ["draftPreparedBy", "draftReviewedBy", "draftApprovedBy"]) {
-  ui[inputId].addEventListener("input", showRoleSeparation);
+  ui[inputId].addEventListener("change", showRoleSeparation);
 }
 ui.annexApplicability.addEventListener("change", () => {
   if (ui.annexApplicability.value === "no_aplica") {
@@ -1485,7 +1524,8 @@ ui.addAnnexButton.addEventListener("click", () => {
   ui.annexesList.lastElementChild?.querySelector("input")?.focus();
 });
 ui.addChangeButton.addEventListener("click", () => {
-  changeRows.push({ version: String(currentPayload.fields?.version || "1.0"), fecha: todayLocal(), razon: "" });
+  const fallbackVersion = String(currentPayload.fields?.version || "1.0");
+  changeRows.push({ version: suggestNextChangeVersion(changeRows, fallbackVersion), fecha: todayLocal(), razon: "" });
   renderChanges();
   markDirty();
   ui.changesList.lastElementChild?.querySelector("input")?.focus();
@@ -1864,5 +1904,8 @@ ui.logoutButton.addEventListener("click", async () => {
 });
 
 csrfToken = sessionStorage.getItem(csrfKey) || "";
+populateApprovalRoleSelect(ui.draftPreparedBy);
+populateApprovalRoleSelect(ui.draftReviewedBy);
+populateApprovalRoleSelect(ui.draftApprovedBy, "", ["Directivo"]);
 installMethodHelps(document);
 if (csrfToken) request("/api/auth/me").then(({ user }) => startSession(user)).catch(clearSession);
