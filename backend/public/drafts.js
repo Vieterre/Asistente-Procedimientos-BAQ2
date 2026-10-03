@@ -50,6 +50,14 @@ const activityFields = [
   ["evidencia", "Registro / evidencia", "input"],
   ["sistema", "Sistema / herramienta", "input"]
 ];
+const controlActions = ["Analiza", "Aprueba", "Autoriza", "Compara", "Comprueba", "Concilia", "Confirma", "Contrasta", "Controla", "Evalúa", "Inspecciona", "Revisa", "Supervisa", "Valida", "Verifica"];
+const controlFields = [
+  ["controlResponsable", "Responsable del control", "input"],
+  ["controlPeriodicidad", "Periodicidad", "input"],
+  ["controlEjecucion", "Ejecución del control", "textarea"],
+  ["controlDesviacion", "Tratamiento de desviaciones", "textarea"],
+  ["controlEvidencia", "Evidencia del control", "textarea"]
+];
 
 function markDirty() {
   dirty = true;
@@ -168,7 +176,7 @@ function renderActivities() {
       : activity.tipo === "Conector" ? "Conector " + String(activity.connectorId || "")
       : String(activity.tipo || "Elemento del flujo");
     heading.append(title);
-    const editable = ["Actividad", "Decisión", "Conector"].includes(activity.tipo) && !activity.tieneControl;
+    const editable = activity.tipo === "Actividad" || (["Decisión", "Conector"].includes(activity.tipo) && !activity.tieneControl);
     if (editable) {
       const remove = document.createElement("button");
       remove.type = "button";
@@ -262,6 +270,67 @@ function renderActivities() {
       grid.append(field);
     }
     row.append(grid);
+    const controlField = document.createElement("div");
+    controlField.className = "field control-toggle";
+    const controlLabel = document.createElement("label");
+    const controlCheckbox = document.createElement("input");
+    controlCheckbox.type = "checkbox";
+    controlCheckbox.id = "activityControl" + index;
+    controlCheckbox.checked = activity.tieneControl === true;
+    controlLabel.htmlFor = controlCheckbox.id;
+    controlLabel.textContent = "Punto de control";
+    controlCheckbox.addEventListener("change", () => {
+      activity.tieneControl = controlCheckbox.checked;
+      renderActivities();
+      markDirty();
+    });
+    controlField.append(controlCheckbox, controlLabel);
+    row.append(controlField);
+    if (activity.tieneControl === true) {
+      const details = document.createElement("div");
+      details.className = "control-details";
+      const actionField = document.createElement("div");
+      actionField.className = "field";
+      const actionLabel = document.createElement("label");
+      const actionSelect = document.createElement("select");
+      actionSelect.id = "controlAction" + index;
+      actionLabel.htmlFor = actionSelect.id;
+      actionLabel.textContent = "Propósito del control";
+      const emptyAction = document.createElement("option");
+      emptyAction.value = "";
+      emptyAction.textContent = "Selecciona una acción";
+      actionSelect.append(emptyAction);
+      const selectedAction = String(activity.controlAccion || "");
+      for (const action of selectedAction && !controlActions.includes(selectedAction) ? [...controlActions, selectedAction] : controlActions) {
+        const option = document.createElement("option");
+        option.value = action;
+        option.textContent = action;
+        actionSelect.append(option);
+      }
+      actionSelect.value = selectedAction;
+      actionSelect.addEventListener("change", () => { activity.controlAccion = actionSelect.value; markDirty(); });
+      actionField.append(actionLabel, actionSelect);
+      details.append(actionField);
+      for (const [key, labelText, kind] of controlFields) {
+        const field = document.createElement("div");
+        field.className = "field" + (kind === "textarea" ? " control-wide" : "");
+        const label = document.createElement("label");
+        const input = document.createElement(kind);
+        input.id = key + index;
+        input.value = typeof activity[key] === "string" ? activity[key] : "";
+        input.maxLength = kind === "textarea" ? 10000 : 500;
+        label.htmlFor = input.id;
+        label.textContent = labelText;
+        input.addEventListener("input", () => {
+          activity[key] = input.value;
+          if (key === "controlResponsable") delete activity.controlResponsableOtro;
+          markDirty();
+        });
+        field.append(label, input);
+        details.append(field);
+      }
+      row.append(details);
+    }
     return row;
   }));
 }

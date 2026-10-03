@@ -39,9 +39,11 @@ Las decisiones permiten registrar pregunta, responsable y rutas Si/No por
 identificador de actividad. No se puede eliminar un destino mientras otra
 ruta lo referencie. Los conectores reciben un identificador automatico y
 permiten elegir un destino; sus identificadores existentes no se editan en
-esta pantalla. Puntos de control, Inicio y Fin se muestran sin edicion y se
-conservan en el contenido. El formulario completo sigue sin conectarse; no
-usar estas rutas como validacion de un flujo publicable.
+esta pantalla. Las actividades ordinarias pueden marcarse como puntos de
+control y registrar responsable, periodicidad, proposito, ejecucion,
+desviaciones y evidencia. Inicio y Fin se muestran sin edicion y se conservan
+en el contenido. El formulario completo sigue sin conectarse; no usar estas
+rutas ni los controles como validacion de un flujo publicable.
 
 ## Activacion
 

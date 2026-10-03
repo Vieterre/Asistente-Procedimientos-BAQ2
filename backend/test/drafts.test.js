@@ -212,7 +212,8 @@ test("draft HTTP routes create, read, and update with a live author session", as
         ],
         activities: [
           { uid: "start", tipo: "Inicio", actividad: "Inicio" },
-          { uid: "step", tipo: "Actividad", n: 1, actividad: "Revisar solicitud", descripcion: "Texto de prueba", responsable: "Profesional", evidencia: "Formato de prueba", sistema: "Sistema de prueba", tieneControl: false },
+          { uid: "step", tipo: "Actividad", n: 1, actividad: "Revisar solicitud", descripcion: "Texto de prueba", responsable: "Profesional", evidencia: "Formato de prueba", sistema: "Sistema de prueba", tieneControl: true,
+            controlResponsable: "Profesional", controlPeriodicidad: "Cada vez", controlAccion: "Verifica", controlEjecucion: "Compara datos", controlDesviacion: "Devuelve", controlEvidencia: "Registro de prueba" },
           { uid: "decision", tipo: "Decisión", actividad: "¿Está completo?", descripcion: "¿Está completo?", responsable: "Profesional", decisionSi: "end", decisionNo: "step", tieneControl: false },
           { uid: "connector", tipo: "Conector", connectorId: "A", actividad: "Conector A", connectorDestino: "step", tieneControl: false },
           { uid: "end", tipo: "Fin", actividad: "Fin" }
@@ -228,6 +229,9 @@ test("draft HTTP routes create, read, and update with a live author session", as
     assert.equal(reopenedPayload.activities.length, 5);
     assert.equal(reopenedPayload.activities[1].responsable, "Profesional");
     assert.equal(reopenedPayload.activities[1].evidencia, "Formato de prueba");
+    assert.equal(reopenedPayload.activities[1].tieneControl, true);
+    assert.equal(reopenedPayload.activities[1].controlAccion, "Verifica");
+    assert.equal(reopenedPayload.activities[1].controlDesviacion, "Devuelve");
     assert.equal(reopenedPayload.activities[2].decisionSi, "end");
     assert.equal(reopenedPayload.activities[2].decisionNo, "step");
     assert.equal(reopenedPayload.activities[3].connectorId, "A");
