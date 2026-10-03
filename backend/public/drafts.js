@@ -1218,97 +1218,141 @@ ui.draftForm.addEventListener("submit", async event => {
 });
 
 ui.newDraftButton.addEventListener("click", newDraft);
-function previewSection(title, rows) {
-  const section = document.createElement("section");
-  section.className = "preview-section";
-  const heading = document.createElement("h3");
-  heading.textContent = title;
-  section.append(heading);
-  for (const [label, value] of rows) {
-    if (value === undefined || value === null || String(value).trim() === "") continue;
-    const block = document.createElement("div");
-    block.className = "preview-field";
-    const name = document.createElement("strong");
-    name.textContent = label;
-    const text = document.createElement("p");
-    text.textContent = String(value);
-    block.append(name, text);
-    section.append(block);
-  }
-  return section;
-}
-
-function previewRecords(title, records, fields) {
-  const section = previewSection(title, []);
-  if (!records.length) {
-    section.append(document.createTextNode("Sin registros."));
-    return section;
-  }
-  records.forEach((record, index) => {
-    const item = previewSection(`${index + 1}. ${record.actividad || record.documento || record.norma || record.tipo || "Registro"}`, fields.map(([key, label]) => [label, record[key]]));
-    item.classList.add("preview-record");
-    section.append(item);
-  });
-  return section;
-}
-
-function previewResponsibilities() {
-  const section = previewSection("Responsables de actividades y controles", []);
+function reportTable(headers, records, valuesForRecord) {
   const table = document.createElement("table");
-  table.className = "preview-responsibilities";
-  const header = document.createElement("thead");
-  const headerRow = document.createElement("tr");
-  for (const label of ["Elemento", "Responsable de la actividad", "Responsable del control"]) {
+  table.className = "preview-report-table";
+  const thead = document.createElement("thead");
+  const header = document.createElement("tr");
+  headers.forEach(label => {
     const cell = document.createElement("th");
     cell.scope = "col";
     cell.textContent = label;
-    headerRow.append(cell);
-  }
-  header.append(headerRow);
-  const body = document.createElement("tbody");
-  activityRows.forEach((activity, index) => {
-    if (!["Actividad", "Decisión"].includes(activity.tipo)) return;
-    const row = document.createElement("tr");
-    const values = [
-      `${index + 1}. ${activity.actividad || activity.descripcion || activity.tipo}`,
-      activity.responsable?.trim() || "Sin asignar",
-      activity.tieneControl ? (activity.controlResponsable?.trim() || "Sin asignar") : "No aplica"
-    ];
-    for (const value of values) {
-      const cell = document.createElement("td");
-      cell.textContent = value;
-      row.append(cell);
-    }
-    body.append(row);
+    header.append(cell);
   });
-  table.append(header, body);
-  section.append(body.children.length ? table : document.createTextNode("Sin actividades ni controles."));
+  thead.append(header);
+  const tbody = document.createElement("tbody");
+  if (!records.length) {
+    const row = document.createElement("tr");
+    const cell = document.createElement("td");
+    cell.colSpan = headers.length;
+    cell.textContent = "Sin información registrada.";
+    row.append(cell);
+    tbody.append(row);
+  } else {
+    records.forEach((record, index) => {
+      const row = document.createElement("tr");
+      valuesForRecord(record, index).forEach(value => {
+        const cell = document.createElement("td");
+        cell.textContent = value || "";
+        row.append(cell);
+      });
+      tbody.append(row);
+    });
+  }
+  table.append(thead, tbody);
+  return table;
+}
+
+function reportSection(number, title, content) {
+  const section = document.createElement("section");
+  section.className = "preview-report-section";
+  const heading = document.createElement("h3");
+  heading.textContent = `${number}. ${title.toLocaleUpperCase("es-CO")}`;
+  section.append(heading, content);
   return section;
 }
 
 function showPreview() {
   const content = ui.previewContent;
-  const process = ui.processCode.selectedOptions[0]?.textContent || "";
-  content.replaceChildren(
-    previewSection("Datos generales", [["Nombre del procedimiento", ui.draftName.value], ["Proceso", ui.processCode.value ? process : ""], ["Objetivo", ui.draftObjective.value], ["Alcance", ui.draftScope.value], ["Definiciones", ui.draftDefinitions.value], ["Condiciones generales", ui.draftConditions.value]]),
-    previewRecords("Normatividad", normRows, [["Tipo", "Tipo"], ["anio", "Año"], ["descripcion", "Descripción"], ["articulo", "Artículo / sección"], ["entidad", "Entidad emisora"]]),
-    previewResponsibilities(),
-    previewRecords("Actividades y flujo", activityRows, [["tipo", "Tipo"], ["descripcion", "Descripción"], ["responsable", "Responsable"], ["evidencia", "Registro / evidencia"], ["sistema", "Sistema / herramienta"], ["controlResponsable", "Responsable del control"], ["controlPeriodicidad", "Periodicidad"], ["controlEjecucion", "Ejecución del control"], ["controlDesviacion", "Tratamiento de desviaciones"], ["controlEvidencia", "Evidencia del control"]]),
-    previewRecords("Documentos anexos", annexesNotApplicable ? [] : annexRows, [["tipo", "Tipo"], ["codigo", "Código / referencia"], ["observacion", "Observación"]]),
-    previewRecords("Control de cambios", changeRows, [["version", "Versión"], ["fecha", "Fecha"], ["razon", "Razón de la actualización"]]),
-    previewSection("Responsables", [["Elaboró", ui.draftPreparedBy.value], ["Nombre", ui.draftPreparedName.value], ["Revisó", ui.draftReviewedBy.value], ["Nombre", ui.draftReviewedName.value], ["Aprobó", ui.draftApprovedBy.value], ["Nombre", ui.draftApprovedName.value]])
-  );
-  ui.previewState.textContent = !currentDraft ? "Vista de un borrador no guardado." : dirty ? "Vista con cambios sin guardar." : `Borrador guardado · revisión ${currentDraft.revision}.`;
+  const process = ui.processCode.selectedOptions[0]?.textContent || "Sin proceso seleccionado";
+  const header = document.createElement("header");
+  header.className = "preview-document-header";
+  const agency = document.createElement("div");
+  agency.className = "preview-agency-mark";
+  agency.textContent = "AP";
+  const title = document.createElement("div");
+  title.className = "preview-document-title";
+  const titleLabel = document.createElement("strong");
+  titleLabel.textContent = "PROCEDIMIENTO";
+  const name = document.createElement("h2");
+  name.textContent = ui.draftName.value.trim() || "Nombre del procedimiento";
+  const processLabel = document.createElement("span");
+  processLabel.textContent = process;
+  title.append(titleLabel, name, processLabel);
+  const meta = document.createElement("div");
+  meta.className = "preview-document-meta";
+  for (const [label, value] of [["Código", ui.processCode.value || "Pendiente"], ["Versión", changeRows.at(-1)?.version || "1.0"], ["Estado", currentDraft?.status || "Borrador"]]) {
+    const cell = document.createElement("div");
+    const strong = document.createElement("strong");
+    strong.textContent = label;
+    const text = document.createElement("span");
+    text.textContent = value;
+    cell.append(strong, text);
+    meta.append(cell);
+  }
+  header.append(agency, title, meta);
+
+  const definitions = ui.draftDefinitions.value.split(/\r?\n/).map(line => line.trim()).filter(Boolean).map(line => {
+    const split = line.indexOf(":");
+    return split > 0 ? [line.slice(0, split).trim(), line.slice(split + 1).trim()] : ["Definición", line];
+  });
+  const definitionTable = reportTable(["Término", "Definición"], definitions, row => row);
+  const destinations = new Map(activityRows.map(activity => [activity.uid, activity.actividad || activity.tipo || "Destino"]));
+  const showEvidence = activityRows.some(activity => String(activity.evidencia || activity.controlEvidencia || "").trim());
+  const showSystem = activityRows.some(activity => String(activity.sistema || "").trim());
+  const activityHeaders = ["N.º", "Tipo", "Actividad", "Descripción / rutas", "Responsable", "Punto de control"];
+  if (showEvidence) activityHeaders.push("Registro / evidencia");
+  if (showSystem) activityHeaders.push("Sistema / herramienta");
+  const activityTable = reportTable(activityHeaders, activityRows, (activity, index) => {
+    const description = [activity.descripcion || ""];
+    if (activity.tipo === "Decisión") description.push(`Sí → ${destinations.get(activity.decisionSi) || "Sin destino"}`, `No → ${destinations.get(activity.decisionNo) || "Sin destino"}`);
+    if (activity.tipo === "Conector") description.push(`Conector ${activity.connectorId || ""} → ${destinations.get(activity.connectorDestino) || "Sin destino"}`);
+    const control = activity.tieneControl ? [
+      ["Responsable", activity.controlResponsable], ["Periodicidad", activity.controlPeriodicidad],
+      ["Propósito", activity.controlAccion], ["Ejecución", activity.controlEjecucion],
+      ["Desviación", activity.controlDesviacion], ["Evidencia", activity.controlEvidencia]
+    ].filter(([, value]) => String(value || "").trim()).map(([label, value]) => `${label}: ${value}`).join("\n") || "Control sin detalle" : "No aplica";
+    const row = [String(index + 1), activity.tipo || "", activity.actividad || "", description.join("\n"), activity.responsable || "", control];
+    if (showEvidence) row.push(activity.evidencia || activity.controlEvidencia || "");
+    if (showSystem) row.push(activity.sistema || "");
+    return row;
+  });
+  const approvals = reportTable(["Elaboró", "Revisó", "Aprobó"], [{}], () => [
+    [ui.draftPreparedBy.value, ui.draftPreparedName.value && `Nombre: ${ui.draftPreparedName.value}`].filter(Boolean).join("\n"),
+    [ui.draftReviewedBy.value, ui.draftReviewedName.value && `Nombre: ${ui.draftReviewedName.value}`].filter(Boolean).join("\n"),
+    [ui.draftApprovedBy.value, ui.draftApprovedName.value && `Nombre: ${ui.draftApprovedName.value}`].filter(Boolean).join("\n")
+  ]);
+  const report = document.createElement("article");
+  report.className = "preview-report";
+  report.append(header,
+    reportSection("1", "Objetivo", document.createTextNode(ui.draftObjective.value || "Sin información registrada.")),
+    reportSection("2", "Alcance", document.createTextNode(ui.draftScope.value || "Sin información registrada.")),
+    reportSection("3", "Términos y definiciones", definitionTable),
+    reportSection("4", "Condiciones generales", document.createTextNode(ui.draftConditions.value || "Sin información registrada.")),
+    reportSection("5", "Normatividad", reportTable(["Tipo", "Norma", "Año", "Descripción de la norma", "Artículo / sección", "Entidad emisora"], normRows, row => [row.tipo, row.norma, row.anio, row.descripcion, row.articulo, row.entidad])),
+    reportSection("6", "Descripción del procedimiento", activityTable));
+
+  const flowSection = document.createElement("section");
+  flowSection.className = "preview-report-section preview-report-flow";
+  const flowHeading = document.createElement("h3");
+  flowHeading.textContent = "7. FLUJOGRAMA";
+  flowSection.append(flowHeading);
+  const diagram = document.createElement("div");
+  diagram.className = "preview-diagram";
   renderFlow();
   if (activityRows.length) {
-    const diagram = previewSection("Flujograma", []);
-    diagram.classList.add("preview-diagram");
     const svg = ui.flowSvg.cloneNode(true);
     svg.removeAttribute("id");
     svg.removeAttribute("style");
     diagram.append(svg);
-    content.append(diagram);
-  }
+  } else diagram.textContent = "Sin actividades registradas.";
+  flowSection.append(diagram);
+  report.append(flowSection,
+    reportSection("8", "Documentos anexos", reportTable(["Documento", "Tipo", "Código / referencia", "Observación"], annexesNotApplicable ? [] : annexRows, row => [row.documento, row.tipo, row.codigo, row.observacion])),
+    reportSection("9", "Control de cambios", reportTable(["Versión", "Fecha", "Razón de la actualización"], changeRows, row => [row.version, row.fecha, row.razon])),
+    approvals);
+  content.replaceChildren(report);
+  ui.previewState.textContent = !currentDraft ? "Vista de un borrador no guardado." : dirty ? "Vista con cambios sin guardar." : `Borrador guardado · revisión ${currentDraft.revision}.`;
   ui.previewDialog.showModal();
 }
 

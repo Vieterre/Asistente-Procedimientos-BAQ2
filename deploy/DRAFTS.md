@@ -79,6 +79,14 @@ No aplica borra los anexos visibles solo tras confirmacion. Los campos tienen
 ayudas metodologicas desplegables; los cargos se escriben con sugerencias,
 sin implicar una aprobacion real ni bloquear el guardado del borrador incompleto.
 
+La consola de pruebas incluye una Vista preliminar de solo lectura con los
+cambios actuales del formulario (incluidos los no guardados). Presenta las
+nueve secciones numeradas del procedimiento, encabezado con proceso, codigo,
+version y estado, tablas de normatividad, actividades, controles, anexos y
+cambios, responsables y flujograma. Permite imprimir desde el navegador. El
+editor usa la paleta azul y verde y los encabezados del prototipo para mantener
+continuidad visual; la preliminar no equivale aun a la exportacion PDF oficial.
+
 ## Contraste del modulo central
 
 El revisor de pruebas y `analyzeFlowGraph` del prototipo comparten el mismo
@@ -97,9 +105,10 @@ persistencia tras cerrar sesion. Esto no certifica equivalencia completa:
   campos de la pantalla de pruebas no equivale a autorizacion para publicar.
 - El prototipo tambien incluye avisos de redaccion, especificidad de roles
   y otros criterios metodologicos que no son parte de Revisar flujo.
-- El flujograma del prototipo permite exportar PDF. La vista de pruebas aun
-  no ofrece esa funcion; el zoom y la visualizacion de evidencias requieren
-  comparacion manual adicional con el prototipo.
+- El flujograma del prototipo permite exportar PDF. La vista de pruebas permite
+  imprimir la preliminar desde el navegador; aun requiere comparacion manual
+  frente al PDF oficial. El zoom y las evidencias tambien requieren esa
+  comparacion.
 - Falta verificar visualmente casos con varios responsables por actividad,
   bifurcaciones largas, rutas cruzadas y etiquetas extensas en escritorio y
   movil antes de declarar equivalencia del flujograma.
