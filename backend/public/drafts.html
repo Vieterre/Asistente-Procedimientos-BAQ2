@@ -7,7 +7,7 @@
 <body>
 <header class="site-header"><div class="header-inner">
 <div class="brand"><span class="brand-mark" aria-hidden="true">AP</span><span>Asistente de Procedimientos<small>Entorno de pruebas</small></span></div>
-<div class="session-controls" id="sessionControls" hidden><span id="sessionIdentity"></span><button class="secondary-button header-preview-button" id="previewButton" type="button" hidden>Vista preliminar</button><button class="quiet-button" id="logoutButton" type="button">Cerrar sesión</button></div>
+<div class="session-controls" id="sessionControls" hidden><span id="sessionIdentity"></span><button class="primary-button header-submit-button" id="submitReviewButton" type="button" hidden>Enviar para revisión del Evaluador</button><button class="secondary-button header-preview-button" id="previewButton" type="button" hidden>Vista preliminar</button><button class="quiet-button" id="logoutButton" type="button">Cerrar sesión</button></div>
 </div></header>
 <main>
 <section class="login-wrap" id="loginView" aria-labelledby="loginTitle"><div class="login-panel">
@@ -39,7 +39,7 @@
 <p class="empty-state" id="emptyActivities">Todavía no hay actividades registradas.</p><div id="activitiesList"></div>
 <div class="flow-review"><button class="secondary-button" id="reviewFlowButton" type="button">Revisar flujo</button><div id="flowReviewResult" role="status" hidden></div></div>
 </section>
-<div class="form-actions"><button class="primary-button" id="saveDraftButton" type="submit">Guardar borrador</button><button class="primary-button" id="submitReviewButton" type="button" hidden>Enviar para revisión del Evaluador</button><p class="form-message" id="editorMessage" role="status" hidden></p></div>
+<div class="form-actions"><button class="primary-button" id="saveDraftButton" type="submit">Guardar borrador</button><p class="form-message" id="editorMessage" role="status" hidden></p></div>
 </form></section>
 <section class="list-section" aria-labelledby="listTitle">
 <div class="section-heading"><div><h2 id="listTitle">Mis procedimientos</h2><p id="draftCount">0 procedimientos</p></div><button class="secondary-button" id="refreshDraftsButton" type="button" aria-label="Actualizar lista" title="Actualizar lista">Actualizar</button></div>

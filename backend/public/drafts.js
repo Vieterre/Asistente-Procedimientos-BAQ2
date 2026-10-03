@@ -866,6 +866,7 @@ function clearSession() {
   ui.workspace.hidden = true;
   ui.previewButton.hidden = true;
   ui.submitReviewButton.hidden = true;
+  ui.submitReviewButton.disabled = true;
   ui.evaluatorInbox.hidden = true;
   ui.evaluatorDetail.hidden = true;
   if (ui.previewDialog.open) ui.previewDialog.close();
@@ -892,6 +893,8 @@ async function startSession(user) {
   ui.evaluatorInbox.hidden = true;
   ui.evaluatorDetail.hidden = true;
   ui.previewButton.hidden = true;
+  ui.submitReviewButton.hidden = user.role !== "elaborador";
+  ui.submitReviewButton.disabled = true;
 
   if (user.mustChangePassword) {
     ui.draftWorkspace.hidden = true;
@@ -1088,7 +1091,10 @@ function applyDraftEditability() {
   ui.saveDraftButton.hidden = !editable;
   ui.saveDocumentsButton.hidden = !editable;
   ui.newDraftButton.disabled = !editable;
-  ui.submitReviewButton.hidden = !(currentUserRole === "elaborador" && currentDraft && ["borrador", "devuelto_para_ajustes"].includes(currentDraft.status));
+  const canSubmit = currentDraft && ["borrador", "devuelto_para_ajustes"].includes(currentDraft.status);
+  ui.submitReviewButton.hidden = currentUserRole !== "elaborador";
+  ui.submitReviewButton.disabled = !canSubmit;
+  ui.submitReviewButton.title = canSubmit ? "Enviar este borrador guardado para revisión" : "Abre un borrador guardado para habilitar el envío";
   ui.previewButton.hidden = currentUserRole !== "elaborador" && currentUserRole !== "administrador" && currentUserRole !== "evaluador";
 }
 
