@@ -1252,12 +1252,47 @@ function previewRecords(title, records, fields) {
   return section;
 }
 
+function previewResponsibilities() {
+  const section = previewSection("Responsables de actividades y controles", []);
+  const table = document.createElement("table");
+  table.className = "preview-responsibilities";
+  const header = document.createElement("thead");
+  const headerRow = document.createElement("tr");
+  for (const label of ["Elemento", "Responsable de la actividad", "Responsable del control"]) {
+    const cell = document.createElement("th");
+    cell.scope = "col";
+    cell.textContent = label;
+    headerRow.append(cell);
+  }
+  header.append(headerRow);
+  const body = document.createElement("tbody");
+  activityRows.forEach((activity, index) => {
+    if (!["Actividad", "Decisión"].includes(activity.tipo)) return;
+    const row = document.createElement("tr");
+    const values = [
+      `${index + 1}. ${activity.actividad || activity.descripcion || activity.tipo}`,
+      activity.responsable?.trim() || "Sin asignar",
+      activity.tieneControl ? (activity.controlResponsable?.trim() || "Sin asignar") : "No aplica"
+    ];
+    for (const value of values) {
+      const cell = document.createElement("td");
+      cell.textContent = value;
+      row.append(cell);
+    }
+    body.append(row);
+  });
+  table.append(header, body);
+  section.append(body.children.length ? table : document.createTextNode("Sin actividades ni controles."));
+  return section;
+}
+
 function showPreview() {
   const content = ui.previewContent;
   const process = ui.processCode.selectedOptions[0]?.textContent || "";
   content.replaceChildren(
     previewSection("Datos generales", [["Nombre del procedimiento", ui.draftName.value], ["Proceso", ui.processCode.value ? process : ""], ["Objetivo", ui.draftObjective.value], ["Alcance", ui.draftScope.value], ["Definiciones", ui.draftDefinitions.value], ["Condiciones generales", ui.draftConditions.value]]),
     previewRecords("Normatividad", normRows, [["Tipo", "Tipo"], ["anio", "Año"], ["descripcion", "Descripción"], ["articulo", "Artículo / sección"], ["entidad", "Entidad emisora"]]),
+    previewResponsibilities(),
     previewRecords("Actividades y flujo", activityRows, [["tipo", "Tipo"], ["descripcion", "Descripción"], ["responsable", "Responsable"], ["evidencia", "Registro / evidencia"], ["sistema", "Sistema / herramienta"], ["controlResponsable", "Responsable del control"], ["controlPeriodicidad", "Periodicidad"], ["controlEjecucion", "Ejecución del control"], ["controlDesviacion", "Tratamiento de desviaciones"], ["controlEvidencia", "Evidencia del control"]]),
     previewRecords("Documentos anexos", annexesNotApplicable ? [] : annexRows, [["tipo", "Tipo"], ["codigo", "Código / referencia"], ["observacion", "Observación"]]),
     previewRecords("Control de cambios", changeRows, [["version", "Versión"], ["fecha", "Fecha"], ["razon", "Razón de la actualización"]]),
