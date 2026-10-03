@@ -32,8 +32,11 @@ La pantalla de prueba edita nombre, proceso, objetivo, alcance, definiciones y
 condiciones generales. Los cuatro campos de texto usan las mismas claves de
 `payload.fields` del prototipo; al actualizar conserva las otras secciones del
 `payload` sin mostrarlas. Tambien permite agregar y eliminar varias normas con
-los seis campos de `payload.norms` usados por el prototipo. Actividades y el
-formulario completo siguen sin conectarse.
+los seis campos de `payload.norms` usados por el prototipo. La seccion
+Actividades permite agregar y editar actividades ordinarias (nombre,
+descripcion, responsable, evidencia y sistema) en `payload.activities`.
+Decisiones, conectores, puntos de control, Inicio y Fin se muestran sin edicion
+y se conservan en el contenido. El formulario completo sigue sin conectarse.
 
 ## Activacion
 

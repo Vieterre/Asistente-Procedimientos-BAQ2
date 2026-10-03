@@ -3,7 +3,7 @@ const ids = [
   "workspace", "sessionControls", "sessionIdentity", "logoutButton", "welcomeText",
   "passwordRequired", "draftWorkspace", "draftForm", "editorTitle", "editorStatus",
   "draftName", "processCode", "draftObjective", "draftScope", "draftDefinitions", "draftConditions", "saveDraftButton", "editorMessage",
-  "newDraftButton", "addNormButton", "normsList", "emptyNorms", "refreshDraftsButton", "draftCount", "listMessage", "emptyDrafts",
+  "newDraftButton", "addNormButton", "normsList", "emptyNorms", "addActivityButton", "activitiesList", "emptyActivities", "refreshDraftsButton", "draftCount", "listMessage", "emptyDrafts",
   "draftList"
 ];
 const ui = Object.fromEntries(ids.map(id => [id, document.getElementById(id)]));
@@ -32,6 +32,7 @@ let currentDraft = null;
 let currentPayload = {};
 let dirty = false;
 let normRows = [];
+let activityRows = [];
 const textFields = [
   ["draftObjective", "objetivo"],
   ["draftScope", "alcance"],
@@ -41,6 +42,13 @@ const textFields = [
 const normFields = [
   ["norma", "Norma"], ["anio", "Año"], ["descripcion", "Descripción"],
   ["articulo", "Artículo / sección"], ["entidad", "Entidad emisora"]
+];
+const activityFields = [
+  ["actividad", "Actividad", "input"],
+  ["descripcion", "Descripción", "textarea"],
+  ["responsable", "Responsable", "input"],
+  ["evidencia", "Registro / evidencia", "input"],
+  ["sistema", "Sistema / herramienta", "input"]
 ];
 
 function markDirty() {
@@ -111,6 +119,60 @@ function renderNorms() {
   }));
 }
 
+function renderActivities() {
+  ui.emptyActivities.hidden = activityRows.length > 0;
+  ui.activitiesList.replaceChildren(...activityRows.map((activity, index) => {
+    const row = document.createElement("div");
+    row.className = "activity-row";
+    const heading = document.createElement("div");
+    heading.className = "activity-heading";
+    const title = document.createElement("h4");
+    title.textContent = activity.tipo === "Actividad" ? "Actividad " + (index + 1) : String(activity.tipo || "Elemento del flujo");
+    heading.append(title);
+    const editable = activity.tipo === "Actividad" && !activity.tieneControl;
+    if (editable) {
+      const remove = document.createElement("button");
+      remove.type = "button";
+      remove.className = "secondary-button";
+      remove.textContent = "Eliminar";
+      remove.setAttribute("aria-label", "Eliminar actividad " + (index + 1));
+      remove.addEventListener("click", () => {
+        if (!window.confirm("¿Eliminar esta actividad del borrador?")) return;
+        activityRows.splice(index, 1);
+        renderActivities();
+        markDirty();
+      });
+      heading.append(remove);
+    }
+    row.append(heading);
+    if (!editable) {
+      const summary = document.createElement("p");
+      summary.className = "activity-summary";
+      summary.textContent = String(activity.actividad || activity.descripcion || "Sin nombre");
+      row.append(summary);
+      return row;
+    }
+    const grid = document.createElement("div");
+    grid.className = "activity-grid";
+    for (const [key, labelText, kind] of activityFields) {
+      const field = document.createElement("div");
+      field.className = "field" + (key === "descripcion" ? " activity-wide" : "");
+      const label = document.createElement("label");
+      const input = document.createElement(kind);
+      input.id = "activity" + key + index;
+      input.value = typeof activity[key] === "string" ? activity[key] : "";
+      input.maxLength = kind === "textarea" ? 10000 : 500;
+      label.htmlFor = input.id;
+      label.textContent = labelText;
+      input.addEventListener("input", () => { activity[key] = input.value; markDirty(); });
+      field.append(label, input);
+      grid.append(field);
+    }
+    row.append(grid);
+    return row;
+  }));
+}
+
 function setMessage(node, text, success = false) {
   node.textContent = text;
   node.classList.toggle("success", success);
@@ -152,6 +214,8 @@ function clearSession() {
   currentPayload = {};
   normRows = [];
   renderNorms();
+  activityRows = [];
+  renderActivities();
   dirty = false;
   ui.workspace.hidden = true;
   ui.sessionControls.hidden = true;
@@ -267,6 +331,10 @@ async function openDraft(id) {
       ? currentPayload.norms.map(norm => norm && typeof norm === "object" && !Array.isArray(norm) ? { ...norm } : {})
       : [];
     renderNorms();
+    activityRows = Array.isArray(currentPayload.activities)
+      ? currentPayload.activities.map(activity => activity && typeof activity === "object" && !Array.isArray(activity) ? { ...activity } : {})
+      : [];
+    renderActivities();
     ui.draftName.value = procedure.name;
     for (const [inputId, fieldId] of textFields) {
       ui[inputId].value = typeof currentPayload.fields?.[fieldId] === "string"
@@ -292,6 +360,8 @@ function newDraft() {
   currentPayload = { fields: {}, norms: [], activities: [], annexes: [], changes: [], settings: {} };
   normRows = [];
   renderNorms();
+  activityRows = [];
+  renderActivities();
   ui.draftForm.reset();
   ui.processCode.disabled = false;
   ui.editorTitle.textContent = "Nuevo borrador";
@@ -338,6 +408,18 @@ ui.addNormButton.addEventListener("click", () => {
   markDirty();
   ui.normsList.lastElementChild?.querySelector("input")?.focus();
 });
+ui.addActivityButton.addEventListener("click", () => {
+  const record = {
+    uid: crypto.randomUUID(), tipo: "Actividad", n: activityRows.filter(activity => activity.tipo === "Actividad").length + 1,
+    actividad: "", descripcion: "",
+    responsable: "", evidencia: "", sistema: "", tieneControl: false
+  };
+  const endIndex = activityRows.findIndex(activity => activity.tipo === "Fin");
+  activityRows.splice(endIndex < 0 ? activityRows.length : endIndex, 0, record);
+  renderActivities();
+  markDirty();
+  ui.activitiesList.querySelectorAll(".activity-row")[endIndex < 0 ? activityRows.length - 1 : endIndex]?.querySelector("input")?.focus();
+});
 
 ui.draftForm.addEventListener("submit", async event => {
   event.preventDefault();
@@ -351,7 +433,12 @@ ui.draftForm.addEventListener("submit", async event => {
     : {};
   const updatedFields = { ...fields, nombre: name };
   for (const [inputId, fieldId] of textFields) updatedFields[fieldId] = ui[inputId].value;
-  const payload = { ...currentPayload, fields: updatedFields, norms: normRows.map(norm => ({ ...norm })) };
+  const payload = {
+    ...currentPayload,
+    fields: updatedFields,
+    norms: normRows.map(norm => ({ ...norm })),
+    activities: activityRows.map(activity => ({ ...activity }))
+  };
   const body = { name, processCode: ui.processCode.value, payload };
 
   try {
@@ -366,6 +453,7 @@ ui.draftForm.addEventListener("submit", async event => {
     currentDraft = result.procedure;
     currentPayload = result.procedure.payload;
     normRows = Array.isArray(currentPayload.norms) ? currentPayload.norms.map(norm => ({ ...norm })) : [];
+    activityRows = Array.isArray(currentPayload.activities) ? currentPayload.activities.map(activity => ({ ...activity })) : [];
     ui.processCode.value = currentDraft.processCode;
     ui.processCode.disabled = true;
     ui.editorTitle.textContent = "Editar borrador";

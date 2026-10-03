@@ -210,7 +210,11 @@ test("draft HTTP routes create, read, and update with a live author session", as
           { tipo: "Externa", norma: "Norma de prueba", anio: "2026", descripcion: "Texto ficticio", articulo: "1", entidad: "Entidad de prueba" },
           { tipo: "Interna", norma: "Regla de prueba", anio: "2025", descripcion: "Otro texto", articulo: "2", entidad: "Otra entidad" }
         ],
-        activities: [{ actividad: "Inicio" }]
+        activities: [
+          { uid: "start", tipo: "Inicio", actividad: "Inicio" },
+          { uid: "step", tipo: "Actividad", n: 1, actividad: "Revisar solicitud", descripcion: "Texto de prueba", responsable: "Profesional", evidencia: "Formato de prueba", sistema: "Sistema de prueba", tieneControl: false },
+          { uid: "end", tipo: "Fin", actividad: "Fin" }
+        ]
       },
       revision: 1
     }) });
@@ -219,7 +223,10 @@ test("draft HTTP routes create, read, and update with a live author session", as
     const reopened = await fetch(`${base}/${procedure.id}`, { headers });
     const reopenedPayload = (await reopened.json()).procedure.payload;
     assert.deepEqual(reopenedPayload.fields, { nombre: "Nuevo", objetivo: "Objetivo", alcance: "Alcance", definiciones: "Definiciones", condiciones: "Condiciones" });
-    assert.deepEqual(reopenedPayload.activities, [{ actividad: "Inicio" }]);
+    assert.equal(reopenedPayload.activities.length, 3);
+    assert.equal(reopenedPayload.activities[1].responsable, "Profesional");
+    assert.equal(reopenedPayload.activities[1].evidencia, "Formato de prueba");
+    assert.deepEqual(reopenedPayload.activities[2], { uid: "end", tipo: "Fin", actividad: "Fin" });
     assert.equal(reopenedPayload.norms.length, 2);
     assert.equal(reopenedPayload.norms[0].norma, "Norma de prueba");
     assert.equal(reopenedPayload.norms[1].tipo, "Interna");

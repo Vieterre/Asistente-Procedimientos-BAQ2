@@ -29,6 +29,11 @@ input,select{height:41px}textarea{resize:vertical;min-height:120px;line-height:1
 .norm-row{border:1px solid #cbd8db;border-radius:5px;padding:16px;margin-bottom:14px;background:#fff}
 .norm-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}.norm-heading h4{font-size:14px;margin:0}
 .norm-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 14px}.norm-wide{grid-column:1/-1}.norm-grid textarea{min-height:82px}
+.activities-section{border-top:1px solid #cbd8db;padding-top:20px;margin:24px 0}.activities-section h3{font-size:17px;margin:0}
+.activity-row{border:1px solid #cbd8db;border-radius:5px;padding:16px;margin-bottom:14px;background:#fff}
+.activity-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}.activity-heading h4{font-size:14px;margin:0}
+.activity-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 14px}.activity-wide{grid-column:1/-1}.activity-grid textarea{min-height:82px}
+.activity-summary{color:#5a6e75;margin:0;overflow-wrap:anywhere}
 .form-actions{display:flex;align-items:center;gap:14px;min-height:40px;flex-wrap:wrap}
 .form-message{color:#a63223;font-size:12px;line-height:1.45;margin:0}.form-message.success{color:#176d56}.login-panel .form-message{margin:0 0 14px}
 .notice{margin:20px 0 0;padding:14px 16px;background:#fff8e9;border-left:4px solid #bf8a22;color:#35464a;line-height:1.5}.notice a{color:#176d56;font-weight:650}
@@ -37,4 +42,4 @@ input,select{height:41px}textarea{resize:vertical;min-height:120px;line-height:1
 .draft-open:hover{background:#edf3f3}.draft-info{display:grid;gap:4px;min-width:0}.draft-info strong{font-size:13px;overflow-wrap:anywhere}.draft-info small{color:#5a6e75;font-size:12px}
 .draft-status{font-size:11px;font-weight:650;color:#176d56;white-space:nowrap}.empty-state{color:#61747b;font-size:13px;padding:12px 0}
 @media(max-width:760px){.header-inner{padding:11px 16px}.session-controls{gap:7px;flex-direction:column;align-items:flex-end}.brand{font-size:14px}main{padding:0 16px 40px}.work-layout{grid-template-columns:1fr;gap:0}.editor-section{border-right:0;border-bottom:1px solid #cbd8db;padding-right:0}.page-heading{align-items:flex-start}.login-panel{padding:22px}}
-@media(max-width:480px){.norm-grid{grid-template-columns:1fr}.norm-wide{grid-column:auto}.norm-row{padding:12px}}
+@media(max-width:480px){.norm-grid,.activity-grid{grid-template-columns:1fr}.norm-wide,.activity-wide{grid-column:auto}.norm-row,.activity-row{padding:12px}}
