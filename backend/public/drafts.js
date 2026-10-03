@@ -5,7 +5,10 @@ const ids = [
   "draftName", "processCode", "draftObjective", "draftScope", "draftDefinitions", "draftConditions", "saveDraftButton", "editorMessage",
   "newDraftButton", "addNormButton", "normsList", "emptyNorms", "addBoundaryButton", "addActivityButton", "addDecisionButton", "addConnectorButton", "activitiesList", "emptyActivities", "reviewFlowButton", "flowReviewResult", "refreshDraftsButton", "draftCount", "listMessage", "emptyDrafts",
   "draftList", "flowSection", "flowSummary", "showFlowEvidence", "refreshFlowButton", "flowCanvas", "flowSvg",
-  "zoomOutButton", "zoomInButton", "fitFlowButton", "resetFlowZoomButton", "flowZoomValue"
+  "zoomOutButton", "zoomInButton", "fitFlowButton", "resetFlowZoomButton", "flowZoomValue",
+  "documentsSection", "annexApplicability", "addAnnexButton", "annexNotApplicableMessage", "emptyAnnexes", "annexesList",
+  "addChangeButton", "emptyChanges", "changesList", "draftPreparedBy", "draftPreparedName", "draftReviewedBy", "draftReviewedName",
+  "draftApprovedBy", "draftApprovedName", "roleSeparationMessage", "saveDocumentsButton", "documentsMessage"
 ];
 const ui = Object.fromEntries(ids.map(id => [id, document.getElementById(id)]));
 const csrfKey = "drafts_csrf";
@@ -38,11 +41,17 @@ let flowIntrinsicWidth = 760;
 let flowIntrinsicHeight = 500;
 let normRows = [];
 let activityRows = [];
+let annexRows = [];
+let changeRows = [];
+let annexesNotApplicable = false;
 const textFields = [
   ["draftObjective", "objetivo"],
   ["draftScope", "alcance"],
   ["draftDefinitions", "definiciones"],
-  ["draftConditions", "condiciones"]
+  ["draftConditions", "condiciones"],
+  ["draftPreparedBy", "elaboro"], ["draftPreparedName", "elaboroNombre"],
+  ["draftReviewedBy", "reviso"], ["draftReviewedName", "revisoNombre"],
+  ["draftApprovedBy", "aprobo"], ["draftApprovedName", "aproboNombre"]
 ];
 const normFields = [
   ["norma", "Norma"], ["anio", "Año"], ["descripcion", "Descripción"],
@@ -63,6 +72,92 @@ const controlFields = [
   ["controlDesviacion", "Tratamiento de desviaciones", "textarea"],
   ["controlEvidencia", "Evidencia del control", "textarea"]
 ];
+const annexTypes = ["Formato", "Instructivo", "Manual", "Guía", "Guía técnica", "Matriz", "Base de datos", "Documento relacionado", "Otro"];
+const helpById = {
+  draftName: "Use un verbo de acción específico y verificable, un objeto y un complemento cuando sea necesario. Evite un nombre demasiado largo.",
+  processCode: "Seleccione el proceso organizacional al que pertenece el procedimiento.",
+  draftObjective: "Explique para qué existe el procedimiento y qué resultado pretende lograr.",
+  draftScope: "Indique dónde inicia y finaliza; precise áreas, usuarios, límites o exclusiones.",
+  draftDefinitions: "Registre términos y siglas en orden alfabético. Escriba cada término seguido de dos puntos y su definición.",
+  draftConditions: "Registre reglas o restricciones que aplican a todo el procedimiento y no a una actividad específica.",
+  annexApplicability: "Elija No aplica solo si este procedimiento no utiliza documentos anexos. Cambiar a No aplica elimina las filas de anexos tras confirmación.",
+  draftPreparedBy: "Cargo que prepara o actualiza técnicamente el procedimiento. Debe ser distinto de quien revisa y aprueba.",
+  draftReviewedBy: "Cargo que verifica coherencia, suficiencia y cumplimiento. Debe ser distinto de quien elabora y aprueba.",
+  draftApprovedBy: "Cargo directivo que autoriza formalmente la versión.",
+  draftPreparedName: "Nombre de la persona que elaboró, si ya se conoce.",
+  draftReviewedName: "Nombre de la persona que revisó, si ya se conoce.",
+  draftApprovedName: "Nombre de la persona que aprobó, si ya se conoce."
+};
+const normHelp = {
+  "Tipo": "Interna si procede de la organización; Externa si proviene de otra autoridad u organismo.",
+  "Norma": "Escriba el nombre y número completo de la norma, resolución, política o guía aplicable.",
+  "Año": "Año de expedición o de la versión vigente.",
+  "Descripción": "Resuma el objeto o asunto regulado por la norma.",
+  "Artículo / sección": "Indique el artículo, numeral o sección que sustenta este procedimiento.",
+  "Entidad emisora": "Autoridad, entidad o dependencia que expide la norma."
+};
+const activityHelp = {
+  "Nombre": "Para Inicio registre un nombre breve; para Fin, el nombre del resultado o cierre.",
+  "Evento que inicia el procedimiento": "Describa el hecho o condición que activa el procedimiento.",
+  "Resultado o condición de cierre": "Describa el producto o condición con la que termina el procedimiento.",
+  "Actividad": "Use un nombre corto y concreto para la acción o tarea.",
+  "Descripción": "Describa qué se hace, cómo se hace y el resultado esperado.",
+  "Responsable": "Cargo o rol que ejecuta la actividad; se utilizará para el carril del flujograma.",
+  "Registro / evidencia": "Soporte opcional de la ejecución: correo, formato, acta o registro de sistema.",
+  "Sistema / herramienta": "Aplicativo, archivo o medio utilizado para ejecutar la actividad.",
+  "Pregunta de decisión": "Plantee una condición concreta que pueda responderse Sí o No.",
+  "Punto de control": "Marque esta opción solo si la actividad incorpora una verificación crítica frente a un riesgo o requisito.",
+  "Ruta Sí": "Seleccione la actividad o destino cuando la condición se cumple.",
+  "Ruta No": "Si se repite un control, dirija primero esta ruta a una actividad que corrija o complemente la información.",
+  "Identificador": "Código corto y único para reconocer el conector.",
+  "Continuar el flujo en": "Seleccione el elemento donde continúa el flujo después del conector.",
+  "Propósito del control": "El verbo orienta la acción, pero por sí solo no convierte la actividad en un punto de control.",
+  "Responsable del control": "Rol que ejecuta o verifica el control; puede coincidir con el responsable de la actividad.",
+  "Periodicidad": "Frecuencia del control: por trámite, diariamente, mensualmente, por auditoría, etc.",
+  "Ejecución del control": "Explique qué se revisa, contra qué criterio y cómo se realiza la verificación.",
+  "Tratamiento de desviaciones": "Indique qué ocurre ante un incumplimiento: devolver, corregir, escalar o solicitar ajustes.",
+  "Evidencia del control": "Soporte que demuestra la ejecución del control: firma, correo, acta o registro."
+};
+const annexHelp = {
+  "Documento": "Nombre completo del documento que complementa o soporta el procedimiento.",
+  "Tipo": "Elija la tipología adecuada; Matriz organiza datos tabulares y Guía técnica orienta una labor especializada.",
+  "Código / referencia": "Código, enlace interno, número de formato o referencia que identifica el documento.",
+  "Observación": "Explique para qué se utiliza este documento dentro del procedimiento."
+};
+const changeHelp = {
+  "Versión": "Número de la versión registrada. Una modificación menor avanza al decimal; una mayor, al siguiente entero.",
+  "Fecha": "Fecha de aprobación o actualización de esta versión, entre el 1 de enero de 2024 y hoy.",
+  "Razón de la actualización": "Describa concretamente qué cambió y por qué se actualizó el procedimiento."
+};
+
+function installMethodHelps(root) {
+  for (const label of root.querySelectorAll("label[for]")) {
+    if (label.nextElementSibling?.classList.contains("method-help")) continue;
+    const text = label.closest(".norm-row") ? normHelp[label.textContent.trim()]
+      : label.closest(".activity-row") ? activityHelp[label.textContent.trim()]
+      : label.closest(".annex-row") ? annexHelp[label.textContent.trim()]
+      : label.closest(".change-row") ? changeHelp[label.textContent.trim()]
+      : helpById[label.htmlFor];
+    if (!text) continue;
+    const details = document.createElement("details");
+    details.className = "method-help";
+    const summary = document.createElement("summary");
+    summary.textContent = "i";
+    summary.title = "Ayuda metodológica";
+    summary.setAttribute("aria-label", `Ayuda para ${label.textContent.trim()}`);
+    const explanation = document.createElement("p");
+    explanation.textContent = text;
+    details.append(summary, explanation);
+    label.classList.add("method-label");
+    label.after(details);
+  }
+}
+
+function showRoleSeparation() {
+  const roles = [ui.draftPreparedBy, ui.draftReviewedBy, ui.draftApprovedBy].map(input => input.value.trim().toLocaleLowerCase("es-CO")).filter(Boolean);
+  const repeated = roles.length > new Set(roles).size;
+  setMessage(ui.roleSeparationMessage, repeated ? "Elaboró, Revisó y Aprobó deben corresponder a cargos distintos." : "");
+}
 
 function markDirty() {
   dirty = true;
@@ -167,6 +262,119 @@ function renderNorms() {
     row.append(grid);
     return row;
   }));
+  installMethodHelps(ui.normsList);
+}
+
+function todayLocal() {
+  const date = new Date();
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
+function recordField(record, index, section, key, labelText, kind = "input", options = []) {
+  const field = document.createElement("div");
+  field.className = "field" + (["observacion", "razon"].includes(key) ? " record-wide" : "");
+  const label = document.createElement("label");
+  const input = document.createElement(kind === "textarea" ? "textarea" : kind === "select" ? "select" : "input");
+  input.id = `${section}${key}${index}`;
+  label.htmlFor = input.id;
+  label.textContent = labelText;
+  if (kind === "select") {
+    const values = options.includes(record[key]) ? options : record[key] ? [...options, record[key]] : ["", ...options];
+    for (const value of values) {
+      const option = document.createElement("option");
+      option.value = value;
+      option.textContent = value || "Selecciona un tipo";
+      input.append(option);
+    }
+  } else if (kind === "date") {
+    input.type = "date";
+    input.min = "2024-01-01";
+    input.max = todayLocal();
+  } else {
+    input.maxLength = kind === "textarea" ? 10000 : 500;
+  }
+  input.value = typeof record[key] === "string" ? record[key] : "";
+  input.addEventListener(kind === "select" || kind === "date" ? "change" : "input", () => {
+    if (kind === "date" && input.value) {
+      const corrected = input.value < input.min ? input.min : input.value > input.max ? input.max : input.value;
+      if (corrected !== input.value) {
+        input.value = corrected;
+        setMessage(ui.documentsMessage, "La fecha se ajustó al rango permitido: desde 2024 hasta hoy.");
+      }
+    }
+    record[key] = input.value;
+    markDirty();
+  });
+  field.append(label, input);
+  return field;
+}
+
+function renderAnnexes() {
+  ui.annexApplicability.value = annexesNotApplicable ? "no_aplica" : "aplica";
+  ui.addAnnexButton.disabled = annexesNotApplicable;
+  ui.annexNotApplicableMessage.hidden = !annexesNotApplicable;
+  ui.emptyAnnexes.hidden = annexesNotApplicable || annexRows.length > 0;
+  ui.annexesList.hidden = annexesNotApplicable;
+  ui.annexesList.replaceChildren(...annexRows.map((annex, index) => {
+    const row = document.createElement("div");
+    row.className = "record-row annex-row";
+    const heading = document.createElement("div");
+    heading.className = "section-heading";
+    const title = document.createElement("h4");
+    title.textContent = "Anexo " + (index + 1);
+    const remove = document.createElement("button");
+    remove.type = "button";
+    remove.className = "secondary-button";
+    remove.textContent = "Eliminar";
+    remove.setAttribute("aria-label", "Eliminar anexo " + (index + 1));
+    remove.addEventListener("click", () => {
+      if (!window.confirm("¿Eliminar este anexo del borrador?")) return;
+      annexRows.splice(index, 1);
+      renderAnnexes();
+      markDirty();
+    });
+    heading.append(title, remove);
+    const grid = document.createElement("div");
+    grid.className = "record-grid";
+    for (const [key, label, kind] of [["documento", "Documento", "input"], ["tipo", "Tipo", "select"], ["codigo", "Código / referencia", "input"], ["observacion", "Observación", "textarea"]]) {
+      grid.append(recordField(annex, index, "annex", key, label, kind, kind === "select" ? annexTypes : []));
+    }
+    row.append(heading, grid);
+    return row;
+  }));
+  installMethodHelps(ui.annexesList);
+}
+
+function renderChanges() {
+  ui.emptyChanges.hidden = changeRows.length > 0;
+  ui.changesList.replaceChildren(...changeRows.map((change, index) => {
+    const row = document.createElement("div");
+    row.className = "record-row change-row";
+    const heading = document.createElement("div");
+    heading.className = "section-heading";
+    const title = document.createElement("h4");
+    title.textContent = "Cambio " + (index + 1);
+    const remove = document.createElement("button");
+    remove.type = "button";
+    remove.className = "secondary-button";
+    remove.textContent = "Eliminar";
+    remove.setAttribute("aria-label", "Eliminar cambio " + (index + 1));
+    remove.addEventListener("click", () => {
+      if (!window.confirm("¿Eliminar este cambio del borrador?")) return;
+      changeRows.splice(index, 1);
+      renderChanges();
+      markDirty();
+    });
+    heading.append(title, remove);
+    const grid = document.createElement("div");
+    grid.className = "record-grid";
+    for (const [key, label, kind] of [["version", "Versión", "input"], ["fecha", "Fecha", "date"], ["razon", "Razón de la actualización", "textarea"]]) {
+      grid.append(recordField(change, index, "change", key, label, kind));
+    }
+    row.append(heading, grid);
+    return row;
+  }));
+  installMethodHelps(ui.changesList);
 }
 
 function destinationField(activity, index, key, labelText) {
@@ -440,6 +648,7 @@ function renderActivities() {
     }
     return row;
   }));
+  installMethodHelps(ui.activitiesList);
   renderFlow();
 }
 
@@ -635,8 +844,17 @@ function clearSession() {
   renderNorms();
   activityRows = [];
   renderActivities();
+  annexRows = [];
+  changeRows = [];
+  annexesNotApplicable = false;
+  renderAnnexes();
+  renderChanges();
+  for (const [inputId] of textFields) ui[inputId].value = "";
+  showRoleSeparation();
+  setMessage(ui.documentsMessage, "");
   dirty = false;
   ui.workspace.hidden = true;
+  ui.documentsSection.hidden = true;
   ui.sessionControls.hidden = true;
   ui.loginView.hidden = false;
   ui.loginPassword.value = "";
@@ -654,6 +872,7 @@ async function startSession(user) {
   ui.sessionIdentity.textContent = user.username || user.displayName;
   ui.welcomeText.textContent = user.displayName + " · " + user.role;
   ui.passwordRequired.hidden = !user.mustChangePassword;
+  ui.documentsSection.hidden = true;
 
   if (user.mustChangePassword) {
     ui.draftWorkspace.hidden = true;
@@ -666,6 +885,7 @@ async function startSession(user) {
   }
 
   ui.draftWorkspace.hidden = false;
+  ui.documentsSection.hidden = false;
   await Promise.all([loadProcesses(), loadDrafts()]);
 }
 
@@ -757,17 +977,29 @@ async function openDraft(id) {
       ? currentPayload.activities.map(activity => activity && typeof activity === "object" && !Array.isArray(activity) ? { ...activity, uid: activity.uid || crypto.randomUUID() } : { uid: crypto.randomUUID() })
       : [];
     renderActivities();
+    annexRows = Array.isArray(currentPayload.annexes)
+      ? currentPayload.annexes.map(annex => annex && typeof annex === "object" && !Array.isArray(annex) ? { ...annex } : {})
+      : [];
+    changeRows = Array.isArray(currentPayload.changes)
+      ? currentPayload.changes.map(change => change && typeof change === "object" && !Array.isArray(change) ? { ...change } : {})
+      : [];
+    annexesNotApplicable = currentPayload.settings?.annexesNotApplicable === true;
+    renderAnnexes();
+    renderChanges();
+    setMessage(ui.documentsMessage, "");
     ui.draftName.value = procedure.name;
     for (const [inputId, fieldId] of textFields) {
       ui[inputId].value = typeof currentPayload.fields?.[fieldId] === "string"
         ? currentPayload.fields[fieldId]
         : "";
     }
+    showRoleSeparation();
     ui.processCode.value = procedure.processCode;
     ui.processCode.disabled = true;
     ui.editorTitle.textContent = "Editar borrador";
     ui.editorStatus.textContent = procedure.status + " · revisión " + procedure.revision;
     ui.saveDraftButton.textContent = "Guardar cambios";
+    ui.saveDocumentsButton.textContent = "Guardar cambios";
     dirty = false;
     setMessage(ui.editorMessage, "");
     ui.flowReviewResult.hidden = true;
@@ -787,11 +1019,20 @@ function newDraft() {
   renderNorms();
   activityRows = [boundaryRecord("Inicio"), boundaryRecord("Fin")];
   renderActivities();
+  annexRows = [];
+  changeRows = [{ version: "1.0", fecha: todayLocal(), razon: "Creación inicial del procedimiento" }];
+  annexesNotApplicable = false;
+  renderAnnexes();
+  renderChanges();
+  setMessage(ui.documentsMessage, "");
   ui.draftForm.reset();
+  for (const [inputId] of textFields) ui[inputId].value = "";
+  showRoleSeparation();
   ui.processCode.disabled = false;
   ui.editorTitle.textContent = "Nuevo borrador";
   ui.editorStatus.textContent = "Borrador no guardado";
   ui.saveDraftButton.textContent = "Guardar borrador";
+  ui.saveDocumentsButton.textContent = "Guardar borrador";
   dirty = false;
   setMessage(ui.editorMessage, "");
   ui.flowReviewResult.hidden = true;
@@ -829,6 +1070,40 @@ ui.loginForm.addEventListener("submit", async event => {
 
 ui.draftForm.addEventListener("input", markDirty);
 ui.draftForm.addEventListener("change", markDirty);
+for (const inputId of ["draftPreparedBy", "draftPreparedName", "draftReviewedBy", "draftReviewedName", "draftApprovedBy", "draftApprovedName"]) {
+  ui[inputId].addEventListener("input", markDirty);
+}
+for (const inputId of ["draftPreparedBy", "draftReviewedBy", "draftApprovedBy"]) {
+  ui[inputId].addEventListener("input", showRoleSeparation);
+}
+ui.annexApplicability.addEventListener("change", () => {
+  if (ui.annexApplicability.value === "no_aplica") {
+    if (!window.confirm("Confirma que este procedimiento no contiene anexos? Los anexos registrados se eliminarán de esta sección.")) {
+      ui.annexApplicability.value = annexesNotApplicable ? "no_aplica" : "aplica";
+      return;
+    }
+    annexRows = [];
+    annexesNotApplicable = true;
+  } else {
+    annexesNotApplicable = false;
+  }
+  renderAnnexes();
+  markDirty();
+});
+ui.addAnnexButton.addEventListener("click", () => {
+  if (annexesNotApplicable) return;
+  annexRows.push({ documento: "", tipo: "Formato", codigo: "", observacion: "" });
+  renderAnnexes();
+  markDirty();
+  ui.annexesList.lastElementChild?.querySelector("input")?.focus();
+});
+ui.addChangeButton.addEventListener("click", () => {
+  changeRows.push({ version: String(currentPayload.fields?.version || "1.0"), fecha: todayLocal(), razon: "" });
+  renderChanges();
+  markDirty();
+  ui.changesList.lastElementChild?.querySelector("input")?.focus();
+});
+ui.saveDocumentsButton.addEventListener("click", () => ui.draftForm.requestSubmit());
 ui.addNormButton.addEventListener("click", () => {
   normRows.push({ tipo: "Externa", norma: "", anio: "", descripcion: "", articulo: "", entidad: "" });
   renderNorms();
@@ -892,7 +1167,10 @@ ui.draftForm.addEventListener("submit", async event => {
     ...currentPayload,
     fields: updatedFields,
     norms: normRows.map(norm => ({ ...norm })),
-    activities: activityRows.map(activity => ({ ...activity }))
+    activities: activityRows.map(activity => ({ ...activity })),
+    annexes: annexRows.map(annex => ({ ...annex })),
+    changes: changeRows.map(change => ({ ...change })),
+    settings: { ...(currentPayload.settings && typeof currentPayload.settings === "object" && !Array.isArray(currentPayload.settings) ? currentPayload.settings : {}), annexesNotApplicable }
   };
   const body = { name, processCode: ui.processCode.value, payload };
 
@@ -910,16 +1188,26 @@ ui.draftForm.addEventListener("submit", async event => {
     normRows = Array.isArray(currentPayload.norms) ? currentPayload.norms.map(norm => ({ ...norm })) : [];
     activityRows = Array.isArray(currentPayload.activities) ? currentPayload.activities.map(activity => ({ ...activity })) : [];
     renderFlow();
+    annexRows = Array.isArray(currentPayload.annexes) ? currentPayload.annexes.map(annex => ({ ...annex })) : [];
+    changeRows = Array.isArray(currentPayload.changes) ? currentPayload.changes.map(change => ({ ...change })) : [];
+    annexesNotApplicable = currentPayload.settings?.annexesNotApplicable === true;
+    renderAnnexes();
+    renderChanges();
     ui.processCode.value = currentDraft.processCode;
     ui.processCode.disabled = true;
     ui.editorTitle.textContent = "Editar borrador";
     ui.editorStatus.textContent = currentDraft.status + " · revisión " + currentDraft.revision;
     ui.saveDraftButton.textContent = "Guardar cambios";
+    ui.saveDocumentsButton.textContent = "Guardar cambios";
     dirty = false;
     setMessage(ui.editorMessage, "Borrador guardado.", true);
+    setMessage(ui.documentsMessage, "Borrador guardado.", true);
     await loadDrafts();
   } catch (error) {
     handleRequestError(error, ui.editorMessage);
+    if (!["unauthenticated", "csrf_failed", "password_change_required"].includes(error.code)) {
+      setMessage(ui.documentsMessage, errorText(error));
+    }
   } finally {
     button.disabled = false;
   }
@@ -946,4 +1234,5 @@ ui.logoutButton.addEventListener("click", async () => {
 });
 
 csrfToken = sessionStorage.getItem(csrfKey) || "";
+installMethodHelps(document);
 if (csrfToken) request("/api/auth/me").then(({ user }) => startSession(user)).catch(clearSession);

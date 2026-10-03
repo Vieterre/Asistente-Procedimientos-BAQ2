@@ -354,11 +354,22 @@ test("draft HTTP routes create, read, and update with a live author session", as
     const updated = await fetch(`${base}/${procedure.id}`, { method: "PUT", headers, body: JSON.stringify({
       name: "Nuevo",
       payload: {
-        fields: { nombre: "Nuevo", objetivo: "Objetivo", alcance: "Alcance", definiciones: "Definiciones", condiciones: "Condiciones" },
+        fields: { nombre: "Nuevo", objetivo: "Objetivo", alcance: "Alcance", definiciones: "Definiciones", condiciones: "Condiciones",
+          elaboro: "Profesional Universitario", elaboroNombre: "Persona A", reviso: "Jefe de Oficina", revisoNombre: "Persona B",
+          aprobo: "Director", aproboNombre: "Persona C" },
         norms: [
           { tipo: "Externa", norma: "Norma de prueba", anio: "2026", descripcion: "Texto ficticio", articulo: "1", entidad: "Entidad de prueba" },
           { tipo: "Interna", norma: "Regla de prueba", anio: "2025", descripcion: "Otro texto", articulo: "2", entidad: "Otra entidad" }
         ],
+        annexes: [
+          { documento: "Formato de solicitud", tipo: "Formato", codigo: "F-01", observacion: "Registra la solicitud" },
+          { documento: "Matriz de seguimiento", tipo: "Matriz", codigo: "M-02", observacion: "Consolida los casos" }
+        ],
+        changes: [
+          { version: "1.0", fecha: "2026-10-03", razon: "Creación inicial" },
+          { version: "1.1", fecha: "2026-10-03", razon: "Corrección de texto" }
+        ],
+        settings: { annexesNotApplicable: false, showEvidenceFlow: true },
         activities: [
           { uid: "start", tipo: "Inicio", actividad: "Solicitud recibida", descripcion: "Radicacion de prueba" },
           { uid: "step", tipo: "Actividad", n: 1, actividad: "Revisar solicitud", descripcion: "Texto de prueba", responsable: "Profesional", evidencia: "Formato de prueba", sistema: "Sistema de prueba", tieneControl: true,
@@ -374,7 +385,15 @@ test("draft HTTP routes create, read, and update with a live author session", as
     assert.equal((await updated.json()).procedure.revision, 2);
     const reopened = await fetch(`${base}/${procedure.id}`, { headers });
     const reopenedPayload = (await reopened.json()).procedure.payload;
-    assert.deepEqual(reopenedPayload.fields, { nombre: "Nuevo", objetivo: "Objetivo", alcance: "Alcance", definiciones: "Definiciones", condiciones: "Condiciones" });
+    assert.deepEqual(reopenedPayload.fields, { nombre: "Nuevo", objetivo: "Objetivo", alcance: "Alcance", definiciones: "Definiciones", condiciones: "Condiciones",
+      elaboro: "Profesional Universitario", elaboroNombre: "Persona A", reviso: "Jefe de Oficina", revisoNombre: "Persona B",
+      aprobo: "Director", aproboNombre: "Persona C" });
+    assert.equal(reopenedPayload.annexes.length, 2);
+    assert.equal(reopenedPayload.annexes[0].codigo, "F-01");
+    assert.equal(reopenedPayload.annexes[1].tipo, "Matriz");
+    assert.equal(reopenedPayload.changes.length, 2);
+    assert.equal(reopenedPayload.changes[1].version, "1.1");
+    assert.deepEqual(reopenedPayload.settings, { annexesNotApplicable: false, showEvidenceFlow: true });
     assert.equal(reopenedPayload.activities.length, 5);
     assert.equal(reopenedPayload.activities[1].responsable, "Profesional");
     assert.equal(reopenedPayload.activities[1].evidencia, "Formato de prueba");

@@ -30,8 +30,8 @@ PostgreSQL de forma explicita; no se crean asignaciones automaticamente.
 
 La pantalla de prueba edita nombre, proceso, objetivo, alcance, definiciones y
 condiciones generales. Los cuatro campos de texto usan las mismas claves de
-`payload.fields` del prototipo; al actualizar conserva las otras secciones del
-`payload` sin mostrarlas. Tambien permite agregar y eliminar varias normas con
+`payload.fields` del prototipo; al actualizar conserva las secciones del
+`payload` aun no conectadas. Tambien permite agregar y eliminar varias normas con
 los seis campos de `payload.norms` usados por el prototipo. La seccion
 Actividades permite agregar y editar actividades ordinarias (nombre,
 descripcion, responsable, evidencia y sistema) en `payload.activities`.
@@ -69,6 +69,15 @@ Mostrar evidencias dibuja el registro o evidencia asociado sin cambiar el
 borrador. Los controles de escala permiten alejar, acercar, ajustar al ancho
 y volver a 100%, entre 35% y 180%; tampoco cambian el borrador. Es una vista
 de comparacion, no la exportacion final del prototipo.
+
+El componente 06 de pruebas permite registrar documentos anexos (documento,
+tipo, codigo/referencia y observacion), confirmar No aplica, y anotar cambios
+por version, fecha y razon. Usa `payload.annexes`, `payload.changes` y
+`payload.settings.annexesNotApplicable` como el prototipo; los cargos y nombres
+de Elaboro, Reviso y Aprobo usan sus claves originales de `payload.fields`.
+No aplica borra los anexos visibles solo tras confirmacion. Los campos tienen
+ayudas metodologicas desplegables; los cargos se escriben con sugerencias,
+sin implicar una aprobacion real ni bloquear el guardado del borrador incompleto.
 
 ## Contraste del modulo central
 
