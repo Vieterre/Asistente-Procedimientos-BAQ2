@@ -3,7 +3,7 @@ const ids = [
   "workspace", "sessionControls", "sessionIdentity", "logoutButton", "welcomeText",
   "passwordRequired", "draftWorkspace", "draftForm", "editorTitle", "editorStatus",
   "draftName", "processCode", "draftObjective", "draftScope", "draftDefinitions", "draftConditions", "saveDraftButton", "editorMessage",
-  "newDraftButton", "addNormButton", "normsList", "emptyNorms", "addActivityButton", "addDecisionButton", "addConnectorButton", "activitiesList", "emptyActivities", "refreshDraftsButton", "draftCount", "listMessage", "emptyDrafts",
+  "newDraftButton", "addNormButton", "normsList", "emptyNorms", "addBoundaryButton", "addActivityButton", "addDecisionButton", "addConnectorButton", "activitiesList", "emptyActivities", "refreshDraftsButton", "draftCount", "listMessage", "emptyDrafts",
   "draftList"
 ];
 const ui = Object.fromEntries(ids.map(id => [id, document.getElementById(id)]));
@@ -164,8 +164,27 @@ function nextConnectorId() {
   return "C" + number;
 }
 
+function boundaryRecord(type) {
+  return { uid: crypto.randomUUID(), tipo: type, actividad: type, descripcion: "", tieneControl: false };
+}
+
+function completeBoundaries() {
+  let added = false;
+  if (!activityRows.some(activity => activity.tipo === "Inicio")) {
+    activityRows.unshift(boundaryRecord("Inicio"));
+    added = true;
+  }
+  if (!activityRows.some(activity => activity.tipo === "Fin")) {
+    activityRows.push(boundaryRecord("Fin"));
+    added = true;
+  }
+  renderActivities();
+  if (added) markDirty();
+}
+
 function renderActivities() {
   ui.emptyActivities.hidden = activityRows.length > 0;
+  ui.addBoundaryButton.hidden = activityRows.some(activity => activity.tipo === "Inicio") && activityRows.some(activity => activity.tipo === "Fin");
   ui.activitiesList.replaceChildren(...activityRows.map((activity, index) => {
     const row = document.createElement("div");
     row.className = "activity-row";
@@ -196,6 +215,26 @@ function renderActivities() {
       heading.append(remove);
     }
     row.append(heading);
+    if (["Inicio", "Fin"].includes(activity.tipo)) {
+      const grid = document.createElement("div");
+      grid.className = "activity-grid";
+      for (const [key, labelText, kind] of [["actividad", "Nombre", "input"], ["descripcion", activity.tipo === "Inicio" ? "Evento que inicia el procedimiento" : "Resultado o condición de cierre", "textarea"]]) {
+        const field = document.createElement("div");
+        field.className = "field" + (key === "descripcion" ? " activity-wide" : "");
+        const label = document.createElement("label");
+        const input = document.createElement(kind);
+        input.id = "boundary" + key + index;
+        input.value = typeof activity[key] === "string" ? activity[key] : "";
+        input.maxLength = kind === "textarea" ? 10000 : 500;
+        label.htmlFor = input.id;
+        label.textContent = labelText;
+        input.addEventListener("input", () => { activity[key] = input.value; markDirty(); });
+        field.append(label, input);
+        grid.append(field);
+      }
+      row.append(grid);
+      return row;
+    }
     if (!editable) {
       const summary = document.createElement("p");
       summary.className = "activity-summary";
@@ -522,7 +561,7 @@ function newDraft() {
   currentPayload = { fields: {}, norms: [], activities: [], annexes: [], changes: [], settings: {} };
   normRows = [];
   renderNorms();
-  activityRows = [];
+  activityRows = [boundaryRecord("Inicio"), boundaryRecord("Fin")];
   renderActivities();
   ui.draftForm.reset();
   ui.processCode.disabled = false;
@@ -585,6 +624,7 @@ ui.addDecisionButton.addEventListener("click", () => addFlowItem({
   uid: crypto.randomUUID(), tipo: "Decisión", actividad: "", descripcion: "", responsable: "",
   decisionSi: "", decisionNo: "", tieneControl: false
 }));
+ui.addBoundaryButton.addEventListener("click", completeBoundaries);
 ui.addConnectorButton.addEventListener("click", () => {
   const connectorId = nextConnectorId();
   addFlowItem({

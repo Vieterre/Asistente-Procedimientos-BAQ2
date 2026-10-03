@@ -211,12 +211,12 @@ test("draft HTTP routes create, read, and update with a live author session", as
           { tipo: "Interna", norma: "Regla de prueba", anio: "2025", descripcion: "Otro texto", articulo: "2", entidad: "Otra entidad" }
         ],
         activities: [
-          { uid: "start", tipo: "Inicio", actividad: "Inicio" },
+          { uid: "start", tipo: "Inicio", actividad: "Solicitud recibida", descripcion: "Radicacion de prueba" },
           { uid: "step", tipo: "Actividad", n: 1, actividad: "Revisar solicitud", descripcion: "Texto de prueba", responsable: "Profesional", evidencia: "Formato de prueba", sistema: "Sistema de prueba", tieneControl: true,
             controlResponsable: "Profesional", controlPeriodicidad: "Cada vez", controlAccion: "Verifica", controlEjecucion: "Compara datos", controlDesviacion: "Devuelve", controlEvidencia: "Registro de prueba" },
           { uid: "decision", tipo: "Decisión", actividad: "¿Está completo?", descripcion: "¿Está completo?", responsable: "Profesional", decisionSi: "end", decisionNo: "step", tieneControl: false },
           { uid: "connector", tipo: "Conector", connectorId: "A", actividad: "Conector A", connectorDestino: "step", tieneControl: false },
-          { uid: "end", tipo: "Fin", actividad: "Fin" }
+          { uid: "end", tipo: "Fin", actividad: "Solicitud cerrada", descripcion: "Respuesta de prueba" }
         ]
       },
       revision: 1
@@ -236,7 +236,8 @@ test("draft HTTP routes create, read, and update with a live author session", as
     assert.equal(reopenedPayload.activities[2].decisionNo, "step");
     assert.equal(reopenedPayload.activities[3].connectorId, "A");
     assert.equal(reopenedPayload.activities[3].connectorDestino, "step");
-    assert.deepEqual(reopenedPayload.activities[4], { uid: "end", tipo: "Fin", actividad: "Fin" });
+    assert.deepEqual(reopenedPayload.activities[0], { uid: "start", tipo: "Inicio", actividad: "Solicitud recibida", descripcion: "Radicacion de prueba" });
+    assert.deepEqual(reopenedPayload.activities[4], { uid: "end", tipo: "Fin", actividad: "Solicitud cerrada", descripcion: "Respuesta de prueba" });
     assert.equal(reopenedPayload.norms.length, 2);
     assert.equal(reopenedPayload.norms[0].norma, "Norma de prueba");
     assert.equal(reopenedPayload.norms[1].tipo, "Interna");

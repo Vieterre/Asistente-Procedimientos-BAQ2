@@ -41,8 +41,10 @@ ruta lo referencie. Los conectores reciben un identificador automatico y
 permiten elegir un destino; sus identificadores existentes no se editan en
 esta pantalla. Las actividades ordinarias pueden marcarse como puntos de
 control y registrar responsable, periodicidad, proposito, ejecucion,
-desviaciones y evidencia. Inicio y Fin se muestran sin edicion y se conservan
-en el contenido. El formulario completo sigue sin conectarse; no usar estas
+desviaciones y evidencia. Los borradores nuevos incluyen Inicio y Fin con
+nombre y descripcion editables; los borradores anteriores pueden completarlos
+sin duplicar los nodos existentes. Inicio y Fin no se eliminan desde esta
+pantalla. El formulario completo sigue sin conectarse; no usar estas
 rutas ni los controles como validacion de un flujo publicable.
 
 ## Activacion
