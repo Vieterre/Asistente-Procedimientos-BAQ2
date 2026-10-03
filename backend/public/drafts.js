@@ -4,7 +4,7 @@ const ids = [
   "passwordRequired", "draftWorkspace", "draftForm", "editorTitle", "editorStatus",
   "draftName", "processCode", "draftObjective", "draftScope", "draftDefinitions", "draftConditions", "saveDraftButton", "editorMessage",
   "newDraftButton", "addNormButton", "normsList", "emptyNorms", "addBoundaryButton", "addActivityButton", "addDecisionButton", "addConnectorButton", "activitiesList", "emptyActivities", "reviewFlowButton", "flowReviewResult", "refreshDraftsButton", "draftCount", "listMessage", "emptyDrafts",
-  "draftList"
+  "draftList", "flowSection", "flowSummary", "refreshFlowButton", "flowSvg"
 ];
 const ui = Object.fromEntries(ids.map(id => [id, document.getElementById(id)]));
 const csrfKey = "drafts_csrf";
@@ -420,6 +420,124 @@ function renderActivities() {
     }
     return row;
   }));
+  renderFlow();
+}
+
+function svgNode(tag, attributes = {}, content) {
+  const node = document.createElementNS("http://www.w3.org/2000/svg", tag);
+  for (const [key, value] of Object.entries(attributes)) node.setAttribute(key, String(value));
+  if (content !== undefined) node.textContent = content;
+  return node;
+}
+
+function flowLines(value, maxLength = 22) {
+  const chunks = String(value || "").match(/\S+|\s+/g) || [];
+  const lines = [];
+  let line = "";
+  for (let chunk of chunks) {
+    if (!chunk.trim()) continue;
+    if (line && (line + " " + chunk).length > maxLength) { lines.push(line); line = ""; }
+    while (chunk.length > maxLength) {
+      if (line) { lines.push(line); line = ""; }
+      lines.push(chunk.slice(0, maxLength));
+      chunk = chunk.slice(maxLength);
+    }
+    line = line ? line + " " + chunk : chunk;
+  }
+  if (line) lines.push(line);
+  if (lines.length > 2) return [lines[0], lines[1].slice(0, maxLength - 1) + "…"];
+  return lines.length ? lines : ["Sin nombre"];
+}
+
+function renderFlow() {
+  const svg = ui.flowSvg;
+  svg.replaceChildren();
+  ui.flowSection.hidden = activityRows.length === 0;
+  if (!activityRows.length) return;
+
+  const roles = [...new Set(activityRows.filter(item => !["Inicio", "Fin", "Conector"].includes(item.tipo))
+    .flatMap(item => {
+      const names = String(item.responsable || "").split(";").map(role => role.trim()).filter(Boolean);
+      return names.length ? names : ["Sin responsable"];
+    }))];
+  if (!roles.length) roles.push("Sin responsable");
+  const laneWidth = 260;
+  const width = Math.max(760, roles.length * laneWidth + 160);
+  const height = 150 + activityRows.length * 132;
+  svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+  svg.setAttribute("width", width);
+  svg.setAttribute("height", height);
+  ui.flowSummary.textContent = `${activityRows.length} elementos · ${roles.length} responsable${roles.length === 1 ? "" : "s"}`;
+  const title = svgNode("title", {}, "Flujograma del borrador abierto");
+  const defs = svgNode("defs");
+  for (const [id, color] of [["flowArrow", "#607b84"], ["flowYes", "#168064"], ["flowNo", "#bd5140"]]) {
+    const marker = svgNode("marker", { id, viewBox: "0 0 10 10", refX: 9, refY: 5, markerWidth: 8, markerHeight: 8, orient: "auto-start-reverse" });
+    marker.append(svgNode("path", { d: "M 0 0 L 10 5 L 0 10 z", fill: color }));
+    defs.append(marker);
+  }
+  svg.append(title, defs);
+  for (const [index, role] of roles.entries()) {
+    const x = 80 + index * laneWidth;
+    svg.append(svgNode("rect", { x, y: 0, width: laneWidth, height, class: `flow-lane${index % 2 ? " alt" : ""}` }));
+    svg.append(svgNode("rect", { x, y: 0, width: laneWidth, height: 68, class: "flow-lane-header" }));
+    const label = svgNode("text", { x: x + laneWidth / 2, y: 31, "text-anchor": "middle", fill: "#fff", "font-size": 13, "font-weight": 700 }, flowLines(role, 28)[0]);
+    label.append(svgNode("title", {}, role));
+    svg.append(label);
+  }
+
+  const positions = new Map(activityRows.map((item, index) => {
+    const itemRoles = String(item.responsable || "").split(";").map(role => role.trim()).filter(Boolean);
+    if (!itemRoles.length) itemRoles.push("Sin responsable");
+    const lanes = itemRoles.map(role => roles.indexOf(role)).filter(lane => lane >= 0);
+    const center = ["Inicio", "Fin", "Conector"].includes(item.tipo) ? width / 2
+      : lanes.length ? 80 + (Math.min(...lanes) + Math.max(...lanes) + 1) * laneWidth / 2 : 80 + laneWidth / 2;
+    return [item.uid, { x: center, y: 118 + index * 132, index, item }];
+  }));
+
+  for (const [index, item] of activityRows.entries()) {
+    const source = positions.get(item.uid);
+    if (!source) continue;
+    const links = item.tipo === "Decisión" ? [[item.decisionSi, "Sí"], [item.decisionNo, "No"]]
+      : item.tipo === "Conector" ? [[item.connectorDestino, ""]]
+      : item.tipo === "Fin" ? [] : [[activityRows[index + 1]?.uid, ""]];
+    for (const [id, label] of links) {
+      const target = positions.get(id);
+      if (!target) continue;
+      const branch = label === "Sí" ? "yes" : label === "No" ? "no" : item.tipo === "Conector" ? "connector" : "";
+      const outer = label || item.tipo === "Conector" || target.index <= index || target.index > index + 1;
+      const side = label === "No" || target.index <= index ? -1 : 1;
+      let points;
+      if (outer) {
+        const fromX = source.x + side * (item.tipo === "Conector" ? 27 : item.tipo === "Decisión" ? 77 : 102);
+        const toX = target.x + side * (target.item.tipo === "Conector" ? 28 : 104);
+        const rail = side < 0 ? 35 : width - 35;
+        points = `${fromX},${source.y} ${rail},${source.y} ${rail},${target.y} ${toX},${target.y}`;
+      } else {
+        const mid = (source.y + target.y) / 2;
+        points = `${source.x},${source.y + 42} ${source.x},${mid} ${target.x},${mid} ${target.x},${target.y - 46}`;
+      }
+      const edge = svgNode("polyline", { points, class: `flow-edge ${branch}`, "marker-end": `url(#${label === "Sí" ? "flowYes" : label === "No" ? "flowNo" : "flowArrow"})` });
+      edge.append(svgNode("title", {}, `${item.actividad || item.tipo} → ${target.item.actividad || target.item.tipo}${label ? ` (${label})` : ""}`));
+      svg.append(edge);
+      if (label) svg.append(svgNode("text", { x: source.x + side * 91, y: source.y - 9, class: `flow-route-label ${branch}`, "text-anchor": "middle" }, label));
+    }
+  }
+
+  for (const item of activityRows) {
+    const position = positions.get(item.uid);
+    if (!position) continue;
+    const { x, y } = position;
+    const group = svgNode("g");
+    group.append(svgNode("title", {}, `${item.tipo}: ${item.actividad || item.descripcion || "Sin nombre"}${item.responsable ? ` · ${item.responsable}` : ""}`));
+    if (item.tipo === "Decisión") group.append(svgNode("polygon", { points: `${x},${y - 44} ${x + 77},${y} ${x},${y + 44} ${x - 77},${y}`, class: "flow-node decision" }));
+    else if (item.tipo === "Conector") group.append(svgNode("circle", { cx: x, cy: y, r: 27, class: "flow-node connector" }));
+    else group.append(svgNode("rect", { x: x - 102, y: y - 42, width: 204, height: 84, rx: ["Inicio", "Fin"].includes(item.tipo) ? 28 : 5, class: `flow-node${["Inicio", "Fin"].includes(item.tipo) ? " boundary" : ""}${item.tieneControl ? " control" : ""}` }));
+    const textValue = item.tipo === "Conector" ? String(item.connectorId || "?") : item.tipo === "Decisión" ? String(item.descripcion || item.actividad || "Decisión") : String(item.actividad || item.tipo);
+    const lines = flowLines(textValue, item.tipo === "Decisión" ? 15 : 24);
+    lines.forEach((line, lineIndex) => group.append(svgNode("text", { x, y: y + (lineIndex - (lines.length - 1) / 2) * 17 + 5, class: "flow-text", "text-anchor": "middle" }, line)));
+    if (item.tieneControl) group.append(svgNode("text", { x, y: y + 32, class: "flow-note", "text-anchor": "middle" }, "CONTROL"));
+    svg.append(group);
+  }
 }
 
 function setMessage(node, text, success = false) {
@@ -740,6 +858,7 @@ ui.draftForm.addEventListener("submit", async event => {
     currentPayload = result.procedure.payload;
     normRows = Array.isArray(currentPayload.norms) ? currentPayload.norms.map(norm => ({ ...norm })) : [];
     activityRows = Array.isArray(currentPayload.activities) ? currentPayload.activities.map(activity => ({ ...activity })) : [];
+    renderFlow();
     ui.processCode.value = currentDraft.processCode;
     ui.processCode.disabled = true;
     ui.editorTitle.textContent = "Editar borrador";
@@ -757,6 +876,7 @@ ui.draftForm.addEventListener("submit", async event => {
 
 ui.newDraftButton.addEventListener("click", newDraft);
 ui.refreshDraftsButton.addEventListener("click", loadDrafts);
+ui.refreshFlowButton.addEventListener("click", renderFlow);
 ui.logoutButton.addEventListener("click", async () => {
   ui.logoutButton.disabled = true;
   try {

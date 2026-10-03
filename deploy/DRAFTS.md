@@ -57,6 +57,9 @@ senala rutas No que van directamente a un punto de control, controles
 con atributos obligatorios incompletos e identificadores de conector ausentes
 o duplicados.
 Todavia no sustituye las reglas completas ni el flujograma del prototipo.
+La vista Flujograma de pruebas dibuja el orden actual por responsable, las
+rutas Si/No, los destinos de conectores y los puntos de control. Es una vista
+de comparacion del borrador abierto, no la exportacion final del prototipo.
 
 ## Activacion
 
