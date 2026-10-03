@@ -47,8 +47,11 @@ sin duplicar los nodos existentes. Inicio y Fin no se eliminan desde esta
 pantalla. El formulario completo sigue sin conectarse; no usar estas
 rutas ni los controles como validacion de un flujo publicable.
 El boton Revisar flujo comprueba Inicio, Fin, identificadores y destinos de
-decisiones y conectores con los cambios en pantalla, sin guardar ni impedir
-que se conserve un borrador incompleto.
+decisiones y conectores, exige rutas Si/No diferentes y revisa la continuidad
+segun el orden de actividades y los destinos explicitados. Senala elementos
+inalcanzables, rutas sin salida hacia Fin y ciclos cerrados. Usa los cambios
+en pantalla, sin guardar ni impedir que se conserve un borrador incompleto.
+Todavia no sustituye las reglas completas ni el flujograma del prototipo.
 
 ## Activacion
 

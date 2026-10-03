@@ -10,20 +10,34 @@ const other = { id: "22222222-2222-4222-8222-222222222222", role: "elaborador", 
 const draftId = "33333333-3333-4333-8333-333333333333";
 
 test("flow review detects missing boundaries, broken routes, and duplicate identifiers", () => {
-  assert.deepEqual(reviewFlow([
+  const broken = reviewFlow([
     { uid: "start", tipo: "Inicio" },
     { uid: "choice", tipo: "Decisión", decisionSi: "end", decisionNo: "missing" },
     { uid: "connector", tipo: "Conector", connectorDestino: "" },
     { uid: "end", tipo: "Fin" }
-  ]), [
-    { index: 1, message: "Ruta No: el destino no es válido." },
-    { index: 2, message: "Destino del conector: selecciona un destino." }
   ]);
+  assert.ok(broken.some(issue => issue.index === 1 && issue.message === "Ruta No: el destino no es válido."));
+  assert.ok(broken.some(issue => issue.index === 2 && issue.message === "Destino del conector: selecciona un destino."));
   assert.deepEqual(reviewFlow([{ uid: "same", tipo: "Inicio" }, { uid: "same", tipo: "Fin" }]), [
     { index: 1, message: "El identificador del elemento está repetido." }
   ]);
   assert.equal(reviewFlow([{ uid: "start", tipo: "Inicio" }]).length, 1);
   assert.deepEqual(reviewFlow([{ uid: "start", tipo: "Inicio" }, { uid: "end", tipo: "Fin" }]), []);
+});
+
+test("flow review rejects identical decision routes and cycles without an exit", () => {
+  const activities = [
+    { uid: "start", tipo: "Inicio" },
+    { uid: "choice", tipo: "Decisión", decisionSi: "loop", decisionNo: "loop" },
+    { uid: "loop", tipo: "Conector", connectorDestino: "choice" },
+    { uid: "end", tipo: "Fin" }
+  ];
+  const issues = reviewFlow(activities);
+  assert.ok(issues.some(issue => issue.message === "Las rutas Sí y No deben tener destinos diferentes."));
+  assert.ok(issues.some(issue => issue.message === "Hay un ciclo sin salida hacia Fin."));
+  assert.ok(issues.some(issue => issue.index === 3 && issue.message === "No se puede alcanzar este elemento desde Inicio."));
+  activities[1].decisionNo = "end";
+  assert.deepEqual(reviewFlow(activities), []);
 });
 const row = {
   id: draftId, code: null, name: "Borrador", process_code: "DE", version: "1.0",
