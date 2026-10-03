@@ -93,23 +93,52 @@ export function reviewFlow(activities) {
     else if (!canReachEnd.has(item.uid)) issues.push({ index, message: "Este elemento no tiene una ruta hacia Fin." });
   }
 
-  const visiting = new Set();
-  const visited = new Set();
-  let trappedCycle = false;
+  let nextIndex = 0;
+  const indices = new Map();
+  const lowLinks = new Map();
+  const stack = [];
+  const onStack = new Set();
+  const cycles = [];
   function visit(id) {
-    if (visiting.has(id)) { trappedCycle = true; return; }
-    if (visited.has(id)) return;
-    visiting.add(id);
+    indices.set(id, nextIndex);
+    lowLinks.set(id, nextIndex++);
+    stack.push(id);
+    onStack.add(id);
     for (const target of edges.get(id)) {
-      if (reachable.has(target) && !canReachEnd.has(target)) visit(target);
+      if (!reachable.has(target)) continue;
+      if (!indices.has(target)) {
+        visit(target);
+        lowLinks.set(id, Math.min(lowLinks.get(id), lowLinks.get(target)));
+      } else if (onStack.has(target)) {
+        lowLinks.set(id, Math.min(lowLinks.get(id), indices.get(target)));
+      }
     }
-    visiting.delete(id);
-    visited.add(id);
+    if (lowLinks.get(id) !== indices.get(id)) return;
+    const component = [];
+    let current;
+    do {
+      current = stack.pop();
+      onStack.delete(current);
+      component.push(current);
+    } while (current !== id);
+    if (component.length > 1 || edges.get(id).includes(id)) cycles.push(component);
   }
-  for (const item of activities) {
-    if (reachable.has(item.uid) && !canReachEnd.has(item.uid)) visit(item.uid);
+  for (const id of reachable) if (!indices.has(id)) visit(id);
+  if (cycles.some(component => component.every(id => !canReachEnd.has(id)))) {
+    issues.push({ index: null, message: "Hay un ciclo sin salida hacia Fin." });
   }
-  if (trappedCycle) issues.push({ index: null, message: "Hay un ciclo sin salida hacia Fin." });
+  for (const component of cycles.filter(group => group.some(id => canReachEnd.has(id)))) {
+    const index = Math.min(...component.map(id => activities.findIndex(item => item.uid === id)));
+    issues.push({ index, message: "Esta ruta regresa a una actividad anterior; confirme su condición de salida.", severity: "warning" });
+  }
+  for (const [index, item] of activities.entries()) {
+    if (item.tipo !== "Decisión" || item.decisionSi === item.decisionNo || !byId.has(item.decisionSi) || !byId.has(item.decisionNo)) continue;
+    const yesReach = walk(item.decisionSi, edges);
+    const noReach = walk(item.decisionNo, edges);
+    if (![...yesReach].some(id => id !== end.uid && noReach.has(id))) {
+      issues.push({ index, message: "Las rutas Sí y No no reconvergen antes de Fin; confirme si representan resultados independientes.", severity: "warning" });
+    }
+  }
 
   return issues;
 }

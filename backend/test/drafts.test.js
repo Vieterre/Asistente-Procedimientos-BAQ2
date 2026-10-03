@@ -37,7 +37,7 @@ test("flow review rejects identical decision routes and cycles without an exit",
   assert.ok(issues.some(issue => issue.message === "Hay un ciclo sin salida hacia Fin."));
   assert.ok(issues.some(issue => issue.index === 3 && issue.message === "No se puede alcanzar este elemento desde Inicio."));
   activities[1].decisionNo = "end";
-  assert.deepEqual(reviewFlow(activities), []);
+  assert.ok(reviewFlow(activities).every(issue => issue.severity === "warning"));
 });
 
 test("flow review checks the negative route and required control details", () => {
@@ -57,7 +57,8 @@ test("flow review checks the negative route and required control details", () =>
     controlEjecucion: "Compara", controlDesviacion: "Devuelve", controlEvidencia: "Registro"
   });
   issues = reviewFlow(activities);
-  assert.deepEqual(issues, []);
+  assert.ok(issues.every(issue => issue.severity === "warning"));
+  assert.ok(issues.some(issue => issue.message.includes("no reconvergen")));
 });
 
 test("flow review rejects missing or duplicate connector labels", () => {
@@ -93,11 +94,25 @@ test("flow review accepts a correction loop with an exit but rejects a closed lo
     { uid: "choice", tipo: "Decisión", decisionSi: "end", decisionNo: "correction" },
     { uid: "end", tipo: "Fin" }
   ];
-  assert.deepEqual(reviewFlow(activities), []);
+  const review = reviewFlow(activities);
+  assert.ok(review.every(issue => issue.severity === "warning"));
+  assert.ok(review.some(issue => issue.message.includes("condición de salida")));
   activities[2].decisionSi = "correction";
   const issues = reviewFlow(activities);
   assert.ok(issues.some(issue => issue.message === "Las rutas Sí y No deben tener destinos diferentes."));
   assert.ok(issues.some(issue => issue.message === "Hay un ciclo sin salida hacia Fin."));
+});
+
+test("flow review does not warn when decision branches reconverge", () => {
+  const activities = [
+    { uid: "start", tipo: "Inicio" },
+    { uid: "choice", tipo: "Decisión", decisionSi: "yes", decisionNo: "no" },
+    { uid: "yes", tipo: "Conector", connectorId: "A", connectorDestino: "join" },
+    { uid: "no", tipo: "Actividad" },
+    { uid: "join", tipo: "Actividad" },
+    { uid: "end", tipo: "Fin" }
+  ];
+  assert.deepEqual(reviewFlow(activities), []);
 });
 
 const row = {

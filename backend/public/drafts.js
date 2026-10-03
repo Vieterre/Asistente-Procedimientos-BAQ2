@@ -71,14 +71,18 @@ function markDirty() {
 function showFlowReview(issues) {
   const result = ui.flowReviewResult;
   result.replaceChildren();
+  const errors = issues.filter(issue => issue.severity !== "warning");
+  const warnings = issues.filter(issue => issue.severity === "warning");
   const summary = document.createElement("p");
-  summary.textContent = issues.length ? `${issues.length} observación${issues.length === 1 ? "" : "es"} en el flujo.` : "Las rutas y los nodos del flujo son coherentes.";
+  summary.textContent = errors.length
+    ? `${errors.length} observación${errors.length === 1 ? "" : "es"} por corregir en el flujo.${warnings.length ? ` ${warnings.length} aviso${warnings.length === 1 ? "" : "s"} adicional${warnings.length === 1 ? "" : "es"}.` : ""}`
+    : `Las rutas y los nodos del flujo son coherentes.${warnings.length ? ` ${warnings.length} aviso${warnings.length === 1 ? "" : "s"} para revisar.` : ""}`;
   result.append(summary);
   if (issues.length) {
     const list = document.createElement("ul");
     for (const issue of issues) {
       const item = document.createElement("li");
-      item.textContent = (Number.isInteger(issue.index) ? `Elemento ${issue.index + 1}: ` : "") + issue.message;
+      item.textContent = (issue.severity === "warning" ? "Aviso: " : "") + (Number.isInteger(issue.index) ? `Elemento ${issue.index + 1}: ` : "") + issue.message;
       list.append(item);
     }
     result.append(list);
