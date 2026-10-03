@@ -8,7 +8,8 @@ const ids = [
   "zoomOutButton", "zoomInButton", "fitFlowButton", "resetFlowZoomButton", "flowZoomValue",
   "documentsSection", "annexApplicability", "addAnnexButton", "annexNotApplicableMessage", "emptyAnnexes", "annexesList",
   "addChangeButton", "emptyChanges", "changesList", "draftPreparedBy", "draftPreparedName", "draftReviewedBy", "draftReviewedName",
-  "draftApprovedBy", "draftApprovedName", "roleSeparationMessage", "saveDocumentsButton", "documentsMessage"
+  "draftApprovedBy", "draftApprovedName", "roleSeparationMessage", "saveDocumentsButton", "documentsMessage",
+  "previewButton", "previewDialog", "previewState", "previewContent", "printPreviewButton", "closePreviewButton"
 ];
 const ui = Object.fromEntries(ids.map(id => [id, document.getElementById(id)]));
 const csrfKey = "drafts_csrf";
@@ -854,6 +855,8 @@ function clearSession() {
   setMessage(ui.documentsMessage, "");
   dirty = false;
   ui.workspace.hidden = true;
+  ui.previewButton.hidden = true;
+  if (ui.previewDialog.open) ui.previewDialog.close();
   ui.documentsSection.hidden = true;
   ui.sessionControls.hidden = true;
   ui.loginView.hidden = false;
@@ -886,6 +889,7 @@ async function startSession(user) {
 
   ui.draftWorkspace.hidden = false;
   ui.documentsSection.hidden = false;
+  ui.previewButton.hidden = false;
   await Promise.all([loadProcesses(), loadDrafts()]);
 }
 
@@ -1214,6 +1218,68 @@ ui.draftForm.addEventListener("submit", async event => {
 });
 
 ui.newDraftButton.addEventListener("click", newDraft);
+function previewSection(title, rows) {
+  const section = document.createElement("section");
+  section.className = "preview-section";
+  const heading = document.createElement("h3");
+  heading.textContent = title;
+  section.append(heading);
+  for (const [label, value] of rows) {
+    if (value === undefined || value === null || String(value).trim() === "") continue;
+    const block = document.createElement("div");
+    block.className = "preview-field";
+    const name = document.createElement("strong");
+    name.textContent = label;
+    const text = document.createElement("p");
+    text.textContent = String(value);
+    block.append(name, text);
+    section.append(block);
+  }
+  return section;
+}
+
+function previewRecords(title, records, fields) {
+  const section = previewSection(title, []);
+  if (!records.length) {
+    section.append(document.createTextNode("Sin registros."));
+    return section;
+  }
+  records.forEach((record, index) => {
+    const item = previewSection(`${index + 1}. ${record.actividad || record.documento || record.norma || record.tipo || "Registro"}`, fields.map(([key, label]) => [label, record[key]]));
+    item.classList.add("preview-record");
+    section.append(item);
+  });
+  return section;
+}
+
+function showPreview() {
+  const content = ui.previewContent;
+  const process = ui.processCode.selectedOptions[0]?.textContent || "";
+  content.replaceChildren(
+    previewSection("Datos generales", [["Nombre del procedimiento", ui.draftName.value], ["Proceso", ui.processCode.value ? process : ""], ["Objetivo", ui.draftObjective.value], ["Alcance", ui.draftScope.value], ["Definiciones", ui.draftDefinitions.value], ["Condiciones generales", ui.draftConditions.value]]),
+    previewRecords("Normatividad", normRows, [["Tipo", "Tipo"], ["anio", "Año"], ["descripcion", "Descripción"], ["articulo", "Artículo / sección"], ["entidad", "Entidad emisora"]]),
+    previewRecords("Actividades y flujo", activityRows, [["tipo", "Tipo"], ["descripcion", "Descripción"], ["responsable", "Responsable"], ["evidencia", "Registro / evidencia"], ["sistema", "Sistema / herramienta"], ["controlResponsable", "Responsable del control"], ["controlPeriodicidad", "Periodicidad"], ["controlEjecucion", "Ejecución del control"], ["controlDesviacion", "Tratamiento de desviaciones"], ["controlEvidencia", "Evidencia del control"]]),
+    previewRecords("Documentos anexos", annexesNotApplicable ? [] : annexRows, [["tipo", "Tipo"], ["codigo", "Código / referencia"], ["observacion", "Observación"]]),
+    previewRecords("Control de cambios", changeRows, [["version", "Versión"], ["fecha", "Fecha"], ["razon", "Razón de la actualización"]]),
+    previewSection("Responsables", [["Elaboró", ui.draftPreparedBy.value], ["Nombre", ui.draftPreparedName.value], ["Revisó", ui.draftReviewedBy.value], ["Nombre", ui.draftReviewedName.value], ["Aprobó", ui.draftApprovedBy.value], ["Nombre", ui.draftApprovedName.value]])
+  );
+  ui.previewState.textContent = !currentDraft ? "Vista de un borrador no guardado." : dirty ? "Vista con cambios sin guardar." : `Borrador guardado · revisión ${currentDraft.revision}.`;
+  renderFlow();
+  if (activityRows.length) {
+    const diagram = previewSection("Flujograma", []);
+    diagram.classList.add("preview-diagram");
+    const svg = ui.flowSvg.cloneNode(true);
+    svg.removeAttribute("id");
+    svg.removeAttribute("style");
+    diagram.append(svg);
+    content.append(diagram);
+  }
+  ui.previewDialog.showModal();
+}
+
+ui.previewButton.addEventListener("click", showPreview);
+ui.closePreviewButton.addEventListener("click", () => ui.previewDialog.close());
+ui.printPreviewButton.addEventListener("click", () => window.print());
 ui.refreshDraftsButton.addEventListener("click", loadDrafts);
 ui.refreshFlowButton.addEventListener("click", renderFlow);
 ui.showFlowEvidence.addEventListener("change", renderFlow);

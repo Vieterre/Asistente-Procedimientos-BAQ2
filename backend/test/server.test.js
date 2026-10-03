@@ -93,7 +93,7 @@ test("private consoles serve only their own assets with a restrictive policy", a
     for (const id of ["documentsSection", "annexApplicability", "addAnnexButton", "annexesList", "addChangeButton", "changesList", "saveDocumentsButton"]) {
       assert.match(draftHtml, new RegExp(`id="${id}"`));
     }
-    for (const id of ["flowCanvas", "zoomOutButton", "zoomInButton", "fitFlowButton", "resetFlowZoomButton", "flowZoomValue"]) {
+    for (const id of ["flowCanvas", "zoomOutButton", "zoomInButton", "fitFlowButton", "resetFlowZoomButton", "flowZoomValue", "previewButton", "previewDialog", "previewContent", "printPreviewButton"]) {
       assert.match(draftHtml, new RegExp(`id="${id}"`));
     }
     const draftScript = await (await fetch(base + "/drafts.js")).text();
