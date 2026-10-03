@@ -63,6 +63,14 @@ const processGroupDefinitions = [
   { label: "MACROPROCESOS – PROCESOS DE APOYO", codes: ["GCT", "GI", "GD", "GH", "GJ"] },
   { label: "MACROPROCESOS – PROCESOS DE EVALUACIÓN", codes: ["EI", "GDI"] }
 ];
+const responsibilityRoleGroups = [
+  { level: "Directivo", cargos: ["Jefe de Oficina", "Director", "Tesorero Distrital", "Secretario de despacho", "Gerente", "Secretario Local de Salud"] },
+  { level: "Asesor", cargos: ["Asesor"] },
+  { level: "Profesional", cargos: ["Profesional Universitario", "Profesional Universitario Área salud", "Profesional Especializado", "Corregidor", "Líder de Proyecto", "Inspector de Policía Urbano Categoría Especial y 1a Categoría", "Comandante", "Comisario de familia"] },
+  { level: "Técnico", cargos: ["Técnico Operativo", "Técnico Área Salud", "Inspector de Tránsito y Transporte", "Subcomandante de Bomberos", "Técnico Administrativo"] },
+  { level: "Asistencial", cargos: ["Auxiliar Administrativo", "Auxiliar de Servicios Generales", "Secretario", "Auxiliar área salud", "Bombero", "Sargento de Bomberos", "Cabo Bombero", "Teniente de Bombero", "Operario", "Secretaria Ejecutiva"] }
+];
+const responsibilityRoleNames = new Set(responsibilityRoleGroups.flatMap(group => group.cargos));
 const textFields = [
   ["draftObjective", "objetivo"],
   ["draftScope", "alcance"],
@@ -460,6 +468,70 @@ function moveActivity(index, direction) {
   ui.activitiesList.querySelectorAll(".activity-row")[target]?.querySelector(direction < 0 ? '[data-move="up"]' : '[data-move="down"]')?.focus();
 }
 
+function createResponsibilityField(activity, index, key, labelText, idPrefix) {
+  const field = document.createElement("div");
+  field.className = "field";
+  const label = document.createElement("label");
+  const select = document.createElement("select");
+  const otherInput = document.createElement("input");
+  const otherFlag = key === "controlResponsable" ? "controlResponsableOtro" : "responsableOtro";
+  const value = typeof activity[key] === "string" ? activity[key] : "";
+  const isOther = activity[otherFlag] === true || (value && !responsibilityRoleNames.has(value));
+
+  select.id = idPrefix + index;
+  label.htmlFor = select.id;
+  label.textContent = labelText;
+  const placeholder = document.createElement("option");
+  placeholder.value = "";
+  placeholder.textContent = "Selecciona un cargo";
+  select.append(placeholder);
+  for (const group of responsibilityRoleGroups) {
+    const optgroup = document.createElement("optgroup");
+    optgroup.label = group.level;
+    for (const cargo of group.cargos) {
+      const option = document.createElement("option");
+      option.value = cargo;
+      option.textContent = cargo;
+      optgroup.append(option);
+    }
+    select.append(optgroup);
+  }
+  const otherOption = document.createElement("option");
+  otherOption.value = "__otro__";
+  otherOption.textContent = "Otro — ¿Cuál?";
+  select.append(otherOption);
+  select.value = isOther ? "__otro__" : value;
+
+  otherInput.id = idPrefix + "Other" + index;
+  otherInput.maxLength = 500;
+  otherInput.placeholder = "Especifica el cargo, dependencia o actor";
+  otherInput.setAttribute("aria-label", labelText + " — otro cargo, dependencia o actor");
+  otherInput.value = isOther ? value : "";
+  otherInput.hidden = !isOther;
+  if (isOther) activity[otherFlag] = true;
+  select.addEventListener("change", () => {
+    if (select.value === "__otro__") {
+      if (activity[otherFlag] !== true) activity[key] = "";
+      activity[otherFlag] = true;
+      otherInput.hidden = false;
+      otherInput.value = activity[key] || "";
+      otherInput.focus();
+    } else {
+      activity[key] = select.value;
+      delete activity[otherFlag];
+      otherInput.value = "";
+      otherInput.hidden = true;
+    }
+    markDirty();
+  });
+  otherInput.addEventListener("input", () => {
+    activity[key] = otherInput.value;
+    markDirty();
+  });
+  field.append(label, select, otherInput);
+  return field;
+}
+
 function renderActivities() {
   ui.emptyActivities.hidden = activityRows.length > 0;
   ui.addBoundaryButton.hidden = activityRows.some(activity => activity.tipo === "Inicio") && activityRows.some(activity => activity.tipo === "Fin");
@@ -568,18 +640,7 @@ function renderActivities() {
       });
       questionField.append(questionLabel, question);
       row.append(questionField);
-      const responsibleField = document.createElement("div");
-      responsibleField.className = "field";
-      const responsibleLabel = document.createElement("label");
-      const responsible = document.createElement("input");
-      responsible.id = "decisionResponsible" + index;
-      responsibleLabel.htmlFor = responsible.id;
-      responsibleLabel.textContent = "Responsable";
-      responsible.value = typeof activity.responsable === "string" ? activity.responsable : "";
-      responsible.maxLength = 500;
-      responsible.addEventListener("input", () => { activity.responsable = responsible.value; markDirty(); });
-      responsibleField.append(responsibleLabel, responsible);
-      row.append(responsibleField);
+      row.append(createResponsibilityField(activity, index, "responsable", "Responsable", "decisionResponsible"));
       const routes = document.createElement("div");
       routes.className = "activity-grid";
       routes.append(destinationField(activity, index, "decisionSi", "Ruta Sí"));
@@ -590,6 +651,10 @@ function renderActivities() {
     const grid = document.createElement("div");
     grid.className = "activity-grid";
     for (const [key, labelText, kind] of activityFields) {
+      if (key === "responsable") {
+        grid.append(createResponsibilityField(activity, index, key, labelText, "activityResponsible"));
+        continue;
+      }
       const field = document.createElement("div");
       field.className = "field" + (key === "descripcion" ? " activity-wide" : "");
       const label = document.createElement("label");
@@ -646,6 +711,10 @@ function renderActivities() {
       actionField.append(actionLabel, actionSelect);
       details.append(actionField);
       for (const [key, labelText, kind] of controlFields) {
+        if (key === "controlResponsable") {
+          details.append(createResponsibilityField(activity, index, key, labelText, "controlResponsible"));
+          continue;
+        }
         const field = document.createElement("div");
         field.className = "field" + (kind === "textarea" ? " control-wide" : "");
         const label = document.createElement("label");
