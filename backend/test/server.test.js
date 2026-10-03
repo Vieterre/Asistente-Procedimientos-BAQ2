@@ -96,8 +96,12 @@ test("private consoles serve only their own assets with a restrictive policy", a
     for (const id of ["flowCanvas", "zoomOutButton", "zoomInButton", "fitFlowButton", "resetFlowZoomButton", "flowZoomValue", "previewButton", "previewDialog", "previewContent", "printPreviewButton"]) {
       assert.match(draftHtml, new RegExp(`id="${id}"`));
     }
+    assert.match(draftHtml, /id="sessionControls"[^]*id="previewButton"[^]*id="logoutButton"/);
     const draftScript = await (await fetch(base + "/drafts.js")).text();
+    assert.match(draftScript, /ui\.previewButton\.hidden = false/);
     assert.match(draftScript, /ui\.showFlowEvidence\.addEventListener\("change", renderFlow\)/);
+    const draftCss = await (await fetch(base + "/drafts.css")).text();
+    assert.match(draftCss, /\.site-header\{position:sticky;top:0/);
     assert.match(draftScript, /item\.evidencia \|\| item\.controlEvidencia/);
     assert.match(draftScript, /ui\.fitFlowButton\.addEventListener\("click", fitFlow\)/);
     assert.match(draftScript, /installMethodHelps\(document\)/);
