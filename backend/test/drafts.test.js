@@ -2,11 +2,29 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { createAppServer } from "../src/server.js";
 import { createDraft, getOwnDraft, listOwnDrafts, updateOwnDraft } from "../src/domain/drafts.js";
+import { reviewFlow } from "../src/domain/flow-review.js";
 import { hashToken } from "../src/security/auth.js";
 
 const author = { id: "11111111-1111-4111-8111-111111111111", role: "elaborador", mustChangePassword: false };
 const other = { id: "22222222-2222-4222-8222-222222222222", role: "elaborador", mustChangePassword: false };
 const draftId = "33333333-3333-4333-8333-333333333333";
+
+test("flow review detects missing boundaries, broken routes, and duplicate identifiers", () => {
+  assert.deepEqual(reviewFlow([
+    { uid: "start", tipo: "Inicio" },
+    { uid: "choice", tipo: "Decisión", decisionSi: "end", decisionNo: "missing" },
+    { uid: "connector", tipo: "Conector", connectorDestino: "" },
+    { uid: "end", tipo: "Fin" }
+  ]), [
+    { index: 1, message: "Ruta No: el destino no es válido." },
+    { index: 2, message: "Destino del conector: selecciona un destino." }
+  ]);
+  assert.deepEqual(reviewFlow([{ uid: "same", tipo: "Inicio" }, { uid: "same", tipo: "Fin" }]), [
+    { index: 1, message: "El identificador del elemento está repetido." }
+  ]);
+  assert.equal(reviewFlow([{ uid: "start", tipo: "Inicio" }]).length, 1);
+  assert.deepEqual(reviewFlow([{ uid: "start", tipo: "Inicio" }, { uid: "end", tipo: "Fin" }]), []);
+});
 const row = {
   id: draftId, code: null, name: "Borrador", process_code: "DE", version: "1.0",
   status: "borrador", revision: 1, updated_at: new Date(), current_payload: { fields: { nombre: "Borrador" } }
@@ -147,6 +165,13 @@ test("draft HTTP routes require session, password change, and CSRF", async () =>
     assert.equal(write.status, 403);
     const invalid = await fetch(url, { method: "POST", headers: { cookie, "x-csrf-token": csrf, "content-type": "application/json" }, body: "{}" });
     assert.equal(invalid.status, 400);
+    const reviewUrl = `${url}/flow-review`;
+    const reviewBody = JSON.stringify({ activities: [{ uid: "start", tipo: "Inicio" }, { uid: "end", tipo: "Fin" }] });
+    assert.equal((await fetch(reviewUrl, { method: "POST", headers: { "content-type": "application/json" }, body: reviewBody })).status, 401);
+    assert.equal((await fetch(reviewUrl, { method: "POST", headers: { cookie, "content-type": "application/json" }, body: reviewBody })).status, 403);
+    const review = await fetch(reviewUrl, { method: "POST", headers: { cookie, "x-csrf-token": csrf, "content-type": "application/json" }, body: reviewBody });
+    assert.equal(review.status, 200);
+    assert.deepEqual((await review.json()).issues, []);
   } finally {
     await new Promise(resolve => server.close(resolve));
   }

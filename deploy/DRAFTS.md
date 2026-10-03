@@ -46,6 +46,9 @@ nombre y descripcion editables; los borradores anteriores pueden completarlos
 sin duplicar los nodos existentes. Inicio y Fin no se eliminan desde esta
 pantalla. El formulario completo sigue sin conectarse; no usar estas
 rutas ni los controles como validacion de un flujo publicable.
+El boton Revisar flujo comprueba Inicio, Fin, identificadores y destinos de
+decisiones y conectores con los cambios en pantalla, sin guardar ni impedir
+que se conserve un borrador incompleto.
 
 ## Activacion
 

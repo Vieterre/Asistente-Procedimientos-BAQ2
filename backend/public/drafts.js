@@ -3,7 +3,7 @@ const ids = [
   "workspace", "sessionControls", "sessionIdentity", "logoutButton", "welcomeText",
   "passwordRequired", "draftWorkspace", "draftForm", "editorTitle", "editorStatus",
   "draftName", "processCode", "draftObjective", "draftScope", "draftDefinitions", "draftConditions", "saveDraftButton", "editorMessage",
-  "newDraftButton", "addNormButton", "normsList", "emptyNorms", "addBoundaryButton", "addActivityButton", "addDecisionButton", "addConnectorButton", "activitiesList", "emptyActivities", "refreshDraftsButton", "draftCount", "listMessage", "emptyDrafts",
+  "newDraftButton", "addNormButton", "normsList", "emptyNorms", "addBoundaryButton", "addActivityButton", "addDecisionButton", "addConnectorButton", "activitiesList", "emptyActivities", "reviewFlowButton", "flowReviewResult", "refreshDraftsButton", "draftCount", "listMessage", "emptyDrafts",
   "draftList"
 ];
 const ui = Object.fromEntries(ids.map(id => [id, document.getElementById(id)]));
@@ -31,6 +31,7 @@ let csrfToken = "";
 let currentDraft = null;
 let currentPayload = {};
 let dirty = false;
+let flowReviewVersion = 0;
 let normRows = [];
 let activityRows = [];
 const textFields = [
@@ -61,7 +62,28 @@ const controlFields = [
 
 function markDirty() {
   dirty = true;
+  flowReviewVersion += 1;
   setMessage(ui.editorMessage, "");
+  ui.flowReviewResult.replaceChildren();
+  ui.flowReviewResult.hidden = true;
+}
+
+function showFlowReview(issues) {
+  const result = ui.flowReviewResult;
+  result.replaceChildren();
+  const summary = document.createElement("p");
+  summary.textContent = issues.length ? `${issues.length} observación${issues.length === 1 ? "" : "es"} en el flujo.` : "Las rutas y los nodos del flujo son coherentes.";
+  result.append(summary);
+  if (issues.length) {
+    const list = document.createElement("ul");
+    for (const issue of issues) {
+      const item = document.createElement("li");
+      item.textContent = (Number.isInteger(issue.index) ? `Elemento ${issue.index + 1}: ` : "") + issue.message;
+      list.append(item);
+    }
+    result.append(list);
+  }
+  result.hidden = false;
 }
 
 function renderNorms() {
@@ -409,6 +431,7 @@ async function request(path, { method = "GET", body, csrf = false } = {}) {
 }
 
 function clearSession() {
+  flowReviewVersion += 1;
   csrfToken = "";
   sessionStorage.removeItem(csrfKey);
   currentDraft = null;
@@ -424,6 +447,8 @@ function clearSession() {
   ui.loginPassword.value = "";
   ui.loginOtp.value = "";
   ui.draftForm.reset();
+  ui.flowReviewResult.replaceChildren();
+  ui.flowReviewResult.hidden = true;
   setMessage(ui.loginMessage, "");
 }
 
@@ -524,6 +549,7 @@ async function openDraft(id) {
 
   try {
     const { procedure } = await request("/api/procedures/" + encodeURIComponent(id));
+    flowReviewVersion += 1;
     currentDraft = procedure;
     currentPayload = procedure.payload && typeof procedure.payload === "object" && !Array.isArray(procedure.payload)
       ? procedure.payload
@@ -549,6 +575,8 @@ async function openDraft(id) {
     ui.saveDraftButton.textContent = "Guardar cambios";
     dirty = false;
     setMessage(ui.editorMessage, "");
+    ui.flowReviewResult.hidden = true;
+    ui.flowReviewResult.replaceChildren();
     ui.draftName.focus();
   } catch (error) {
     handleRequestError(error, ui.listMessage);
@@ -557,6 +585,7 @@ async function openDraft(id) {
 
 function newDraft() {
   if (dirty && !window.confirm("Hay cambios sin guardar. ¿Descartarlos?")) return;
+  flowReviewVersion += 1;
   currentDraft = null;
   currentPayload = { fields: {}, norms: [], activities: [], annexes: [], changes: [], settings: {} };
   normRows = [];
@@ -570,6 +599,8 @@ function newDraft() {
   ui.saveDraftButton.textContent = "Guardar borrador";
   dirty = false;
   setMessage(ui.editorMessage, "");
+  ui.flowReviewResult.hidden = true;
+  ui.flowReviewResult.replaceChildren();
   ui.draftName.focus();
 }
 
@@ -631,6 +662,23 @@ ui.addConnectorButton.addEventListener("click", () => {
     uid: crypto.randomUUID(), tipo: "Conector", connectorId, actividad: "Conector " + connectorId,
     descripcion: "", connectorDestino: "", tieneControl: false
   });
+});
+
+ui.reviewFlowButton.addEventListener("click", async () => {
+  const button = ui.reviewFlowButton;
+  const version = flowReviewVersion;
+  button.disabled = true;
+  try {
+    const { issues } = await request("/api/procedures/flow-review", {
+      method: "POST", csrf: true,
+      body: { activities: activityRows.map(activity => ({ ...activity })) }
+    });
+    if (version === flowReviewVersion) showFlowReview(issues);
+  } catch (error) {
+    if (version === flowReviewVersion) showFlowReview([{ index: null, message: errorText(error) }]);
+  } finally {
+    button.disabled = false;
+  }
 });
 
 ui.draftForm.addEventListener("submit", async event => {

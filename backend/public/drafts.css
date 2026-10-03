@@ -25,6 +25,7 @@ input,select{height:41px}textarea{resize:vertical;min-height:120px;line-height:1
 .editor-section,.list-section{padding:23px 0 28px;min-width:0}.editor-section{border-right:1px solid #cbd8db;padding-right:28px}
 .section-heading{display:flex;align-items:center;justify-content:space-between;gap:15px;margin-bottom:22px}
 .section-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.flow-review{border-top:1px solid #cbd8db;padding-top:16px;margin-top:20px}.flow-review p{margin:12px 0 0}.flow-review ul{margin:10px 0 0;padding-left:22px}.flow-review li{margin:5px 0}
 .section-heading h2{font-size:18px;margin:0 0 4px}.field{margin-bottom:17px}
 .norms-section{border-top:1px solid #cbd8db;padding-top:20px;margin:24px 0}.norms-section h3{font-size:17px;margin:0}
 .norm-row{border:1px solid #cbd8db;border-radius:5px;padding:16px;margin-bottom:14px;background:#fff}

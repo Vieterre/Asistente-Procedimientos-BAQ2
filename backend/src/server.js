@@ -8,6 +8,7 @@ import { ACTIONS, canPerform } from "./domain/permissions.js";
 import { UserManagementError, createAccount, listAccounts, resetAccountPassword, setAccountActive } from "./security/admin-users.js";
 import { clientIp } from "./security/client-ip.js";
 import { DraftError, createDraft, getOwnDraft, listOwnDrafts, updateOwnDraft } from "./domain/drafts.js";
+import { reviewFlow } from "./domain/flow-review.js";
 
 const rootDir = join(fileURLToPath(new URL("../..", import.meta.url)));
 const accountAssets = {
@@ -241,6 +242,7 @@ export function createAppServer({ poolFactory = createPool, secureCookies, trust
 
       const draftId = /^\/api\/procedures\/([0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12})$/.exec(url.pathname)?.[1];
       if ((url.pathname === "/api/procedures" && ["GET", "POST"].includes(req.method)) ||
+          (url.pathname === "/api/procedures/flow-review" && req.method === "POST") ||
           (draftId && ["GET", "PUT"].includes(req.method))) {
         let pool;
         try {
@@ -261,7 +263,14 @@ export function createAppServer({ poolFactory = createPool, secureCookies, trust
               return;
             }
           }
-          if (url.pathname === "/api/procedures" && req.method === "GET") {
+          if (url.pathname === "/api/procedures/flow-review") {
+            if (!["elaborador", "administrador"].includes(session.user.role)) {
+              sendJson(res, 403, { ok: false, error: "forbidden" });
+              return;
+            }
+            const body = await readJson(req, 1_048_576);
+            sendJson(res, 200, { ok: true, issues: reviewFlow(body?.activities) });
+          } else if (url.pathname === "/api/procedures" && req.method === "GET") {
             sendJson(res, 200, { ok: true, procedures: await listOwnDrafts(pool, session.user) });
           } else if (url.pathname === "/api/procedures") {
             const body = await readJson(req, 1_048_576);
