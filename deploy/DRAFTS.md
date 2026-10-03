@@ -61,6 +61,31 @@ La vista Flujograma de pruebas dibuja el orden actual por responsable, las
 rutas Si/No, los destinos de conectores y los puntos de control. Es una vista
 de comparacion del borrador abierto, no la exportacion final del prototipo.
 
+## Contraste del modulo central
+
+El revisor de pruebas y `analyzeFlowGraph` del prototipo comparten el mismo
+criterio basico de aristas: Inicio y actividades siguen al elemento siguiente;
+decisiones siguen sus rutas Si/No; conectores siguen su destino; Fin no tiene
+salida. Ambos identifican elementos inalcanzables, ciclos sin salida,
+identificadores de conector repetidos y rutas No directas a un control.
+El revisor de pruebas tambien rechaza tipos de elemento desconocidos.
+
+La prueba manual de un borrador ficticio cubrio guardado, reordenamiento,
+eliminacion protegida, rutas, correccion de ciclos, comparacion visual y
+persistencia tras cerrar sesion. Esto no certifica equivalencia completa:
+
+- El prototipo exige ademas nombres, descripciones y responsables completos,
+  y valida la especificidad de responsables personalizados. El boton Revisar
+  flujo se limita a estructura de grafo y atributos obligatorios de control.
+- El prototipo advierte sobre bifurcaciones sin reconvergencia y retornos
+  potencialmente indefinidos, aunque haya una salida hacia Fin. Esos avisos
+  informativos no aparecen todavia en la pantalla de pruebas.
+- El flujograma del prototipo permite mostrar evidencias, ajustar zoom y
+  exportar PDF. La vista de pruebas aun no ofrece esas funciones.
+- Falta verificar visualmente casos con varios responsables por actividad,
+  bifurcaciones largas, rutas cruzadas y etiquetas extensas en escritorio y
+  movil antes de declarar equivalencia del flujograma.
+
 ## Activacion
 
 1. Respalde la base activa y verifique el respaldo antes de la migracion.

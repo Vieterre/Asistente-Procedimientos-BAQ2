@@ -73,6 +73,33 @@ test("flow review rejects missing or duplicate connector labels", () => {
   activities[2].connectorId = "B";
   assert.deepEqual(reviewFlow(activities), []);
 });
+
+test("flow review rejects unknown node types and deleted destinations", () => {
+  const activities = [
+    { uid: "start", tipo: "Inicio" },
+    { uid: "choice", tipo: "Decisión", decisionSi: "end", decisionNo: "removed" },
+    { uid: "unknown", tipo: "Tarea" },
+    { uid: "end", tipo: "Fin" }
+  ];
+  const issues = reviewFlow(activities);
+  assert.ok(issues.some(issue => issue.index === 1 && issue.message === "Ruta No: el destino no es válido."));
+  assert.ok(issues.some(issue => issue.index === 2 && issue.message === "El tipo de elemento no es válido."));
+});
+
+test("flow review accepts a correction loop with an exit but rejects a closed loop", () => {
+  const activities = [
+    { uid: "start", tipo: "Inicio" },
+    { uid: "correction", tipo: "Actividad" },
+    { uid: "choice", tipo: "Decisión", decisionSi: "end", decisionNo: "correction" },
+    { uid: "end", tipo: "Fin" }
+  ];
+  assert.deepEqual(reviewFlow(activities), []);
+  activities[2].decisionSi = "correction";
+  const issues = reviewFlow(activities);
+  assert.ok(issues.some(issue => issue.message === "Las rutas Sí y No deben tener destinos diferentes."));
+  assert.ok(issues.some(issue => issue.message === "Hay un ciclo sin salida hacia Fin."));
+});
+
 const row = {
   id: draftId, code: null, name: "Borrador", process_code: "DE", version: "1.0",
   status: "borrador", revision: 1, updated_at: new Date(), current_payload: { fields: { nombre: "Borrador" } }

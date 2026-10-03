@@ -7,7 +7,11 @@ export function reviewFlow(activities) {
   const ids = new Set();
   const byId = new Map();
   const connectorIds = new Set();
+  const allowedTypes = new Set(["Inicio", "Fin", "Actividad", "Decisión", "Conector"]);
   for (const [index, item] of activities.entries()) {
+    if (!allowedTypes.has(item.tipo)) {
+      issues.push({ index, message: "El tipo de elemento no es válido." });
+    }
     if (typeof item.uid !== "string" || !item.uid.trim()) {
       issues.push({ index, message: "Falta el identificador del elemento." });
     } else if (ids.has(item.uid)) {
