@@ -24,7 +24,7 @@ test("database check requires tables and the initial migration", async () => {
   const pool = {
     async query(sql) {
       if (sql.includes("to_regclass")) {
-        return { rows: [{ users_ready: true, procedures_ready: true, migrations_ready: true, sessions_ready: true }] };
+        return { rows: [{ users_ready: true, procedures_ready: true, migrations_ready: true, sessions_ready: true, notifications_ready: true }] };
       }
       return { rows: [{ "?column?": 1 }] };
     }
@@ -36,6 +36,19 @@ test("database check rejects an incomplete schema", async () => {
   const pool = {
     async query() {
       return { rows: [{ users_ready: true, procedures_ready: false, migrations_ready: true, sessions_ready: true }] };
+    }
+  };
+  assert.equal(await checkDatabase(pool), false);
+});
+
+test("database check requires the notifications migration before reporting ready", async () => {
+  const pool = {
+    async query(sql, params) {
+      if (sql.includes("to_regclass")) return { rows: [{
+        users_ready: true, procedures_ready: true, migrations_ready: true,
+        sessions_ready: true, notifications_ready: true
+      }] };
+      return { rows: params[0] === "006_user_notifications" ? [] : [{ "?column?": 1 }] };
     }
   };
   assert.equal(await checkDatabase(pool), false);

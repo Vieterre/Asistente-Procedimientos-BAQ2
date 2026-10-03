@@ -1,7 +1,7 @@
 # Borradores en el entorno de pruebas
 
 La pantalla privada `/drafts` usa la sesion real para crear, listar, abrir y actualizar borradores propios. La API se activa solo despues de aplicar la migracion
-`005_draft_revision` y los permisos de `grant-drafts-test.sql`. La consola de
+`006_user_notifications` y los permisos de `grant-drafts-test.sql`. La consola de
 cuentas no cambia y el prototipo publico continua guardando localmente.
 
 ## Contrato
@@ -18,6 +18,11 @@ cuentas no cambia y el prototipo publico continua guardando localmente.
 - `GET /api/evaluator/inbox` y `GET /api/evaluator/procedures/:id`: bandeja y
   lectura de procedimientos asignados al evaluador.
 - `POST /api/evaluator/procedures/:id/start`: cambia el estado a `en_evaluacion`.
+- `GET /api/notifications`: lista solo avisos del usuario autenticado.
+- `POST /api/notifications/:id/read` y `POST /api/notifications/read-all`:
+  marcan avisos propios como leidos y requieren CSRF.
+- `GET /api/admin/analytics`: entrega agregados por periodo, proceso y rol;
+  solo Administracion puede consultarlos.
 
 Todas las rutas requieren una sesion activa y una contrasena ya cambiada. Las
 escrituras requieren `X-CSRF-Token`. El envio valida los campos metodologicos,
@@ -27,14 +32,17 @@ incluye la matriz de criterios, devolucion de hallazgos ni emision de concepto.
 Para un Elaborador, el catalogo y los borradores propios se filtran por la asignacion actual en
 `user_processes`; creacion y edicion vuelven a comprobarla en la base. Sin
 asignacion no podra abrir ni crear borradores. El Administrador conserva acceso
-al catalogo completo. Esta pantalla sigue siendo solo de pruebas.
+al catalogo activo completo. Los 13 codigos, nombres, agrupaciones y orden se
+contrastan con `processGroups` del formulario original.
+Esta pantalla sigue siendo solo de pruebas.
 
 Antes de reiniciar el servicio actualizado, compruebe que la cuenta de prueba
 `planeacionprueba` tenga asignado el proceso del borrador de prueba y exista un
 Evaluador activo asignado a ese mismo proceso en `user_processes`. Aplique de
 nuevo `grant-drafts-test.sql` para conceder las lecturas y escrituras de
-procedimientos, evaluaciones y auditoria al rol del servicio. Las asignaciones
-faltantes debe realizarlas un administrador de PostgreSQL de forma explicita;
+procedimientos, evaluaciones, auditoria y notificaciones al rol del servicio.
+Las asignaciones
+faltantes las debe realizar un administrador de PostgreSQL de forma explicita;
 no se crean automaticamente.
 
 La pantalla de prueba edita nombre, proceso, objetivo, alcance, definiciones y
@@ -96,6 +104,25 @@ cambios, responsables y flujograma. Permite imprimir desde el navegador. El
 editor usa la paleta azul y verde y los encabezados del prototipo para mantener
 continuidad visual; la preliminar no equivale aun a la exportacion PDF oficial.
 
+La seccion Actividades incluye las cuatro reglas metodologicas del modelado del
+formulario original: actividad y punto de control, decision, independencia entre
+decision y control, y correccion previa al retorno desde la ruta No. El control
+de cambios contiene la tabla completa de la Guia para clasificar el cambio y
+asignar la version (cuatro cambios menores y cuatro mayores, con ejemplos de
+1.1 a 1.4 y de 2.0 a 4.0).
+
+La campana persiste avisos por destinatario: el Evaluador recibe uno al llegar
+un procedimiento a su bandeja y el Elaborador recibe otro cuando comienza la
+evaluacion. Cada aviso se guarda en la misma transaccion que el cambio de estado;
+no puede leerse ni marcarse desde otra cuenta.
+
+`D1 · Analitica` es exclusivo de Administracion. Presenta borradores creados,
+ediciones guardadas, envios a revision y evaluaciones iniciadas, con filtros de
+7, 30, 90 o 365 dias, proceso y rol. Usa eventos reales de `audit_events`; no
+importa metricas locales del prototipo ni representa sesiones, accesos o eventos
+que el backend aun no registra. Los conteos empiezan con eventos del backend y
+no reconstruyen actividad historica del navegador.
+
 ## Contraste del modulo central
 
 El revisor de pruebas y `analyzeFlowGraph` del prototipo comparten el mismo
@@ -125,12 +152,15 @@ persistencia tras cerrar sesion. Esto no certifica equivalencia completa:
 ## Activacion
 
 1. Respalde la base activa y verifique el respaldo antes de la migracion.
-2. Actualice el checkout del servicio, ejecute `npm test` y aplique
-   `npm run db:migrate` con una cuenta propietaria de la base.
-3. Con el administrador local de PostgreSQL, aplique
-   `deploy/grant-drafts-test.sql` a `asistente_procedimientos`.
-4. Reinicie solo `asistente-procedimientos-test.service` y verifique
+2. Actualice el checkout del servicio y ejecute `npm test`.
+3. Desde `/opt/asistente-backend-test`, aplique las migraciones y registre sus
+   checksums usando la cuenta local de PostgreSQL:
+   `runuser -u postgres -- env DATABASE_URL='postgresql://postgres@localhost/asistente_procedimientos?host=/var/run/postgresql' node backend/src/tools/migrate.js`
+4. Aplique los permisos de la version actualizada:
+   `runuser -u postgres -- psql -w -h /var/run/postgresql -U postgres -d asistente_procedimientos -v ON_ERROR_STOP=1 -f deploy/grant-drafts-test.sql`
+5. Reinicie solo `asistente-procedimientos-test.service` y verifique
    `/health/db`, la consola de cuentas, y los rechazos `401` sin sesion y
-   `403` sin CSRF para `POST /api/procedures`.
-5. Abra `/drafts` e inicie sesion con un Elaborador de prueba. Pruebe crear,
-   abrir y actualizar un borrador. No use datos reales hasta validar el flujo.
+   `403` sin CSRF para las escrituras.
+6. Abra `/drafts`: confirme que `planeacionprueba` ve solo `PD`, que el envio
+   genera una notificacion para el Evaluador, que iniciar evaluacion avisa al
+   Elaborador y que `D1 · Analitica` solo aparece para Administracion.

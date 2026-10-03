@@ -9,6 +9,8 @@ import { UserManagementError, createAccount, listAccounts, resetAccountPassword,
 import { clientIp } from "./security/client-ip.js";
 import { DraftError, createDraft, getAssignedProcedure, getOwnDraft, listAssignedProcedures, listOwnDrafts, listProcessEvaluators, startAssignedEvaluation, submitOwnDraft, updateOwnDraft } from "./domain/drafts.js";
 import { reviewFlow, reviewFlowCompleteness } from "./domain/flow-review.js";
+import { AnalyticsError, getAdminAnalytics } from "./domain/analytics.js";
+import { listOwnNotifications, markAllOwnNotificationsRead, markOwnNotificationRead, NotificationError } from "./domain/notifications.js";
 
 const rootDir = join(fileURLToPath(new URL("../..", import.meta.url)));
 const accountAssets = {
@@ -234,6 +236,79 @@ export function createAppServer({ poolFactory = createPool, secureCookies, trust
         } catch (error) {
           if (error instanceof DraftError) sendJson(res, error.status, { ok: false, error: error.code });
           else sendJson(res, 503, { ok: false, error: "processes_unavailable" });
+        } finally {
+          await pool?.end();
+        }
+        return;
+      }
+
+      const notificationReadMatch = /^\/api\/notifications\/([0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12})\/read$/.exec(url.pathname);
+      if ((url.pathname === "/api/notifications" && req.method === "GET") ||
+          (url.pathname === "/api/notifications/read-all" && req.method === "POST") ||
+          (notificationReadMatch && req.method === "POST")) {
+        let pool;
+        try {
+          pool = poolFactory();
+          const session = await getSession(pool, parseCookies(req.headers.cookie)[SESSION_COOKIE]);
+          if (!session) {
+            sendJson(res, 401, { ok: false, error: "unauthenticated" });
+            return;
+          }
+          if (session.user.mustChangePassword) {
+            sendJson(res, 403, { ok: false, error: "password_change_required" });
+            return;
+          }
+          if (req.method === "POST") {
+            const csrfToken = String(req.headers["x-csrf-token"] || "");
+            if (!csrfToken || hashToken(csrfToken) !== session.csrfTokenHash) {
+              sendJson(res, 403, { ok: false, error: "csrf_failed" });
+              return;
+            }
+          }
+          if (url.pathname === "/api/notifications") {
+            sendJson(res, 200, { ok: true, ...await listOwnNotifications(pool, session.user) });
+          } else if (notificationReadMatch) {
+            await markOwnNotificationRead(pool, session.user, notificationReadMatch[1]);
+            sendJson(res, 200, { ok: true });
+          } else {
+            const updated = await markAllOwnNotificationsRead(pool, session.user);
+            sendJson(res, 200, { ok: true, updated });
+          }
+        } catch (error) {
+          if (error instanceof NotificationError) sendJson(res, error.status, { ok: false, error: error.code });
+          else sendJson(res, 503, { ok: false, error: "notifications_unavailable" });
+        } finally {
+          await pool?.end();
+        }
+        return;
+      }
+
+      if (url.pathname === "/api/admin/analytics" && req.method === "GET") {
+        let pool;
+        try {
+          pool = poolFactory();
+          const session = await getSession(pool, parseCookies(req.headers.cookie)[SESSION_COOKIE]);
+          if (!session) {
+            sendJson(res, 401, { ok: false, error: "unauthenticated" });
+            return;
+          }
+          if (session.user.mustChangePassword) {
+            sendJson(res, 403, { ok: false, error: "password_change_required" });
+            return;
+          }
+          if (!canPerform(session.user, ACTIONS.VIEW_ADMIN_ANALYTICS)) {
+            sendJson(res, 403, { ok: false, error: "forbidden" });
+            return;
+          }
+          const analytics = await getAdminAnalytics(pool, {
+            periodDays: url.searchParams.get("periodDays"),
+            processCode: url.searchParams.get("processCode"),
+            role: url.searchParams.get("role")
+          });
+          sendJson(res, 200, { ok: true, analytics });
+        } catch (error) {
+          if (error instanceof AnalyticsError) sendJson(res, error.status, { ok: false, error: error.code });
+          else sendJson(res, 503, { ok: false, error: "analytics_unavailable" });
         } finally {
           await pool?.end();
         }

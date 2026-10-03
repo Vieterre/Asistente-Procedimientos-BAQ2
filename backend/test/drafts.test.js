@@ -274,7 +274,7 @@ test("author can submit a complete draft to an evaluator assigned to its process
       if (sql.startsWith("SELECT p.id")) return { rows: [procedure] };
       if (sql.startsWith("SELECT 1 FROM app_users")) return { rows: [{ "?column?": 1 }] };
       if (sql.startsWith("UPDATE procedures")) return { rows: [{ ...procedure, status: "enviado_a_evaluacion", revision: 5, assigned_evaluator_id: evaluator.id }] };
-      if (sql.startsWith("INSERT INTO evaluations") || sql.startsWith("INSERT INTO audit_events")) return { rows: [] };
+      if (sql.startsWith("INSERT INTO evaluations") || sql.startsWith("INSERT INTO audit_events") || sql.startsWith("INSERT INTO user_notifications")) return { rows: [] };
       throw new Error(`Unexpected SQL: ${sql}`);
     },
     release() {}
@@ -282,7 +282,10 @@ test("author can submit a complete draft to an evaluator assigned to its process
   const submitted = await submitOwnDraft(pool, author, draftId, { evaluatorId: evaluator.id, revision: 4 });
   assert.equal(submitted.status, "enviado_a_evaluacion");
   assert.equal(submitted.assignedEvaluatorId, evaluator.id);
-  assert.deepEqual(calls.slice(-4).map(({ sql }) => sql === "COMMIT" ? "COMMIT" : sql.startsWith("INSERT INTO evaluations") ? "EVALUATION" : sql.startsWith("INSERT INTO audit_events") ? "AUDIT" : "UPDATE"), ["UPDATE", "EVALUATION", "AUDIT", "COMMIT"]);
+  assert.deepEqual(calls.slice(-5).map(({ sql }) => sql === "COMMIT" ? "COMMIT" : sql.startsWith("INSERT INTO evaluations") ? "EVALUATION" : sql.startsWith("INSERT INTO audit_events") ? "AUDIT" : sql.startsWith("INSERT INTO user_notifications") ? "NOTIFICATION" : "UPDATE"), ["UPDATE", "EVALUATION", "AUDIT", "NOTIFICATION", "COMMIT"]);
+  const notification = calls.find(call => call.sql.startsWith("INSERT INTO user_notifications"));
+  assert.equal(notification.params[1], evaluator.id);
+  assert.equal(notification.params[2], draftId);
 });
 
 test("evaluator choices require process access and include only eligible assigned evaluators", async () => {
@@ -336,10 +339,14 @@ test("evaluator inbox and start action are limited to assigned processes", async
     },
     async connect() {
       return {
-        async query(sql) {
+        async query(sql, params) {
           if (["BEGIN", "COMMIT", "ROLLBACK"].includes(sql)) return { rows: [] };
-          if (sql.startsWith("SELECT p.id")) return { rows: [{ id: draftId, status: "enviado_a_evaluacion", assigned_evaluator_id: evaluator.id }] };
+          if (sql.startsWith("SELECT p.id")) return { rows: [{ id: draftId, status: "enviado_a_evaluacion", assigned_evaluator_id: evaluator.id, created_by_user_id: author.id, name: "Borrador de prueba" }] };
           if (sql.startsWith("UPDATE procedures")) return { rows: [{ ...row, process_code: "PD", status: "en_evaluacion", assigned_evaluator_id: evaluator.id }] };
+          if (sql.startsWith("INSERT INTO user_notifications")) {
+            queries.push({ sql, params });
+            return { rows: [] };
+          }
           if (sql.startsWith("UPDATE evaluations") || sql.startsWith("INSERT INTO audit_events")) return { rows: [] };
           throw new Error(`Unexpected SQL: ${sql}`);
         },
@@ -351,6 +358,8 @@ test("evaluator inbox and start action are limited to assigned processes", async
   assert.match(queries[0].sql, /assigned_evaluator_id = \$1/);
   assert.equal((await getAssignedProcedure(pool, evaluator, draftId)).payload, row.current_payload);
   assert.equal((await startAssignedEvaluation(pool, evaluator, draftId)).status, "en_evaluacion");
+  const authorNotice = queries.find(call => call.sql.startsWith("INSERT INTO user_notifications"));
+  assert.equal(authorNotice.params[1], author.id);
   await assert.rejects(listAssignedProcedures(pool, author), { code: "forbidden" });
 });
 
@@ -568,9 +577,15 @@ test("active process catalog requires an authenticated procedure author", async 
       if (sql.startsWith("UPDATE app_sessions SET last_seen_at")) return { rows: [] };
       if (sql.startsWith("SELECT p.code, p.name FROM processes")) {
         catalogReads += 1;
-        assert.deepEqual(params, [userId, false]);
+        assert.deepEqual(params, [userId, role === "administrador"]);
         assert.match(sql, /user_processes/);
-        return { rows: assigned ? [{ code: "DE", name: "Desarrollo economico" }] : [] };
+        if (role === "administrador") return { rows: [
+          ["PD", "Gestión del Desarrollo Económico"], ["GT", "Gestión del Turismo"], ["DE", "Direccionamiento Estratégico y Planeación"],
+          ["GC", "Gestión de la Comunicación"], ["TIC", "Gestión de las Tecnologías e Información"], ["GF", "Gestión de Recursos Financieros"],
+          ["GCT", "Gestión de la Contratación"], ["GI", "Gestión de la Infraestructura Física"], ["GD", "Gestión Documental"],
+          ["GH", "Gestión Humana y SST"], ["GJ", "Gestión Jurídica"], ["EI", "Evaluación Independiente"], ["GDI", "Gestión Disciplinaria"]
+        ].map(([code, name]) => ({ code, name })) };
+        return { rows: assigned ? [{ code: "PD", name: "Gestión del Desarrollo Económico" }] : [] };
       }
       throw new Error("Unexpected SQL: " + sql);
     },
@@ -587,13 +602,16 @@ test("active process catalog requires an authenticated procedure author", async 
     mustChangePassword = false;
     const response = await fetch(url, { headers: { cookie } });
     assert.equal(response.status, 200);
-    assert.deepEqual((await response.json()).processes, [{ code: "DE", name: "Desarrollo economico" }]);
+    assert.deepEqual((await response.json()).processes, [{ code: "PD", name: "Gestión del Desarrollo Económico" }]);
     assigned = false;
     const unassigned = await fetch(url, { headers: { cookie } });
     assert.deepEqual((await unassigned.json()).processes, []);
+    role = "administrador";
+    const adminCatalog = await fetch(url, { headers: { cookie } });
+    assert.equal((await adminCatalog.json()).processes.length, 13);
     role = "evaluador";
     assert.equal((await fetch(url, { headers: { cookie } })).status, 403);
-    assert.equal(catalogReads, 2);
+    assert.equal(catalogReads, 3);
   } finally {
     await new Promise(resolve => server.close(resolve));
   }

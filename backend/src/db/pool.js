@@ -34,10 +34,11 @@ export async function checkDatabase(pool) {
       to_regclass('app_users') IS NOT NULL AS users_ready,
       to_regclass('procedures') IS NOT NULL AS procedures_ready,
       to_regclass('schema_migrations') IS NOT NULL AS migrations_ready,
-      to_regclass('app_sessions') IS NOT NULL AS sessions_ready
+      to_regclass('app_sessions') IS NOT NULL AS sessions_ready,
+      to_regclass('user_notifications') IS NOT NULL AS notifications_ready
   `);
   const row = result.rows[0];
-  if (!row?.users_ready || !row?.procedures_ready || !row?.migrations_ready || !row?.sessions_ready) {
+  if (!row?.users_ready || !row?.procedures_ready || !row?.migrations_ready || !row?.sessions_ready || !row?.notifications_ready) {
     return false;
   }
   const migration = await pool.query(
@@ -56,5 +57,13 @@ export async function checkDatabase(pool) {
     "SELECT 1 FROM schema_migrations WHERE version = $1",
     ["004_usernames"]
   );
-  return [migration, secondMigration, thirdMigration, fourthMigration].every(result => result.rows.length === 1);
+  const fifthMigration = await pool.query(
+    "SELECT 1 FROM schema_migrations WHERE version = $1",
+    ["005_draft_revision"]
+  );
+  const sixthMigration = await pool.query(
+    "SELECT 1 FROM schema_migrations WHERE version = $1",
+    ["006_user_notifications"]
+  );
+  return [migration, secondMigration, thirdMigration, fourthMigration, fifthMigration, sixthMigration].every(result => result.rows.length === 1);
 }

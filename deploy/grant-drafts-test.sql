@@ -20,3 +20,9 @@ GRANT INSERT (id, procedure_id, evaluator_id, status, criteria_payload) ON publi
 GRANT UPDATE (status, updated_at) ON public.evaluations TO asistente_app_test;
 GRANT INSERT (id, actor_user_id, event_type, entity_type, entity_id, metadata)
   ON public.audit_events TO asistente_app_test;
+GRANT SELECT (actor_user_id, event_type, entity_type, entity_id, created_at)
+  ON public.audit_events TO asistente_app_test;
+GRANT SELECT (id, recipient_user_id, procedure_id, event_type, title, message, created_at, read_at),
+      INSERT (id, recipient_user_id, procedure_id, event_type, title, message),
+      UPDATE (read_at)
+  ON public.user_notifications TO asistente_app_test;

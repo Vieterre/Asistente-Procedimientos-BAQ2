@@ -260,6 +260,11 @@ export async function submitOwnDraft(pool, user, id, { evaluatorId, revision }) 
        VALUES ($1, $2, 'procedure_submitted_for_review', 'procedure', $3, $4::jsonb)`,
       [randomUUID(), user.id, id, JSON.stringify({ evaluatorId, revision: updated.rows[0].revision })]
     );
+    await client.query(
+      `INSERT INTO user_notifications (id, recipient_user_id, procedure_id, event_type, title, message)
+       VALUES ($1, $2, $3, 'procedure_submitted_for_review', $4, $5)`,
+      [randomUUID(), evaluatorId, id, "Nuevo procedimiento para revisión", `«${procedure.name}» fue enviado a tu bandeja de evaluación.`]
+    );
     await client.query("COMMIT");
     return publicDraft(updated.rows[0], true);
   } catch (error) {
@@ -303,7 +308,7 @@ export async function startAssignedEvaluation(pool, user, id) {
   try {
     await client.query("BEGIN");
     const found = await client.query(
-      `SELECT p.id, p.status, p.assigned_evaluator_id
+      `SELECT p.id, p.status, p.assigned_evaluator_id, p.created_by_user_id, p.name
          FROM procedures p JOIN user_processes up ON up.process_code = p.process_code AND up.user_id = $2
         WHERE p.id = $1 AND p.assigned_evaluator_id = $2 FOR UPDATE`,
       [id, user.id]
@@ -327,6 +332,11 @@ export async function startAssignedEvaluation(pool, user, id) {
       `INSERT INTO audit_events (id, actor_user_id, event_type, entity_type, entity_id)
        VALUES ($1, $2, 'procedure_evaluation_started', 'procedure', $3)`,
       [randomUUID(), user.id, id]
+    );
+    await client.query(
+      `INSERT INTO user_notifications (id, recipient_user_id, procedure_id, event_type, title, message)
+       VALUES ($1, $2, $3, 'procedure_evaluation_started', $4, $5)`,
+      [randomUUID(), procedure.created_by_user_id, id, "La evaluación comenzó", `El Evaluador inició la revisión de «${procedure.name}».`]
     );
     await client.query("COMMIT");
     return publicDraft(result.rows[0], true);

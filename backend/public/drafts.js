@@ -1,6 +1,7 @@
 const ids = [
   "loginView", "loginForm", "loginUsername", "loginPassword", "loginOtp", "loginMessage",
-  "workspace", "sessionControls", "sessionIdentity", "logoutButton", "welcomeText",
+  "workspace", "sessionControls", "sessionIdentity", "notificationCenter", "notificationBell", "notificationPopover", "notificationCount", "emptyNotifications", "notificationList", "markAllNotificationsRead", "logoutButton", "welcomeText",
+  "pageHeading", "analyticsButton", "analyticsSection", "backFromAnalytics", "refreshAnalytics", "analyticsFilters", "analyticsPeriod", "analyticsProcess", "analyticsRole", "analyticsMessage", "analyticsMetrics", "analyticsByDay", "analyticsByProcess", "emptyAnalyticsDays", "emptyAnalyticsProcesses",
   "passwordRequired", "draftWorkspace", "draftForm", "editorTitle", "editorStatus", "submitReviewButton", "submitReviewDialog", "submitReviewForm", "reviewEvaluatorSelect", "submitReviewMessage", "cancelSubmitReview", "confirmSubmitReview",
   "evaluatorInbox", "evaluatorDraftCount", "evaluatorInboxMessage", "emptyEvaluatorInbox", "evaluatorDraftList", "refreshEvaluatorInbox", "evaluatorDetail", "evaluatorDetailTitle", "evaluatorDetailStatus", "backToEvaluatorInbox", "startEvaluationButton",
   "draftName", "processCode", "draftObjective", "draftScope", "draftDefinitions", "draftConditions", "saveDraftButton", "editorMessage",
@@ -33,7 +34,11 @@ const errorMessages = {
   request_too_large: "El contenido supera el tamaño permitido.",
   submission_incomplete: "Completa los requisitos pendientes antes de enviar.",
   evaluator_unavailable: "No hay un Evaluador activo asignado a este proceso. Contacta al administrador.",
-  invalid_revision: "El borrador cambió. Actualízalo y vuelve a intentar."
+  invalid_revision: "El borrador cambió. Actualízalo y vuelve a intentar.",
+  notification_not_found: "La notificación ya no está disponible. Actualiza la lista.",
+  invalid_analytics_period: "Selecciona un periodo válido.",
+  invalid_analytics_process: "Selecciona un proceso válido.",
+  invalid_analytics_role: "Selecciona un rol válido."
 };
 
 let csrfToken = "";
@@ -43,6 +48,7 @@ let currentPayload = {};
 let dirty = false;
 let flowReviewVersion = 0;
 let flowZoom = 100;
+let notificationTimer = null;
 let flowIntrinsicWidth = 760;
 let flowIntrinsicHeight = 500;
 let normRows = [];
@@ -50,6 +56,13 @@ let activityRows = [];
 let annexRows = [];
 let changeRows = [];
 let annexesNotApplicable = false;
+let processNames = new Map();
+const processGroupDefinitions = [
+  { label: "MACROPROCESOS – PROCESOS MISIONALES · DESARROLLO ECONÓMICO", codes: ["PD", "GT"] },
+  { label: "MACROPROCESOS – PROCESOS ESTRATÉGICOS", codes: ["DE", "GC", "TIC", "GF"] },
+  { label: "MACROPROCESOS – PROCESOS DE APOYO", codes: ["GCT", "GI", "GD", "GH", "GJ"] },
+  { label: "MACROPROCESOS – PROCESOS DE EVALUACIÓN", codes: ["EI", "GDI"] }
+];
 const textFields = [
   ["draftObjective", "objetivo"],
   ["draftScope", "alcance"],
@@ -843,8 +856,151 @@ async function request(path, { method = "GET", body, csrf = false } = {}) {
   return result;
 }
 
+async function refreshNotifications() {
+  try {
+    const { notifications, unreadCount } = await request("/api/notifications");
+    ui.notificationCount.textContent = unreadCount > 99 ? "99+" : String(unreadCount || "");
+    ui.notificationCount.hidden = unreadCount < 1;
+    ui.notificationBell.setAttribute("aria-label", unreadCount ? `Notificaciones, ${unreadCount} sin leer` : "Notificaciones");
+    ui.markAllNotificationsRead.hidden = unreadCount < 1;
+    ui.emptyNotifications.hidden = notifications.length > 0;
+    ui.notificationList.replaceChildren(...notifications.map(notification => {
+      const item = document.createElement("li");
+      item.className = notification.readAt ? "notification-item" : "notification-item unread";
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "notification-open";
+      const title = document.createElement("strong");
+      title.textContent = notification.title;
+      const message = document.createElement("span");
+      message.textContent = notification.message;
+      const date = document.createElement("small");
+      const timestamp = new Date(notification.createdAt);
+      date.textContent = Number.isNaN(timestamp.valueOf()) ? "" : timestamp.toLocaleString("es-CO");
+      button.append(title, message, date);
+      button.addEventListener("click", () => openNotification(notification));
+      item.append(button);
+      return item;
+    }));
+  } catch (error) {
+    if (["unauthenticated", "csrf_failed", "password_change_required"].includes(error.code)) {
+      handleRequestError(error, ui.listMessage);
+    }
+  }
+}
+
+async function openNotification(notification) {
+  try {
+    await request(`/api/notifications/${encodeURIComponent(notification.id)}/read`, { method: "POST", csrf: true });
+    await refreshNotifications();
+    ui.notificationPopover.hidden = true;
+    ui.notificationBell.setAttribute("aria-expanded", "false");
+    if (notification.eventType === "procedure_submitted_for_review" && currentUserRole === "evaluador") {
+      hideAnalytics();
+      await openAssignedProcedure(notification.procedureId);
+    } else if (notification.eventType === "procedure_evaluation_started" && ["elaborador", "administrador"].includes(currentUserRole)) {
+      hideAnalytics();
+      await openDraft(notification.procedureId);
+    }
+  } catch (error) {
+    handleRequestError(error, currentUserRole === "evaluador" ? ui.evaluatorInboxMessage : ui.listMessage);
+  }
+}
+
+const analyticsEventLabels = [
+  ["procedure_draft_created", "Borradores creados"],
+  ["procedure_draft_updated", "Ediciones guardadas"],
+  ["procedure_submitted_for_review", "Envíos a revisión"],
+  ["procedure_evaluation_started", "Evaluaciones iniciadas"]
+];
+
+function renderAnalytics(analytics) {
+  ui.analyticsMetrics.replaceChildren(...analyticsEventLabels.map(([key, label]) => {
+    const metric = document.createElement("div");
+    metric.className = "analytics-metric";
+    const value = document.createElement("strong");
+    value.textContent = String(analytics.totals[key] || 0);
+    const caption = document.createElement("span");
+    caption.textContent = label;
+    metric.append(value, caption);
+    return metric;
+  }));
+
+  ui.analyticsByDay.replaceChildren(...analytics.byDay.map(row => {
+    const tr = document.createElement("tr");
+    const date = document.createElement("th");
+    date.scope = "row";
+    date.textContent = row.day;
+    tr.append(date);
+    for (const [key] of analyticsEventLabels) {
+      const cell = document.createElement("td");
+      cell.textContent = String(row[key] || 0);
+      tr.append(cell);
+    }
+    return tr;
+  }));
+  ui.emptyAnalyticsDays.hidden = analytics.byDay.length > 0;
+
+  ui.analyticsByProcess.replaceChildren(...analytics.byProcess.map(row => {
+    const tr = document.createElement("tr");
+    const process = document.createElement("th");
+    process.scope = "row";
+    process.textContent = `${row.processName} (${row.processCode})`;
+    tr.append(process);
+    for (const [key] of analyticsEventLabels) {
+      const cell = document.createElement("td");
+      cell.textContent = String(row[key] || 0);
+      tr.append(cell);
+    }
+    return tr;
+  }));
+  ui.emptyAnalyticsProcesses.hidden = analytics.byProcess.length > 0;
+  setMessage(ui.analyticsMessage, `Eventos del backend durante los últimos ${analytics.periodDays} días.`, true);
+}
+
+async function loadAnalytics() {
+  setMessage(ui.analyticsMessage, "Consultando actividad...");
+  const query = new URLSearchParams({
+    periodDays: ui.analyticsPeriod.value,
+    processCode: ui.analyticsProcess.value,
+    role: ui.analyticsRole.value
+  });
+  try {
+    const { analytics } = await request(`/api/admin/analytics?${query}`);
+    renderAnalytics(analytics);
+  } catch (error) {
+    handleRequestError(error, ui.analyticsMessage);
+  }
+}
+
+function showAnalytics() {
+  if (currentUserRole !== "administrador") return;
+  ui.notificationPopover.hidden = true;
+  ui.notificationBell.setAttribute("aria-expanded", "false");
+  ui.analyticsSection.hidden = false;
+  ui.pageHeading.hidden = true;
+  ui.draftWorkspace.hidden = true;
+  ui.evaluatorInbox.hidden = true;
+  ui.evaluatorDetail.hidden = true;
+  ui.flowSection.hidden = true;
+  ui.documentsSection.hidden = true;
+  loadAnalytics();
+}
+
+function hideAnalytics() {
+  ui.analyticsSection.hidden = true;
+  ui.pageHeading.hidden = false;
+  ui.evaluatorInbox.hidden = currentUserRole !== "evaluador";
+  ui.draftWorkspace.hidden = currentUserRole === "evaluador";
+  ui.documentsSection.hidden = currentUserRole === "evaluador";
+  ui.flowSection.hidden = currentUserRole === "evaluador";
+  if (currentUserRole !== "evaluador") renderFlow();
+}
+
 function clearSession() {
   flowReviewVersion += 1;
+  clearInterval(notificationTimer);
+  notificationTimer = null;
   csrfToken = "";
   sessionStorage.removeItem(csrfKey);
   currentDraft = null;
@@ -864,6 +1020,13 @@ function clearSession() {
   setMessage(ui.documentsMessage, "");
   dirty = false;
   ui.workspace.hidden = true;
+  ui.analyticsSection.hidden = true;
+  ui.pageHeading.hidden = false;
+  ui.analyticsButton.hidden = true;
+  ui.notificationPopover.hidden = true;
+  ui.notificationBell.setAttribute("aria-expanded", "false");
+  ui.notificationCount.hidden = true;
+  ui.notificationList.replaceChildren();
   ui.previewButton.hidden = true;
   ui.submitReviewButton.hidden = true;
   ui.submitReviewButton.disabled = true;
@@ -882,6 +1045,8 @@ function clearSession() {
 }
 
 async function startSession(user) {
+  clearInterval(notificationTimer);
+  notificationTimer = null;
   ui.loginView.hidden = true;
   ui.workspace.hidden = false;
   ui.sessionControls.hidden = false;
@@ -889,6 +1054,11 @@ async function startSession(user) {
   ui.welcomeText.textContent = user.displayName + " · " + user.role;
   ui.passwordRequired.hidden = !user.mustChangePassword;
   ui.documentsSection.hidden = true;
+  ui.analyticsSection.hidden = true;
+  ui.pageHeading.hidden = false;
+  ui.analyticsButton.hidden = user.role !== "administrador";
+  ui.notificationPopover.hidden = true;
+  ui.notificationBell.setAttribute("aria-expanded", "false");
   currentUserRole = user.role;
   ui.evaluatorInbox.hidden = true;
   ui.evaluatorDetail.hidden = true;
@@ -900,6 +1070,11 @@ async function startSession(user) {
     ui.draftWorkspace.hidden = true;
     return;
   }
+  await refreshNotifications();
+  if (!currentUserRole) return;
+  notificationTimer = setInterval(() => {
+    if (!document.hidden) refreshNotifications();
+  }, 60_000);
   if (user.role === "evaluador") {
     ui.draftWorkspace.hidden = true;
     ui.evaluatorInbox.hidden = false;
@@ -916,7 +1091,8 @@ async function startSession(user) {
   ui.documentsSection.hidden = false;
   ui.previewButton.hidden = false;
   applyDraftEditability();
-  await Promise.all([loadProcesses(), loadDrafts()]);
+  await loadProcesses();
+  await loadDrafts();
 }
 
 function handleRequestError(error, node) {
@@ -931,20 +1107,56 @@ function handleRequestError(error, node) {
 async function loadProcesses() {
   try {
     const { processes } = await request("/api/processes");
+    processNames = new Map(processes.map(process => [process.code, process.name]));
     const placeholder = document.createElement("option");
     placeholder.value = "";
     placeholder.textContent = "Selecciona un proceso";
-    const options = processes.map(process => {
-      const option = document.createElement("option");
-      option.value = process.code;
-      option.textContent = process.name + " (" + process.code + ")";
-      return option;
-    });
-    ui.processCode.replaceChildren(placeholder, ...options);
+    const groups = buildProcessOptionGroups(processes);
+    ui.processCode.replaceChildren(placeholder, ...groups);
+    if (currentUserRole === "administrador") {
+      const allProcesses = document.createElement("option");
+      allProcesses.value = "";
+      allProcesses.textContent = "Todos los procesos";
+      ui.analyticsProcess.replaceChildren(allProcesses, ...groups.map(group => group.cloneNode(true)));
+    }
     ui.processCode.disabled = Boolean(currentDraft);
   } catch (error) {
     handleRequestError(error, ui.editorMessage);
   }
+}
+
+function buildProcessOptionGroups(processes) {
+  const byCode = new Map(processes.map(process => [process.code, process]));
+  const used = new Set();
+  const groups = processGroupDefinitions.map(group => {
+    const options = group.codes.flatMap(code => {
+      const process = byCode.get(code);
+      if (!process) return [];
+      used.add(code);
+      const option = document.createElement("option");
+      option.value = code;
+      option.textContent = `${process.name} (${code})`;
+      return [option];
+    });
+    if (!options.length) return null;
+    const optgroup = document.createElement("optgroup");
+    optgroup.label = group.label;
+    optgroup.append(...options);
+    return optgroup;
+  }).filter(Boolean);
+  const otherProcesses = processes.filter(process => !used.has(process.code));
+  if (otherProcesses.length) {
+    const optgroup = document.createElement("optgroup");
+    optgroup.label = "Otros procesos";
+    for (const process of otherProcesses) {
+      const option = document.createElement("option");
+      option.value = process.code;
+      option.textContent = `${process.name} (${process.code})`;
+      optgroup.append(option);
+    }
+    groups.push(optgroup);
+  }
+  return groups;
 }
 
 async function loadDrafts() {
@@ -1070,7 +1282,7 @@ function populateDraft(procedure) {
   showRoleSeparation();
   const option = document.createElement("option");
   option.value = procedure.processCode;
-  option.textContent = `${procedure.processCode} · ${procedure.processCode}`;
+  option.textContent = `${processNames.get(procedure.processCode) || procedure.processCode} (${procedure.processCode})`;
   ui.processCode.replaceChildren(option);
   ui.processCode.value = procedure.processCode;
   ui.editorTitle.textContent = "Editar borrador";
@@ -1528,6 +1740,39 @@ function showPreview() {
 }
 
 ui.previewButton.addEventListener("click", showPreview);
+ui.analyticsButton.addEventListener("click", showAnalytics);
+ui.backFromAnalytics.addEventListener("click", hideAnalytics);
+ui.refreshAnalytics.addEventListener("click", loadAnalytics);
+ui.analyticsFilters.addEventListener("submit", event => {
+  event.preventDefault();
+  loadAnalytics();
+});
+ui.notificationBell.addEventListener("click", () => {
+  const open = ui.notificationPopover.hidden;
+  ui.notificationPopover.hidden = !open;
+  ui.notificationBell.setAttribute("aria-expanded", String(open));
+  if (open) refreshNotifications();
+});
+ui.markAllNotificationsRead.addEventListener("click", async () => {
+  ui.markAllNotificationsRead.disabled = true;
+  try {
+    await request("/api/notifications/read-all", { method: "POST", csrf: true });
+    await refreshNotifications();
+  } catch (error) {
+    handleRequestError(error, currentUserRole === "evaluador" ? ui.evaluatorInboxMessage : ui.listMessage);
+  } finally {
+    ui.markAllNotificationsRead.disabled = false;
+  }
+});
+document.addEventListener("click", event => {
+  if (!ui.notificationCenter.contains(event.target)) {
+    ui.notificationPopover.hidden = true;
+    ui.notificationBell.setAttribute("aria-expanded", "false");
+  }
+});
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden && currentUserRole) refreshNotifications();
+});
 ui.closePreviewButton.addEventListener("click", () => ui.previewDialog.close());
 ui.printPreviewButton.addEventListener("click", () => window.print());
 ui.refreshDraftsButton.addEventListener("click", loadDrafts);
