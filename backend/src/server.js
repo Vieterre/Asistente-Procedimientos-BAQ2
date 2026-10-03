@@ -8,7 +8,7 @@ import { ACTIONS, canPerform } from "./domain/permissions.js";
 import { UserManagementError, createAccount, listAccounts, resetAccountPassword, setAccountActive } from "./security/admin-users.js";
 import { clientIp } from "./security/client-ip.js";
 import { DraftError, createDraft, getOwnDraft, listOwnDrafts, updateOwnDraft } from "./domain/drafts.js";
-import { reviewFlow } from "./domain/flow-review.js";
+import { reviewFlow, reviewFlowCompleteness } from "./domain/flow-review.js";
 
 const rootDir = join(fileURLToPath(new URL("../..", import.meta.url)));
 const accountAssets = {
@@ -269,7 +269,7 @@ export function createAppServer({ poolFactory = createPool, secureCookies, trust
               return;
             }
             const body = await readJson(req, 1_048_576);
-            sendJson(res, 200, { ok: true, issues: reviewFlow(body?.activities) });
+            sendJson(res, 200, { ok: true, issues: reviewFlow(body?.activities), completenessIssues: reviewFlowCompleteness(body?.activities) });
           } else if (url.pathname === "/api/procedures" && req.method === "GET") {
             sendJson(res, 200, { ok: true, procedures: await listOwnDrafts(pool, session.user) });
           } else if (url.pathname === "/api/procedures") {

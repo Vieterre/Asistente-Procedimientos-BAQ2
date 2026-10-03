@@ -57,6 +57,11 @@ senala rutas No que van directamente a un punto de control, controles
 con atributos obligatorios incompletos e identificadores de conector ausentes
 o duplicados. Los retornos que aun pueden llegar a Fin y las bifurcaciones
 que no reconvergen antes de Fin se muestran como avisos, no como errores.
+La respuesta muestra por separado campos por completar: descripcion de Inicio
+y Fin, nombre y descripcion de actividades, pregunta de decisiones y
+responsables de actividades y decisiones. No modifica el borrador ni bloquea
+su guardado; sirve para distinguir coherencia de rutas de completitud previa
+a publicacion.
 Todavia no sustituye las reglas completas ni el flujograma del prototipo.
 La vista Flujograma de pruebas dibuja el orden actual por responsable, las
 rutas Si/No, los destinos de conectores y los puntos de control. La opcion
@@ -76,9 +81,9 @@ La prueba manual de un borrador ficticio cubrio guardado, reordenamiento,
 eliminacion protegida, rutas, correccion de ciclos, comparacion visual y
 persistencia tras cerrar sesion. Esto no certifica equivalencia completa:
 
-- El prototipo exige ademas nombres, descripciones y responsables completos,
-  y valida la especificidad de responsables personalizados. El boton Revisar
-  flujo se limita a estructura de grafo y atributos obligatorios de control.
+- El prototipo exige ademas otras reglas de calidad metodologica que la
+  pantalla de pruebas todavia no implementa por completo. La revision de
+  campos de la pantalla de pruebas no equivale a autorizacion para publicar.
 - El prototipo tambien incluye avisos de redaccion, especificidad de roles
   y otros criterios metodologicos que no son parte de Revisar flujo.
 - El flujograma del prototipo permite ajustar zoom y exportar PDF. La vista

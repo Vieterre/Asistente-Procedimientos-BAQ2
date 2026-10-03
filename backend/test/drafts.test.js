@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { createAppServer } from "../src/server.js";
 import { createDraft, getOwnDraft, listOwnDrafts, updateOwnDraft } from "../src/domain/drafts.js";
-import { reviewFlow } from "../src/domain/flow-review.js";
+import { reviewFlow, reviewFlowCompleteness } from "../src/domain/flow-review.js";
 import { hashToken } from "../src/security/auth.js";
 
 const author = { id: "11111111-1111-4111-8111-111111111111", role: "elaborador", mustChangePassword: false };
@@ -113,6 +113,35 @@ test("flow review does not warn when decision branches reconverge", () => {
     { uid: "end", tipo: "Fin" }
   ];
   assert.deepEqual(reviewFlow(activities), []);
+});
+
+test("flow completeness is separate from graph coherence", () => {
+  const activities = [
+    { uid: "start", tipo: "Inicio", descripcion: "Solicitud recibida" },
+    { uid: "plan", tipo: "Actividad", actividad: "PLANIFICAR", descripcion: "", responsable: "Planeación" },
+    { uid: "choice", tipo: "Decisión", descripcion: "¿Todo bien?", responsable: "", decisionSi: "end", decisionNo: "plan" },
+    { uid: "end", tipo: "Fin", descripcion: "" }
+  ];
+  assert.ok(reviewFlow(activities).every(issue => issue.severity === "warning"));
+  assert.deepEqual(reviewFlowCompleteness(activities), [
+    { index: 1, message: "Describe la actividad." },
+    { index: 2, message: "Indica un responsable." },
+    { index: 3, message: "Describe el resultado o condición de cierre." }
+  ]);
+  activities[1].descripcion = "Elabora el plan";
+  activities[2].responsable = "Profesional";
+  activities[3].descripcion = "Plan aprobado";
+  assert.deepEqual(reviewFlowCompleteness(activities), []);
+});
+
+test("flow completeness rejects vague custom responsibilities", () => {
+  assert.deepEqual(reviewFlowCompleteness([
+    { tipo: "Actividad", actividad: "Revisar", descripcion: "Compara los datos", responsable: "Todos", responsableOtro: true,
+      tieneControl: true, controlResponsable: "N/A", controlResponsableOtro: true }
+  ]), [
+    { index: 0, message: "Especifica el cargo o rol responsable." },
+    { index: 0, message: "Especifica el responsable del control." }
+  ]);
 });
 
 const row = {
@@ -261,7 +290,12 @@ test("draft HTTP routes require session, password change, and CSRF", async () =>
     assert.equal((await fetch(reviewUrl, { method: "POST", headers: { cookie, "content-type": "application/json" }, body: reviewBody })).status, 403);
     const review = await fetch(reviewUrl, { method: "POST", headers: { cookie, "x-csrf-token": csrf, "content-type": "application/json" }, body: reviewBody });
     assert.equal(review.status, 200);
-    assert.deepEqual((await review.json()).issues, []);
+    const reviewResult = await review.json();
+    assert.deepEqual(reviewResult.issues, []);
+    assert.deepEqual(reviewResult.completenessIssues, [
+      { index: 0, message: "Describe el evento que inicia el procedimiento." },
+      { index: 1, message: "Describe el resultado o condición de cierre." }
+    ]);
   } finally {
     await new Promise(resolve => server.close(resolve));
   }

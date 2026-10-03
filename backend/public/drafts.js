@@ -68,7 +68,7 @@ function markDirty() {
   ui.flowReviewResult.hidden = true;
 }
 
-function showFlowReview(issues) {
+function showFlowReview(issues, completenessIssues = []) {
   const result = ui.flowReviewResult;
   result.replaceChildren();
   const errors = issues.filter(issue => issue.severity !== "warning");
@@ -83,6 +83,18 @@ function showFlowReview(issues) {
     for (const issue of issues) {
       const item = document.createElement("li");
       item.textContent = (issue.severity === "warning" ? "Aviso: " : "") + (Number.isInteger(issue.index) ? `Elemento ${issue.index + 1}: ` : "") + issue.message;
+      list.append(item);
+    }
+    result.append(list);
+  }
+  if (completenessIssues.length) {
+    const heading = document.createElement("p");
+    heading.textContent = `${completenessIssues.length} campo${completenessIssues.length === 1 ? "" : "s"} por completar antes de publicar:`;
+    result.append(heading);
+    const list = document.createElement("ul");
+    for (const issue of completenessIssues) {
+      const item = document.createElement("li");
+      item.textContent = `Elemento ${issue.index + 1}: ${issue.message}`;
       list.append(item);
     }
     result.append(list);
@@ -830,11 +842,11 @@ ui.reviewFlowButton.addEventListener("click", async () => {
   const version = flowReviewVersion;
   button.disabled = true;
   try {
-    const { issues } = await request("/api/procedures/flow-review", {
+    const { issues, completenessIssues } = await request("/api/procedures/flow-review", {
       method: "POST", csrf: true,
       body: { activities: activityRows.map(activity => ({ ...activity })) }
     });
-    if (version === flowReviewVersion) showFlowReview(issues);
+    if (version === flowReviewVersion) showFlowReview(issues, completenessIssues);
   } catch (error) {
     if (version === flowReviewVersion) showFlowReview([{ index: null, message: errorText(error) }]);
   } finally {

@@ -142,3 +142,31 @@ export function reviewFlow(activities) {
 
   return issues;
 }
+
+export function reviewFlowCompleteness(activities) {
+  if (!Array.isArray(activities)) return [];
+  const missing = value => typeof value !== "string" || !value.trim();
+  const vague = value => /^(varios|todos|quien corresponda|n\/?a|no aplica)$/i.test(String(value || "").trim());
+  const issues = [];
+  for (const [index, item] of activities.entries()) {
+    if (!item || typeof item !== "object" || Array.isArray(item)) continue;
+    if (["Inicio", "Fin"].includes(item.tipo) && missing(item.descripcion)) {
+      issues.push({ index, message: item.tipo === "Inicio" ? "Describe el evento que inicia el procedimiento." : "Describe el resultado o condición de cierre." });
+    }
+    if (item.tipo === "Actividad") {
+      if (missing(item.actividad)) issues.push({ index, message: "Escribe el nombre de la actividad." });
+      if (missing(item.descripcion)) issues.push({ index, message: "Describe la actividad." });
+    }
+    if (item.tipo === "Decisión" && missing(item.descripcion)) {
+      issues.push({ index, message: "Escribe la pregunta o condición de la decisión." });
+    }
+    if (["Actividad", "Decisión"].includes(item.tipo)) {
+      if (missing(item.responsable)) issues.push({ index, message: "Indica un responsable." });
+      else if (item.responsableOtro && vague(item.responsable)) issues.push({ index, message: "Especifica el cargo o rol responsable." });
+    }
+    if (item.tieneControl && item.controlResponsableOtro && vague(item.controlResponsable)) {
+      issues.push({ index, message: "Especifica el responsable del control." });
+    }
+  }
+  return issues;
+}
