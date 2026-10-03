@@ -222,7 +222,13 @@ export function createAppServer({ poolFactory = createPool, secureCookies, trust
             sendJson(res, 403, { ok: false, error: "forbidden" });
             return;
           }
-          const result = await pool.query("SELECT code, name FROM processes WHERE active = TRUE ORDER BY name, code");
+          const result = await pool.query(
+            `SELECT p.code, p.name FROM processes p WHERE p.active = TRUE
+             AND ($2 OR EXISTS (SELECT 1 FROM user_processes up
+                                WHERE up.user_id = $1 AND up.process_code = p.code))
+             ORDER BY p.name, p.code`,
+            [session.user.id, session.user.role === "administrador"]
+          );
           sendJson(res, 200, { ok: true, processes: result.rows });
         } catch (error) {
           if (error instanceof DraftError) sendJson(res, error.status, { ok: false, error: error.code });

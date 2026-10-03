@@ -1,4 +1,5 @@
 GRANT SELECT (code, name, active) ON public.processes TO asistente_app_test;
+GRANT SELECT (user_id, process_code) ON public.user_processes TO asistente_app_test;
 
 GRANT SELECT (
   id, code, name, process_code, version, status, revision, updated_at,

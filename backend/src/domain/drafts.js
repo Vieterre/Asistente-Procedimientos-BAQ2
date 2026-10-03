@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { ACTIONS, canPerform } from "./permissions.js";
 import { PROCEDURE_STATUS } from "./workflow.js";
+import { ROLES } from "./roles.js";
 
 export class DraftError extends Error {
   constructor(code, status) {
@@ -39,8 +40,11 @@ export async function listOwnDrafts(pool, user) {
   if (!canPerform(user, ACTIONS.CREATE_PROCEDURE)) throw new DraftError("forbidden", 403);
   const result = await pool.query(
     `SELECT id, code, name, process_code, version, status, revision, updated_at
-     FROM procedures WHERE created_by_user_id = $1 ORDER BY updated_at DESC`,
-    [user.id]
+     FROM procedures p WHERE created_by_user_id = $1
+       AND ($2 OR EXISTS (SELECT 1 FROM user_processes up
+                          WHERE up.user_id = $1 AND up.process_code = p.process_code))
+     ORDER BY updated_at DESC`,
+    [user.id, user.role === ROLES.ADMIN]
   );
   return result.rows.map(row => publicDraft(row));
 }
@@ -49,8 +53,10 @@ export async function getOwnDraft(pool, user, id) {
   if (!canPerform(user, ACTIONS.CREATE_PROCEDURE)) throw new DraftError("forbidden", 403);
   const result = await pool.query(
     `SELECT id, code, name, process_code, version, status, revision, updated_at, current_payload
-     FROM procedures WHERE id = $1 AND created_by_user_id = $2`,
-    [id, user.id]
+     FROM procedures p WHERE id = $1 AND created_by_user_id = $2
+       AND ($3 OR EXISTS (SELECT 1 FROM user_processes up
+                          WHERE up.user_id = $2 AND up.process_code = p.process_code))`,
+    [id, user.id, user.role === ROLES.ADMIN]
   );
   if (!result.rows[0]) throw new DraftError("draft_not_found", 404);
   return publicDraft(result.rows[0], true);
@@ -65,7 +71,12 @@ export async function createDraft(pool, user, { name, processCode, payload }) {
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
-    const process = await client.query("SELECT 1 FROM processes WHERE code = $1 AND active = TRUE", [processCode]);
+    const process = await client.query(
+      `SELECT 1 FROM processes p WHERE p.code = $1 AND p.active = TRUE
+       AND ($3 OR EXISTS (SELECT 1 FROM user_processes up
+                          WHERE up.user_id = $2 AND up.process_code = p.code))`,
+      [processCode, user.id, user.role === ROLES.ADMIN]
+    );
     if (!process.rows.length) throw new DraftError("invalid_process", 400);
     const result = await client.query(
       `INSERT INTO procedures (id, name, process_code, status, created_by_user_id, current_payload)
@@ -96,8 +107,11 @@ export async function updateOwnDraft(pool, user, id, { name, payload, revision }
     await client.query("BEGIN");
     const found = await client.query(
       `SELECT id, status, created_by_user_id, revision
-       FROM procedures WHERE id = $1 AND created_by_user_id = $2 FOR UPDATE`,
-      [id, user.id]
+       FROM procedures p WHERE id = $1 AND created_by_user_id = $2
+         AND ($3 OR EXISTS (SELECT 1 FROM user_processes up
+                            WHERE up.user_id = $2 AND up.process_code = p.process_code))
+       FOR UPDATE`,
+      [id, user.id, user.role === ROLES.ADMIN]
     );
     const procedure = found.rows[0];
     if (!procedure) throw new DraftError("draft_not_found", 404);

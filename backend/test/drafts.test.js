@@ -30,51 +30,70 @@ test("author creates an audited draft for an active process", async () => {
   });
   assert.equal(result.name, "Borrador");
   assert.equal(result.revision, 1);
+  const processCheck = calls.find(call => call.sql.startsWith("SELECT 1 FROM processes"));
+  assert.deepEqual(processCheck.params, ["DE", author.id, false]);
+  assert.match(processCheck.sql, /user_processes/);
   assert.equal(calls.find(call => call.sql.startsWith("INSERT INTO procedures")).params[1], "Borrador");
   assert.deepEqual(calls.slice(-2).map(call => call.sql.startsWith("INSERT INTO audit_events") ? "AUDIT" : call.sql), ["AUDIT", "COMMIT"]);
 });
 
-test("draft creation rejects bad data and inactive processes", async () => {
+test("draft creation rejects bad data and processes without access", async () => {
   const noConnect = { connect: async () => { throw new Error("should not connect"); } };
   await assert.rejects(createDraft(noConnect, author, { name: "", processCode: "DE", payload: {} }), { code: "invalid_draft" });
   await assert.rejects(createDraft(noConnect, author, { name: "Ok", processCode: "??", payload: {} }), { code: "invalid_process" });
   await assert.rejects(createDraft(noConnect, { ...author, mustChangePassword: true }, { name: "Ok", processCode: "DE", payload: {} }), { code: "forbidden" });
   let rolledBack = false;
+  let assigned = false;
   const pool = { connect: async () => ({
-    async query(sql) {
+    async query(sql, params) {
       if (sql === "BEGIN") return { rows: [] };
       if (sql === "ROLLBACK") { rolledBack = true; return { rows: [] }; }
-      if (sql.startsWith("SELECT 1 FROM processes")) return { rows: [] };
+      if (sql.startsWith("SELECT 1 FROM processes")) {
+        assert.deepEqual(params, ["DE", author.id, false]);
+        assert.match(sql, /user_processes/);
+        return { rows: assigned ? [{ "?column?": 1 }] : [] };
+      }
+      if (sql.startsWith("INSERT INTO procedures") || sql.startsWith("INSERT INTO audit_events")) return { rows: [row] };
+      if (sql === "COMMIT") return { rows: [] };
       throw new Error(`Unexpected SQL: ${sql}`);
     },
     release() {}
   }) };
   await assert.rejects(createDraft(pool, author, { name: "Ok", processCode: "DE", payload: {} }), { code: "invalid_process" });
   assert.equal(rolledBack, true);
+  assigned = true;
+  assert.equal((await createDraft(pool, author, { name: "Ok", processCode: "DE", payload: {} })).status, "borrador");
 });
 
 test("list and detail are scoped to the owner", async () => {
   const queries = [];
+  let assigned = true;
   const pool = { async query(sql, params) {
     queries.push({ sql, params });
-    return { rows: params.includes(author.id) ? [row] : [] };
+    return { rows: params.includes(author.id) && (assigned || params.at(-1) === true) ? [row] : [] };
   } };
   assert.equal((await listOwnDrafts(pool, author))[0].payload, undefined);
   assert.deepEqual((await getOwnDraft(pool, author, draftId)).payload, row.current_payload);
+  assigned = false;
+  assert.deepEqual(await listOwnDrafts(pool, author), []);
+  await assert.rejects(getOwnDraft(pool, author, draftId), { code: "draft_not_found" });
+  assert.equal((await listOwnDrafts(pool, { ...author, role: "administrador" })).length, 1);
   await assert.rejects(getOwnDraft(pool, other, draftId), { code: "draft_not_found", status: 404 });
   assert.ok(queries.every(call => call.sql.includes("created_by_user_id") &&
     (call.params.includes(author.id) || call.params.includes(other.id))));
+  assert.ok(queries.every(call => call.sql.includes("user_processes")));
 });
 
 test("update rejects another author, locked status, and stale revision", async () => {
   let status = "borrador";
   let revision = 2;
+  let assigned = true;
   const calls = [];
   const pool = { connect: async () => ({
     async query(sql, params) {
       calls.push(sql);
       if (["BEGIN", "ROLLBACK", "COMMIT"].includes(sql)) return { rows: [] };
-      if (sql.startsWith("SELECT id, status")) return { rows: params[1] === author.id ? [{ id: draftId, status, created_by_user_id: author.id, revision }] : [] };
+      if (sql.startsWith("SELECT id, status")) return { rows: params[1] === author.id && assigned ? [{ id: draftId, status, created_by_user_id: author.id, revision }] : [] };
       if (sql.startsWith("UPDATE procedures")) return { rows: [{ ...row, revision: revision + 1 }] };
       if (sql.startsWith("INSERT INTO audit_events")) return { rows: [] };
       throw new Error(`Unexpected SQL: ${sql}`);
@@ -90,6 +109,9 @@ test("update rejects another author, locked status, and stale revision", async (
   assert.equal(calls.filter(sql => sql.startsWith("UPDATE procedures")).length, 0);
   details.revision = 2;
   assert.equal((await updateOwnDraft(pool, author, draftId, details)).revision, 3);
+  assigned = false;
+  await assert.rejects(updateOwnDraft(pool, author, draftId, details), { code: "draft_not_found" });
+  assert.ok(calls.some(sql => sql.startsWith("SELECT id, status") && sql.includes("user_processes")));
 });
 
 test("draft HTTP routes require session, password change, and CSRF", async () => {
@@ -208,6 +230,7 @@ test("active process catalog requires an authenticated procedure author", async 
   let role = "elaborador";
   let mustChangePassword = false;
   let catalogReads = 0;
+  let assigned = true;
   const poolFactory = () => ({
     async query(sql, params) {
       if (sql.includes("FROM app_sessions s")) return { rows: params[0] === hashToken(token) ? [{
@@ -216,9 +239,11 @@ test("active process catalog requires an authenticated procedure author", async 
         must_change_password: mustChangePassword
       }] : [] };
       if (sql.startsWith("UPDATE app_sessions SET last_seen_at")) return { rows: [] };
-      if (sql.startsWith("SELECT code, name FROM processes")) {
+      if (sql.startsWith("SELECT p.code, p.name FROM processes")) {
         catalogReads += 1;
-        return { rows: [{ code: "DE", name: "Desarrollo economico" }] };
+        assert.deepEqual(params, [userId, false]);
+        assert.match(sql, /user_processes/);
+        return { rows: assigned ? [{ code: "DE", name: "Desarrollo economico" }] : [] };
       }
       throw new Error("Unexpected SQL: " + sql);
     },
@@ -236,9 +261,12 @@ test("active process catalog requires an authenticated procedure author", async 
     const response = await fetch(url, { headers: { cookie } });
     assert.equal(response.status, 200);
     assert.deepEqual((await response.json()).processes, [{ code: "DE", name: "Desarrollo economico" }]);
+    assigned = false;
+    const unassigned = await fetch(url, { headers: { cookie } });
+    assert.deepEqual((await unassigned.json()).processes, []);
     role = "evaluador";
     assert.equal((await fetch(url, { headers: { cookie } })).status, 403);
-    assert.equal(catalogReads, 1);
+    assert.equal(catalogReads, 2);
   } finally {
     await new Promise(resolve => server.close(resolve));
   }

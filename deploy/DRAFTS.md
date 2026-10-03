@@ -16,7 +16,17 @@ cuentas no cambia y el prototipo publico continua guardando localmente.
 Todas las rutas requieren una sesion activa y una contrasena ya cambiada. Las
 escrituras requieren `X-CSRF-Token`. La API no cambia estados de evaluacion ni
 interpreta `payload` como una aprobacion. No usarla para el flujo de conceptos
-hasta que exista una API de evaluacion independiente. El catalogo no filtra asignaciones de `user_processes`, por lo que esta pantalla no debe usarse con datos reales ni como control de acceso a procesos.
+hasta que exista una API de evaluacion independiente. Para un Elaborador, el
+catalogo y los borradores propios se filtran por la asignacion actual en
+`user_processes`; creacion y edicion vuelven a comprobarla en la base. Sin
+asignacion no podra abrir ni crear borradores. El Administrador conserva acceso
+al catalogo completo. Esta pantalla sigue siendo solo de pruebas.
+
+Antes de reiniciar el servicio actualizado, compruebe que la cuenta de prueba
+`planeacionprueba` tenga asignado el proceso del borrador de prueba. Aplique
+de nuevo `grant-drafts-test.sql` para conceder lectura de `user_processes` al
+rol del servicio. Una asignacion faltante debe realizarla un administrador de
+PostgreSQL de forma explicita; no se crean asignaciones automaticamente.
 
 La pantalla de prueba edita nombre, proceso, objetivo, alcance, definiciones y
 condiciones generales. Los cuatro campos de texto usan las mismas claves de
