@@ -90,7 +90,7 @@ test("private consoles serve only their own assets with a restrictive policy", a
     assert.match(draftHtml, /id="flowSvg"/);
     assert.match(draftHtml, /id="refreshFlowButton"/);
     assert.match(draftHtml, /id="showFlowEvidence"/);
-    for (const id of ["documentsSection", "annexApplicability", "addAnnexButton", "annexesList", "addChangeButton", "changesList", "saveDocumentsButton"]) {
+    for (const id of ["documentsSection", "annexApplicability", "addAnnexButton", "annexesList", "addChangeButton", "changesList", "saveDocumentsButton", "submitReviewButton", "submitReviewDialog", "reviewEvaluatorSelect", "evaluatorInbox", "evaluatorDraftList", "evaluatorDetail", "startEvaluationButton"]) {
       assert.match(draftHtml, new RegExp(`id="${id}"`));
     }
     for (const id of ["flowCanvas", "zoomOutButton", "zoomInButton", "fitFlowButton", "resetFlowZoomButton", "flowZoomValue", "previewButton", "previewDialog", "previewContent", "printPreviewButton"]) {
@@ -105,6 +105,8 @@ test("private consoles serve only their own assets with a restrictive policy", a
     assert.match(draftScript, /item\.evidencia \|\| item\.controlEvidencia/);
     assert.match(draftScript, /ui\.fitFlowButton\.addEventListener\("click", fitFlow\)/);
     assert.match(draftScript, /installMethodHelps\(document\)/);
+    assert.match(draftScript, /\/api\/procedures\/\$\{encodeURIComponent\(currentDraft\.id\)\}\/submit/);
+    assert.match(draftScript, /\/api\/evaluator\/inbox/);
     for (const path of ["/accounts.map", "/backend/public/accounts.js", "/drafts.map", "/backend/public/drafts.js"]) {
       assert.equal((await fetch(base + path)).status, 404);
     }

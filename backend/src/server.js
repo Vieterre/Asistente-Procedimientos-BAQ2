@@ -7,7 +7,7 @@ import { AuthError, SESSION_COOKIE, changePassword, cookieOptions, getSession, h
 import { ACTIONS, canPerform } from "./domain/permissions.js";
 import { UserManagementError, createAccount, listAccounts, resetAccountPassword, setAccountActive } from "./security/admin-users.js";
 import { clientIp } from "./security/client-ip.js";
-import { DraftError, createDraft, getOwnDraft, listOwnDrafts, updateOwnDraft } from "./domain/drafts.js";
+import { DraftError, createDraft, getAssignedProcedure, getOwnDraft, listAssignedProcedures, listOwnDrafts, listProcessEvaluators, startAssignedEvaluation, submitOwnDraft, updateOwnDraft } from "./domain/drafts.js";
 import { reviewFlow, reviewFlowCompleteness } from "./domain/flow-review.js";
 
 const rootDir = join(fileURLToPath(new URL("../..", import.meta.url)));
@@ -241,7 +241,13 @@ export function createAppServer({ poolFactory = createPool, secureCookies, trust
       }
 
       const draftId = /^\/api\/procedures\/([0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12})$/.exec(url.pathname)?.[1];
+      const submitDraftId = /^\/api\/procedures\/([0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12})\/submit$/.exec(url.pathname)?.[1];
+      const assignedDraftMatch = /^\/api\/evaluator\/procedures\/([0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12})(?:\/(start))?$/.exec(url.pathname);
       if ((url.pathname === "/api/procedures" && ["GET", "POST"].includes(req.method)) ||
+          (url.pathname === "/api/evaluators" && req.method === "GET") ||
+          (url.pathname === "/api/evaluator/inbox" && req.method === "GET") ||
+          (submitDraftId && req.method === "POST") ||
+          (assignedDraftMatch && ((assignedDraftMatch[2] && req.method === "POST") || (!assignedDraftMatch[2] && req.method === "GET"))) ||
           (url.pathname === "/api/procedures/flow-review" && req.method === "POST") ||
           (draftId && ["GET", "PUT"].includes(req.method))) {
         let pool;
@@ -263,7 +269,24 @@ export function createAppServer({ poolFactory = createPool, secureCookies, trust
               return;
             }
           }
-          if (url.pathname === "/api/procedures/flow-review") {
+          if (url.pathname === "/api/evaluators") {
+            if (!canPerform(session.user, ACTIONS.CREATE_PROCEDURE)) {
+              sendJson(res, 403, { ok: false, error: "forbidden" });
+              return;
+            }
+            const evaluators = await listProcessEvaluators(pool, session.user, url.searchParams.get("processCode"));
+            sendJson(res, 200, { ok: true, evaluators });
+          } else if (url.pathname === "/api/evaluator/inbox") {
+            sendJson(res, 200, { ok: true, procedures: await listAssignedProcedures(pool, session.user) });
+          } else if (assignedDraftMatch?.[2]) {
+            const procedure = await startAssignedEvaluation(pool, session.user, assignedDraftMatch[1]);
+            sendJson(res, 200, { ok: true, procedure });
+          } else if (assignedDraftMatch) {
+            sendJson(res, 200, { ok: true, procedure: await getAssignedProcedure(pool, session.user, assignedDraftMatch[1]) });
+          } else if (submitDraftId) {
+            const body = await readJson(req, 1_048_576);
+            sendJson(res, 200, { ok: true, procedure: await submitOwnDraft(pool, session.user, submitDraftId, body || {}) });
+          } else if (url.pathname === "/api/procedures/flow-review") {
             if (!["elaborador", "administrador"].includes(session.user.role)) {
               sendJson(res, 403, { ok: false, error: "forbidden" });
               return;
@@ -285,7 +308,7 @@ export function createAppServer({ poolFactory = createPool, secureCookies, trust
           if (error.message === "request_too_large" || error.message === "invalid_json") {
             sendJson(res, 400, { ok: false, error: error.message });
           } else if (error instanceof DraftError) {
-            sendJson(res, error.status, { ok: false, error: error.code });
+            sendJson(res, error.status, { ok: false, error: error.code, ...(error.details ? { details: error.details } : {}) });
           } else {
             sendJson(res, 503, { ok: false, error: "procedure_unavailable" });
           }

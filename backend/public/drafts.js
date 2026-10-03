@@ -1,7 +1,8 @@
 const ids = [
   "loginView", "loginForm", "loginUsername", "loginPassword", "loginOtp", "loginMessage",
   "workspace", "sessionControls", "sessionIdentity", "logoutButton", "welcomeText",
-  "passwordRequired", "draftWorkspace", "draftForm", "editorTitle", "editorStatus",
+  "passwordRequired", "draftWorkspace", "draftForm", "editorTitle", "editorStatus", "submitReviewButton", "submitReviewDialog", "submitReviewForm", "reviewEvaluatorSelect", "submitReviewMessage", "cancelSubmitReview", "confirmSubmitReview",
+  "evaluatorInbox", "evaluatorDraftCount", "evaluatorInboxMessage", "emptyEvaluatorInbox", "evaluatorDraftList", "refreshEvaluatorInbox", "evaluatorDetail", "evaluatorDetailTitle", "evaluatorDetailStatus", "backToEvaluatorInbox", "startEvaluationButton",
   "draftName", "processCode", "draftObjective", "draftScope", "draftDefinitions", "draftConditions", "saveDraftButton", "editorMessage",
   "newDraftButton", "addNormButton", "normsList", "emptyNorms", "addBoundaryButton", "addActivityButton", "addDecisionButton", "addConnectorButton", "activitiesList", "emptyActivities", "reviewFlowButton", "flowReviewResult", "refreshDraftsButton", "draftCount", "listMessage", "emptyDrafts",
   "draftList", "flowSection", "flowSummary", "showFlowEvidence", "refreshFlowButton", "flowCanvas", "flowSvg",
@@ -29,11 +30,15 @@ const errorMessages = {
   draft_conflict: "El borrador cambió en otra sesión. Vuelve a abrirlo antes de guardar.",
   processes_unavailable: "No se pudieron cargar los procesos.",
   procedure_unavailable: "No se pudo completar la operación.",
-  request_too_large: "El contenido supera el tamaño permitido."
+  request_too_large: "El contenido supera el tamaño permitido.",
+  submission_incomplete: "Completa los requisitos pendientes antes de enviar.",
+  evaluator_unavailable: "No hay un Evaluador activo asignado a este proceso. Contacta al administrador.",
+  invalid_revision: "El borrador cambió. Actualízalo y vuelve a intentar."
 };
 
 let csrfToken = "";
 let currentDraft = null;
+let currentUserRole = "";
 let currentPayload = {};
 let dirty = false;
 let flowReviewVersion = 0;
@@ -808,6 +813,9 @@ function setMessage(node, text, success = false) {
 }
 
 function errorText(error) {
+  if (error.code === "submission_incomplete" && Array.isArray(error.details)) {
+    return `${errorMessages.submission_incomplete}\n${error.details.map(issue => `• ${issue}`).join("\n")}`;
+  }
   return errorMessages[error.code] || (error.status === 503
     ? "El servicio no está disponible. Inténtalo de nuevo."
     : "No se pudo completar la operación.");
@@ -840,6 +848,7 @@ function clearSession() {
   csrfToken = "";
   sessionStorage.removeItem(csrfKey);
   currentDraft = null;
+  currentUserRole = "";
   currentPayload = {};
   normRows = [];
   renderNorms();
@@ -856,6 +865,9 @@ function clearSession() {
   dirty = false;
   ui.workspace.hidden = true;
   ui.previewButton.hidden = true;
+  ui.submitReviewButton.hidden = true;
+  ui.evaluatorInbox.hidden = true;
+  ui.evaluatorDetail.hidden = true;
   if (ui.previewDialog.open) ui.previewDialog.close();
   ui.documentsSection.hidden = true;
   ui.sessionControls.hidden = true;
@@ -876,9 +888,19 @@ async function startSession(user) {
   ui.welcomeText.textContent = user.displayName + " · " + user.role;
   ui.passwordRequired.hidden = !user.mustChangePassword;
   ui.documentsSection.hidden = true;
+  currentUserRole = user.role;
+  ui.evaluatorInbox.hidden = true;
+  ui.evaluatorDetail.hidden = true;
+  ui.previewButton.hidden = true;
 
   if (user.mustChangePassword) {
     ui.draftWorkspace.hidden = true;
+    return;
+  }
+  if (user.role === "evaluador") {
+    ui.draftWorkspace.hidden = true;
+    ui.evaluatorInbox.hidden = false;
+    await loadEvaluatorInbox();
     return;
   }
   if (!["elaborador", "administrador"].includes(user.role)) {
@@ -890,6 +912,7 @@ async function startSession(user) {
   ui.draftWorkspace.hidden = false;
   ui.documentsSection.hidden = false;
   ui.previewButton.hidden = false;
+  applyDraftEditability();
   await Promise.all([loadProcesses(), loadDrafts()]);
 }
 
@@ -930,6 +953,53 @@ async function loadDrafts() {
   }
 }
 
+const procedureStatusLabels = {
+  borrador: "Borrador",
+  enviado_a_evaluacion: "Enviado a evaluación",
+  en_evaluacion: "En evaluación",
+  devuelto_para_ajustes: "Devuelto para ajustes",
+  subsanado: "Subsanado",
+  concepto_favorable: "Concepto favorable",
+  concepto_no_favorable: "Concepto no favorable",
+  reabierto_por_administrador: "Reabierto por administración"
+};
+
+function statusLabel(status) {
+  return procedureStatusLabels[status] || status || "Borrador";
+}
+
+async function loadEvaluatorInbox() {
+  try {
+    const { procedures } = await request("/api/evaluator/inbox");
+    ui.evaluatorDraftCount.textContent = `${procedures.length} procedimiento${procedures.length === 1 ? "" : "s"}`;
+    ui.emptyEvaluatorInbox.hidden = procedures.length > 0;
+    ui.evaluatorDraftList.replaceChildren(...procedures.map(procedure => {
+      const item = document.createElement("li");
+      item.className = "draft-item";
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "draft-open";
+      const info = document.createElement("span");
+      info.className = "draft-info";
+      const name = document.createElement("strong");
+      name.textContent = procedure.name;
+      const detail = document.createElement("small");
+      detail.textContent = `${procedure.processCode} · ${statusLabel(procedure.status)}`;
+      const status = document.createElement("span");
+      status.className = "draft-status";
+      status.textContent = "Revisar";
+      info.append(name, detail);
+      button.append(info, status);
+      button.addEventListener("click", () => openAssignedProcedure(procedure.id));
+      item.append(button);
+      return item;
+    }));
+    setMessage(ui.evaluatorInboxMessage, "");
+  } catch (error) {
+    handleRequestError(error, ui.evaluatorInboxMessage);
+  }
+}
+
 function renderDrafts(drafts) {
   ui.draftCount.textContent = drafts.length + " procedimiento" + (drafts.length === 1 ? "" : "s");
   ui.emptyDrafts.hidden = drafts.length > 0;
@@ -952,7 +1022,7 @@ function renderDrafts(drafts) {
 
     const status = document.createElement("span");
     status.className = "draft-status";
-    status.textContent = draft.status;
+    status.textContent = statusLabel(draft.status);
 
     info.append(name, details);
     button.append(info, status);
@@ -968,49 +1038,74 @@ async function openDraft(id) {
 
   try {
     const { procedure } = await request("/api/procedures/" + encodeURIComponent(id));
-    flowReviewVersion += 1;
-    currentDraft = procedure;
-    currentPayload = procedure.payload && typeof procedure.payload === "object" && !Array.isArray(procedure.payload)
-      ? procedure.payload
-      : {};
-    normRows = Array.isArray(currentPayload.norms)
-      ? currentPayload.norms.map(norm => norm && typeof norm === "object" && !Array.isArray(norm) ? { ...norm } : {})
-      : [];
-    renderNorms();
-    activityRows = Array.isArray(currentPayload.activities)
-      ? currentPayload.activities.map(activity => activity && typeof activity === "object" && !Array.isArray(activity) ? { ...activity, uid: activity.uid || crypto.randomUUID() } : { uid: crypto.randomUUID() })
-      : [];
-    renderActivities();
-    annexRows = Array.isArray(currentPayload.annexes)
-      ? currentPayload.annexes.map(annex => annex && typeof annex === "object" && !Array.isArray(annex) ? { ...annex } : {})
-      : [];
-    changeRows = Array.isArray(currentPayload.changes)
-      ? currentPayload.changes.map(change => change && typeof change === "object" && !Array.isArray(change) ? { ...change } : {})
-      : [];
-    annexesNotApplicable = currentPayload.settings?.annexesNotApplicable === true;
-    renderAnnexes();
-    renderChanges();
-    setMessage(ui.documentsMessage, "");
-    ui.draftName.value = procedure.name;
-    for (const [inputId, fieldId] of textFields) {
-      ui[inputId].value = typeof currentPayload.fields?.[fieldId] === "string"
-        ? currentPayload.fields[fieldId]
-        : "";
-    }
-    showRoleSeparation();
-    ui.processCode.value = procedure.processCode;
-    ui.processCode.disabled = true;
-    ui.editorTitle.textContent = "Editar borrador";
-    ui.editorStatus.textContent = procedure.status + " · revisión " + procedure.revision;
-    ui.saveDraftButton.textContent = "Guardar cambios";
-    ui.saveDocumentsButton.textContent = "Guardar cambios";
-    dirty = false;
-    setMessage(ui.editorMessage, "");
-    ui.flowReviewResult.hidden = true;
-    ui.flowReviewResult.replaceChildren();
+    populateDraft(procedure);
+    ui.evaluatorInbox.hidden = true;
+    ui.evaluatorDetail.hidden = true;
+    ui.draftWorkspace.hidden = false;
     ui.draftName.focus();
   } catch (error) {
     handleRequestError(error, ui.listMessage);
+  }
+}
+
+function populateDraft(procedure) {
+  flowReviewVersion += 1;
+  currentDraft = procedure;
+  currentPayload = procedure.payload && typeof procedure.payload === "object" && !Array.isArray(procedure.payload) ? procedure.payload : {};
+  normRows = Array.isArray(currentPayload.norms) ? currentPayload.norms.map(norm => norm && typeof norm === "object" && !Array.isArray(norm) ? { ...norm } : {}) : [];
+  renderNorms();
+  activityRows = Array.isArray(currentPayload.activities) ? currentPayload.activities.map(activity => activity && typeof activity === "object" && !Array.isArray(activity) ? { ...activity, uid: activity.uid || crypto.randomUUID() } : { uid: crypto.randomUUID() }) : [];
+  renderActivities();
+  annexRows = Array.isArray(currentPayload.annexes) ? currentPayload.annexes.map(annex => annex && typeof annex === "object" && !Array.isArray(annex) ? { ...annex } : {}) : [];
+  changeRows = Array.isArray(currentPayload.changes) ? currentPayload.changes.map(change => change && typeof change === "object" && !Array.isArray(change) ? { ...change } : {}) : [];
+  annexesNotApplicable = currentPayload.settings?.annexesNotApplicable === true;
+  renderAnnexes();
+  renderChanges();
+  setMessage(ui.documentsMessage, "");
+  ui.draftName.value = procedure.name;
+  for (const [inputId, fieldId] of textFields) ui[inputId].value = typeof currentPayload.fields?.[fieldId] === "string" ? currentPayload.fields[fieldId] : "";
+  showRoleSeparation();
+  const option = document.createElement("option");
+  option.value = procedure.processCode;
+  option.textContent = `${procedure.processCode} · ${procedure.processCode}`;
+  ui.processCode.replaceChildren(option);
+  ui.processCode.value = procedure.processCode;
+  ui.editorTitle.textContent = "Editar borrador";
+  ui.editorStatus.textContent = `${statusLabel(procedure.status)} · revisión ${procedure.revision}`;
+  ui.saveDraftButton.textContent = "Guardar cambios";
+  ui.saveDocumentsButton.textContent = "Guardar cambios";
+  dirty = false;
+  setMessage(ui.editorMessage, "");
+  ui.flowReviewResult.hidden = true;
+  ui.flowReviewResult.replaceChildren();
+  applyDraftEditability();
+}
+
+function applyDraftEditability() {
+  const editable = ["elaborador", "administrador"].includes(currentUserRole) && (!currentDraft || ["borrador", "devuelto_para_ajustes"].includes(currentDraft.status));
+  for (const control of ui.draftForm.querySelectorAll("input, select, textarea, button")) control.disabled = !editable;
+  for (const control of ui.documentsSection.querySelectorAll("input, select, textarea, button")) control.disabled = !editable;
+  ui.saveDraftButton.hidden = !editable;
+  ui.saveDocumentsButton.hidden = !editable;
+  ui.newDraftButton.disabled = !editable;
+  ui.submitReviewButton.hidden = !(currentUserRole === "elaborador" && currentDraft && ["borrador", "devuelto_para_ajustes"].includes(currentDraft.status));
+  ui.previewButton.hidden = currentUserRole !== "elaborador" && currentUserRole !== "administrador" && currentUserRole !== "evaluador";
+}
+
+async function openAssignedProcedure(id) {
+  try {
+    const { procedure } = await request(`/api/evaluator/procedures/${encodeURIComponent(id)}`);
+    populateDraft(procedure);
+    ui.processCode.disabled = true;
+    ui.draftWorkspace.hidden = true;
+    ui.evaluatorInbox.hidden = true;
+    ui.evaluatorDetail.hidden = false;
+    ui.evaluatorDetailTitle.textContent = procedure.name;
+    ui.evaluatorDetailStatus.textContent = `${procedure.processCode} · ${statusLabel(procedure.status)} · revisión ${procedure.revision}`;
+    ui.startEvaluationButton.hidden = procedure.status !== "enviado_a_evaluacion" && procedure.status !== "subsanado";
+    ui.previewButton.hidden = false;
+  } catch (error) {
+    handleRequestError(error, ui.evaluatorInboxMessage);
   }
 }
 
@@ -1041,6 +1136,7 @@ function newDraft() {
   setMessage(ui.editorMessage, "");
   ui.flowReviewResult.hidden = true;
   ui.flowReviewResult.replaceChildren();
+  applyDraftEditability();
   ui.draftName.focus();
 }
 
@@ -1204,6 +1300,7 @@ ui.draftForm.addEventListener("submit", async event => {
     ui.saveDraftButton.textContent = "Guardar cambios";
     ui.saveDocumentsButton.textContent = "Guardar cambios";
     dirty = false;
+    applyDraftEditability();
     setMessage(ui.editorMessage, "Borrador guardado.", true);
     setMessage(ui.documentsMessage, "Borrador guardado.", true);
     await loadDrafts();
@@ -1218,6 +1315,74 @@ ui.draftForm.addEventListener("submit", async event => {
 });
 
 ui.newDraftButton.addEventListener("click", newDraft);
+ui.submitReviewButton.addEventListener("click", async () => {
+  if (!currentDraft) return;
+  if (dirty) {
+    setMessage(ui.editorMessage, "Guarda los cambios antes de enviar el procedimiento.");
+    return;
+  }
+  setMessage(ui.submitReviewMessage, "");
+  ui.reviewEvaluatorSelect.replaceChildren(new Option("Cargando evaluadores...", ""));
+  try {
+    const { evaluators } = await request(`/api/evaluators?processCode=${encodeURIComponent(currentDraft.processCode)}`);
+    if (!evaluators.length) {
+      setMessage(ui.editorMessage, errorMessages.evaluator_unavailable);
+      return;
+    }
+    ui.reviewEvaluatorSelect.replaceChildren(new Option("Selecciona un Evaluador", ""), ...evaluators.map(evaluator => new Option(evaluator.displayName, evaluator.id)));
+    ui.submitReviewDialog.showModal();
+  } catch (error) {
+    setMessage(ui.editorMessage, errorText(error));
+  }
+});
+ui.cancelSubmitReview.addEventListener("click", () => ui.submitReviewDialog.close());
+ui.submitReviewForm.addEventListener("submit", async event => {
+  event.preventDefault();
+  const evaluatorId = ui.reviewEvaluatorSelect.value;
+  const evaluatorName = ui.reviewEvaluatorSelect.selectedOptions[0]?.textContent;
+  if (!currentDraft || !evaluatorId) return;
+  if (!window.confirm(`¿Enviar “${currentDraft.name}” para revisión de ${evaluatorName}? El borrador quedará bloqueado durante la revisión.`)) return;
+  ui.confirmSubmitReview.disabled = true;
+  setMessage(ui.submitReviewMessage, "");
+  try {
+    const { procedure } = await request(`/api/procedures/${encodeURIComponent(currentDraft.id)}/submit`, {
+      method: "POST", csrf: true, body: { evaluatorId, revision: currentDraft.revision }
+    });
+    currentDraft = procedure;
+    ui.editorStatus.textContent = `${statusLabel(procedure.status)} · revisión ${procedure.revision}`;
+    dirty = false;
+    applyDraftEditability();
+    setMessage(ui.editorMessage, `Enviado a ${evaluatorName}. El procedimiento quedó bloqueado para revisión.`, true);
+    ui.submitReviewDialog.close();
+    await loadDrafts();
+  } catch (error) {
+    setMessage(ui.submitReviewMessage, errorText(error));
+  } finally {
+    ui.confirmSubmitReview.disabled = false;
+  }
+});
+ui.refreshEvaluatorInbox.addEventListener("click", loadEvaluatorInbox);
+ui.backToEvaluatorInbox.addEventListener("click", () => {
+  ui.evaluatorDetail.hidden = true;
+  ui.evaluatorInbox.hidden = false;
+  ui.previewButton.hidden = true;
+});
+ui.startEvaluationButton.addEventListener("click", async () => {
+  if (!currentDraft) return;
+  ui.startEvaluationButton.disabled = true;
+  try {
+    const { procedure } = await request(`/api/evaluator/procedures/${encodeURIComponent(currentDraft.id)}/start`, { method: "POST", csrf: true, body: {} });
+    currentDraft = procedure;
+    ui.evaluatorDetailStatus.textContent = `${procedure.processCode} · ${statusLabel(procedure.status)} · revisión ${procedure.revision}`;
+    ui.startEvaluationButton.hidden = true;
+    setMessage(ui.evaluatorInboxMessage, "Evaluación iniciada.", true);
+    await loadEvaluatorInbox();
+  } catch (error) {
+    handleRequestError(error, ui.evaluatorInboxMessage);
+  } finally {
+    ui.startEvaluationButton.disabled = false;
+  }
+});
 function reportTable(headers, records, valuesForRecord) {
   const table = document.createElement("table");
   table.className = "preview-report-table";

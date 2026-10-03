@@ -12,21 +12,30 @@ cuentas no cambia y el prototipo publico continua guardando localmente.
 - `GET /api/procedures/:id`: devuelve un borrador propio con su contenido.
 - `PUT /api/procedures/:id`: actualiza `name` y `payload` de un borrador propio;
   exige `revision` y devuelve `409 draft_conflict` si otra edicion gano antes.
+- `GET /api/evaluators?processCode=PD`: devuelve evaluadores activos asignados al proceso.
+- `POST /api/procedures/:id/submit`: valida el contenido, asigna evaluador, cambia
+  a `enviado_a_evaluacion`, crea el registro de evaluacion y audita el envio.
+- `GET /api/evaluator/inbox` y `GET /api/evaluator/procedures/:id`: bandeja y
+  lectura de procedimientos asignados al evaluador.
+- `POST /api/evaluator/procedures/:id/start`: cambia el estado a `en_evaluacion`.
 
 Todas las rutas requieren una sesion activa y una contrasena ya cambiada. Las
-escrituras requieren `X-CSRF-Token`. La API no cambia estados de evaluacion ni
-interpreta `payload` como una aprobacion. No usarla para el flujo de conceptos
-hasta que exista una API de evaluacion independiente. Para un Elaborador, el
-catalogo y los borradores propios se filtran por la asignacion actual en
+escrituras requieren `X-CSRF-Token`. El envio valida los campos metodologicos,
+las rutas, controles, anexos y aprobaciones; bloquea la edicion del autor hasta
+que se agreguen las transiciones de respuesta del evaluador. Esta entrega no
+incluye la matriz de criterios, devolucion de hallazgos ni emision de concepto.
+Para un Elaborador, el catalogo y los borradores propios se filtran por la asignacion actual en
 `user_processes`; creacion y edicion vuelven a comprobarla en la base. Sin
 asignacion no podra abrir ni crear borradores. El Administrador conserva acceso
 al catalogo completo. Esta pantalla sigue siendo solo de pruebas.
 
 Antes de reiniciar el servicio actualizado, compruebe que la cuenta de prueba
-`planeacionprueba` tenga asignado el proceso del borrador de prueba. Aplique
-de nuevo `grant-drafts-test.sql` para conceder lectura de `user_processes` al
-rol del servicio. Una asignacion faltante debe realizarla un administrador de
-PostgreSQL de forma explicita; no se crean asignaciones automaticamente.
+`planeacionprueba` tenga asignado el proceso del borrador de prueba y exista un
+Evaluador activo asignado a ese mismo proceso en `user_processes`. Aplique de
+nuevo `grant-drafts-test.sql` para conceder las lecturas y escrituras de
+procedimientos, evaluaciones y auditoria al rol del servicio. Las asignaciones
+faltantes debe realizarlas un administrador de PostgreSQL de forma explicita;
+no se crean automaticamente.
 
 La pantalla de prueba edita nombre, proceso, objetivo, alcance, definiciones y
 condiciones generales. Los cuatro campos de texto usan las mismas claves de

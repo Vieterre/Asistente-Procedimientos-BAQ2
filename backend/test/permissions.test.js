@@ -50,6 +50,20 @@ test("elaborador can edit only own draft or returned procedure", () => {
   );
 });
 
+test("elaborador can submit only a complete owned draft with an assigned evaluator", () => {
+  const procedure = {
+    createdByUserId: author.id,
+    status: PROCEDURE_STATUS.DRAFT,
+    isComplete: true,
+    assignedEvaluatorId: evaluator.id
+  };
+  assert.equal(canPerform(author, ACTIONS.SUBMIT_FOR_REVIEW, { procedure }), true);
+  assert.equal(canPerform(author, ACTIONS.SUBMIT_FOR_REVIEW, { procedure: { ...procedure, isComplete: false } }), false);
+  assert.equal(canPerform(author, ACTIONS.SUBMIT_FOR_REVIEW, { procedure: { ...procedure, assignedEvaluatorId: null } }), false);
+  assert.equal(canPerform(author, ACTIONS.SUBMIT_FOR_REVIEW, { procedure: { ...procedure, createdByUserId: "u-other" } }), false);
+  assert.equal(canPerform(author, ACTIONS.SUBMIT_FOR_REVIEW, { procedure: { ...procedure, status: PROCEDURE_STATUS.IN_REVIEW } }), false);
+});
+
 test("elaborador cannot generate branded PDF", () => {
   assert.equal(
     canPerform(author, ACTIONS.GENERATE_BRANDED_PDF, {

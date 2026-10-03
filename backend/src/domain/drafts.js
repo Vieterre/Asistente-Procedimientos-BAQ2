@@ -2,13 +2,57 @@ import { randomUUID } from "node:crypto";
 import { ACTIONS, canPerform } from "./permissions.js";
 import { PROCEDURE_STATUS } from "./workflow.js";
 import { ROLES } from "./roles.js";
+import { reviewFlow, reviewFlowCompleteness } from "./flow-review.js";
 
 export class DraftError extends Error {
-  constructor(code, status) {
+  constructor(code, status, details) {
     super(code);
     this.code = code;
     this.status = status;
+    this.details = details;
   }
+}
+
+function submissionIssues(name, payload) {
+  const fields = payload.fields && typeof payload.fields === "object" && !Array.isArray(payload.fields) ? payload.fields : {};
+  const issues = [];
+  for (const [key, label] of [["objetivo", "Objetivo"], ["alcance", "Alcance"], ["definiciones", "Definiciones"], ["condiciones", "Condiciones generales"]]) {
+    if (typeof fields[key] !== "string" || !fields[key].trim()) issues.push(`Completa ${label.toLocaleLowerCase("es-CO")}.`);
+  }
+  const norms = Array.isArray(payload.norms) ? payload.norms : [];
+  if (!norms.length) issues.push("Registra al menos una norma aplicable.");
+  norms.forEach((norm, index) => {
+    if (!norm || ["tipo", "norma", "anio", "descripcion", "articulo", "entidad"].some(key => typeof norm[key] !== "string" || !norm[key].trim())) {
+      issues.push(`Completa todos los datos de la norma ${index + 1}.`);
+    }
+  });
+  const activities = Array.isArray(payload.activities) ? payload.activities : [];
+  const flowIssues = reviewFlow(activities).filter(issue => issue.severity !== "warning");
+  const completeness = reviewFlowCompleteness(activities);
+  if (flowIssues.length) issues.push("Corrige las observaciones del flujo antes de enviar.");
+  if (completeness.length) issues.push("Completa los datos obligatorios de las actividades y decisiones.");
+  if (!activities.length) issues.push("Registra las actividades del procedimiento.");
+  const annexesNotApplicable = payload.settings?.annexesNotApplicable === true;
+  const annexes = Array.isArray(payload.annexes) ? payload.annexes : [];
+  if (!annexesNotApplicable && !annexes.length) issues.push("Registra al menos un documento anexo o confirma No aplica.");
+  annexes.forEach((annex, index) => {
+    if (!annexesNotApplicable && (!annex || ["documento", "tipo", "codigo", "observacion"].some(key => typeof annex[key] !== "string" || !annex[key].trim()))) {
+      issues.push(`Completa todos los datos del anexo ${index + 1}.`);
+    }
+  });
+  const changes = Array.isArray(payload.changes) ? payload.changes : [];
+  if (!changes.length) issues.push("Registra el control de cambios inicial.");
+  changes.forEach((change, index) => {
+    if (!change || ["version", "fecha", "razon"].some(key => typeof change[key] !== "string" || !change[key].trim())) {
+      issues.push(`Completa todos los datos del cambio ${index + 1}.`);
+    }
+  });
+  const roles = [fields.elaboro, fields.reviso, fields.aprobo];
+  if (roles.some(role => typeof role !== "string" || !role.trim()) || new Set(roles.map(role => String(role).trim().toLocaleLowerCase("es-CO"))).size !== roles.length) {
+    issues.push("Completa Elaboró, Revisó y Aprobó con cargos distintos.");
+  }
+  if (!String(name || "").trim()) issues.push("Escribe el nombre del procedimiento.");
+  return issues;
 }
 
 function validPayload(payload) {
@@ -28,6 +72,7 @@ function publicDraft(row, includePayload = false) {
     code: row.code,
     name: row.name,
     processCode: row.process_code,
+    assignedEvaluatorId: row.assigned_evaluator_id || null,
     version: row.version,
     status: row.status,
     revision: row.revision,
@@ -127,6 +172,160 @@ export async function updateOwnDraft(pool, user, id, { name, payload, revision }
     await client.query(
       `INSERT INTO audit_events (id, actor_user_id, event_type, entity_type, entity_id)
        VALUES ($1, $2, 'procedure_draft_updated', 'procedure', $3)`,
+      [randomUUID(), user.id, id]
+    );
+    await client.query("COMMIT");
+    return publicDraft(result.rows[0], true);
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+export async function listProcessEvaluators(pool, user, processCode) {
+  if (![ROLES.ELABORADOR, ROLES.ADMIN].includes(user.role) || !/^[A-Z]{2,3}$/.test(String(processCode || ""))) {
+    throw new DraftError("forbidden", 403);
+  }
+  const process = await pool.query(
+    `SELECT 1 FROM processes p WHERE p.code = $1 AND p.active = TRUE
+       AND ($3 OR EXISTS (SELECT 1 FROM user_processes up WHERE up.user_id = $2 AND up.process_code = p.code))`,
+    [processCode, user.id, user.role === ROLES.ADMIN]
+  );
+  if (!process.rows.length) throw new DraftError("invalid_process", 400);
+  const result = await pool.query(
+    `SELECT u.id, u.display_name AS "displayName"
+       FROM app_users u JOIN user_processes up ON up.user_id = u.id
+      WHERE u.role = 'evaluador' AND u.active = TRUE AND u.must_change_password = FALSE
+        AND up.process_code = $1
+      ORDER BY u.display_name, u.id`,
+    [processCode]
+  );
+  return result.rows;
+}
+
+export async function submitOwnDraft(pool, user, id, { evaluatorId, revision }) {
+  if (!Number.isSafeInteger(revision) || revision < 1) throw new DraftError("invalid_revision", 400);
+  if (typeof evaluatorId !== "string" || !/^[0-9a-fA-F-]{36}$/.test(evaluatorId)) throw new DraftError("evaluator_unavailable", 400);
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    const found = await client.query(
+      `SELECT p.id, p.code, p.name, p.process_code, p.version, p.status, p.revision,
+              p.current_payload, p.created_by_user_id, p.assigned_evaluator_id
+         FROM procedures p WHERE p.id = $1 AND p.created_by_user_id = $2
+           AND EXISTS (SELECT 1 FROM user_processes up WHERE up.user_id = $2 AND up.process_code = p.process_code)
+         FOR UPDATE`,
+      [id, user.id]
+    );
+    const procedure = found.rows[0];
+    if (!procedure) throw new DraftError("draft_not_found", 404);
+    if (procedure.revision !== revision) throw new DraftError("draft_conflict", 409);
+    const issues = submissionIssues(procedure.name, procedure.current_payload);
+    const evaluator = await client.query(
+      `SELECT 1 FROM app_users u JOIN user_processes up ON up.user_id = u.id
+        WHERE u.id = $1 AND u.role = 'evaluador' AND u.active = TRUE
+          AND u.must_change_password = FALSE AND up.process_code = $2`,
+      [evaluatorId, procedure.process_code]
+    );
+    const permissionContext = {
+      procedure: {
+        status: procedure.status,
+        createdByUserId: procedure.created_by_user_id,
+        assignedEvaluatorId: evaluator.rows.length ? evaluatorId : null,
+        isComplete: issues.length === 0
+      }
+    };
+    if (!evaluator.rows.length) throw new DraftError("evaluator_unavailable", 400);
+    if (!canPerform(user, ACTIONS.SUBMIT_FOR_REVIEW, permissionContext)) {
+      if (issues.length) throw new DraftError("submission_incomplete", 400, issues);
+      throw new DraftError("draft_locked", 403);
+    }
+    const updated = await client.query(
+      `UPDATE procedures SET status = $2, assigned_evaluator_id = $3,
+              revision = revision + 1, updated_at = now()
+        WHERE id = $1
+        RETURNING id, code, name, process_code, version, status, revision, updated_at,
+                  current_payload, assigned_evaluator_id`,
+      [id, PROCEDURE_STATUS.SUBMITTED, evaluatorId]
+    );
+    await client.query(
+      `INSERT INTO evaluations (id, procedure_id, evaluator_id, status, criteria_payload)
+       VALUES ($1, $2, $3, $4, $5::jsonb)`,
+      [randomUUID(), id, evaluatorId, PROCEDURE_STATUS.SUBMITTED, JSON.stringify({ submittedRevision: updated.rows[0].revision })]
+    );
+    await client.query(
+      `INSERT INTO audit_events (id, actor_user_id, event_type, entity_type, entity_id, metadata)
+       VALUES ($1, $2, 'procedure_submitted_for_review', 'procedure', $3, $4::jsonb)`,
+      [randomUUID(), user.id, id, JSON.stringify({ evaluatorId, revision: updated.rows[0].revision })]
+    );
+    await client.query("COMMIT");
+    return publicDraft(updated.rows[0], true);
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+export async function listAssignedProcedures(pool, user) {
+  if (user.role !== ROLES.EVALUADOR) throw new DraftError("forbidden", 403);
+  const result = await pool.query(
+    `SELECT p.id, p.code, p.name, p.process_code, p.version, p.status, p.revision,
+            p.updated_at, p.current_payload, p.assigned_evaluator_id
+       FROM procedures p JOIN user_processes up ON up.process_code = p.process_code AND up.user_id = $1
+      WHERE p.assigned_evaluator_id = $1 AND p.status IN ($2, $3, $4)
+      ORDER BY p.updated_at DESC`,
+    [user.id, PROCEDURE_STATUS.SUBMITTED, PROCEDURE_STATUS.IN_REVIEW, PROCEDURE_STATUS.CORRECTED]
+  );
+  return result.rows.map(row => publicDraft(row));
+}
+
+export async function getAssignedProcedure(pool, user, id) {
+  if (user.role !== ROLES.EVALUADOR) throw new DraftError("forbidden", 403);
+  const result = await pool.query(
+    `SELECT p.id, p.code, p.name, p.process_code, p.version, p.status, p.revision,
+            p.updated_at, p.current_payload, p.assigned_evaluator_id
+       FROM procedures p JOIN user_processes up ON up.process_code = p.process_code AND up.user_id = $2
+      WHERE p.id = $1 AND p.assigned_evaluator_id = $2
+        AND p.status IN ($3, $4, $5)`,
+    [id, user.id, PROCEDURE_STATUS.SUBMITTED, PROCEDURE_STATUS.IN_REVIEW, PROCEDURE_STATUS.CORRECTED]
+  );
+  if (!result.rows[0]) throw new DraftError("draft_not_found", 404);
+  return publicDraft(result.rows[0], true);
+}
+
+export async function startAssignedEvaluation(pool, user, id) {
+  if (user.role !== ROLES.EVALUADOR) throw new DraftError("forbidden", 403);
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    const found = await client.query(
+      `SELECT p.id, p.status, p.assigned_evaluator_id
+         FROM procedures p JOIN user_processes up ON up.process_code = p.process_code AND up.user_id = $2
+        WHERE p.id = $1 AND p.assigned_evaluator_id = $2 FOR UPDATE`,
+      [id, user.id]
+    );
+    const procedure = found.rows[0];
+    if (!procedure) throw new DraftError("draft_not_found", 404);
+    if (![PROCEDURE_STATUS.SUBMITTED, PROCEDURE_STATUS.CORRECTED].includes(procedure.status)) {
+      throw new DraftError("draft_locked", 403);
+    }
+    const result = await client.query(
+      `UPDATE procedures SET status = $2, revision = revision + 1, updated_at = now()
+        WHERE id = $1 RETURNING id, code, name, process_code, version, status, revision, updated_at, current_payload, assigned_evaluator_id`,
+      [id, PROCEDURE_STATUS.IN_REVIEW]
+    );
+    await client.query(
+      `UPDATE evaluations SET status = $2, updated_at = now()
+        WHERE id = (SELECT id FROM evaluations WHERE procedure_id = $1 AND evaluator_id = $3 ORDER BY created_at DESC LIMIT 1)`,
+      [id, PROCEDURE_STATUS.IN_REVIEW, user.id]
+    );
+    await client.query(
+      `INSERT INTO audit_events (id, actor_user_id, event_type, entity_type, entity_id)
+       VALUES ($1, $2, 'procedure_evaluation_started', 'procedure', $3)`,
       [randomUUID(), user.id, id]
     );
     await client.query("COMMIT");

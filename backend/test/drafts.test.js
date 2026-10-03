@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { createAppServer } from "../src/server.js";
-import { createDraft, getOwnDraft, listOwnDrafts, updateOwnDraft } from "../src/domain/drafts.js";
+import { createDraft, getAssignedProcedure, getOwnDraft, listAssignedProcedures, listOwnDrafts, listProcessEvaluators, startAssignedEvaluation, submitOwnDraft, updateOwnDraft } from "../src/domain/drafts.js";
 import { reviewFlow, reviewFlowCompleteness } from "../src/domain/flow-review.js";
 import { hashToken } from "../src/security/auth.js";
 
@@ -149,6 +149,19 @@ const row = {
   status: "borrador", revision: 1, updated_at: new Date(), current_payload: { fields: { nombre: "Borrador" } }
 };
 
+const evaluator = { id: "44444444-4444-4444-8444-444444444444", role: "evaluador", mustChangePassword: false };
+const completePayload = {
+  fields: { objetivo: "Resolver solicitudes", alcance: "Desde recepción hasta respuesta", definiciones: "Solicitud: petición recibida", condiciones: "Aplicar la normativa vigente", elaboro: "Profesional", reviso: "Jefe", aprobo: "Director" },
+  norms: [{ tipo: "Interna", norma: "Manual", anio: "2026", descripcion: "Regula el trámite", articulo: "1", entidad: "Entidad" }],
+  activities: [
+    { uid: "start", tipo: "Inicio", descripcion: "Solicitud recibida" },
+    { uid: "work", tipo: "Actividad", actividad: "Revisar solicitud", descripcion: "Verifica la información", responsable: "Profesional" },
+    { uid: "end", tipo: "Fin", descripcion: "Solicitud revisada" }
+  ],
+  annexes: [], changes: [{ version: "1.0", fecha: "2026-10-03", razon: "Creación inicial" }],
+  settings: { annexesNotApplicable: true }
+};
+
 test("author creates an audited draft for an active process", async () => {
   const calls = [];
   const client = {
@@ -251,6 +264,96 @@ test("update rejects another author, locked status, and stale revision", async (
   assert.ok(calls.some(sql => sql.startsWith("SELECT id, status") && sql.includes("user_processes")));
 });
 
+test("author can submit a complete draft to an evaluator assigned to its process", async () => {
+  const calls = [];
+  const procedure = { ...row, process_code: "PD", revision: 4, current_payload: completePayload, created_by_user_id: author.id };
+  const pool = { connect: async () => ({
+    async query(sql, params) {
+      calls.push({ sql, params });
+      if (["BEGIN", "COMMIT", "ROLLBACK"].includes(sql)) return { rows: [] };
+      if (sql.startsWith("SELECT p.id")) return { rows: [procedure] };
+      if (sql.startsWith("SELECT 1 FROM app_users")) return { rows: [{ "?column?": 1 }] };
+      if (sql.startsWith("UPDATE procedures")) return { rows: [{ ...procedure, status: "enviado_a_evaluacion", revision: 5, assigned_evaluator_id: evaluator.id }] };
+      if (sql.startsWith("INSERT INTO evaluations") || sql.startsWith("INSERT INTO audit_events")) return { rows: [] };
+      throw new Error(`Unexpected SQL: ${sql}`);
+    },
+    release() {}
+  }) };
+  const submitted = await submitOwnDraft(pool, author, draftId, { evaluatorId: evaluator.id, revision: 4 });
+  assert.equal(submitted.status, "enviado_a_evaluacion");
+  assert.equal(submitted.assignedEvaluatorId, evaluator.id);
+  assert.deepEqual(calls.slice(-4).map(({ sql }) => sql === "COMMIT" ? "COMMIT" : sql.startsWith("INSERT INTO evaluations") ? "EVALUATION" : sql.startsWith("INSERT INTO audit_events") ? "AUDIT" : "UPDATE"), ["UPDATE", "EVALUATION", "AUDIT", "COMMIT"]);
+});
+
+test("evaluator choices require process access and include only eligible assigned evaluators", async () => {
+  const calls = [];
+  const pool = { async query(sql, params) {
+    calls.push({ sql, params });
+    if (sql.startsWith("SELECT 1 FROM processes")) return { rows: [{ "?column?": 1 }] };
+    if (sql.startsWith("SELECT u.id, u.display_name")) return { rows: [{ id: evaluator.id, displayName: "Evaluador de prueba" }] };
+    throw new Error(`Unexpected SQL: ${sql}`);
+  } };
+  assert.deepEqual(await listProcessEvaluators(pool, author, "DE"), [{ id: evaluator.id, displayName: "Evaluador de prueba" }]);
+  assert.deepEqual(calls[0].params, ["DE", author.id, false]);
+  assert.match(calls[1].sql, /u\.role = 'evaluador'/);
+  assert.match(calls[1].sql, /u\.active = TRUE/);
+  assert.match(calls[1].sql, /u\.must_change_password = FALSE/);
+  assert.match(calls[1].sql, /up\.process_code = \$1/);
+  await assert.rejects(listProcessEvaluators(pool, { ...author, role: "evaluador" }, "DE"), { code: "forbidden" });
+  await assert.rejects(listProcessEvaluators(pool, author, "INVALID"), { code: "forbidden" });
+});
+
+test("submission rejects incomplete drafts, stale revisions, and evaluators outside the process", async () => {
+  const procedure = { ...row, process_code: "PD", revision: 4, current_payload: { ...completePayload, fields: {} }, created_by_user_id: author.id };
+  let evaluatorAssigned = true;
+  const pool = { connect: async () => ({
+    async query(sql) {
+      if (["BEGIN", "COMMIT", "ROLLBACK"].includes(sql)) return { rows: [] };
+      if (sql.startsWith("SELECT p.id")) return { rows: [procedure] };
+      if (sql.startsWith("SELECT 1 FROM app_users")) return { rows: evaluatorAssigned ? [{ "?column?": 1 }] : [] };
+      throw new Error(`Unexpected SQL: ${sql}`);
+    },
+    release() {}
+  }) };
+  await assert.rejects(submitOwnDraft(pool, author, draftId, { evaluatorId: evaluator.id, revision: 4 }), error => {
+    assert.equal(error.code, "submission_incomplete");
+    assert.ok(error.details.length > 0);
+    return true;
+  });
+  procedure.current_payload = completePayload;
+  evaluatorAssigned = false;
+  await assert.rejects(submitOwnDraft(pool, author, draftId, { evaluatorId: evaluator.id, revision: 4 }), { code: "evaluator_unavailable" });
+  evaluatorAssigned = true;
+  await assert.rejects(submitOwnDraft(pool, author, draftId, { evaluatorId: evaluator.id, revision: 3 }), { code: "draft_conflict", status: 409 });
+});
+
+test("evaluator inbox and start action are limited to assigned processes", async () => {
+  const queries = [];
+  const pool = {
+    async query(sql, params) {
+      queries.push({ sql, params });
+      return { rows: [{ ...row, process_code: "PD", status: "enviado_a_evaluacion", assigned_evaluator_id: evaluator.id }] };
+    },
+    async connect() {
+      return {
+        async query(sql) {
+          if (["BEGIN", "COMMIT", "ROLLBACK"].includes(sql)) return { rows: [] };
+          if (sql.startsWith("SELECT p.id")) return { rows: [{ id: draftId, status: "enviado_a_evaluacion", assigned_evaluator_id: evaluator.id }] };
+          if (sql.startsWith("UPDATE procedures")) return { rows: [{ ...row, process_code: "PD", status: "en_evaluacion", assigned_evaluator_id: evaluator.id }] };
+          if (sql.startsWith("UPDATE evaluations") || sql.startsWith("INSERT INTO audit_events")) return { rows: [] };
+          throw new Error(`Unexpected SQL: ${sql}`);
+        },
+        release() {}
+      };
+    }
+  };
+  assert.equal((await listAssignedProcedures(pool, evaluator))[0].status, "enviado_a_evaluacion");
+  assert.match(queries[0].sql, /assigned_evaluator_id = \$1/);
+  assert.equal((await getAssignedProcedure(pool, evaluator, draftId)).payload, row.current_payload);
+  assert.equal((await startAssignedEvaluation(pool, evaluator, draftId)).status, "en_evaluacion");
+  await assert.rejects(listAssignedProcedures(pool, author), { code: "forbidden" });
+});
+
 test("draft HTTP routes require session, password change, and CSRF", async () => {
   const token = "test-session";
   const csrf = "test-csrf";
@@ -296,6 +399,37 @@ test("draft HTTP routes require session, password change, and CSRF", async () =>
       { index: 0, message: "Describe el evento que inicia el procedimiento." },
       { index: 1, message: "Describe el resultado o condición de cierre." }
     ]);
+  } finally {
+    await new Promise(resolve => server.close(resolve));
+  }
+});
+
+test("evaluator inbox HTTP route requires an authenticated evaluator", async () => {
+  const evaluatorToken = "evaluator-session";
+  const authorToken = "author-session";
+  const sessions = new Map([
+    [hashToken(evaluatorToken), { session_id: draftId, csrf_token_hash: hashToken("eval-csrf"), id: evaluator.id, username: "reviewer", display_name: "Evaluador", role: "evaluador", must_change_password: false }],
+    [hashToken(authorToken), { session_id: draftId, csrf_token_hash: hashToken("author-csrf"), id: author.id, username: "author1", display_name: "Author", role: "elaborador", must_change_password: false }]
+  ]);
+  const poolFactory = () => ({
+    async query(sql, params) {
+      if (sql.includes("FROM app_sessions s")) return { rows: [sessions.get(params[0])].filter(Boolean) };
+      if (sql.startsWith("UPDATE app_sessions SET last_seen_at")) return { rows: [] };
+      if (sql.startsWith("SELECT p.id")) return { rows: [] };
+      throw new Error(`Unexpected SQL: ${sql}`);
+    },
+    async end() {}
+  });
+  const server = createAppServer({ poolFactory, secureCookies: false });
+  await new Promise(resolve => server.listen(0, "127.0.0.1", resolve));
+  const url = `http://127.0.0.1:${server.address().port}/api/evaluator/inbox`;
+  try {
+    assert.equal((await fetch(url)).status, 401);
+    const evaluatorResponse = await fetch(url, { headers: { cookie: `__Host-asistente_session=${evaluatorToken}` } });
+    assert.equal(evaluatorResponse.status, 200);
+    assert.deepEqual((await evaluatorResponse.json()).procedures, []);
+    const authorResponse = await fetch(url, { headers: { cookie: `__Host-asistente_session=${authorToken}` } });
+    assert.equal(authorResponse.status, 403);
   } finally {
     await new Promise(resolve => server.close(resolve));
   }
