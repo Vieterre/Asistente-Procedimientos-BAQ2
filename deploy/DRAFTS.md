@@ -66,7 +66,9 @@ Todavia no sustituye las reglas completas ni el flujograma del prototipo.
 La vista Flujograma de pruebas dibuja el orden actual por responsable, las
 rutas Si/No, los destinos de conectores y los puntos de control. La opcion
 Mostrar evidencias dibuja el registro o evidencia asociado sin cambiar el
-borrador. Es una vista de comparacion, no la exportacion final del prototipo.
+borrador. Los controles de escala permiten alejar, acercar, ajustar al ancho
+y volver a 100%, entre 35% y 180%; tampoco cambian el borrador. Es una vista
+de comparacion, no la exportacion final del prototipo.
 
 ## Contraste del modulo central
 
@@ -86,9 +88,9 @@ persistencia tras cerrar sesion. Esto no certifica equivalencia completa:
   campos de la pantalla de pruebas no equivale a autorizacion para publicar.
 - El prototipo tambien incluye avisos de redaccion, especificidad de roles
   y otros criterios metodologicos que no son parte de Revisar flujo.
-- El flujograma del prototipo permite ajustar zoom y exportar PDF. La vista
-  de pruebas aun no ofrece esas funciones; la visualizacion de evidencias
-  requiere una comparacion manual adicional con el prototipo.
+- El flujograma del prototipo permite exportar PDF. La vista de pruebas aun
+  no ofrece esa funcion; el zoom y la visualizacion de evidencias requieren
+  comparacion manual adicional con el prototipo.
 - Falta verificar visualmente casos con varios responsables por actividad,
   bifurcaciones largas, rutas cruzadas y etiquetas extensas en escritorio y
   movil antes de declarar equivalencia del flujograma.

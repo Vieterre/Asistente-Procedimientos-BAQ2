@@ -90,9 +90,13 @@ test("private consoles serve only their own assets with a restrictive policy", a
     assert.match(draftHtml, /id="flowSvg"/);
     assert.match(draftHtml, /id="refreshFlowButton"/);
     assert.match(draftHtml, /id="showFlowEvidence"/);
+    for (const id of ["flowCanvas", "zoomOutButton", "zoomInButton", "fitFlowButton", "resetFlowZoomButton", "flowZoomValue"]) {
+      assert.match(draftHtml, new RegExp(`id="${id}"`));
+    }
     const draftScript = await (await fetch(base + "/drafts.js")).text();
     assert.match(draftScript, /ui\.showFlowEvidence\.addEventListener\("change", renderFlow\)/);
     assert.match(draftScript, /item\.evidencia \|\| item\.controlEvidencia/);
+    assert.match(draftScript, /ui\.fitFlowButton\.addEventListener\("click", fitFlow\)/);
     for (const path of ["/accounts.map", "/backend/public/accounts.js", "/drafts.map", "/backend/public/drafts.js"]) {
       assert.equal((await fetch(base + path)).status, 404);
     }

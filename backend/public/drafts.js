@@ -4,7 +4,8 @@ const ids = [
   "passwordRequired", "draftWorkspace", "draftForm", "editorTitle", "editorStatus",
   "draftName", "processCode", "draftObjective", "draftScope", "draftDefinitions", "draftConditions", "saveDraftButton", "editorMessage",
   "newDraftButton", "addNormButton", "normsList", "emptyNorms", "addBoundaryButton", "addActivityButton", "addDecisionButton", "addConnectorButton", "activitiesList", "emptyActivities", "reviewFlowButton", "flowReviewResult", "refreshDraftsButton", "draftCount", "listMessage", "emptyDrafts",
-  "draftList", "flowSection", "flowSummary", "showFlowEvidence", "refreshFlowButton", "flowSvg"
+  "draftList", "flowSection", "flowSummary", "showFlowEvidence", "refreshFlowButton", "flowCanvas", "flowSvg",
+  "zoomOutButton", "zoomInButton", "fitFlowButton", "resetFlowZoomButton", "flowZoomValue"
 ];
 const ui = Object.fromEntries(ids.map(id => [id, document.getElementById(id)]));
 const csrfKey = "drafts_csrf";
@@ -32,6 +33,9 @@ let currentDraft = null;
 let currentPayload = {};
 let dirty = false;
 let flowReviewVersion = 0;
+let flowZoom = 100;
+let flowIntrinsicWidth = 760;
+let flowIntrinsicHeight = 500;
 let normRows = [];
 let activityRows = [];
 const textFields = [
@@ -446,6 +450,21 @@ function svgNode(tag, attributes = {}, content) {
   return node;
 }
 
+function setFlowZoom(value) {
+  flowZoom = Math.max(35, Math.min(180, Math.round(Number(value) || 100)));
+  ui.flowSvg.style.width = Math.round(flowIntrinsicWidth * flowZoom / 100) + "px";
+  ui.flowSvg.style.height = Math.round(flowIntrinsicHeight * flowZoom / 100) + "px";
+  ui.flowZoomValue.textContent = flowZoom + "%";
+  ui.zoomOutButton.disabled = flowZoom <= 35;
+  ui.zoomInButton.disabled = flowZoom >= 180;
+}
+
+function fitFlow() {
+  const available = Math.max(320, ui.flowCanvas.clientWidth - 32);
+  setFlowZoom(Math.min(100, Math.floor(available / flowIntrinsicWidth * 100)));
+  ui.flowCanvas.scrollTo({ left: 0, top: 0, behavior: "smooth" });
+}
+
 function flowLines(value, maxLength = 22) {
   const chunks = String(value || "").match(/\S+|\s+/g) || [];
   const lines = [];
@@ -482,6 +501,8 @@ function renderFlow() {
   const rowHeight = showEvidence ? 168 : 132;
   const width = Math.max(760, roles.length * laneWidth + 160);
   const height = 150 + activityRows.length * rowHeight;
+  flowIntrinsicWidth = width;
+  flowIntrinsicHeight = height;
   svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
   svg.setAttribute("width", width);
   svg.setAttribute("height", height);
@@ -567,6 +588,7 @@ function renderFlow() {
       svg.append(record);
     }
   }
+  setFlowZoom(flowZoom);
 }
 
 function setMessage(node, text, success = false) {
@@ -907,6 +929,10 @@ ui.newDraftButton.addEventListener("click", newDraft);
 ui.refreshDraftsButton.addEventListener("click", loadDrafts);
 ui.refreshFlowButton.addEventListener("click", renderFlow);
 ui.showFlowEvidence.addEventListener("change", renderFlow);
+ui.zoomOutButton.addEventListener("click", () => setFlowZoom(flowZoom - 10));
+ui.zoomInButton.addEventListener("click", () => setFlowZoom(flowZoom + 10));
+ui.fitFlowButton.addEventListener("click", fitFlow);
+ui.resetFlowZoomButton.addEventListener("click", () => setFlowZoom(100));
 ui.logoutButton.addEventListener("click", async () => {
   ui.logoutButton.disabled = true;
   try {

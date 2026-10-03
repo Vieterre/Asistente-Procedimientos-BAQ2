@@ -47,5 +47,6 @@
 </section></section>
 <section class="flow-section" id="flowSection" aria-labelledby="flowTitle" hidden>
 <div class="section-heading"><div><h2 id="flowTitle">Flujograma</h2><p id="flowSummary"></p></div><div class="section-actions"><label class="flow-option"><input id="showFlowEvidence" type="checkbox"> Mostrar evidencias</label><button class="secondary-button" id="refreshFlowButton" type="button">Actualizar flujograma</button></div></div>
-<div class="flow-canvas"><svg id="flowSvg" role="img" aria-label="Flujograma del borrador"></svg></div>
+<div class="flow-toolbar" role="group" aria-label="Controles de escala del flujograma"><button class="secondary-button flow-zoom-button" id="zoomOutButton" type="button" aria-label="Alejar" title="Alejar">−</button><span id="flowZoomValue" class="flow-zoom-value" aria-live="polite">100%</span><button class="secondary-button flow-zoom-button" id="zoomInButton" type="button" aria-label="Acercar" title="Acercar">+</button><button class="secondary-button" id="fitFlowButton" type="button">Ajustar</button><button class="secondary-button" id="resetFlowZoomButton" type="button">100%</button></div>
+<div class="flow-canvas" id="flowCanvas"><svg id="flowSvg" role="img" aria-label="Flujograma del borrador"></svg></div>
 </section></div></main></body></html>
