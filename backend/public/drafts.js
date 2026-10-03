@@ -53,6 +53,7 @@ let flowIntrinsicWidth = 760;
 let flowIntrinsicHeight = 500;
 let normRows = [];
 let activityRows = [];
+const collapsedActivityUids = new Set();
 let annexRows = [];
 let changeRows = [];
 let annexesNotApplicable = false;
@@ -577,7 +578,15 @@ function renderActivities() {
   ui.addBoundaryButton.hidden = activityRows.some(activity => activity.tipo === "Inicio") && activityRows.some(activity => activity.tipo === "Fin");
   ui.activitiesList.replaceChildren(...activityRows.map((activity, index) => {
     const row = document.createElement("div");
-    row.className = "activity-row";
+    const isBoundary = ["Inicio", "Fin"].includes(activity.tipo);
+    const isCollapsed = !isBoundary && collapsedActivityUids.has(activity.uid);
+    row.className = [
+      "activity-row",
+      isCollapsed ? "is-collapsed" : "",
+      activity.tipo === "Decisión" ? "decision-row" : "",
+      activity.tipo === "Conector" ? "connector-row" : "",
+      activity.tieneControl === true ? "control-row" : ""
+    ].filter(Boolean).join(" ");
     const heading = document.createElement("div");
     heading.className = "activity-heading";
     const title = document.createElement("h4");
@@ -586,7 +595,7 @@ function renderActivities() {
       : String(activity.tipo || "Elemento del flujo");
     heading.append(title);
     const editable = activity.tipo === "Actividad" || (["Decisión", "Conector"].includes(activity.tipo) && !activity.tieneControl);
-    if (!["Inicio", "Fin"].includes(activity.tipo)) {
+    if (!isBoundary) {
       const actions = document.createElement("div");
       actions.className = "activity-actions";
       for (const [direction, symbol, labelText] of [[-1, "↑", "Subir"], [1, "↓", "Bajar"]]) {
@@ -601,6 +610,20 @@ function renderActivities() {
         button.addEventListener("click", () => moveActivity(index, direction));
         actions.append(button);
       }
+      const collapse = document.createElement("button");
+      collapse.type = "button";
+      collapse.className = "secondary-button collapse-button";
+      collapse.dataset.collapseUid = activity.uid;
+      collapse.textContent = isCollapsed ? "Expandir" : "Contraer";
+      collapse.setAttribute("aria-expanded", String(!isCollapsed));
+      collapse.addEventListener("click", () => {
+        if (collapsedActivityUids.has(activity.uid)) collapsedActivityUids.delete(activity.uid);
+        else collapsedActivityUids.add(activity.uid);
+        renderActivities();
+        [...ui.activitiesList.querySelectorAll("[data-collapse-uid]")]
+          .find(button => button.dataset.collapseUid === activity.uid)?.focus();
+      });
+      actions.append(collapse);
       heading.append(actions);
     }
     if (editable) {
@@ -622,7 +645,32 @@ function renderActivities() {
       heading.querySelector(".activity-actions")?.append(remove);
     }
     row.append(heading);
-    if (["Inicio", "Fin"].includes(activity.tipo)) {
+    if (isCollapsed) {
+      const summary = document.createElement("div");
+      summary.className = "activity-collapsed-summary";
+      const description = document.createElement("strong");
+      description.textContent = String(activity.tipo === "Decisión"
+        ? activity.descripcion || "Decisión sin pregunta"
+        : activity.tipo === "Conector"
+          ? activity.connectorId ? `Conector ${activity.connectorId}` : activity.actividad || "Conector sin identificador"
+          : activity.actividad || activity.descripcion || "Actividad sin nombre");
+      summary.append(description);
+      const responsible = activity.responsable || activity.controlResponsable;
+      if (responsible) {
+        const responsibleLabel = document.createElement("span");
+        responsibleLabel.textContent = `Responsable: ${responsible}`;
+        summary.append(responsibleLabel);
+      }
+      if (activity.tieneControl === true) {
+        const control = document.createElement("span");
+        control.className = "activity-summary-tag control-summary-tag";
+        control.textContent = "Punto de control";
+        summary.append(control);
+      }
+      row.append(summary);
+      return row;
+    }
+    if (isBoundary) {
       const grid = document.createElement("div");
       grid.className = "activity-grid";
       for (const [key, labelText, kind] of [["actividad", "Nombre", "input"], ["descripcion", activity.tipo === "Inicio" ? "Evento que inicia el procedimiento" : "Resultado o condición de cierre", "textarea"]]) {
@@ -1117,6 +1165,7 @@ function clearSession() {
   currentPayload = {};
   normRows = [];
   renderNorms();
+  collapsedActivityUids.clear();
   activityRows = [];
   renderActivities();
   annexRows = [];
@@ -1378,6 +1427,7 @@ function populateDraft(procedure) {
   currentPayload = procedure.payload && typeof procedure.payload === "object" && !Array.isArray(procedure.payload) ? procedure.payload : {};
   normRows = Array.isArray(currentPayload.norms) ? currentPayload.norms.map(norm => norm && typeof norm === "object" && !Array.isArray(norm) ? { ...norm } : {}) : [];
   renderNorms();
+  collapsedActivityUids.clear();
   activityRows = Array.isArray(currentPayload.activities) ? currentPayload.activities.map(activity => activity && typeof activity === "object" && !Array.isArray(activity) ? { ...activity, uid: activity.uid || crypto.randomUUID() } : { uid: crypto.randomUUID() }) : [];
   renderActivities();
   annexRows = Array.isArray(currentPayload.annexes) ? currentPayload.annexes.map(annex => annex && typeof annex === "object" && !Array.isArray(annex) ? { ...annex } : {}) : [];
@@ -1448,6 +1498,7 @@ function newDraft() {
   currentPayload = { fields: {}, norms: [], activities: [], annexes: [], changes: [], settings: {} };
   normRows = [];
   renderNorms();
+  collapsedActivityUids.clear();
   activityRows = [boundaryRecord("Inicio"), boundaryRecord("Fin")];
   renderActivities();
   annexRows = [];
