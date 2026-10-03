@@ -47,7 +47,7 @@ input[type=password]{letter-spacing:0}
 .login-panel .form-message{margin:0 0 14px}
 .password-section.required{background:#fff8e9;border-left:4px solid #bf8a22;padding:23px 18px 28px;margin:18px 0 0}
 .table-scroll{max-width:100%;overflow-x:auto;background:#fff;border:1px solid #d7e0e2}
-table{width:100%;border-collapse:collapse;min-width:790px}
+table{width:100%;border-collapse:collapse;min-width:980px}
 th,td{text-align:left;padding:11px 12px;border-bottom:1px solid #e1e8e9;vertical-align:middle}
 th{background:#eaf0f1;color:#294349;font-size:12px;white-space:nowrap}
 tr:last-child td{border-bottom:0}
@@ -60,6 +60,7 @@ td strong{font-size:13px}
 .row-actions button:hover{background:#eff5f4}
 .row-actions button.danger{color:#a63223;border-color:#d9aaa4}
 dialog{border:1px solid #b6c7cb;border-radius:8px;width:min(475px,calc(100% - 24px));padding:22px 24px;color:#22313a;box-shadow:0 22px 60px rgba(18,40,45,.2)}
+dialog#processDialog{width:min(690px,calc(100% - 24px))}
 dialog::backdrop{background:rgba(13,32,38,.62)}
 .dialog-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
 .dialog-heading h2{font-size:19px;margin:0 0 12px}
@@ -71,5 +72,10 @@ dialog p{font-size:13px;line-height:1.45;color:#546971}
 .credential-list dd{margin:0;font-weight:650;overflow-wrap:anywhere}
 .credential-list .secret{font-family:Consolas,monospace;font-size:15px;color:#132e35}
 .dialog-actions{display:flex;gap:9px;justify-content:flex-end;flex-wrap:wrap;margin:18px 0 0}
+.process-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 18px;max-height:min(52vh,430px);overflow:auto;border-top:1px solid #d7e0e2;border-bottom:1px solid #d7e0e2}
+.process-option{display:flex;align-items:flex-start;gap:9px;padding:11px 6px;border-bottom:1px solid #e6ecec;font-weight:500;line-height:1.4;cursor:pointer}
+.process-option input{width:17px;height:17px;flex:none;margin:1px 0 0;accent-color:#176d56}
+.process-option:has(input:disabled){color:#78888d;cursor:not-allowed}
 dialog .form-message{margin-top:10px}
-@media(max-width:720px){.header-inner{padding:11px 16px}.session-controls{gap:7px;flex-direction:column;align-items:flex-end}.brand{font-size:14px}main{padding:0 16px 40px}.form-grid{grid-template-columns:1fr}.section-heading{align-items:flex-start}.login-panel{padding:22px}}
+@media(max-width:720px){.header-inner{padding:11px 16px}.session-controls{gap:7px;flex-direction:column;align-items:flex-end}.brand{font-size:14px}main{padding:0 16px 40px}.form-grid{grid-template-columns:1fr}.section-heading{align-items:flex-start}.login-panel{padding:22px}.process-options{grid-template-columns:1fr}dialog#processDialog{padding:19px 17px}}
+

@@ -5,11 +5,14 @@ const ui = Object.fromEntries([
   "confirmPassword", "passwordMessage", "adminWorkspace", "createForm", "newUsername",
   "displayName", "newRole", "createMessage", "usersCount", "usersMessage", "usersBody",
   "refreshUsersButton", "credentialDialog", "issuedUsername", "issuedPassword",
-  "copyPasswordButton", "closeCredentialButton", "doneCredentialButton", "credentialMessage"
+  "copyPasswordButton", "closeCredentialButton", "doneCredentialButton", "credentialMessage",
+  "processDialog", "processTitle", "processOptions", "processMessage", "saveProcessButton",
+  "closeProcessButton", "cancelProcessButton"
 ].map(id => [id, document.getElementById(id)]));
 
 let csrfToken = "";
 let currentUser = null;
+let processAccount = null;
 
 const errors = {
   invalid_credentials: "Nombre de usuario o contraseña incorrectos.",
@@ -25,7 +28,9 @@ const errors = {
   user_not_found: "El usuario ya no existe.",
   inactive_user: "Activa el usuario antes de restablecer su contraseña.",
   last_admin: "No se puede desactivar al último administrador activo.",
-  admin_reset_not_supported: "La contraseña del administrador se cambia desde su propia sesión."
+  admin_reset_not_supported: "La contraseña del administrador se cambia desde su propia sesión.",
+  invalid_process_assignment: "Selecciona procesos activos y vuelve a intentarlo.",
+  invalid_process_assignment_target: "Solo se pueden asignar procesos a cuentas de Elaborador o Evaluador."
 };
 
 function message(node, value, success = false) {
@@ -72,6 +77,7 @@ function clearSession() {
   ui.loginOtp.value = "";
   ui.passwordForm.reset();
   hideCredential();
+  hideProcessDialog();
 }
 
 function showSession(user) {
@@ -136,6 +142,8 @@ function userRow(user) {
   cell(row, username);
   cell(row, user.displayName);
   cell(row, user.role);
+  const processCodes = Array.isArray(user.processCodes) ? user.processCodes : [];
+  cell(row, processCodes.length ? processCodes.join(", ") : "Sin procesos");
   const status = document.createElement("span");
   status.className = `state${user.active ? "" : " inactive"}`;
   status.textContent = user.active ? "Activo" : "Inactivo";
@@ -147,6 +155,7 @@ function userRow(user) {
   const actions = document.createElement("div");
   actions.className = "row-actions";
   if (user.role !== "administrador") {
+    actions.append(actionButton("Asignar procesos", () => editAccountProcesses(user)));
     if (user.active) actions.append(actionButton("Restablecer clave", () => resetPassword(user)));
     actions.append(actionButton(user.active ? "Desactivar" : "Activar", () => setActive(user), user.active));
   }
@@ -188,6 +197,61 @@ function hideCredential() {
   ui.issuedUsername.textContent = "";
   ui.issuedPassword.textContent = "";
   message(ui.credentialMessage, "");
+}
+
+function hideProcessDialog() {
+  if (ui.processDialog.open) ui.processDialog.close();
+  processAccount = null;
+  ui.processOptions.replaceChildren();
+  message(ui.processMessage, "");
+}
+
+function processOption(process, assignedCodes) {
+  const label = document.createElement("label");
+  label.className = "process-option";
+  const checkbox = document.createElement("input");
+  checkbox.type = "checkbox";
+  checkbox.value = process.code;
+  checkbox.checked = assignedCodes.includes(process.code);
+  checkbox.disabled = !process.active && !checkbox.checked;
+  const name = document.createElement("span");
+  name.textContent = `${process.name} (${process.code})${process.active ? "" : " · Inactivo"}`;
+  label.append(checkbox, name);
+  return label;
+}
+
+async function editAccountProcesses(user) {
+  message(ui.usersMessage, "");
+  try {
+    const result = await request(`/api/admin/users/${encodeURIComponent(user.id)}/processes`);
+    processAccount = user;
+    ui.processTitle.textContent = `Procesos de ${user.username || user.displayName}`;
+    const assignedCodes = result.processCodes || [];
+    ui.processOptions.replaceChildren(...result.processes.map(process => processOption(process, assignedCodes)));
+    message(ui.processMessage, "");
+    ui.processDialog.showModal();
+  } catch (error) {
+    sessionExpired(error, ui.usersMessage);
+  }
+}
+
+async function saveAccountProcesses() {
+  if (!processAccount) return;
+  ui.saveProcessButton.disabled = true;
+  message(ui.processMessage, "");
+  try {
+    const processCodes = [...ui.processOptions.querySelectorAll("input:checked")].map(input => input.value);
+    await request(`/api/admin/users/${encodeURIComponent(processAccount.id)}/processes`, {
+      method: "PUT", csrf: true, body: { processCodes }
+    });
+    hideProcessDialog();
+    message(ui.usersMessage, "Asignación de procesos actualizada.", true);
+    await refreshUsers();
+  } catch (error) {
+    sessionExpired(error, ui.processMessage);
+  } finally {
+    ui.saveProcessButton.disabled = false;
+  }
 }
 
 ui.loginForm.addEventListener("submit", async event => {
@@ -285,8 +349,17 @@ ui.copyPasswordButton.addEventListener("click", async () => {
     message(ui.credentialMessage, "No se pudo copiar. Selecciona la contraseña manualmente.");
   }
 });
+ui.saveProcessButton.addEventListener("click", saveAccountProcesses);
+ui.closeProcessButton.addEventListener("click", hideProcessDialog);
+ui.cancelProcessButton.addEventListener("click", hideProcessDialog);
+ui.processDialog.addEventListener("close", () => {
+  processAccount = null;
+  ui.processOptions.replaceChildren();
+  message(ui.processMessage, "");
+});
 
 csrfToken = sessionStorage.getItem("account_csrf") || "";
 if (csrfToken) {
   request("/api/auth/me").then(result => showSession(result.user)).catch(() => clearSession());
 }
+

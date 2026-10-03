@@ -67,7 +67,7 @@
         <section class="section" aria-labelledby="usersTitle">
           <div class="section-heading"><div><h2 id="usersTitle">Usuarios</h2><p id="usersCount"></p></div><button class="secondary-button" id="refreshUsersButton" type="button">Actualizar</button></div>
           <p class="form-message" id="usersMessage" role="status" hidden></p>
-          <div class="table-scroll"><table><thead><tr><th scope="col">Usuario</th><th scope="col">Nombre</th><th scope="col">Rol</th><th scope="col">Estado</th><th scope="col">Contraseña</th><th scope="col">Acciones</th></tr></thead><tbody id="usersBody"></tbody></table></div>
+          <div class="table-scroll"><table><thead><tr><th scope="col">Usuario</th><th scope="col">Nombre</th><th scope="col">Rol</th><th scope="col">Procesos asignados</th><th scope="col">Estado</th><th scope="col">Contraseña</th><th scope="col">Acciones</th></tr></thead><tbody id="usersBody"></tbody></table></div>
         </section>
       </div>
     </div>
@@ -80,5 +80,14 @@
     <div class="dialog-actions"><button class="secondary-button" id="copyPasswordButton" type="button">Copiar contraseña</button><button class="primary-button" id="doneCredentialButton" type="button">Listo</button></div>
     <p class="form-message" id="credentialMessage" role="status" hidden></p>
   </dialog>
+
+  <dialog id="processDialog" aria-labelledby="processTitle">
+    <div class="dialog-heading"><h2 id="processTitle">Procesos asignados</h2><button class="icon-close" type="button" id="closeProcessButton" aria-label="Cerrar" title="Cerrar">&times;</button></div>
+    <p id="processIntro">Los procesos determinan qué procedimientos puede consultar o gestionar esta cuenta. Los cambios aplican de inmediato.</p>
+    <div class="process-options" id="processOptions" role="group" aria-label="Procesos disponibles"></div>
+    <p class="form-message" id="processMessage" role="status" hidden></p>
+    <div class="dialog-actions"><button class="secondary-button" id="cancelProcessButton" type="button">Cancelar</button><button class="primary-button" id="saveProcessButton" type="button">Guardar asignación</button></div>
+  </dialog>
 </body>
 </html>
+

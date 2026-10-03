@@ -26,16 +26,122 @@ function publicAccount(row) {
     role: row.role,
     active: row.active,
     mfaEnabled: row.mfa_enabled,
-    mustChangePassword: row.must_change_password
+    mustChangePassword: row.must_change_password,
+    processCodes: row.process_codes || []
   };
 }
 
 export async function listAccounts(pool) {
   const result = await pool.query(
-    `SELECT id, username, email, display_name, role, active, mfa_enabled, must_change_password
-     FROM app_users ORDER BY created_at, id`
+    `SELECT u.id, u.username, u.email, u.display_name, u.role, u.active, u.mfa_enabled,
+            u.must_change_password,
+            COALESCE((SELECT array_agg(up.process_code ORDER BY up.process_code)
+                      FROM user_processes up WHERE up.user_id = u.id), ARRAY[]::text[]) AS process_codes
+       FROM app_users u ORDER BY u.created_at, u.id`
   );
   return result.rows.map(publicAccount);
+}
+
+function validateProcessCodes(processCodes) {
+  if (!Array.isArray(processCodes) || processCodes.length > 100 ||
+      processCodes.some(code => typeof code !== "string" || !/^[A-Z]{2,3}$/.test(code)) ||
+      new Set(processCodes).size !== processCodes.length) {
+    throw new UserManagementError("invalid_process_assignment", 400);
+  }
+  return [...processCodes].sort();
+}
+
+function validateProcessTarget(row) {
+  if (!row) throw new UserManagementError("user_not_found", 404);
+  if (![ROLES.ELABORADOR, ROLES.EVALUADOR].includes(row.role)) {
+    throw new UserManagementError("invalid_process_assignment_target", 409);
+  }
+}
+
+export async function getAccountProcessAssignments(pool, { targetId }) {
+  const targetResult = await pool.query(
+    "SELECT id, role FROM app_users WHERE id = $1",
+    [targetId]
+  );
+  const target = targetResult.rows[0];
+  validateProcessTarget(target);
+
+  const result = await pool.query(
+    `SELECT p.code, p.name, p.active,
+            EXISTS (SELECT 1 FROM user_processes up
+                    WHERE up.user_id = $1 AND up.process_code = p.code) AS assigned
+       FROM processes p
+      WHERE p.active = TRUE OR EXISTS (
+        SELECT 1 FROM user_processes up WHERE up.user_id = $1 AND up.process_code = p.code
+      )
+      ORDER BY p.name, p.code`,
+    [targetId]
+  );
+  return {
+    processes: result.rows,
+    processCodes: result.rows.filter(process => process.assigned).map(process => process.code)
+  };
+}
+
+export async function setAccountProcessAssignments(pool, { actor, targetId, processCodes }) {
+  const requestedCodes = validateProcessCodes(processCodes);
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    const actorResult = await client.query(
+      "SELECT role, active FROM app_users WHERE id = $1 FOR UPDATE",
+      [actor.id]
+    );
+    if (actorResult.rows[0]?.role !== ROLES.ADMIN || actorResult.rows[0]?.active !== true) {
+      throw new UserManagementError("forbidden", 403);
+    }
+
+    const targetResult = await client.query(
+      "SELECT id, role FROM app_users WHERE id = $1 FOR UPDATE",
+      [targetId]
+    );
+    const target = targetResult.rows[0];
+    validateProcessTarget(target);
+
+    const currentResult = await client.query(
+      "SELECT process_code FROM user_processes WHERE user_id = $1 ORDER BY process_code",
+      [targetId]
+    );
+    const currentCodes = currentResult.rows.map(row => row.process_code).sort();
+    const processResult = await client.query(
+      "SELECT code, active FROM processes WHERE code = ANY($1::text[])",
+      [requestedCodes]
+    );
+    const available = new Map(processResult.rows.map(process => [process.code, process.active]));
+    const currentSet = new Set(currentCodes);
+    if (requestedCodes.some(code => !available.has(code) || (!available.get(code) && !currentSet.has(code)))) {
+      throw new UserManagementError("invalid_process_assignment", 400);
+    }
+
+    if (JSON.stringify(currentCodes) !== JSON.stringify(requestedCodes)) {
+      await client.query("DELETE FROM user_processes WHERE user_id = $1", [targetId]);
+      if (requestedCodes.length) {
+        await client.query(
+          `INSERT INTO user_processes (user_id, process_code)
+           SELECT $1, selected.process_code FROM unnest($2::text[]) AS selected(process_code)`,
+          [targetId, requestedCodes]
+        );
+      }
+      await client.query(
+        `INSERT INTO audit_events (id, actor_user_id, event_type, entity_type, entity_id, metadata)
+         VALUES ($1, $2, 'user_processes_updated', 'app_user', $3, $4::jsonb)`,
+        [randomUUID(), actor.id, targetId, JSON.stringify({ processCodes: requestedCodes })]
+      );
+    }
+
+    await client.query("COMMIT");
+    return { processCodes: requestedCodes };
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
 }
 
 export async function createAccount(pool, { actor, username, displayName, role }) {
@@ -191,3 +297,4 @@ export async function setAccountActive(pool, { actor, targetId, active }) {
     client.release();
   }
 }
+

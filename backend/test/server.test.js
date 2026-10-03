@@ -87,6 +87,15 @@ test("private consoles serve only their own assets with a restrictive policy", a
       assert.match(response.headers.get("content-security-policy"), /default-src 'none'/);
       assert.ok((await response.text()).length > 100);
     }
+    const accountsHtml = await (await fetch(base + "/accounts")).text();
+    const accountsScript = await (await fetch(base + "/accounts.js")).text();
+    for (const id of ["processDialog", "processTitle", "processOptions", "processMessage", "saveProcessButton", "closeProcessButton", "cancelProcessButton"]) {
+      assert.match(accountsHtml, new RegExp(`id="${id}"`));
+      assert.match(accountsScript, new RegExp(`"${id}"`));
+    }
+    assert.match(accountsHtml, /Procesos asignados/);
+    assert.match(accountsScript, /\/api\/admin\/users\/\$\{encodeURIComponent\(user\.id\)\}\/processes/);
+    assert.match(accountsScript, /method: "PUT", csrf: true, body: \{ processCodes \}/);
     const draftHtml = await (await fetch(base + "/drafts")).text();
     const draftScript = await (await fetch(base + "/drafts.js")).text();
     const draftIds = draftScript.match(/const ids = \[([\s\S]*?)\];/)?.[1];
@@ -194,3 +203,4 @@ test("notifications use session and CSRF, and analytics stays administrator-only
     await new Promise(resolve => server.close(resolve));
   }
 });
+

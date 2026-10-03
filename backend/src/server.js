@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 import { checkDatabase, createPool } from "./db/pool.js";
 import { AuthError, SESSION_COOKIE, changePassword, cookieOptions, getSession, hashToken, loginUser, parseCookies, revokeSession } from "./security/auth.js";
 import { ACTIONS, canPerform } from "./domain/permissions.js";
-import { UserManagementError, createAccount, listAccounts, resetAccountPassword, setAccountActive } from "./security/admin-users.js";
+import { UserManagementError, createAccount, getAccountProcessAssignments, listAccounts, resetAccountPassword, setAccountActive, setAccountProcessAssignments } from "./security/admin-users.js";
 import { clientIp } from "./security/client-ip.js";
 import { DraftError, createDraft, getAssignedProcedure, getOwnDraft, listAssignedProcedures, listOwnDrafts, listProcessEvaluators, startAssignedEvaluation, submitOwnDraft, updateOwnDraft } from "./domain/drafts.js";
 import { reviewFlow, reviewFlowCompleteness } from "./domain/flow-review.js";
@@ -394,9 +394,11 @@ export function createAppServer({ poolFactory = createPool, secureCookies, trust
       }
 
       const accountAction = /^\/api\/admin\/users\/([0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12})\/(deactivate|reactivate|reset-password)$/.exec(url.pathname);
+      const accountProcesses = /^\/api\/admin\/users\/([0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12})\/processes$/.exec(url.pathname);
       const accountCreation = url.pathname === "/api/admin/users" && req.method === "POST";
       if ((url.pathname === "/api/admin/users" && req.method === "GET") ||
-          accountCreation || (accountAction && req.method === "POST")) {
+          accountCreation || (accountAction && req.method === "POST") ||
+          (accountProcesses && ["GET", "PUT"].includes(req.method))) {
         let pool;
         try {
           pool = poolFactory();
@@ -413,13 +415,23 @@ export function createAppServer({ poolFactory = createPool, secureCookies, trust
             sendJson(res, 403, { ok: false, error: "forbidden" });
             return;
           }
-          if (accountAction || accountCreation) {
+          if (accountAction || accountCreation || (accountProcesses && req.method === "PUT")) {
             const csrfToken = String(req.headers["x-csrf-token"] || "");
             if (!csrfToken || hashToken(csrfToken) !== session.csrfTokenHash) {
               sendJson(res, 403, { ok: false, error: "csrf_failed" });
               return;
             }
-            if (accountCreation) {
+            if (accountProcesses) {
+              const body = await readJson(req);
+              sendJson(res, 200, {
+                ok: true,
+                ...await setAccountProcessAssignments(pool, {
+                  actor: session.user,
+                  targetId: accountProcesses[1],
+                  processCodes: body.processCodes
+                })
+              });
+            } else if (accountCreation) {
               const body = await readJson(req);
               sendJson(res, 201, { ok: true, ...await createAccount(pool, {
                 actor: session.user,
@@ -440,6 +452,11 @@ export function createAppServer({ poolFactory = createPool, secureCookies, trust
               });
               sendJson(res, 200, { ok: true, user });
             }
+          } else if (accountProcesses) {
+            sendJson(res, 200, {
+              ok: true,
+              ...await getAccountProcessAssignments(pool, { targetId: accountProcesses[1] })
+            });
           } else {
             sendJson(res, 200, { ok: true, users: await listAccounts(pool) });
           }
@@ -491,3 +508,4 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     console.log(`Asistente disponible en http://${host}:${port}`);
   });
 }
+

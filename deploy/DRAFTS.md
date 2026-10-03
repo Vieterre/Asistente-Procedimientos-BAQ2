@@ -23,6 +23,10 @@ cuentas no cambia y el prototipo publico continua guardando localmente.
   marcan avisos propios como leidos y requieren CSRF.
 - `GET /api/admin/analytics`: entrega agregados por periodo, proceso y rol;
   solo Administracion puede consultarlos.
+- `GET /api/admin/users/:id/processes` y `PUT /api/admin/users/:id/processes`:
+  Administracion consulta y reemplaza los procesos asignados a una cuenta de
+  Elaborador o Evaluador. La escritura exige CSRF, valida procesos activos y
+  registra el cambio en auditoria. Los permisos se aplican inmediatamente.
 
 Todas las rutas requieren una sesion activa y una contrasena ya cambiada. Las
 escrituras requieren `X-CSRF-Token`. El envio valida los campos metodologicos,
@@ -40,10 +44,9 @@ Antes de reiniciar el servicio actualizado, compruebe que la cuenta de prueba
 `planeacionprueba` tenga asignado el proceso del borrador de prueba y exista un
 Evaluador activo asignado a ese mismo proceso en `user_processes`. Aplique de
 nuevo `grant-drafts-test.sql` para conceder las lecturas y escrituras de
-procedimientos, evaluaciones, auditoria y notificaciones al rol del servicio.
-Las asignaciones
-faltantes las debe realizar un administrador de PostgreSQL de forma explicita;
-no se crean automaticamente.
+procedimientos, evaluaciones, auditoria, notificaciones y asignaciones de
+procesos al rol del servicio. Las cuentas nuevas no reciben procesos
+automaticamente: un administrador debe concederlos desde la consola Cuentas.
 
 La pantalla de prueba edita nombre, proceso, objetivo, alcance, definiciones y
 condiciones generales. Los cuatro campos de texto usan las mismas claves de
@@ -180,3 +183,4 @@ persistencia tras cerrar sesion. Esto no certifica equivalencia completa:
 6. Abra `/drafts`: confirme que `planeacionprueba` ve solo `PD`, que el envio
    genera una notificacion para el Evaluador, que iniciar evaluacion avisa al
    Elaborador y que `D1 · Analitica` solo aparece para Administracion.
+
