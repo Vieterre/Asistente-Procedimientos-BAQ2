@@ -1841,6 +1841,64 @@ function reportSection(number, title, content) {
   return section;
 }
 
+function previewFitScale(viewportWidth, contentWidth) {
+  const available = Number(viewportWidth);
+  const total = Number(contentWidth);
+  if (!Number.isFinite(available) || !Number.isFinite(total) || available <= 0 || total <= 0) return 1;
+  return Math.max(0.05, Math.min(1, available / total));
+}
+
+function createPreviewDiagramControls(diagram, svg) {
+  const sourceWidth = Number(svg.getAttribute("width")) || svg.viewBox?.baseVal.width || 0;
+  let zoom = 1;
+  const toolbar = document.createElement("div");
+  toolbar.className = "preview-diagram-toolbar";
+  const group = document.createElement("div");
+  group.className = "preview-diagram-tools";
+  group.setAttribute("role", "group");
+  group.setAttribute("aria-label", "Controles de zoom del flujograma");
+  const fitButton = document.createElement("button");
+  fitButton.type = "button";
+  fitButton.className = "secondary-button preview-fit-button";
+  fitButton.textContent = "Ajustar al ancho";
+  fitButton.addEventListener("click", fitToWidth);
+  const zoomOut = document.createElement("button");
+  zoomOut.type = "button";
+  zoomOut.className = "secondary-button preview-zoom-button";
+  zoomOut.textContent = "−";
+  zoomOut.title = "Reducir el flujograma";
+  zoomOut.setAttribute("aria-label", "Reducir el flujograma");
+  zoomOut.addEventListener("click", () => { zoom = Math.max(0.05, zoom / 1.15); applyZoom(); });
+  const zoomValue = document.createElement("output");
+  zoomValue.className = "preview-zoom-value";
+  zoomValue.setAttribute("aria-live", "polite");
+  const zoomIn = document.createElement("button");
+  zoomIn.type = "button";
+  zoomIn.className = "secondary-button preview-zoom-button";
+  zoomIn.textContent = "+";
+  zoomIn.title = "Ampliar el flujograma";
+  zoomIn.setAttribute("aria-label", "Ampliar el flujograma");
+  zoomIn.addEventListener("click", () => { zoom = Math.min(1.8, zoom * 1.15); applyZoom(); });
+  group.append(fitButton, zoomOut, zoomValue, zoomIn);
+  toolbar.append(group);
+
+  function applyZoom() {
+    if (sourceWidth > 0) svg.style.width = `${Math.round(sourceWidth * zoom)}px`;
+    zoomValue.textContent = `${Math.round(zoom * 100)}%`;
+    zoomOut.disabled = zoom <= 0.05;
+    zoomIn.disabled = zoom >= 1.8;
+  }
+
+  function fitToWidth() {
+    zoom = previewFitScale(diagram.clientWidth - 30, sourceWidth);
+    applyZoom();
+    diagram.scrollTo({ left: 0, top: 0 });
+  }
+
+  applyZoom();
+  return { toolbar, fitToWidth };
+}
+
 function showPreview() {
   const content = ui.previewContent;
   const process = ui.processCode.selectedOptions[0]?.textContent || "Sin proceso seleccionado";
@@ -1918,11 +1976,15 @@ function showPreview() {
   flowSection.append(flowHeading);
   const diagram = document.createElement("div");
   diagram.className = "preview-diagram";
+  let fitPreviewDiagram = () => {};
   renderFlow();
   if (activityRows.length) {
     const svg = ui.flowSvg.cloneNode(true);
     svg.removeAttribute("id");
     svg.removeAttribute("style");
+    const controls = createPreviewDiagramControls(diagram, svg);
+    flowSection.append(controls.toolbar);
+    fitPreviewDiagram = controls.fitToWidth;
     diagram.append(svg);
   } else diagram.textContent = "Sin actividades registradas.";
   flowSection.append(diagram);
@@ -1933,6 +1995,7 @@ function showPreview() {
   content.replaceChildren(report);
   ui.previewState.textContent = !currentDraft ? "Vista de un borrador no guardado." : dirty ? "Vista con cambios sin guardar." : `Borrador guardado · revisión ${currentDraft.revision}.`;
   ui.previewDialog.showModal();
+  requestAnimationFrame(fitPreviewDiagram);
 }
 
 ui.previewButton.addEventListener("click", showPreview);

@@ -109,7 +109,9 @@ cambios actuales del formulario (incluidos los no guardados). Presenta las
 nueve secciones numeradas del procedimiento, encabezado con proceso, codigo,
 version y estado, tablas de normatividad, actividades, controles, anexos y
 cambios, responsables y flujograma. Permite imprimir desde el navegador. El
-editor usa la paleta azul y verde y los encabezados del prototipo para mantener
+flujograma se ajusta al ancho de la preliminar al abrirse y permite ampliarlo,
+reducirlo o volver al ajuste al ancho; estos controles se ocultan al imprimir.
+El editor usa la paleta azul y verde y los encabezados del prototipo para mantener
 continuidad visual; la preliminar no equivale aun a la exportacion PDF oficial.
 
 La seccion Actividades incluye las cuatro reglas metodologicas del modelado del

@@ -73,3 +73,23 @@ test("collapsed activity status follows the original required-field rules", asyn
   }
   assert.equal(isComplete({ ...controlled, controlResponsable: "N/A", controlResponsableOtro: true }), false);
 });
+
+test("preview flowchart fits the available width and keeps accessible zoom controls", async () => {
+  const [script, css] = await Promise.all([
+    readFile(join(root, "backend/public/drafts.js"), "utf8"),
+    readFile(join(root, "backend/public/drafts.css"), "utf8")
+  ]);
+  const helperSource = script.match(/function previewFitScale\([\s\S]*?(?=\nfunction createPreviewDiagramControls\()/)?.[0];
+  assert.ok(helperSource, "preview fit helper should be present");
+  const fitScale = runInNewContext(`${helperSource}\npreviewFitScale`);
+  assert.equal(fitScale(900, 1800), 0.5);
+  assert.equal(fitScale(1200, 1000), 1);
+  assert.equal(fitScale(0, 1000), 1);
+  assert.match(script, /fitButton\.textContent = "Ajustar al ancho"/);
+  assert.match(script, /zoomOut\.setAttribute\("aria-label", "Reducir el flujograma"\)/);
+  assert.match(script, /zoomIn\.setAttribute\("aria-label", "Ampliar el flujograma"\)/);
+  assert.match(script, /requestAnimationFrame\(fitPreviewDiagram\)/);
+  assert.match(css, /\.preview-diagram-toolbar/);
+  assert.match(css, /@media print\{\.preview-diagram-toolbar\{display:none!important\}\}/);
+  assert.match(css, /\.preview-diagram svg\{height:auto\}/);
+});

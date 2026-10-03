@@ -80,3 +80,5 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 @media(max-width:760px){.analytics-filters{grid-template-columns:repeat(2,minmax(0,1fr))}.analytics-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.analytics-section .section-heading{flex-wrap:wrap}.notification-popover{right:-56px}}
 @media(max-width:480px){.analytics-filters{grid-template-columns:1fr}.analytics-filters>button{width:100%}.analytics-metrics{gap:8px}.analytics-metric{padding:10px}.notification-center{order:0}.notification-popover{right:-78px}.method-rules ol{padding-left:30px}}
 .notification-popover span{text-align:left;overflow-wrap:anywhere}
+.preview-diagram-toolbar{display:flex;justify-content:flex-end;padding:8px 10px;border:1px solid #d3dde2;border-bottom:0;background:#f5f8f9}.preview-diagram-tools{display:flex;align-items:center;gap:6px}.preview-zoom-button{width:36px;min-width:36px;height:36px;padding:0;font-size:19px;line-height:1}.preview-zoom-value{min-width:48px;color:#52666d;font-size:12px;font-variant-numeric:tabular-nums;text-align:center}.preview-diagram svg{height:auto}
+@media print{.preview-diagram-toolbar{display:none!important}}
