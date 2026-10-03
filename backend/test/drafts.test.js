@@ -206,6 +206,10 @@ test("draft HTTP routes create, read, and update with a live author session", as
       name: "Nuevo",
       payload: {
         fields: { nombre: "Nuevo", objetivo: "Objetivo", alcance: "Alcance", definiciones: "Definiciones", condiciones: "Condiciones" },
+        norms: [
+          { tipo: "Externa", norma: "Norma de prueba", anio: "2026", descripcion: "Texto ficticio", articulo: "1", entidad: "Entidad de prueba" },
+          { tipo: "Interna", norma: "Regla de prueba", anio: "2025", descripcion: "Otro texto", articulo: "2", entidad: "Otra entidad" }
+        ],
         activities: [{ actividad: "Inicio" }]
       },
       revision: 1
@@ -216,6 +220,9 @@ test("draft HTTP routes create, read, and update with a live author session", as
     const reopenedPayload = (await reopened.json()).procedure.payload;
     assert.deepEqual(reopenedPayload.fields, { nombre: "Nuevo", objetivo: "Objetivo", alcance: "Alcance", definiciones: "Definiciones", condiciones: "Condiciones" });
     assert.deepEqual(reopenedPayload.activities, [{ actividad: "Inicio" }]);
+    assert.equal(reopenedPayload.norms.length, 2);
+    assert.equal(reopenedPayload.norms[0].norma, "Norma de prueba");
+    assert.equal(reopenedPayload.norms[1].tipo, "Interna");
     const conflict = await fetch(`${base}/${procedure.id}`, { method: "PUT", headers, body: JSON.stringify({ name: "Viejo", payload: {}, revision: 1 }) });
     assert.equal(conflict.status, 409);
   } finally {

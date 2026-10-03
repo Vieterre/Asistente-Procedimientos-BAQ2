@@ -31,7 +31,9 @@ PostgreSQL de forma explicita; no se crean asignaciones automaticamente.
 La pantalla de prueba edita nombre, proceso, objetivo, alcance, definiciones y
 condiciones generales. Los cuatro campos de texto usan las mismas claves de
 `payload.fields` del prototipo; al actualizar conserva las otras secciones del
-`payload` sin mostrarlas. El formulario completo sigue sin conectarse.
+`payload` sin mostrarlas. Tambien permite agregar y eliminar varias normas con
+los seis campos de `payload.norms` usados por el prototipo. Actividades y el
+formulario completo siguen sin conectarse.
 
 ## Activacion
 

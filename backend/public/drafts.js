@@ -3,7 +3,7 @@ const ids = [
   "workspace", "sessionControls", "sessionIdentity", "logoutButton", "welcomeText",
   "passwordRequired", "draftWorkspace", "draftForm", "editorTitle", "editorStatus",
   "draftName", "processCode", "draftObjective", "draftScope", "draftDefinitions", "draftConditions", "saveDraftButton", "editorMessage",
-  "newDraftButton", "refreshDraftsButton", "draftCount", "listMessage", "emptyDrafts",
+  "newDraftButton", "addNormButton", "normsList", "emptyNorms", "refreshDraftsButton", "draftCount", "listMessage", "emptyDrafts",
   "draftList"
 ];
 const ui = Object.fromEntries(ids.map(id => [id, document.getElementById(id)]));
@@ -31,12 +31,85 @@ let csrfToken = "";
 let currentDraft = null;
 let currentPayload = {};
 let dirty = false;
+let normRows = [];
 const textFields = [
   ["draftObjective", "objetivo"],
   ["draftScope", "alcance"],
   ["draftDefinitions", "definiciones"],
   ["draftConditions", "condiciones"]
 ];
+const normFields = [
+  ["norma", "Norma"], ["anio", "Año"], ["descripcion", "Descripción"],
+  ["articulo", "Artículo / sección"], ["entidad", "Entidad emisora"]
+];
+
+function markDirty() {
+  dirty = true;
+  setMessage(ui.editorMessage, "");
+}
+
+function renderNorms() {
+  ui.emptyNorms.hidden = normRows.length > 0;
+  ui.normsList.replaceChildren(...normRows.map((norm, index) => {
+    const row = document.createElement("div");
+    row.className = "norm-row";
+    const heading = document.createElement("div");
+    heading.className = "norm-heading";
+    const title = document.createElement("h4");
+    title.textContent = "Norma " + (index + 1);
+    const remove = document.createElement("button");
+    remove.type = "button";
+    remove.className = "secondary-button";
+    remove.textContent = "Eliminar";
+    remove.setAttribute("aria-label", "Eliminar norma " + (index + 1));
+    remove.addEventListener("click", () => {
+      if (!window.confirm("¿Eliminar esta norma del borrador?")) return;
+      normRows.splice(index, 1);
+      renderNorms();
+      markDirty();
+    });
+    heading.append(title, remove);
+    row.append(heading);
+
+    const grid = document.createElement("div");
+    grid.className = "norm-grid";
+    const typeField = document.createElement("div");
+    typeField.className = "field";
+    const typeLabel = document.createElement("label");
+    const typeInput = document.createElement("select");
+    typeInput.id = "normType" + index;
+    typeLabel.htmlFor = typeInput.id;
+    typeLabel.textContent = "Tipo";
+    for (const value of ["Externa", "Interna"]) {
+      const option = document.createElement("option");
+      option.value = value;
+      option.textContent = value;
+      typeInput.append(option);
+    }
+    typeInput.value = norm.tipo === "Interna" ? "Interna" : "Externa";
+    typeInput.addEventListener("change", () => { norm.tipo = typeInput.value; markDirty(); });
+    typeField.append(typeLabel, typeInput);
+    grid.append(typeField);
+
+    for (const [key, labelText] of normFields) {
+      const field = document.createElement("div");
+      field.className = "field" + (key === "descripcion" ? " norm-wide" : "");
+      const label = document.createElement("label");
+      const input = key === "descripcion" ? document.createElement("textarea") : document.createElement("input");
+      input.id = "norm" + key + index;
+      input.value = typeof norm[key] === "string" ? norm[key] : "";
+      input.maxLength = key === "descripcion" ? 10000 : key === "anio" ? 4 : 500;
+      if (key === "anio") input.inputMode = "numeric";
+      label.htmlFor = input.id;
+      label.textContent = labelText;
+      input.addEventListener("input", () => { norm[key] = input.value; markDirty(); });
+      field.append(label, input);
+      grid.append(field);
+    }
+    row.append(grid);
+    return row;
+  }));
+}
 
 function setMessage(node, text, success = false) {
   node.textContent = text;
@@ -77,6 +150,8 @@ function clearSession() {
   sessionStorage.removeItem(csrfKey);
   currentDraft = null;
   currentPayload = {};
+  normRows = [];
+  renderNorms();
   dirty = false;
   ui.workspace.hidden = true;
   ui.sessionControls.hidden = true;
@@ -188,6 +263,10 @@ async function openDraft(id) {
     currentPayload = procedure.payload && typeof procedure.payload === "object" && !Array.isArray(procedure.payload)
       ? procedure.payload
       : {};
+    normRows = Array.isArray(currentPayload.norms)
+      ? currentPayload.norms.map(norm => norm && typeof norm === "object" && !Array.isArray(norm) ? { ...norm } : {})
+      : [];
+    renderNorms();
     ui.draftName.value = procedure.name;
     for (const [inputId, fieldId] of textFields) {
       ui[inputId].value = typeof currentPayload.fields?.[fieldId] === "string"
@@ -211,6 +290,8 @@ function newDraft() {
   if (dirty && !window.confirm("Hay cambios sin guardar. ¿Descartarlos?")) return;
   currentDraft = null;
   currentPayload = { fields: {}, norms: [], activities: [], annexes: [], changes: [], settings: {} };
+  normRows = [];
+  renderNorms();
   ui.draftForm.reset();
   ui.processCode.disabled = false;
   ui.editorTitle.textContent = "Nuevo borrador";
@@ -249,13 +330,13 @@ ui.loginForm.addEventListener("submit", async event => {
   }
 });
 
-ui.draftForm.addEventListener("input", () => {
-  dirty = true;
-  setMessage(ui.editorMessage, "");
-});
-ui.draftForm.addEventListener("change", () => {
-  dirty = true;
-  setMessage(ui.editorMessage, "");
+ui.draftForm.addEventListener("input", markDirty);
+ui.draftForm.addEventListener("change", markDirty);
+ui.addNormButton.addEventListener("click", () => {
+  normRows.push({ tipo: "Externa", norma: "", anio: "", descripcion: "", articulo: "", entidad: "" });
+  renderNorms();
+  markDirty();
+  ui.normsList.lastElementChild?.querySelector("input")?.focus();
 });
 
 ui.draftForm.addEventListener("submit", async event => {
@@ -270,7 +351,7 @@ ui.draftForm.addEventListener("submit", async event => {
     : {};
   const updatedFields = { ...fields, nombre: name };
   for (const [inputId, fieldId] of textFields) updatedFields[fieldId] = ui[inputId].value;
-  const payload = { ...currentPayload, fields: updatedFields };
+  const payload = { ...currentPayload, fields: updatedFields, norms: normRows.map(norm => ({ ...norm })) };
   const body = { name, processCode: ui.processCode.value, payload };
 
   try {
@@ -284,6 +365,7 @@ ui.draftForm.addEventListener("submit", async event => {
 
     currentDraft = result.procedure;
     currentPayload = result.procedure.payload;
+    normRows = Array.isArray(currentPayload.norms) ? currentPayload.norms.map(norm => ({ ...norm })) : [];
     ui.processCode.value = currentDraft.processCode;
     ui.processCode.disabled = true;
     ui.editorTitle.textContent = "Editar borrador";
