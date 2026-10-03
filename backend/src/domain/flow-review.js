@@ -6,6 +6,7 @@ export function reviewFlow(activities) {
   const issues = [];
   const ids = new Set();
   const byId = new Map();
+  const connectorIds = new Set();
   for (const [index, item] of activities.entries()) {
     if (typeof item.uid !== "string" || !item.uid.trim()) {
       issues.push({ index, message: "Falta el identificador del elemento." });
@@ -14,6 +15,12 @@ export function reviewFlow(activities) {
     } else {
       ids.add(item.uid);
       byId.set(item.uid, item);
+    }
+    if (item.tipo === "Conector") {
+      const connectorId = typeof item.connectorId === "string" ? item.connectorId.trim().toUpperCase() : "";
+      if (!connectorId) issues.push({ index, message: "El conector necesita un identificador." });
+      else if (connectorIds.has(connectorId)) issues.push({ index, message: "El identificador del conector está repetido." });
+      else connectorIds.add(connectorId);
     }
   }
 

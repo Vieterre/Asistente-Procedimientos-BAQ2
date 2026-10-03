@@ -29,7 +29,7 @@ test("flow review rejects identical decision routes and cycles without an exit",
   const activities = [
     { uid: "start", tipo: "Inicio" },
     { uid: "choice", tipo: "Decisión", decisionSi: "loop", decisionNo: "loop" },
-    { uid: "loop", tipo: "Conector", connectorDestino: "choice" },
+    { uid: "loop", tipo: "Conector", connectorId: "A", connectorDestino: "choice" },
     { uid: "end", tipo: "Fin" }
   ];
   const issues = reviewFlow(activities);
@@ -58,6 +58,20 @@ test("flow review checks the negative route and required control details", () =>
   });
   issues = reviewFlow(activities);
   assert.deepEqual(issues, []);
+});
+
+test("flow review rejects missing or duplicate connector labels", () => {
+  const activities = [
+    { uid: "start", tipo: "Inicio" },
+    { uid: "one", tipo: "Conector", connectorId: "A", connectorDestino: "two" },
+    { uid: "two", tipo: "Conector", connectorId: " a ", connectorDestino: "end" },
+    { uid: "end", tipo: "Fin" }
+  ];
+  assert.ok(reviewFlow(activities).some(issue => issue.index === 2 && issue.message === "El identificador del conector está repetido."));
+  activities[2].connectorId = "";
+  assert.ok(reviewFlow(activities).some(issue => issue.index === 2 && issue.message === "El conector necesita un identificador."));
+  activities[2].connectorId = "B";
+  assert.deepEqual(reviewFlow(activities), []);
 });
 const row = {
   id: draftId, code: null, name: "Borrador", process_code: "DE", version: "1.0",
