@@ -51,6 +51,8 @@ decisiones y conectores, exige rutas Si/No diferentes y revisa la continuidad
 segun el orden de actividades y los destinos explicitados. Senala elementos
 inalcanzables, rutas sin salida hacia Fin y ciclos cerrados. Usa los cambios
 en pantalla, sin guardar ni impedir que se conserve un borrador incompleto.
+Tambien senala rutas No que van directamente a un punto de control y controles
+con atributos obligatorios incompletos.
 Todavia no sustituye las reglas completas ni el flujograma del prototipo.
 
 ## Activacion

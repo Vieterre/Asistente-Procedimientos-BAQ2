@@ -37,6 +37,15 @@ export function reviewFlow(activities) {
     if (item.tipo === "Decisión" && item.decisionSi && item.decisionSi === item.decisionNo) {
       issues.push({ index, message: "Las rutas Sí y No deben tener destinos diferentes." });
     }
+    if (item.tipo === "Decisión" && byId.get(item.decisionNo)?.tieneControl === true) {
+      issues.push({ index, message: "La ruta No debe pasar por una actividad de corrección antes de llegar a un punto de control." });
+    }
+    if (item.tieneControl === true) {
+      const required = ["controlResponsable", "controlPeriodicidad", "controlAccion", "controlEjecucion", "controlDesviacion", "controlEvidencia"];
+      if (required.some(key => typeof item[key] !== "string" || !item[key].trim())) {
+        issues.push({ index, message: "El punto de control tiene campos obligatorios incompletos." });
+      }
+    }
   }
 
   const start = activities.find(item => item.tipo === "Inicio");

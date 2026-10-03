@@ -39,6 +39,26 @@ test("flow review rejects identical decision routes and cycles without an exit",
   activities[1].decisionNo = "end";
   assert.deepEqual(reviewFlow(activities), []);
 });
+
+test("flow review checks the negative route and required control details", () => {
+  const activities = [
+    { uid: "start", tipo: "Inicio" },
+    { uid: "choice", tipo: "Decisión", decisionSi: "end", decisionNo: "control" },
+    { uid: "control", tipo: "Actividad", tieneControl: true },
+    { uid: "end", tipo: "Fin" }
+  ];
+  let issues = reviewFlow(activities);
+  assert.ok(issues.some(issue => issue.index === 1 && issue.message.includes("ruta No")));
+  assert.ok(issues.some(issue => issue.index === 2 && issue.message.includes("campos obligatorios")));
+  activities.splice(2, 0, { uid: "correction", tipo: "Actividad" });
+  activities[1].decisionNo = "correction";
+  Object.assign(activities[3], {
+    controlResponsable: "Profesional", controlPeriodicidad: "Cada trámite", controlAccion: "Verifica",
+    controlEjecucion: "Compara", controlDesviacion: "Devuelve", controlEvidencia: "Registro"
+  });
+  issues = reviewFlow(activities);
+  assert.deepEqual(issues, []);
+});
 const row = {
   id: draftId, code: null, name: "Borrador", process_code: "DE", version: "1.0",
   status: "borrador", revision: 1, updated_at: new Date(), current_payload: { fields: { nombre: "Borrador" } }
