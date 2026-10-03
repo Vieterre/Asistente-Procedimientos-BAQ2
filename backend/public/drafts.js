@@ -573,6 +573,34 @@ function createResponsibilityField(activity, index, key, labelText, idPrefix) {
   return field;
 }
 
+function activityTextIsFilled(value) {
+  return String(value ?? "").trim().length > 0;
+}
+
+function activityResponsibilityIsComplete(activity, key, otherKey) {
+  const value = String(activity[key] ?? "").trim();
+  if (!value) return false;
+  if (activity[otherKey] !== true) return true;
+  const normalized = value.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  return !/^(varios|todos|quien corresponda|n\/?a|no aplica)$/.test(normalized);
+}
+
+function activityRowIsComplete(activity) {
+  if (!activity) return false;
+  if (["Inicio", "Fin"].includes(activity.tipo)) return activityTextIsFilled(activity.descripcion);
+  if (activity.tipo === "Conector") return activityTextIsFilled(activity.connectorId) && activityTextIsFilled(activity.connectorDestino);
+  const responsible = activityResponsibilityIsComplete(activity, "responsable", "responsableOtro");
+  if (activity.tipo === "Decisión") {
+    return activityTextIsFilled(activity.descripcion) && responsible && activityTextIsFilled(activity.decisionSi) &&
+      activityTextIsFilled(activity.decisionNo) && activity.decisionSi !== activity.decisionNo;
+  }
+  const controlComplete = activity.tieneControl !== true || (
+    activityResponsibilityIsComplete(activity, "controlResponsable", "controlResponsableOtro") &&
+    [activity.controlPeriodicidad, activity.controlAccion, activity.controlEjecucion, activity.controlDesviacion, activity.controlEvidencia].every(activityTextIsFilled)
+  );
+  return activityTextIsFilled(activity.actividad) && activityTextIsFilled(activity.descripcion) && responsible && controlComplete;
+}
+
 function renderActivities() {
   ui.emptyActivities.hidden = activityRows.length > 0;
   ui.addBoundaryButton.hidden = activityRows.some(activity => activity.tipo === "Inicio") && activityRows.some(activity => activity.tipo === "Fin");
@@ -655,12 +683,14 @@ function renderActivities() {
           ? activity.connectorId ? `Conector ${activity.connectorId}` : activity.actividad || "Conector sin identificador"
           : activity.actividad || activity.descripcion || "Actividad sin nombre");
       summary.append(description);
-      const responsible = activity.responsable || activity.controlResponsable;
-      if (responsible) {
-        const responsibleLabel = document.createElement("span");
-        responsibleLabel.textContent = `Responsable: ${responsible}`;
-        summary.append(responsibleLabel);
-      }
+      const responsibleLabel = document.createElement("span");
+      responsibleLabel.textContent = `Responsable: ${activity.responsable || "Responsable pendiente"}`;
+      summary.append(responsibleLabel);
+      const complete = activityRowIsComplete(activity);
+      const completion = document.createElement("span");
+      completion.className = `activity-completion-tag${complete ? "" : " pending"}`;
+      completion.textContent = complete ? "Completa" : "Pendiente";
+      summary.append(completion);
       if (activity.tieneControl === true) {
         const control = document.createElement("span");
         control.className = "activity-summary-tag control-summary-tag";

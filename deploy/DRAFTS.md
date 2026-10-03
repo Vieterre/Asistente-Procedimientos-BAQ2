@@ -116,8 +116,11 @@ La seccion Actividades incluye las cuatro reglas metodologicas del modelado del
 formulario original: actividad y punto de control, decision, independencia entre
 decision y control, y correccion previa al retorno desde la ruta No. Las tarjetas
 permiten contraer y expandir cada actividad, decision o conector de forma
-independiente, mostrando un resumen sin alterar el borrador. Una leyenda de color
-distingue actividades, decisiones, conectores y puntos de control. El control de
+independiente, mostrando responsable y estado Completa/Pendiente sin alterar el
+borrador. Ese estado aplica las reglas del prototipo: campos obligatorios,
+responsables personalizados no ambiguos, destinos Si/No diferentes y los cinco
+datos requeridos del punto de control. Una leyenda de color distingue actividades,
+decisiones, conectores y puntos de control. El control de
 cambios contiene la tabla completa de la Guia para clasificar el cambio y
 asignar la version (cuatro cambios menores y cuatro mayores, con ejemplos de
 1.1 a 1.4 y de 2.0 a 4.0).
