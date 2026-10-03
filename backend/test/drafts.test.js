@@ -180,9 +180,20 @@ test("draft HTTP routes create, read, and update with a live author session", as
     assert.equal(procedure.revision, 1);
     const detail = await fetch(`${base}/${procedure.id}`, { headers });
     assert.equal((await detail.json()).procedure.payload.fields.nombre, "Borrador");
-    const updated = await fetch(`${base}/${procedure.id}`, { method: "PUT", headers, body: JSON.stringify({ name: "Nuevo", payload: { fields: { nombre: "Nuevo" } }, revision: 1 }) });
+    const updated = await fetch(`${base}/${procedure.id}`, { method: "PUT", headers, body: JSON.stringify({
+      name: "Nuevo",
+      payload: {
+        fields: { nombre: "Nuevo", objetivo: "Objetivo", alcance: "Alcance", definiciones: "Definiciones", condiciones: "Condiciones" },
+        activities: [{ actividad: "Inicio" }]
+      },
+      revision: 1
+    }) });
     assert.equal(updated.status, 200);
     assert.equal((await updated.json()).procedure.revision, 2);
+    const reopened = await fetch(`${base}/${procedure.id}`, { headers });
+    const reopenedPayload = (await reopened.json()).procedure.payload;
+    assert.deepEqual(reopenedPayload.fields, { nombre: "Nuevo", objetivo: "Objetivo", alcance: "Alcance", definiciones: "Definiciones", condiciones: "Condiciones" });
+    assert.deepEqual(reopenedPayload.activities, [{ actividad: "Inicio" }]);
     const conflict = await fetch(`${base}/${procedure.id}`, { method: "PUT", headers, body: JSON.stringify({ name: "Viejo", payload: {}, revision: 1 }) });
     assert.equal(conflict.status, 409);
   } finally {

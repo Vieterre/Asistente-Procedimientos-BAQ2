@@ -18,6 +18,11 @@ escrituras requieren `X-CSRF-Token`. La API no cambia estados de evaluacion ni
 interpreta `payload` como una aprobacion. No usarla para el flujo de conceptos
 hasta que exista una API de evaluacion independiente. El catalogo no filtra asignaciones de `user_processes`, por lo que esta pantalla no debe usarse con datos reales ni como control de acceso a procesos.
 
+La pantalla de prueba edita nombre, proceso, objetivo, alcance, definiciones y
+condiciones generales. Los cuatro campos de texto usan las mismas claves de
+`payload.fields` del prototipo; al actualizar conserva las otras secciones del
+`payload` sin mostrarlas. El formulario completo sigue sin conectarse.
+
 ## Activacion
 
 1. Respalde la base activa y verifique el respaldo antes de la migracion.

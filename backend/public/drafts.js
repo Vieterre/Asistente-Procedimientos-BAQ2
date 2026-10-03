@@ -2,7 +2,7 @@ const ids = [
   "loginView", "loginForm", "loginUsername", "loginPassword", "loginOtp", "loginMessage",
   "workspace", "sessionControls", "sessionIdentity", "logoutButton", "welcomeText",
   "passwordRequired", "draftWorkspace", "draftForm", "editorTitle", "editorStatus",
-  "draftName", "processCode", "draftObjective", "saveDraftButton", "editorMessage",
+  "draftName", "processCode", "draftObjective", "draftScope", "draftDefinitions", "draftConditions", "saveDraftButton", "editorMessage",
   "newDraftButton", "refreshDraftsButton", "draftCount", "listMessage", "emptyDrafts",
   "draftList"
 ];
@@ -31,6 +31,12 @@ let csrfToken = "";
 let currentDraft = null;
 let currentPayload = {};
 let dirty = false;
+const textFields = [
+  ["draftObjective", "objetivo"],
+  ["draftScope", "alcance"],
+  ["draftDefinitions", "definiciones"],
+  ["draftConditions", "condiciones"]
+];
 
 function setMessage(node, text, success = false) {
   node.textContent = text;
@@ -183,9 +189,11 @@ async function openDraft(id) {
       ? procedure.payload
       : {};
     ui.draftName.value = procedure.name;
-    ui.draftObjective.value = typeof currentPayload.fields?.objetivo === "string"
-      ? currentPayload.fields.objetivo
-      : "";
+    for (const [inputId, fieldId] of textFields) {
+      ui[inputId].value = typeof currentPayload.fields?.[fieldId] === "string"
+        ? currentPayload.fields[fieldId]
+        : "";
+    }
     ui.processCode.value = procedure.processCode;
     ui.processCode.disabled = true;
     ui.editorTitle.textContent = "Editar borrador";
@@ -260,7 +268,9 @@ ui.draftForm.addEventListener("submit", async event => {
   const fields = currentPayload.fields && typeof currentPayload.fields === "object" && !Array.isArray(currentPayload.fields)
     ? currentPayload.fields
     : {};
-  const payload = { ...currentPayload, fields: { ...fields, nombre: name, objetivo: ui.draftObjective.value } };
+  const updatedFields = { ...fields, nombre: name };
+  for (const [inputId, fieldId] of textFields) updatedFields[fieldId] = ui[inputId].value;
+  const payload = { ...currentPayload, fields: updatedFields };
   const body = { name, processCode: ui.processCode.value, payload };
 
   try {
