@@ -99,10 +99,10 @@ los valores personalizados ya guardados se conservan. Elaboro y Reviso son
 selectores del catalogo completo; Aprobo solo ofrece cargos Directivos. Los
 valores historicos fuera del catalogo se conservan en una opcion identificada.
 Los tres cargos deben ser distintos para enviar a evaluacion. Cada nuevo cambio
-sugiere el siguiente decimal, conserva la fecha del dia y requiere razon antes
-del envio; el usuario asigna versiones mayores segun la guia y no se aceptan
-versiones repetidas. El catalogo es de interfaz y no requiere una migracion de
-base de datos.
+sugiere el decimal siguiente a la mayor version registrada, conserva la fecha
+del dia y requiere razon antes del envio; el usuario asigna versiones mayores
+segun la guia y no se aceptan versiones repetidas. El catalogo es de interfaz y
+no requiere una migracion de base de datos.
 
 La consola de pruebas incluye una Vista preliminar de solo lectura con los
 cambios actuales del formulario (incluidos los no guardados). Presenta las

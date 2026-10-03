@@ -15,6 +15,8 @@ test("a new change row suggests the next decimal version from saved history", as
   assert.equal(suggest([{ version: "1.0" }]), "1.1");
   assert.equal(suggest([{ version: "1.0" }, { version: "1.1" }]), "1.2");
   assert.equal(suggest([{ version: "1.0" }, { version: "" }]), "1.1");
+  assert.equal(suggest([{ version: "1.0" }, { version: "2.0" }, { version: "1.0" }]), "2.1");
+  assert.equal(suggest([{ version: "2.9" }, { version: "2.10" }]), "2.11");
   assert.equal(suggest([], "2.0"), "2.1");
   assert.match(script, /const fallbackVersion = String\(currentPayload\.fields\?\.version \|\| "1\.0"\)/);
 });

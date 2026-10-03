@@ -211,11 +211,17 @@ function populateApprovalRoleSelect(select, selected = "", allowedLevels = null)
 
 function suggestNextChangeVersion(changes, fallback = "1.0") {
   const validVersion = /^\d+\.\d+$/;
-  const latest = [...(Array.isArray(changes) ? changes : [])].reverse()
+  const highest = [...(Array.isArray(changes) ? changes : [])]
     .map(change => String(change?.version || "").trim())
-    .find(version => validVersion.test(version));
+    .filter(version => validVersion.test(version))
+    .reduce((currentHighest, version) => {
+      if (!currentHighest) return version;
+      const [major, minor] = version.split(".").map(Number);
+      const [highestMajor, highestMinor] = currentHighest.split(".").map(Number);
+      return major > highestMajor || (major === highestMajor && minor > highestMinor) ? version : currentHighest;
+    }, "");
   const fallbackVersion = String(fallback || "").trim();
-  const base = latest || (validVersion.test(fallbackVersion) ? fallbackVersion : "1.0");
+  const base = highest || (validVersion.test(fallbackVersion) ? fallbackVersion : "1.0");
   const [major, minor] = base.split(".").map(Number);
   return `${major}.${minor + 1}`;
 }
