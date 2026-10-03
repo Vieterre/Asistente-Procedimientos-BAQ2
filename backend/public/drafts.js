@@ -4,7 +4,7 @@ const ids = [
   "passwordRequired", "draftWorkspace", "draftForm", "editorTitle", "editorStatus",
   "draftName", "processCode", "draftObjective", "draftScope", "draftDefinitions", "draftConditions", "saveDraftButton", "editorMessage",
   "newDraftButton", "addNormButton", "normsList", "emptyNorms", "addBoundaryButton", "addActivityButton", "addDecisionButton", "addConnectorButton", "activitiesList", "emptyActivities", "reviewFlowButton", "flowReviewResult", "refreshDraftsButton", "draftCount", "listMessage", "emptyDrafts",
-  "draftList", "flowSection", "flowSummary", "refreshFlowButton", "flowSvg"
+  "draftList", "flowSection", "flowSummary", "showFlowEvidence", "refreshFlowButton", "flowSvg"
 ];
 const ui = Object.fromEntries(ids.map(id => [id, document.getElementById(id)]));
 const csrfKey = "drafts_csrf";
@@ -454,6 +454,7 @@ function renderFlow() {
   svg.replaceChildren();
   ui.flowSection.hidden = activityRows.length === 0;
   if (!activityRows.length) return;
+  const showEvidence = ui.showFlowEvidence.checked;
 
   const roles = [...new Set(activityRows.filter(item => !["Inicio", "Fin", "Conector"].includes(item.tipo))
     .flatMap(item => {
@@ -461,9 +462,10 @@ function renderFlow() {
       return names.length ? names : ["Sin responsable"];
     }))];
   if (!roles.length) roles.push("Sin responsable");
-  const laneWidth = 260;
+  const laneWidth = showEvidence ? 360 : 260;
+  const rowHeight = showEvidence ? 168 : 132;
   const width = Math.max(760, roles.length * laneWidth + 160);
-  const height = 150 + activityRows.length * 132;
+  const height = 150 + activityRows.length * rowHeight;
   svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
   svg.setAttribute("width", width);
   svg.setAttribute("height", height);
@@ -491,7 +493,7 @@ function renderFlow() {
     const lanes = itemRoles.map(role => roles.indexOf(role)).filter(lane => lane >= 0);
     const center = ["Inicio", "Fin", "Conector"].includes(item.tipo) ? width / 2
       : lanes.length ? 80 + (Math.min(...lanes) + Math.max(...lanes) + 1) * laneWidth / 2 : 80 + laneWidth / 2;
-    return [item.uid, { x: center, y: 118 + index * 132, index, item }];
+    return [item.uid, { x: center, y: 118 + index * rowHeight, index, item }];
   }));
 
   for (const [index, item] of activityRows.entries()) {
@@ -537,6 +539,17 @@ function renderFlow() {
     lines.forEach((line, lineIndex) => group.append(svgNode("text", { x, y: y + (lineIndex - (lines.length - 1) / 2) * 17 + 5, class: "flow-text", "text-anchor": "middle" }, line)));
     if (item.tieneControl) group.append(svgNode("text", { x, y: y + 32, class: "flow-note", "text-anchor": "middle" }, "CONTROL"));
     svg.append(group);
+    const evidence = String(item.evidencia || item.controlEvidencia || "").trim();
+    if (showEvidence && evidence && !["Inicio", "Conector", "Fin"].includes(item.tipo)) {
+      const record = svgNode("g");
+      record.append(svgNode("title", {}, `Registro / evidencia: ${evidence}`));
+      record.append(svgNode("line", { x1: x + 65, y1: y + 43, x2: x + 65, y2: y + 57, class: "flow-record-link" }));
+      record.append(svgNode("path", { d: `M ${x + 30} ${y + 57} h 130 v 54 q -16 -7 -32 0 q -16 7 -32 0 q -16 -7 -33 0 q -16 7 -33 0 z`, class: "flow-record" }));
+      record.append(svgNode("text", { x: x + 95, y: y + 73, class: "flow-record-caption", "text-anchor": "middle" }, "REGISTRO / EVIDENCIA"));
+      const lines = flowLines(evidence, 20);
+      lines.forEach((line, lineIndex) => record.append(svgNode("text", { x: x + 95, y: y + 88 + lineIndex * 11, class: "flow-record-text", "text-anchor": "middle" }, line)));
+      svg.append(record);
+    }
   }
 }
 
@@ -877,6 +890,7 @@ ui.draftForm.addEventListener("submit", async event => {
 ui.newDraftButton.addEventListener("click", newDraft);
 ui.refreshDraftsButton.addEventListener("click", loadDrafts);
 ui.refreshFlowButton.addEventListener("click", renderFlow);
+ui.showFlowEvidence.addEventListener("change", renderFlow);
 ui.logoutButton.addEventListener("click", async () => {
   ui.logoutButton.disabled = true;
   try {
