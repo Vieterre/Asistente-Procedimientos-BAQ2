@@ -35,8 +35,11 @@ condiciones generales. Los cuatro campos de texto usan las mismas claves de
 los seis campos de `payload.norms` usados por el prototipo. La seccion
 Actividades permite agregar y editar actividades ordinarias (nombre,
 descripcion, responsable, evidencia y sistema) en `payload.activities`.
-Decisiones, conectores, puntos de control, Inicio y Fin se muestran sin edicion
-y se conservan en el contenido. El formulario completo sigue sin conectarse.
+Las decisiones permiten registrar pregunta, responsable y rutas Si/No por
+identificador de actividad. No se puede eliminar un destino mientras otra
+ruta lo referencie. Conectores, puntos de control, Inicio y Fin se muestran
+sin edicion y se conservan en el contenido. El formulario completo sigue sin
+conectarse; no usar estas rutas como validacion de un flujo publicable.
 
 ## Activacion
 

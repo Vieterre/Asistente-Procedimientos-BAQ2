@@ -3,7 +3,7 @@ const ids = [
   "workspace", "sessionControls", "sessionIdentity", "logoutButton", "welcomeText",
   "passwordRequired", "draftWorkspace", "draftForm", "editorTitle", "editorStatus",
   "draftName", "processCode", "draftObjective", "draftScope", "draftDefinitions", "draftConditions", "saveDraftButton", "editorMessage",
-  "newDraftButton", "addNormButton", "normsList", "emptyNorms", "addActivityButton", "activitiesList", "emptyActivities", "refreshDraftsButton", "draftCount", "listMessage", "emptyDrafts",
+  "newDraftButton", "addNormButton", "normsList", "emptyNorms", "addActivityButton", "addDecisionButton", "activitiesList", "emptyActivities", "refreshDraftsButton", "draftCount", "listMessage", "emptyDrafts",
   "draftList"
 ];
 const ui = Object.fromEntries(ids.map(id => [id, document.getElementById(id)]));
@@ -129,7 +129,7 @@ function renderActivities() {
     const title = document.createElement("h4");
     title.textContent = activity.tipo === "Actividad" ? "Actividad " + (index + 1) : String(activity.tipo || "Elemento del flujo");
     heading.append(title);
-    const editable = activity.tipo === "Actividad" && !activity.tieneControl;
+    const editable = ["Actividad", "Decisión"].includes(activity.tipo) && !activity.tieneControl;
     if (editable) {
       const remove = document.createElement("button");
       remove.type = "button";
@@ -137,6 +137,10 @@ function renderActivities() {
       remove.textContent = "Eliminar";
       remove.setAttribute("aria-label", "Eliminar actividad " + (index + 1));
       remove.addEventListener("click", () => {
+        if (activityRows.some(other => other !== activity && [other.decisionSi, other.decisionNo, other.connectorDestino].includes(activity.uid))) {
+          window.alert("Esta actividad es destino de una ruta. Cambia primero esa ruta.");
+          return;
+        }
         if (!window.confirm("¿Eliminar esta actividad del borrador?")) return;
         activityRows.splice(index, 1);
         renderActivities();
@@ -150,6 +154,64 @@ function renderActivities() {
       summary.className = "activity-summary";
       summary.textContent = String(activity.actividad || activity.descripcion || "Sin nombre");
       row.append(summary);
+      return row;
+    }
+    if (activity.tipo === "Decisión") {
+      const questionField = document.createElement("div");
+      questionField.className = "field";
+      const questionLabel = document.createElement("label");
+      const question = document.createElement("textarea");
+      question.id = "decisionQuestion" + index;
+      questionLabel.htmlFor = question.id;
+      questionLabel.textContent = "Pregunta de decisión";
+      question.value = typeof activity.descripcion === "string" ? activity.descripcion : "";
+      question.maxLength = 10000;
+      question.addEventListener("input", () => {
+        activity.descripcion = question.value;
+        activity.actividad = question.value;
+        markDirty();
+      });
+      questionField.append(questionLabel, question);
+      row.append(questionField);
+      const responsibleField = document.createElement("div");
+      responsibleField.className = "field";
+      const responsibleLabel = document.createElement("label");
+      const responsible = document.createElement("input");
+      responsible.id = "decisionResponsible" + index;
+      responsibleLabel.htmlFor = responsible.id;
+      responsibleLabel.textContent = "Responsable";
+      responsible.value = typeof activity.responsable === "string" ? activity.responsable : "";
+      responsible.maxLength = 500;
+      responsible.addEventListener("input", () => { activity.responsable = responsible.value; markDirty(); });
+      responsibleField.append(responsibleLabel, responsible);
+      row.append(responsibleField);
+      const routes = document.createElement("div");
+      routes.className = "activity-grid";
+      for (const [key, labelText] of [["decisionSi", "Ruta Sí"], ["decisionNo", "Ruta No"]]) {
+        const field = document.createElement("div");
+        field.className = "field";
+        const label = document.createElement("label");
+        const select = document.createElement("select");
+        select.id = key + index;
+        label.htmlFor = select.id;
+        label.textContent = labelText;
+        const placeholder = document.createElement("option");
+        placeholder.value = "";
+        placeholder.textContent = "Selecciona un destino";
+        select.append(placeholder);
+        for (const target of activityRows) {
+          if (target === activity || target.tipo === "Inicio") continue;
+          const option = document.createElement("option");
+          option.value = target.uid;
+          option.textContent = target.actividad || target.descripcion || target.tipo;
+          select.append(option);
+        }
+        select.value = activity[key] || "";
+        select.addEventListener("change", () => { activity[key] = select.value; markDirty(); });
+        field.append(label, select);
+        routes.append(field);
+      }
+      row.append(routes);
       return row;
     }
     const grid = document.createElement("div");
@@ -332,7 +394,7 @@ async function openDraft(id) {
       : [];
     renderNorms();
     activityRows = Array.isArray(currentPayload.activities)
-      ? currentPayload.activities.map(activity => activity && typeof activity === "object" && !Array.isArray(activity) ? { ...activity } : {})
+      ? currentPayload.activities.map(activity => activity && typeof activity === "object" && !Array.isArray(activity) ? { ...activity, uid: activity.uid || crypto.randomUUID() } : { uid: crypto.randomUUID() })
       : [];
     renderActivities();
     ui.draftName.value = procedure.name;
@@ -408,18 +470,21 @@ ui.addNormButton.addEventListener("click", () => {
   markDirty();
   ui.normsList.lastElementChild?.querySelector("input")?.focus();
 });
-ui.addActivityButton.addEventListener("click", () => {
-  const record = {
-    uid: crypto.randomUUID(), tipo: "Actividad", n: activityRows.filter(activity => activity.tipo === "Actividad").length + 1,
-    actividad: "", descripcion: "",
-    responsable: "", evidencia: "", sistema: "", tieneControl: false
-  };
+function addFlowItem(record) {
   const endIndex = activityRows.findIndex(activity => activity.tipo === "Fin");
   activityRows.splice(endIndex < 0 ? activityRows.length : endIndex, 0, record);
   renderActivities();
   markDirty();
-  ui.activitiesList.querySelectorAll(".activity-row")[endIndex < 0 ? activityRows.length - 1 : endIndex]?.querySelector("input")?.focus();
-});
+  ui.activitiesList.querySelectorAll(".activity-row")[endIndex < 0 ? activityRows.length - 1 : endIndex]?.querySelector("input,textarea")?.focus();
+}
+ui.addActivityButton.addEventListener("click", () => addFlowItem({
+  uid: crypto.randomUUID(), tipo: "Actividad", n: activityRows.filter(activity => activity.tipo === "Actividad").length + 1,
+  actividad: "", descripcion: "", responsable: "", evidencia: "", sistema: "", tieneControl: false
+}));
+ui.addDecisionButton.addEventListener("click", () => addFlowItem({
+  uid: crypto.randomUUID(), tipo: "Decisión", actividad: "", descripcion: "", responsable: "",
+  decisionSi: "", decisionNo: "", tieneControl: false
+}));
 
 ui.draftForm.addEventListener("submit", async event => {
   event.preventDefault();
