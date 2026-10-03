@@ -204,6 +204,15 @@ function completeBoundaries() {
   if (added) markDirty();
 }
 
+function moveActivity(index, direction) {
+  const target = index + direction;
+  if (target < 0 || target >= activityRows.length || ["Inicio", "Fin"].includes(activityRows[index]?.tipo) || ["Inicio", "Fin"].includes(activityRows[target]?.tipo)) return;
+  [activityRows[index], activityRows[target]] = [activityRows[target], activityRows[index]];
+  renderActivities();
+  markDirty();
+  ui.activitiesList.querySelectorAll(".activity-row")[target]?.querySelector(direction < 0 ? '[data-move="up"]' : '[data-move="down"]')?.focus();
+}
+
 function renderActivities() {
   ui.emptyActivities.hidden = activityRows.length > 0;
   ui.addBoundaryButton.hidden = activityRows.some(activity => activity.tipo === "Inicio") && activityRows.some(activity => activity.tipo === "Fin");
@@ -218,6 +227,23 @@ function renderActivities() {
       : String(activity.tipo || "Elemento del flujo");
     heading.append(title);
     const editable = activity.tipo === "Actividad" || (["Decisión", "Conector"].includes(activity.tipo) && !activity.tieneControl);
+    if (!["Inicio", "Fin"].includes(activity.tipo)) {
+      const actions = document.createElement("div");
+      actions.className = "activity-actions";
+      for (const [direction, symbol, labelText] of [[-1, "↑", "Subir"], [1, "↓", "Bajar"]]) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "secondary-button move-button";
+        button.dataset.move = direction < 0 ? "up" : "down";
+        button.textContent = symbol;
+        button.title = labelText;
+        button.setAttribute("aria-label", `${labelText} ${activity.tipo.toLowerCase()} ${index + 1}`);
+        button.disabled = ["Inicio", "Fin"].includes(activityRows[index + direction]?.tipo) || index + direction < 0 || index + direction >= activityRows.length;
+        button.addEventListener("click", () => moveActivity(index, direction));
+        actions.append(button);
+      }
+      heading.append(actions);
+    }
     if (editable) {
       const remove = document.createElement("button");
       remove.type = "button";
@@ -234,7 +260,7 @@ function renderActivities() {
         renderActivities();
         markDirty();
       });
-      heading.append(remove);
+      heading.querySelector(".activity-actions")?.append(remove);
     }
     row.append(heading);
     if (["Inicio", "Fin"].includes(activity.tipo)) {
