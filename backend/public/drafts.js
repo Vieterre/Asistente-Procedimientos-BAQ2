@@ -40,6 +40,7 @@ const errorMessages = {
   invalid_evaluation: "Revisa los datos de la evaluación.",
   evaluation_incomplete: "Completa los criterios, las observaciones y los ajustes requeridos.",
   evaluation_concept_required: "Escribe el concepto técnico antes de decidir.",
+  evaluation_favorable_conditions_unmet: "El concepto favorable exige al menos 90 puntos, ningún incumplimiento crítico y ningún hallazgo abierto.",
   evaluation_no_findings: "No hay criterios incumplidos para devolver.",
   evaluation_meets_favorable_threshold: "La evaluación cumple las condiciones del concepto favorable.",
   invalid_evaluation_decision: "La decisión de evaluación no es válida.",

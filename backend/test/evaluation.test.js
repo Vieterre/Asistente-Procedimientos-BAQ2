@@ -133,8 +133,15 @@ test("favorable concept is atomic and rejects incomplete or critical evaluations
   const criteria = criteriaWith();
   criteria.con1 = { result: "No cumple", observation: "Incumple", adjustment: "Ajustar", findingStatus: "Pendiente" };
   await saveAssignedEvaluation(critical, evaluator, procedureId, { criteria, concept: "Debe corregir" });
-  await assert.rejects(decideAssignedEvaluation(critical, evaluator, procedureId, { decision: "favorable" }), { code: "draft_locked" });
+  await assert.rejects(decideAssignedEvaluation(critical, evaluator, procedureId, { decision: "favorable" }), { code: "evaluation_favorable_conditions_unmet" });
   assert.equal(critical.procedure.status, PROCEDURE_STATUS.IN_REVIEW);
+
+  const incomplete = evaluationPool();
+  const partial = criteriaWith();
+  partial.obj2.result = "";
+  await saveAssignedEvaluation(incomplete, evaluator, procedureId, { criteria: partial, concept: "Prueba incompleta" });
+  await assert.rejects(decideAssignedEvaluation(incomplete, evaluator, procedureId, { decision: "favorable" }), { code: "evaluation_incomplete" });
+  assert.equal(incomplete.procedure.status, PROCEDURE_STATUS.IN_REVIEW);
 });
 
 test("returning findings lets the author answer before a new review", async () => {

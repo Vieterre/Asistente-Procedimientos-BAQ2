@@ -219,15 +219,19 @@ export async function decideAssignedEvaluation(pool, user, procedureId, { decisi
       procedure: { status: procedure.status, assignedEvaluatorId: procedure.assigned_evaluator_id, processCode: procedure.process_code },
       evaluation: { complete: metrics.complete, score: metrics.score, criticalFailures: metrics.criticalFailures, openFindings: metrics.openFindings }
     };
-    const action = decision === "favorable" ? ACTIONS.ISSUE_FAVORABLE_CONCEPT
-      : decision === "no_favorable" ? ACTIONS.ISSUE_UNFAVORABLE_CONCEPT
-      : ACTIONS.RETURN_FOR_CORRECTIONS;
-    if (!canPerform({ ...user, processCodes: [procedure.process_code] }, action, permissionContext)) throw new DraftError("draft_locked", 403);
+    const currentUser = { ...user, processCodes: [procedure.process_code] };
+    if (!canPerform(currentUser, ACTIONS.UPDATE_EVALUATION, permissionContext)) throw new DraftError("draft_locked", 403);
     const issues = validateEvaluation(criteria, procedure.version);
     if (issues.length) throw new DraftError("evaluation_incomplete", 400, issues);
     if (!String(existing.concept || "").trim()) throw new DraftError("evaluation_concept_required", 400);
     if (decision === "devolver" && metrics.failures === 0) throw new DraftError("evaluation_no_findings", 400);
     if (decision === "no_favorable" && evaluationIsFavorable(metrics)) throw new DraftError("evaluation_meets_favorable_threshold", 400);
+    const action = decision === "favorable" ? ACTIONS.ISSUE_FAVORABLE_CONCEPT
+      : decision === "no_favorable" ? ACTIONS.ISSUE_UNFAVORABLE_CONCEPT
+      : ACTIONS.RETURN_FOR_CORRECTIONS;
+    if (!canPerform(currentUser, action, permissionContext)) {
+      throw new DraftError(decision === "favorable" ? "evaluation_favorable_conditions_unmet" : "draft_locked", decision === "favorable" ? 400 : 403);
+    }
 
     const nextStatus = decision === "devolver" ? PROCEDURE_STATUS.RETURNED
       : decision === "favorable" ? PROCEDURE_STATUS.FAVORABLE
