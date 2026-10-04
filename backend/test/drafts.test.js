@@ -288,6 +288,36 @@ test("author can submit a complete draft to an evaluator assigned to its process
   assert.equal(notification.params[2], draftId);
 });
 
+test("a returned draft requires answers and carries them into the next evaluation round", async () => {
+  const procedure = { ...row, process_code: "DE", status: "devuelto_para_ajustes", revision: 4,
+    current_payload: completePayload, created_by_user_id: author.id, assigned_evaluator_id: evaluator.id };
+  const previous = { id: "55555555-5555-4555-8555-555555555555", status: "devuelto_para_ajustes",
+    criteria_payload: { iteration: 2, criteria: { act1: { result: "No cumple", response: "", findingStatus: "Pendiente" } } } };
+  let inserted;
+  const pool = { connect: async () => ({
+    async query(sql, params) {
+      if (["BEGIN", "COMMIT", "ROLLBACK"].includes(sql)) return { rows: [] };
+      if (sql.startsWith("SELECT p.id")) return { rows: [procedure] };
+      if (sql.startsWith("SELECT id, status, criteria_payload FROM evaluations")) return { rows: [previous] };
+      if (sql.startsWith("SELECT 1 FROM app_users")) return { rows: [{ "?column?": 1 }] };
+      if (sql.startsWith("UPDATE procedures")) return { rows: [{ ...procedure, status: "enviado_a_evaluacion", revision: 5 }] };
+      if (sql.startsWith("INSERT INTO evaluations")) { inserted = JSON.parse(params[4]); return { rows: [] }; }
+      if (sql.startsWith("INSERT INTO audit_events") || sql.startsWith("INSERT INTO user_notifications")) return { rows: [] };
+      throw new Error(`Unexpected SQL: ${sql}`);
+    },
+    release() {}
+  }) };
+  await assert.rejects(submitOwnDraft(pool, author, draftId, { evaluatorId: evaluator.id, revision: 4 }), {
+    code: "correction_responses_required", details: ["act1"]
+  });
+  previous.criteria_payload.criteria.act1.response = "Reordené el flujo";
+  assert.equal((await submitOwnDraft(pool, author, draftId, { evaluatorId: evaluator.id, revision: 4 })).status, "enviado_a_evaluacion");
+  assert.equal(inserted.iteration, 3);
+  assert.equal(inserted.previousEvaluationId, previous.id);
+  assert.equal(inserted.criteria.act1.response, "Reordené el flujo");
+  assert.equal(inserted.criteria.act1.findingStatus, "Respondido");
+});
+
 test("evaluator choices require process access and include only eligible assigned evaluators", async () => {
   const calls = [];
   const pool = { async query(sql, params) {
@@ -309,11 +339,13 @@ test("evaluator choices require process access and include only eligible assigne
 test("submission rejects incomplete drafts, stale revisions, and evaluators outside the process", async () => {
   const procedure = { ...row, process_code: "PD", revision: 4, current_payload: { ...completePayload, fields: {} }, created_by_user_id: author.id };
   let evaluatorAssigned = true;
+  let procedureUpdates = 0;
   const pool = { connect: async () => ({
     async query(sql) {
       if (["BEGIN", "COMMIT", "ROLLBACK"].includes(sql)) return { rows: [] };
       if (sql.startsWith("SELECT p.id")) return { rows: [procedure] };
       if (sql.startsWith("SELECT 1 FROM app_users")) return { rows: evaluatorAssigned ? [{ "?column?": 1 }] : [] };
+      if (sql.startsWith("UPDATE procedures")) procedureUpdates += 1;
       throw new Error(`Unexpected SQL: ${sql}`);
     },
     release() {}
@@ -323,6 +355,20 @@ test("submission rejects incomplete drafts, stale revisions, and evaluators outs
     assert.ok(error.details.length > 0);
     return true;
   });
+  procedure.current_payload = {
+    ...completePayload,
+    activities: [
+      completePayload.activities[0],
+      { uid: "choice", tipo: "Decisión", descripcion: "¿Está completo?", responsable: "Profesional", decisionSi: "end", decisionNo: "missing" },
+      completePayload.activities[2]
+    ]
+  };
+  await assert.rejects(submitOwnDraft(pool, author, draftId, { evaluatorId: evaluator.id, revision: 4 }), error => {
+    assert.equal(error.code, "submission_incomplete");
+    assert.ok(error.details.includes("Corrige las observaciones del flujo antes de enviar."));
+    return true;
+  });
+  assert.equal(procedureUpdates, 0, "an invalid flow must never be submitted");
   procedure.current_payload = {
     ...completePayload,
     changes: [...completePayload.changes, { version: "1.0", fecha: "2026-10-03", razon: "Actualización" }]

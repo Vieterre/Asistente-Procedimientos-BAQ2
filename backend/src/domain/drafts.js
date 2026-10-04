@@ -3,6 +3,7 @@ import { ACTIONS, canPerform } from "./permissions.js";
 import { PROCEDURE_STATUS } from "./workflow.js";
 import { ROLES } from "./roles.js";
 import { reviewFlow, reviewFlowCompleteness } from "./flow-review.js";
+import { EVALUATION_RUBRIC_VERSION, missingCorrectionResponses } from "./evaluation-rubric.js";
 
 export class DraftError extends Error {
   constructor(code, status, details) {
@@ -227,6 +228,31 @@ export async function submitOwnDraft(pool, user, id, { evaluatorId, revision }) 
     if (!procedure) throw new DraftError("draft_not_found", 404);
     if (procedure.revision !== revision) throw new DraftError("draft_conflict", 409);
     const issues = submissionIssues(procedure.name, procedure.current_payload);
+    let nextEvaluationPayload = { rubricVersion: EVALUATION_RUBRIC_VERSION, iteration: 1 };
+    if (procedure.status === PROCEDURE_STATUS.RETURNED) {
+      const previous = await client.query(
+        `SELECT id, status, criteria_payload FROM evaluations WHERE procedure_id = $1
+          ORDER BY created_at DESC, id DESC LIMIT 1 FOR UPDATE`,
+        [id]
+      );
+      const stored = previous.rows[0]?.criteria_payload;
+      const criteria = stored?.criteria && typeof stored.criteria === "object" ? stored.criteria : stored;
+      const missingResponses = missingCorrectionResponses(criteria);
+      if (previous.rows[0]?.status !== PROCEDURE_STATUS.RETURNED ||
+          !criteria || typeof criteria !== "object" || Array.isArray(criteria) || missingResponses.length) {
+        throw new DraftError("correction_responses_required", 400, missingResponses);
+      }
+      const copiedCriteria = structuredClone(criteria);
+      for (const record of Object.values(copiedCriteria)) {
+        if (record?.result === "No cumple" && record.response) record.findingStatus = "Respondido";
+      }
+      nextEvaluationPayload = {
+        ...nextEvaluationPayload,
+        iteration: Number(stored?.iteration || 1) + 1,
+        previousEvaluationId: previous.rows[0].id,
+        criteria: copiedCriteria
+      };
+    }
     const evaluator = await client.query(
       `SELECT 1 FROM app_users u JOIN user_processes up ON up.user_id = u.id
         WHERE u.id = $1 AND u.role = 'evaluador' AND u.active = TRUE
@@ -257,7 +283,8 @@ export async function submitOwnDraft(pool, user, id, { evaluatorId, revision }) 
     await client.query(
       `INSERT INTO evaluations (id, procedure_id, evaluator_id, status, criteria_payload)
        VALUES ($1, $2, $3, $4, $5::jsonb)`,
-      [randomUUID(), id, evaluatorId, PROCEDURE_STATUS.SUBMITTED, JSON.stringify({ submittedRevision: updated.rows[0].revision })]
+      [randomUUID(), id, evaluatorId, PROCEDURE_STATUS.SUBMITTED,
+        JSON.stringify({ ...nextEvaluationPayload, submittedRevision: updated.rows[0].revision })]
     );
     await client.query(
       `INSERT INTO audit_events (id, actor_user_id, event_type, entity_type, entity_id, metadata)
@@ -285,9 +312,10 @@ export async function listAssignedProcedures(pool, user) {
     `SELECT p.id, p.code, p.name, p.process_code, p.version, p.status, p.revision,
             p.updated_at, p.current_payload, p.assigned_evaluator_id
        FROM procedures p JOIN user_processes up ON up.process_code = p.process_code AND up.user_id = $1
-      WHERE p.assigned_evaluator_id = $1 AND p.status IN ($2, $3, $4)
+      WHERE p.assigned_evaluator_id = $1 AND p.status IN ($2, $3, $4, $5, $6, $7)
       ORDER BY p.updated_at DESC`,
-    [user.id, PROCEDURE_STATUS.SUBMITTED, PROCEDURE_STATUS.IN_REVIEW, PROCEDURE_STATUS.CORRECTED]
+    [user.id, PROCEDURE_STATUS.SUBMITTED, PROCEDURE_STATUS.IN_REVIEW, PROCEDURE_STATUS.CORRECTED,
+      PROCEDURE_STATUS.RETURNED, PROCEDURE_STATUS.FAVORABLE, PROCEDURE_STATUS.UNFAVORABLE]
   );
   return result.rows.map(row => publicDraft(row));
 }
@@ -299,8 +327,9 @@ export async function getAssignedProcedure(pool, user, id) {
             p.updated_at, p.current_payload, p.assigned_evaluator_id
        FROM procedures p JOIN user_processes up ON up.process_code = p.process_code AND up.user_id = $2
       WHERE p.id = $1 AND p.assigned_evaluator_id = $2
-        AND p.status IN ($3, $4, $5)`,
-    [id, user.id, PROCEDURE_STATUS.SUBMITTED, PROCEDURE_STATUS.IN_REVIEW, PROCEDURE_STATUS.CORRECTED]
+        AND p.status IN ($3, $4, $5, $6, $7, $8)`,
+    [id, user.id, PROCEDURE_STATUS.SUBMITTED, PROCEDURE_STATUS.IN_REVIEW, PROCEDURE_STATUS.CORRECTED,
+      PROCEDURE_STATUS.RETURNED, PROCEDURE_STATUS.FAVORABLE, PROCEDURE_STATUS.UNFAVORABLE]
   );
   if (!result.rows[0]) throw new DraftError("draft_not_found", 404);
   return publicDraft(result.rows[0], true);
@@ -314,7 +343,7 @@ export async function startAssignedEvaluation(pool, user, id) {
     const found = await client.query(
       `SELECT p.id, p.status, p.assigned_evaluator_id, p.created_by_user_id, p.name
          FROM procedures p JOIN user_processes up ON up.process_code = p.process_code AND up.user_id = $2
-        WHERE p.id = $1 AND p.assigned_evaluator_id = $2 FOR UPDATE`,
+        WHERE p.id = $1 AND p.assigned_evaluator_id = $2 FOR UPDATE OF p`,
       [id, user.id]
     );
     const procedure = found.rows[0];

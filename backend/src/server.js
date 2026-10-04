@@ -8,6 +8,7 @@ import { ACTIONS, canPerform } from "./domain/permissions.js";
 import { UserManagementError, createAccount, getAccountProcessAssignments, listAccounts, resetAccountPassword, setAccountActive, setAccountProcessAssignments } from "./security/admin-users.js";
 import { clientIp } from "./security/client-ip.js";
 import { DraftError, createDraft, getAssignedProcedure, getOwnDraft, listAssignedProcedures, listOwnDrafts, listProcessEvaluators, startAssignedEvaluation, submitOwnDraft, updateOwnDraft } from "./domain/drafts.js";
+import { decideAssignedEvaluation, evaluationRubric, getAssignedEvaluation, getOwnEvaluationFeedback, saveAssignedEvaluation, saveAuthorEvaluationResponses } from "./domain/evaluations.js";
 import { reviewFlow, reviewFlowCompleteness } from "./domain/flow-review.js";
 import { AnalyticsError, getAdminAnalytics } from "./domain/analytics.js";
 import { listOwnNotifications, markAllOwnNotificationsRead, markOwnNotificationRead, NotificationError } from "./domain/notifications.js";
@@ -317,12 +318,20 @@ export function createAppServer({ poolFactory = createPool, secureCookies, trust
 
       const draftId = /^\/api\/procedures\/([0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12})$/.exec(url.pathname)?.[1];
       const submitDraftId = /^\/api\/procedures\/([0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12})\/submit$/.exec(url.pathname)?.[1];
-      const assignedDraftMatch = /^\/api\/evaluator\/procedures\/([0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12})(?:\/(start))?$/.exec(url.pathname);
+      const responseDraftId = /^\/api\/procedures\/([0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12})\/evaluation-responses$/.exec(url.pathname)?.[1];
+      const assignedDraftMatch = /^\/api\/evaluator\/procedures\/([0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12})(?:\/(start|evaluation|decision))?$/.exec(url.pathname);
       if ((url.pathname === "/api/procedures" && ["GET", "POST"].includes(req.method)) ||
           (url.pathname === "/api/evaluators" && req.method === "GET") ||
+          (url.pathname === "/api/evaluator/rubric" && req.method === "GET") ||
           (url.pathname === "/api/evaluator/inbox" && req.method === "GET") ||
           (submitDraftId && req.method === "POST") ||
-          (assignedDraftMatch && ((assignedDraftMatch[2] && req.method === "POST") || (!assignedDraftMatch[2] && req.method === "GET"))) ||
+          (responseDraftId && req.method === "PUT") ||
+          (assignedDraftMatch && (
+            (!assignedDraftMatch[2] && req.method === "GET") ||
+            (assignedDraftMatch[2] === "start" && req.method === "POST") ||
+            (assignedDraftMatch[2] === "evaluation" && req.method === "PUT") ||
+            (assignedDraftMatch[2] === "decision" && req.method === "POST")
+          )) ||
           (url.pathname === "/api/procedures/flow-review" && req.method === "POST") ||
           (draftId && ["GET", "PUT"].includes(req.method))) {
         let pool;
@@ -351,13 +360,26 @@ export function createAppServer({ poolFactory = createPool, secureCookies, trust
             }
             const evaluators = await listProcessEvaluators(pool, session.user, url.searchParams.get("processCode"));
             sendJson(res, 200, { ok: true, evaluators });
+          } else if (url.pathname === "/api/evaluator/rubric") {
+            sendJson(res, 200, { ok: true, rubric: evaluationRubric() });
           } else if (url.pathname === "/api/evaluator/inbox") {
             sendJson(res, 200, { ok: true, procedures: await listAssignedProcedures(pool, session.user) });
-          } else if (assignedDraftMatch?.[2]) {
+          } else if (assignedDraftMatch?.[2] === "start") {
             const procedure = await startAssignedEvaluation(pool, session.user, assignedDraftMatch[1]);
             sendJson(res, 200, { ok: true, procedure });
+          } else if (assignedDraftMatch?.[2] === "evaluation") {
+            const body = await readJson(req, 1_048_576);
+            sendJson(res, 200, { ok: true, evaluation: await saveAssignedEvaluation(pool, session.user, assignedDraftMatch[1], body || {}) });
+          } else if (assignedDraftMatch?.[2] === "decision") {
+            const body = await readJson(req);
+            sendJson(res, 200, { ok: true, decision: await decideAssignedEvaluation(pool, session.user, assignedDraftMatch[1], body || {}) });
           } else if (assignedDraftMatch) {
-            sendJson(res, 200, { ok: true, procedure: await getAssignedProcedure(pool, session.user, assignedDraftMatch[1]) });
+            const procedure = await getAssignedProcedure(pool, session.user, assignedDraftMatch[1]);
+            const evaluation = await getAssignedEvaluation(pool, session.user, assignedDraftMatch[1]);
+            sendJson(res, 200, { ok: true, procedure, evaluation });
+          } else if (responseDraftId) {
+            const body = await readJson(req, 1_048_576);
+            sendJson(res, 200, { ok: true, ...await saveAuthorEvaluationResponses(pool, session.user, responseDraftId, body?.responses) });
           } else if (submitDraftId) {
             const body = await readJson(req, 1_048_576);
             sendJson(res, 200, { ok: true, procedure: await submitOwnDraft(pool, session.user, submitDraftId, body || {}) });
@@ -374,7 +396,11 @@ export function createAppServer({ poolFactory = createPool, secureCookies, trust
             const body = await readJson(req, 1_048_576);
             sendJson(res, 201, { ok: true, procedure: await createDraft(pool, session.user, body || {}) });
           } else if (req.method === "GET") {
-            sendJson(res, 200, { ok: true, procedure: await getOwnDraft(pool, session.user, draftId) });
+            const procedure = await getOwnDraft(pool, session.user, draftId);
+            if (session.user.role === "elaborador" && ["devuelto_para_ajustes", "concepto_favorable", "concepto_no_favorable"].includes(procedure.status)) {
+              procedure.evaluation = await getOwnEvaluationFeedback(pool, session.user, draftId);
+            }
+            sendJson(res, 200, { ok: true, procedure });
           } else {
             const body = await readJson(req, 1_048_576);
             sendJson(res, 200, { ok: true, procedure: await updateOwnDraft(pool, session.user, draftId, body || {}) });
@@ -508,4 +534,3 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     console.log(`Asistente disponible en http://${host}:${port}`);
   });
 }
-

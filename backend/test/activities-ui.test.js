@@ -74,6 +74,19 @@ test("collapsed activity status follows the original required-field rules", asyn
   assert.equal(isComplete({ ...controlled, controlResponsable: "N/A", controlResponsableOtro: true }), false);
 });
 
+test("sending for evaluation reviews flow errors before opening the evaluator selector", async () => {
+  const script = await readFile(join(root, "backend/public/drafts.js"), "utf8");
+  const handler = script.match(/ui\.submitReviewButton\.addEventListener\("click", async \(\) => \{[\s\S]*?(?=\nui\.cancelSubmitReview)/)?.[0];
+  assert.ok(handler, "submit action handler should be present");
+  assert.match(handler, /request\("\/api\/procedures\/flow-review"/);
+  assert.match(handler, /showFlowReview\(issues, completenessIssues\)/);
+  assert.match(handler, /issue\.severity !== "warning"/);
+  assert.match(handler, /blockingIssues\.length \|\| completenessIssues\.length/);
+  assert.match(handler, /Corrige las fallas del flujo y los campos obligatorios antes de enviar a evaluación/);
+  assert.ok(handler.indexOf("blockingIssues.length || completenessIssues.length") < handler.indexOf("/api/evaluators?processCode="),
+    "flow errors should stop the flow before fetching evaluators");
+});
+
 test("preview flowchart fits the available width and keeps accessible zoom controls", async () => {
   const [script, css] = await Promise.all([
     readFile(join(root, "backend/public/drafts.js"), "utf8"),

@@ -1,7 +1,7 @@
 # Borradores en el entorno de pruebas
 
-La pantalla privada `/drafts` usa la sesion real para crear, listar, abrir y actualizar borradores propios. La API se activa solo despues de aplicar la migracion
-`006_user_notifications` y los permisos de `grant-drafts-test.sql`. La consola de
+La pantalla privada `/drafts` usa la sesion real para crear, listar, abrir y actualizar borradores propios. La evaluacion se activa solo despues de aplicar la migracion
+`007_evaluation_notifications` y los permisos de `grant-drafts-test.sql`. La consola de
 cuentas no cambia y el prototipo publico continua guardando localmente.
 
 ## Contrato
@@ -18,6 +18,13 @@ cuentas no cambia y el prototipo publico continua guardando localmente.
 - `GET /api/evaluator/inbox` y `GET /api/evaluator/procedures/:id`: bandeja y
   lectura de procedimientos asignados al evaluador.
 - `POST /api/evaluator/procedures/:id/start`: cambia el estado a `en_evaluacion`.
+- `GET /api/evaluator/rubric`: devuelve la matriz metodologica de 31 criterios.
+- `PUT /api/evaluator/procedures/:id/evaluation`: guarda resultados, observaciones,
+  ajustes, estado de hallazgos y concepto del Evaluador asignado.
+- `POST /api/evaluator/procedures/:id/decision`: devuelve para ajustes, emite
+  concepto favorable o concepto no favorable segun la evaluacion guardada.
+- `PUT /api/procedures/:id/evaluation-responses`: guarda las respuestas del
+  Elaborador a los hallazgos de su procedimiento devuelto.
 - `GET /api/notifications`: lista solo avisos del usuario autenticado.
 - `POST /api/notifications/:id/read` y `POST /api/notifications/read-all`:
   marcan avisos propios como leidos y requieren CSRF.
@@ -30,9 +37,8 @@ cuentas no cambia y el prototipo publico continua guardando localmente.
 
 Todas las rutas requieren una sesion activa y una contrasena ya cambiada. Las
 escrituras requieren `X-CSRF-Token`. El envio valida los campos metodologicos,
-las rutas, controles, anexos y aprobaciones; bloquea la edicion del autor hasta
-que se agreguen las transiciones de respuesta del evaluador. Esta entrega no
-incluye la matriz de criterios, devolucion de hallazgos ni emision de concepto.
+las rutas, controles, anexos y aprobaciones; bloquea la edicion del autor
+durante la evaluacion y la habilita de nuevo si se devuelve para ajustes.
 Para un Elaborador, el catalogo y los borradores propios se filtran por la asignacion actual en
 `user_processes`; creacion y edicion vuelven a comprobarla en la base. Sin
 asignacion no podra abrir ni crear borradores. El Administrador conserva acceso
@@ -132,8 +138,28 @@ asignar la version (cuatro cambios menores y cuatro mayores, con ejemplos de
 
 La campana persiste avisos por destinatario: el Evaluador recibe uno al llegar
 un procedimiento a su bandeja y el Elaborador recibe otro cuando comienza la
-evaluacion. Cada aviso se guarda en la misma transaccion que el cambio de estado;
+evaluacion, cuando se devuelve o al emitirse un concepto. Cada aviso se guarda en la misma transaccion que el cambio de estado;
 no puede leerse ni marcarse desde otra cuenta.
+
+## Evaluacion metodologica
+
+El Evaluador asignado inicia la revision y trabaja sobre nueve variables con
+31 criterios y ponderaciones que suman 100%. Puede guardar la matriz incompleta
+sin decidir; el servidor recalcula la puntuacion, los incumplimientos criticos
+y los hallazgos abiertos. Solo `cam1` y `cam4` admiten `No aplica` en la version
+inicial 1.0. Para decidir, todos los criterios deben tener resultado y
+observacion (salvo `No aplica`); cada `No cumple` requiere ajuste, y el
+concepto tecnico es obligatorio.
+
+La devolucion requiere al menos un incumplimiento. El Elaborador puede editar
+su procedimiento devuelto y responder cada hallazgo antes de reenviarlo. Al
+reenviar se conserva la matriz y las respuestas en una nueva iteracion, y el
+Evaluador debe iniciar y revisar de nuevo. Un concepto favorable exige al menos
+90 puntos, ningun incumplimiento critico y ningun hallazgo abierto; un concepto
+no favorable cierra una evaluacion completa que no alcance esas condiciones.
+Las decisiones finales dejan el procedimiento en solo lectura. La exportacion
+de un informe de evaluacion y la creacion de una nueva version a partir de un
+concepto favorable siguen pendientes.
 
 `D1 · Analitica` es exclusivo de Administracion. Presenta borradores creados,
 ediciones guardadas, envios a revision y evaluaciones iniciadas, con filtros de
@@ -183,4 +209,7 @@ persistencia tras cerrar sesion. Esto no certifica equivalencia completa:
 6. Abra `/drafts`: confirme que `planeacionprueba` ve solo `PD`, que el envio
    genera una notificacion para el Evaluador, que iniciar evaluacion avisa al
    Elaborador y que `D1 · Analitica` solo aparece para Administracion.
-
+7. Con cuentas ficticias asignadas al mismo proceso, pruebe guardar la matriz
+   parcialmente, rechazar una decision incompleta, devolver un hallazgo,
+   responderlo y reenviarlo, e iniciar la nueva iteracion. Verifique luego un
+   concepto favorable y otro no favorable en procedimientos de prueba distintos.

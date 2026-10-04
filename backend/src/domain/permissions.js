@@ -22,6 +22,7 @@ export const ACTIONS = Object.freeze({
   UPDATE_EVALUATION: "update_evaluation",
   RETURN_FOR_CORRECTIONS: "return_for_corrections",
   ISSUE_FAVORABLE_CONCEPT: "issue_favorable_concept",
+  ISSUE_UNFAVORABLE_CONCEPT: "issue_unfavorable_concept",
   REOPEN_APPROVED_VERSION: "reopen_approved_version",
   GENERATE_UNBRANDED_PDF: "generate_unbranded_pdf",
   GENERATE_BRANDED_PDF: "generate_branded_pdf"
@@ -100,6 +101,9 @@ export function canPerform(user, action, context = {}) {
     }
     if (action === ACTIONS.ISSUE_FAVORABLE_CONCEPT) {
       return procedure?.status === PROCEDURE_STATUS.IN_REVIEW && favorableEvaluationAllowed(evaluation);
+    }
+    if (action === ACTIONS.ISSUE_UNFAVORABLE_CONCEPT) {
+      return procedure?.status === PROCEDURE_STATUS.IN_REVIEW && evaluation?.complete === true;
     }
     return false;
   }

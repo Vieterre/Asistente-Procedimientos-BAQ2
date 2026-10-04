@@ -4,6 +4,8 @@ const ids = [
   "pageHeading", "analyticsButton", "analyticsSection", "backFromAnalytics", "refreshAnalytics", "analyticsFilters", "analyticsPeriod", "analyticsProcess", "analyticsRole", "analyticsMessage", "analyticsMetrics", "analyticsByDay", "analyticsByProcess", "emptyAnalyticsDays", "emptyAnalyticsProcesses",
   "passwordRequired", "draftWorkspace", "draftForm", "editorTitle", "editorStatus", "submitReviewButton", "submitReviewDialog", "submitReviewForm", "reviewEvaluatorSelect", "submitReviewMessage", "cancelSubmitReview", "confirmSubmitReview",
   "evaluatorInbox", "evaluatorDraftCount", "evaluatorInboxMessage", "emptyEvaluatorInbox", "evaluatorDraftList", "refreshEvaluatorInbox", "evaluatorDetail", "evaluatorDetailTitle", "evaluatorDetailStatus", "backToEvaluatorInbox", "startEvaluationButton",
+  "evaluationWorkspace", "evaluationProgress", "evaluationScore", "evaluationLevel", "evaluationVariableResults", "evaluationCriteriaGroups", "evaluationConcept", "evaluationMessage", "saveEvaluationButton", "returnEvaluationButton", "unfavorableEvaluationButton", "favorableEvaluationButton",
+  "returnedEvaluation", "returnedEvaluationSummary", "returnedEvaluationConcept", "returnedFindings", "saveEvaluationResponses", "returnedEvaluationMessage",
   "draftName", "processCode", "draftObjective", "draftScope", "draftDefinitions", "draftConditions", "saveDraftButton", "editorMessage",
   "newDraftButton", "addNormButton", "normsList", "emptyNorms", "addBoundaryButton", "addActivityButton", "addDecisionButton", "addConnectorButton", "activitiesList", "emptyActivities", "reviewFlowButton", "flowReviewResult", "refreshDraftsButton", "draftCount", "listMessage", "emptyDrafts",
   "draftList", "flowSection", "flowSummary", "showFlowEvidence", "refreshFlowButton", "flowCanvas", "flowSvg",
@@ -35,6 +37,14 @@ const errorMessages = {
   submission_incomplete: "Completa los requisitos pendientes antes de enviar.",
   evaluator_unavailable: "No hay un Evaluador activo asignado a este proceso. Contacta al administrador.",
   invalid_revision: "El borrador cambió. Actualízalo y vuelve a intentar.",
+  invalid_evaluation: "Revisa los datos de la evaluación.",
+  evaluation_incomplete: "Completa los criterios, las observaciones y los ajustes requeridos.",
+  evaluation_concept_required: "Escribe el concepto técnico antes de decidir.",
+  evaluation_no_findings: "No hay criterios incumplidos para devolver.",
+  evaluation_meets_favorable_threshold: "La evaluación cumple las condiciones del concepto favorable.",
+  invalid_evaluation_decision: "La decisión de evaluación no es válida.",
+  invalid_evaluation_response: "Revisa las respuestas a los hallazgos.",
+  correction_responses_required: "Responde los hallazgos pendientes antes de reenviar.",
   notification_not_found: "La notificación ya no está disponible. Actualiza la lista.",
   invalid_analytics_period: "Selecciona un periodo válido.",
   invalid_analytics_process: "Selecciona un proceso válido.",
@@ -45,6 +55,10 @@ let csrfToken = "";
 let currentDraft = null;
 let currentUserRole = "";
 let currentPayload = {};
+let evaluationRubric = null;
+let currentEvaluation = null;
+let returnedEvaluation = null;
+let returnedResponsesDirty = false;
 let dirty = false;
 let flowReviewVersion = 0;
 let flowZoom = 100;
@@ -1016,6 +1030,12 @@ function errorText(error) {
   if (error.code === "submission_incomplete" && Array.isArray(error.details)) {
     return `${errorMessages.submission_incomplete}\n${error.details.map(issue => `• ${issue}`).join("\n")}`;
   }
+  if (Array.isArray(error.details) && error.details.length) {
+    const details = error.code === "correction_responses_required"
+      ? `${error.details.length} criterio(s): ${error.details.join(", ")}`
+      : error.details.slice(0, 4).join("\n");
+    return `${errorMessages[error.code] || "Revisa los datos."}\n${details}`;
+  }
   return errorMessages[error.code] || (error.status === 503
     ? "El servicio no está disponible. Inténtalo de nuevo."
     : "No se pudo completar la operación.");
@@ -1038,6 +1058,7 @@ async function request(path, { method = "GET", body, csrf = false } = {}) {
     const error = new Error(result.error || "request_failed");
     error.code = result.error;
     error.status = response.status;
+    error.details = result.details;
     throw error;
   }
   return result;
@@ -1085,7 +1106,7 @@ async function openNotification(notification) {
     if (notification.eventType === "procedure_submitted_for_review" && currentUserRole === "evaluador") {
       hideAnalytics();
       await openAssignedProcedure(notification.procedureId);
-    } else if (notification.eventType === "procedure_evaluation_started" && ["elaborador", "administrador"].includes(currentUserRole)) {
+    } else if (["procedure_evaluation_started", "procedure_returned_for_corrections", "procedure_favorable_concept_issued", "procedure_unfavorable_concept_issued"].includes(notification.eventType) && ["elaborador", "administrador"].includes(currentUserRole)) {
       hideAnalytics();
       await openDraft(notification.procedureId);
     }
@@ -1193,6 +1214,11 @@ function clearSession() {
   currentDraft = null;
   currentUserRole = "";
   currentPayload = {};
+  currentEvaluation = null;
+  returnedEvaluation = null;
+  returnedResponsesDirty = false;
+  ui.evaluationWorkspace.hidden = true;
+  ui.returnedEvaluation.hidden = true;
   normRows = [];
   renderNorms();
   collapsedActivityUids.clear();
@@ -1220,6 +1246,7 @@ function clearSession() {
   ui.submitReviewButton.disabled = true;
   ui.evaluatorInbox.hidden = true;
   ui.evaluatorDetail.hidden = true;
+  ui.evaluationWorkspace.hidden = true;
   if (ui.previewDialog.open) ui.previewDialog.close();
   ui.documentsSection.hidden = true;
   ui.sessionControls.hidden = true;
@@ -1371,6 +1398,225 @@ function statusLabel(status) {
   return procedureStatusLabels[status] || status || "Borrador";
 }
 
+async function loadEvaluationRubric() {
+  if (!evaluationRubric) {
+    const result = await request("/api/evaluator/rubric");
+    evaluationRubric = result.rubric;
+  }
+  return evaluationRubric;
+}
+
+function evaluationCriteriaList() {
+  return evaluationRubric?.groups.flatMap(group => group.criteria) || [];
+}
+
+function localEvaluationMetrics() {
+  if (!evaluationRubric || !currentEvaluation) return null;
+  let answered = 0;
+  let failures = 0;
+  let criticalFailures = 0;
+  let openFindings = 0;
+  let weighted = 0;
+  const groups = evaluationRubric.groups.map(group => {
+    let applicable = 0;
+    let passed = 0;
+    let groupAnswered = 0;
+    for (const criterion of group.criteria) {
+      const record = currentEvaluation.criteria[criterion.id] || {};
+      const notApplicable = record.result === "No aplica" && criterion.newProcedureNotApplicable && /^0*1(?:\.0+)*$/.test(String(currentDraft?.version || "1.0"));
+      if (record.result) { answered += 1; groupAnswered += 1; }
+      if (!notApplicable) applicable += 1;
+      if (record.result === "Cumple") passed += 1;
+      if (record.result === "No cumple") {
+        failures += 1;
+        if (criterion.critical) criticalFailures += 1;
+        if (record.findingStatus !== "Cerrado") openFindings += 1;
+      }
+    }
+    const score = applicable ? passed / applicable * 100 : 100;
+    weighted += score * group.weight / 100;
+    return { name: group.name, weight: group.weight, answered: groupAnswered, total: group.criteria.length, score: Math.round(score * 10) / 10 };
+  });
+  const score = Math.round(weighted * 10) / 10;
+  const complete = answered === evaluationCriteriaList().length;
+  return { answered, total: evaluationCriteriaList().length, failures, criticalFailures, openFindings, score,
+    level: !complete ? "Pendiente" : score <= 39 ? "Bajo" : score < 90 ? "Medio" : "Alto", groups };
+}
+
+function refreshEvaluationSummary() {
+  const metrics = localEvaluationMetrics();
+  if (!metrics) return;
+  ui.evaluationProgress.textContent = `${metrics.answered} de ${metrics.total} criterios evaluados · ${metrics.failures} incumplidos · ${metrics.criticalFailures} críticos`;
+  ui.evaluationScore.textContent = `${metrics.score.toFixed(1)}%`;
+  ui.evaluationLevel.textContent = metrics.level;
+  ui.evaluationVariableResults.replaceChildren(...metrics.groups.map(group => {
+    const item = document.createElement("div");
+    item.className = "evaluation-variable-result";
+    const name = document.createElement("strong");
+    name.textContent = group.name;
+    const result = document.createElement("span");
+    result.textContent = `${group.answered}/${group.total} · ${group.score.toFixed(1)}% · peso ${group.weight}%`;
+    item.append(name, result);
+    return item;
+  }));
+}
+
+function evaluationField(grid, text, control) {
+  const field = document.createElement("div");
+  field.className = "field";
+  const label = document.createElement("label");
+  label.htmlFor = control.id;
+  label.textContent = text;
+  field.append(label, control);
+  grid.append(field);
+  return control;
+}
+
+function renderEvaluationWorkspace() {
+  const visible = Boolean(currentEvaluation && evaluationRubric && currentDraft?.status !== "enviado_a_evaluacion" && currentDraft?.status !== "subsanado");
+  ui.evaluationWorkspace.hidden = !visible;
+  if (!visible) return;
+  const editable = currentDraft.status === "en_evaluacion";
+  ui.evaluationCriteriaGroups.replaceChildren(...evaluationRubric.groups.map((group, groupIndex) => {
+    const details = document.createElement("details");
+    details.className = "evaluation-group";
+    details.open = groupIndex === 0;
+    const heading = document.createElement("summary");
+    const title = document.createElement("strong");
+    title.textContent = `${groupIndex + 1}. ${group.name} · ${group.weight}%`;
+    const count = document.createElement("span");
+    count.textContent = `${group.criteria.length} criterios`;
+    heading.append(title, count);
+    const description = document.createElement("p");
+    description.className = "evaluation-group-description";
+    description.textContent = group.description;
+    details.append(heading, description);
+    group.criteria.forEach(criterion => {
+      const record = currentEvaluation.criteria[criterion.id] || (currentEvaluation.criteria[criterion.id] = {
+        result: "", evidence: "", observation: "", adjustment: "", findingStatus: "Pendiente", response: ""
+      });
+      const card = document.createElement("div");
+      card.className = `evaluation-criterion${record.result === "No cumple" ? " failed" : record.result === "Cumple" ? " passed" : record.result === "No aplica" ? " na" : ""}`;
+      const question = document.createElement("h4");
+      question.textContent = criterion.question;
+      if (criterion.critical) {
+        const tag = document.createElement("span");
+        tag.className = "critical-tag";
+        tag.textContent = "Crítico";
+        question.append(tag);
+      }
+      const grid = document.createElement("div");
+      grid.className = "evaluation-criterion-grid";
+      const result = document.createElement("select");
+      result.id = `evalResult-${criterion.id}`;
+      const options = [["", "Selecciona resultado"], ["Cumple", "Cumple"], ["No cumple", "No cumple"]];
+      if (criterion.newProcedureNotApplicable && /^0*1(?:\.0+)*$/.test(String(currentDraft.version || "1.0"))) options.push(["No aplica", "No aplica"]);
+      result.replaceChildren(...options.map(([value, label]) => new Option(label, value)));
+      result.value = record.result || "";
+      result.disabled = !editable;
+      const observation = document.createElement("textarea");
+      observation.id = `evalObservation-${criterion.id}`;
+      observation.maxLength = 5000;
+      observation.value = record.observation || "";
+      observation.disabled = !editable;
+      observation.placeholder = "Explica la evidencia y el motivo del resultado.";
+      const adjustment = document.createElement("textarea");
+      adjustment.id = `evalAdjustment-${criterion.id}`;
+      adjustment.maxLength = 5000;
+      adjustment.value = record.adjustment || "";
+      adjustment.disabled = !editable;
+      adjustment.placeholder = "Acción concreta cuando el criterio no cumple.";
+      adjustment.required = record.result === "No cumple";
+      const findingStatus = document.createElement("select");
+      findingStatus.id = `evalFinding-${criterion.id}`;
+      findingStatus.replaceChildren(...["Pendiente", "Respondido", "Subsanado", "Cerrado"].map(value => new Option(value, value)));
+      findingStatus.value = record.findingStatus || "Pendiente";
+      findingStatus.disabled = !editable;
+      evaluationField(grid, "Resultado", result);
+      evaluationField(grid, "Observación", observation);
+      evaluationField(grid, "Ajuste requerido", adjustment);
+      evaluationField(grid, "Estado del hallazgo", findingStatus);
+      if (record.response) {
+        const response = document.createElement("p");
+        response.className = "field-hint";
+        response.textContent = `Respuesta del Elaborador: ${record.response}`;
+        grid.append(response);
+      }
+      result.addEventListener("change", () => {
+        const oldDefault = standardEvaluationObservation(criterion.question, record.result);
+        record.result = result.value;
+        if (!record.observation || record.observation === oldDefault) {
+          record.observation = standardEvaluationObservation(criterion.question, result.value);
+          observation.value = record.observation;
+        }
+        if (["Cumple", "No aplica"].includes(result.value)) record.findingStatus = "Cerrado";
+        else if (result.value === "No cumple" && record.findingStatus === "Cerrado") record.findingStatus = "Pendiente";
+        findingStatus.value = record.findingStatus;
+        adjustment.required = result.value === "No cumple";
+        card.className = `evaluation-criterion${result.value === "No cumple" ? " failed" : result.value === "Cumple" ? " passed" : result.value === "No aplica" ? " na" : ""}`;
+        refreshEvaluationSummary();
+      });
+      observation.addEventListener("input", () => { record.observation = observation.value; });
+      adjustment.addEventListener("input", () => { record.adjustment = adjustment.value; });
+      findingStatus.addEventListener("change", () => { record.findingStatus = findingStatus.value; refreshEvaluationSummary(); });
+      card.append(question, grid);
+      details.append(card);
+    });
+    return details;
+  }));
+  ui.evaluationConcept.value = currentEvaluation.concept || "";
+  ui.evaluationConcept.disabled = !editable;
+  for (const button of [ui.saveEvaluationButton, ui.returnEvaluationButton, ui.unfavorableEvaluationButton, ui.favorableEvaluationButton]) button.hidden = !editable;
+  setMessage(ui.evaluationMessage, "");
+  refreshEvaluationSummary();
+}
+
+function standardEvaluationObservation(question, result) {
+  if (result === "No aplica") return "No aplica por tratarse de un procedimiento nuevo.";
+  if (!["Cumple", "No cumple"].includes(result)) return "";
+  const statement = question.replace(/^¿/, "").replace(/\?$/, "").trim();
+  return result === "Cumple" ? `Se verifica el cumplimiento del criterio: ${statement}.` : `No se evidencia el cumplimiento del criterio: ${statement}.`;
+}
+
+function renderReturnedEvaluation() {
+  ui.returnedEvaluation.hidden = !returnedEvaluation || !["devuelto_para_ajustes", "concepto_favorable", "concepto_no_favorable"].includes(currentDraft?.status);
+  if (ui.returnedEvaluation.hidden) return;
+  const editable = currentDraft.status === "devuelto_para_ajustes";
+  ui.returnedEvaluationSummary.textContent = `${statusLabel(currentDraft.status)} · ${Number(returnedEvaluation.score || 0).toFixed(1)}%`;
+  ui.returnedEvaluationConcept.textContent = returnedEvaluation.concept ? `Concepto técnico: ${returnedEvaluation.concept}` : "";
+  const questions = new Map(evaluationCriteriaList().map(criterion => [criterion.id, criterion.question]));
+  const failed = Object.entries(returnedEvaluation.criteria || {}).filter(([, record]) => record.result === "No cumple");
+  ui.returnedFindings.replaceChildren(...failed.map(([id, record]) => {
+    const item = document.createElement("div");
+    item.className = "returned-finding";
+    const title = document.createElement("h4");
+    title.textContent = questions.get(id) || id;
+    const observation = document.createElement("p");
+    observation.textContent = `Observación: ${record.observation || "Sin detalle"}`;
+    const adjustment = document.createElement("p");
+    adjustment.textContent = `Ajuste requerido: ${record.adjustment || "Sin detalle"}`;
+    item.append(title, observation, adjustment);
+    const grid = document.createElement("div");
+    const response = document.createElement("textarea");
+    response.id = `authorResponse-${id}`;
+    response.maxLength = 5000;
+    response.value = record.response || "";
+    response.disabled = !editable;
+    response.addEventListener("input", () => { record.response = response.value; returnedResponsesDirty = true; });
+    evaluationField(grid, "Respuesta del Elaborador", response);
+    item.append(grid);
+    return item;
+  }));
+  if (!failed.length) {
+    const empty = document.createElement("p");
+    empty.className = "empty-state";
+    empty.textContent = "No se registraron criterios incumplidos.";
+    ui.returnedFindings.append(empty);
+  }
+  ui.saveEvaluationResponses.hidden = !editable;
+  setMessage(ui.returnedEvaluationMessage, "");
+}
+
 async function loadEvaluatorInbox() {
   try {
     const { procedures } = await request("/api/evaluator/inbox");
@@ -1441,6 +1687,7 @@ async function openDraft(id) {
 
   try {
     const { procedure } = await request("/api/procedures/" + encodeURIComponent(id));
+    if (procedure.evaluation) await loadEvaluationRubric();
     populateDraft(procedure);
     ui.evaluatorInbox.hidden = true;
     ui.evaluatorDetail.hidden = true;
@@ -1454,6 +1701,8 @@ async function openDraft(id) {
 function populateDraft(procedure) {
   flowReviewVersion += 1;
   currentDraft = procedure;
+  returnedEvaluation = procedure.evaluation || null;
+  returnedResponsesDirty = false;
   currentPayload = procedure.payload && typeof procedure.payload === "object" && !Array.isArray(procedure.payload) ? procedure.payload : {};
   normRows = Array.isArray(currentPayload.norms) ? currentPayload.norms.map(norm => norm && typeof norm === "object" && !Array.isArray(norm) ? { ...norm } : {}) : [];
   renderNorms();
@@ -1487,6 +1736,7 @@ function populateDraft(procedure) {
   setMessage(ui.editorMessage, "");
   ui.flowReviewResult.hidden = true;
   ui.flowReviewResult.replaceChildren();
+  renderReturnedEvaluation();
   applyDraftEditability();
 }
 
@@ -1506,8 +1756,10 @@ function applyDraftEditability() {
 
 async function openAssignedProcedure(id) {
   try {
-    const { procedure } = await request(`/api/evaluator/procedures/${encodeURIComponent(id)}`);
+    await loadEvaluationRubric();
+    const { procedure, evaluation } = await request(`/api/evaluator/procedures/${encodeURIComponent(id)}`);
     populateDraft(procedure);
+    currentEvaluation = evaluation;
     ui.processCode.disabled = true;
     ui.draftWorkspace.hidden = true;
     ui.evaluatorInbox.hidden = true;
@@ -1516,6 +1768,7 @@ async function openAssignedProcedure(id) {
     ui.evaluatorDetailStatus.textContent = `${procedure.processCode} · ${statusLabel(procedure.status)} · revisión ${procedure.revision}`;
     ui.startEvaluationButton.hidden = procedure.status !== "enviado_a_evaluacion" && procedure.status !== "subsanado";
     ui.previewButton.hidden = false;
+    renderEvaluationWorkspace();
   } catch (error) {
     handleRequestError(error, ui.evaluatorInboxMessage);
   }
@@ -1525,6 +1778,9 @@ function newDraft() {
   if (dirty && !window.confirm("Hay cambios sin guardar. ¿Descartarlos?")) return;
   flowReviewVersion += 1;
   currentDraft = null;
+  returnedEvaluation = null;
+  returnedResponsesDirty = false;
+  ui.returnedEvaluation.hidden = true;
   currentPayload = { fields: {}, norms: [], activities: [], annexes: [], changes: [], settings: {} };
   normRows = [];
   renderNorms();
@@ -1729,6 +1985,32 @@ ui.draftForm.addEventListener("submit", async event => {
 });
 
 ui.newDraftButton.addEventListener("click", newDraft);
+async function saveReturnedResponses() {
+  if (!currentDraft || !returnedEvaluation || currentDraft.status !== "devuelto_para_ajustes") return;
+  const responses = Object.fromEntries(Object.entries(returnedEvaluation.criteria)
+    .filter(([, record]) => record.result === "No cumple")
+    .map(([id, record]) => [id, record.response || ""]));
+  const result = await request(`/api/procedures/${encodeURIComponent(currentDraft.id)}/evaluation-responses`, {
+    method: "PUT", csrf: true, body: { responses }
+  });
+  returnedResponsesDirty = false;
+  setMessage(ui.returnedEvaluationMessage, result.missingResponses
+    ? `Respuestas guardadas. Faltan ${result.missingResponses} hallazgo(s) por responder.`
+    : "Respuestas guardadas.", true);
+  return result;
+}
+
+ui.saveEvaluationResponses.addEventListener("click", async () => {
+  ui.saveEvaluationResponses.disabled = true;
+  try {
+    await saveReturnedResponses();
+  } catch (error) {
+    handleRequestError(error, ui.returnedEvaluationMessage);
+  } finally {
+    ui.saveEvaluationResponses.disabled = false;
+  }
+});
+
 ui.submitReviewButton.addEventListener("click", async () => {
   if (!currentDraft) return;
   if (dirty) {
@@ -1736,8 +2018,29 @@ ui.submitReviewButton.addEventListener("click", async () => {
     return;
   }
   setMessage(ui.submitReviewMessage, "");
-  ui.reviewEvaluatorSelect.replaceChildren(new Option("Cargando evaluadores...", ""));
   try {
+    if (currentDraft.status === "devuelto_para_ajustes" && returnedEvaluation) {
+      const missing = Object.values(returnedEvaluation.criteria).filter(record => record.result === "No cumple" && !String(record.response || "").trim());
+      if (missing.length) {
+        setMessage(ui.editorMessage, `Responde ${missing.length} hallazgo(s) antes de reenviar.`);
+        ui.returnedEvaluation.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        return;
+      }
+      if (returnedResponsesDirty) await saveReturnedResponses();
+    }
+    const { issues, completenessIssues } = await request("/api/procedures/flow-review", {
+      method: "POST", csrf: true,
+      body: { activities: activityRows.map(activity => ({ ...activity })) }
+    });
+    showFlowReview(issues, completenessIssues);
+    const blockingIssues = issues.filter(issue => issue.severity !== "warning");
+    if (blockingIssues.length || completenessIssues.length) {
+      setMessage(ui.editorMessage, "Corrige las fallas del flujo y los campos obligatorios antes de enviar a evaluación.");
+      ui.flowReviewResult.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      return;
+    }
+
+    ui.reviewEvaluatorSelect.replaceChildren(new Option("Cargando evaluadores...", ""));
     const { evaluators } = await request(`/api/evaluators?processCode=${encodeURIComponent(currentDraft.processCode)}`);
     if (!evaluators.length) {
       setMessage(ui.editorMessage, errorMessages.evaluator_unavailable);
@@ -1763,6 +2066,7 @@ ui.submitReviewForm.addEventListener("submit", async event => {
       method: "POST", csrf: true, body: { evaluatorId, revision: currentDraft.revision }
     });
     currentDraft = procedure;
+    renderReturnedEvaluation();
     ui.editorStatus.textContent = `${statusLabel(procedure.status)} · revisión ${procedure.revision}`;
     dirty = false;
     applyDraftEditability();
@@ -1778,18 +2082,19 @@ ui.submitReviewForm.addEventListener("submit", async event => {
 ui.refreshEvaluatorInbox.addEventListener("click", loadEvaluatorInbox);
 ui.backToEvaluatorInbox.addEventListener("click", () => {
   ui.evaluatorDetail.hidden = true;
+  ui.evaluationWorkspace.hidden = true;
   ui.evaluatorInbox.hidden = false;
+  ui.flowSection.hidden = true;
   ui.previewButton.hidden = true;
 });
 ui.startEvaluationButton.addEventListener("click", async () => {
   if (!currentDraft) return;
   ui.startEvaluationButton.disabled = true;
   try {
-    const { procedure } = await request(`/api/evaluator/procedures/${encodeURIComponent(currentDraft.id)}/start`, { method: "POST", csrf: true, body: {} });
-    currentDraft = procedure;
-    ui.evaluatorDetailStatus.textContent = `${procedure.processCode} · ${statusLabel(procedure.status)} · revisión ${procedure.revision}`;
-    ui.startEvaluationButton.hidden = true;
-    setMessage(ui.evaluatorInboxMessage, "Evaluación iniciada.", true);
+    const id = currentDraft.id;
+    await request(`/api/evaluator/procedures/${encodeURIComponent(id)}/start`, { method: "POST", csrf: true, body: {} });
+    await openAssignedProcedure(id);
+    setMessage(ui.evaluationMessage, "Evaluación iniciada. Puedes registrar los criterios.", true);
     await loadEvaluatorInbox();
   } catch (error) {
     handleRequestError(error, ui.evaluatorInboxMessage);
@@ -1797,6 +2102,60 @@ ui.startEvaluationButton.addEventListener("click", async () => {
     ui.startEvaluationButton.disabled = false;
   }
 });
+
+async function saveCurrentEvaluation() {
+  if (!currentDraft || !currentEvaluation || currentDraft.status !== "en_evaluacion") return;
+  const { evaluation } = await request(`/api/evaluator/procedures/${encodeURIComponent(currentDraft.id)}/evaluation`, {
+    method: "PUT", csrf: true,
+    body: { criteria: currentEvaluation.criteria, concept: ui.evaluationConcept.value }
+  });
+  Object.assign(currentEvaluation, {
+    status: evaluation.status,
+    score: evaluation.score,
+    criticalFailures: evaluation.criticalFailures,
+    openFindings: evaluation.openFindings,
+    concept: evaluation.concept,
+    metrics: evaluation.metrics,
+    updatedAt: evaluation.updatedAt
+  });
+  refreshEvaluationSummary();
+  setMessage(ui.evaluationMessage, "Evaluación guardada.", true);
+  return evaluation;
+}
+
+ui.saveEvaluationButton.addEventListener("click", async () => {
+  ui.saveEvaluationButton.disabled = true;
+  try {
+    await saveCurrentEvaluation();
+  } catch (error) {
+    handleRequestError(error, ui.evaluationMessage);
+  } finally {
+    ui.saveEvaluationButton.disabled = false;
+  }
+});
+
+async function submitEvaluationDecision(decision) {
+  if (!currentDraft || currentDraft.status !== "en_evaluacion") return;
+  const label = decision === "devolver" ? "devolver para ajustes"
+    : decision === "favorable" ? "emitir concepto favorable" : "emitir concepto no favorable";
+  if (!window.confirm(`¿Confirmas ${label} para este procedimiento?`)) return;
+  try {
+    const id = currentDraft.id;
+    await saveCurrentEvaluation();
+    await request(`/api/evaluator/procedures/${encodeURIComponent(id)}/decision`, {
+      method: "POST", csrf: true, body: { decision }
+    });
+    await openAssignedProcedure(id);
+    await loadEvaluatorInbox();
+    setMessage(ui.evaluationMessage, "Decisión registrada y notificada al Elaborador.", true);
+  } catch (error) {
+    handleRequestError(error, ui.evaluationMessage);
+  }
+}
+
+ui.returnEvaluationButton.addEventListener("click", () => submitEvaluationDecision("devolver"));
+ui.unfavorableEvaluationButton.addEventListener("click", () => submitEvaluationDecision("no_favorable"));
+ui.favorableEvaluationButton.addEventListener("click", () => submitEvaluationDecision("favorable"));
 function reportTable(headers, records, valuesForRecord) {
   const table = document.createElement("table");
   table.className = "preview-report-table";

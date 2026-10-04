@@ -32,6 +32,8 @@ test("initial migration is transactional and records its checksum", async () => 
   const recorded = pool.calls.find(call => call.sql.startsWith("INSERT INTO schema_migrations"));
   assert.equal(recorded.params[0], "001_initial_schema");
   assert.match(recorded.params[1], /^[a-f0-9]{64}$/);
+  assert.ok(pool.calls.some(call => call.sql.includes("procedure_unfavorable_concept_issued")));
+  assert.ok(pool.calls.some(call => call.sql.startsWith("INSERT INTO schema_migrations") && call.params[0] === "007_evaluation_notifications"));
   assert.deepEqual(statements.slice(-2), ["COMMIT", "RELEASE"]);
 });
 
