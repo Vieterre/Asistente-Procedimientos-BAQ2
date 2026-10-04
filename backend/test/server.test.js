@@ -139,6 +139,13 @@ test("private consoles serve only their own assets with a restrictive policy", a
     assert.match(draftScript, /installMethodHelps\(document\)/);
     assert.match(draftScript, /\/api\/procedures\/\$\{encodeURIComponent\(currentDraft\.id\)\}\/submit/);
     assert.match(draftScript, /\/api\/evaluator\/inbox/);
+    assert.match(draftScript, /function evaluationGroupState\(group\)/);
+    for (const state of ["Pendiente", "En proceso", "Completa"]) {
+      assert.ok(draftScript.includes(`label: "${state}"`));
+    }
+    assert.match(draftScript, /details\.dataset\.groupId = group\.id/);
+    assert.match(draftCss, /\.evaluation-group-toggle::before\{content:"\+"\}/);
+    assert.match(draftCss, /\.evaluation-group\[open\] \.evaluation-group-toggle::before\{content:"−"\}/);
     assert.match(draftCss, /\.header-submit-button/);
     assert.match(draftCss, /\.notification-popover/);
     for (const path of ["/accounts.map", "/backend/public/accounts.js", "/drafts.map", "/backend/public/drafts.js"]) {

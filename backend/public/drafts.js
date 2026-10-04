@@ -1411,6 +1411,24 @@ function evaluationCriteriaList() {
   return evaluationRubric?.groups.flatMap(group => group.criteria) || [];
 }
 
+function evaluationCriterionComplete(criterion) {
+  const record = currentEvaluation?.criteria?.[criterion.id] || {};
+  if (!record.result) return false;
+  if (record.result === "No aplica") {
+    return criterion.newProcedureNotApplicable && /^0*1(?:\.0+)*$/.test(String(currentDraft?.version || "1.0"));
+  }
+  if (!String(record.observation || "").trim()) return false;
+  return record.result === "Cumple" || (record.result === "No cumple" && Boolean(String(record.adjustment || "").trim()));
+}
+
+function evaluationGroupState(group) {
+  const completed = group.criteria.filter(evaluationCriterionComplete).length;
+  const answered = group.criteria.filter(criterion => currentEvaluation?.criteria?.[criterion.id]?.result).length;
+  if (completed === group.criteria.length) return { className: "group-complete", label: "Completa", completed };
+  if (answered) return { className: "group-progress", label: "En proceso", completed };
+  return { className: "group-pending", label: "Pendiente", completed };
+}
+
 function localEvaluationMetrics() {
   if (!evaluationRubric || !currentEvaluation) return null;
   let answered = 0;
@@ -1436,7 +1454,8 @@ function localEvaluationMetrics() {
     }
     const score = applicable ? passed / applicable * 100 : 100;
     weighted += score * group.weight / 100;
-    return { name: group.name, weight: group.weight, answered: groupAnswered, total: group.criteria.length, score: Math.round(score * 10) / 10 };
+    return { id: group.id, name: group.name, weight: group.weight, answered: groupAnswered, total: group.criteria.length,
+      score: Math.round(score * 10) / 10, state: evaluationGroupState(group) };
   });
   const score = Math.round(weighted * 10) / 10;
   const complete = answered === evaluationCriteriaList().length;
@@ -1451,15 +1470,39 @@ function refreshEvaluationSummary() {
   ui.evaluationScore.textContent = `${metrics.score.toFixed(1)}%`;
   ui.evaluationLevel.textContent = metrics.level;
   ui.evaluationVariableResults.replaceChildren(...metrics.groups.map(group => {
-    const item = document.createElement("div");
-    item.className = "evaluation-variable-result";
+    const item = document.createElement("button");
+    item.type = "button";
+    item.className = `evaluation-variable-result ${group.state.className}`;
     const name = document.createElement("strong");
     name.textContent = group.name;
+    const state = document.createElement("span");
+    state.className = "evaluation-group-status";
+    state.textContent = group.state.label;
     const result = document.createElement("span");
+    result.className = "evaluation-variable-score";
     result.textContent = `${group.answered}/${group.total} · ${group.score.toFixed(1)}% · peso ${group.weight}%`;
-    item.append(name, result);
+    const toggle = document.createElement("span");
+    toggle.className = "evaluation-variable-toggle";
+    toggle.setAttribute("aria-hidden", "true");
+    toggle.textContent = "+";
+    item.append(name, toggle, state, result);
+    item.addEventListener("click", () => {
+      const details = [...ui.evaluationCriteriaGroups.children].find(element => element.dataset.groupId === group.id);
+      if (!details) return;
+      details.open = true;
+      details.scrollIntoView({ behavior: "smooth", block: "start" });
+      details.querySelector("summary")?.focus({ preventScroll: true });
+    });
     return item;
   }));
+  metrics.groups.forEach(group => {
+    const details = [...ui.evaluationCriteriaGroups.children].find(element => element.dataset.groupId === group.id);
+    if (!details) return;
+    details.className = `evaluation-group ${group.state.className}`;
+    details.querySelector(".evaluation-group-status").textContent = group.state.label;
+    details.querySelector(".evaluation-group-score").textContent = `${group.answered}/${group.total} · ${group.score.toFixed(1)}%`;
+    details.querySelector(".evaluation-group-progress-fill").style.width = `${Math.round(group.state.completed / group.total * 100)}%`;
+  });
 }
 
 function evaluationField(grid, text, control) {
@@ -1481,13 +1524,30 @@ function renderEvaluationWorkspace() {
   ui.evaluationCriteriaGroups.replaceChildren(...evaluationRubric.groups.map((group, groupIndex) => {
     const details = document.createElement("details");
     details.className = "evaluation-group";
+    details.dataset.groupId = group.id;
     details.open = groupIndex === 0;
     const heading = document.createElement("summary");
+    const toggle = document.createElement("span");
+    toggle.className = "evaluation-group-toggle";
+    toggle.setAttribute("aria-hidden", "true");
     const title = document.createElement("strong");
-    title.textContent = `${groupIndex + 1}. ${group.name} · ${group.weight}%`;
-    const count = document.createElement("span");
-    count.textContent = `${group.criteria.length} criterios`;
-    heading.append(title, count);
+    title.textContent = `${groupIndex + 1}. ${group.name}`;
+    const weight = document.createElement("span");
+    weight.className = "evaluation-group-weight";
+    weight.textContent = `${group.weight}%`;
+    const progress = document.createElement("span");
+    progress.className = "evaluation-group-progress";
+    const status = document.createElement("span");
+    status.className = "evaluation-group-status";
+    const track = document.createElement("span");
+    track.className = "evaluation-group-progress-track";
+    const fill = document.createElement("span");
+    fill.className = "evaluation-group-progress-fill";
+    track.append(fill);
+    const score = document.createElement("span");
+    score.className = "evaluation-group-score";
+    progress.append(status, track, score);
+    heading.append(toggle, title, weight, progress);
     const description = document.createElement("p");
     description.className = "evaluation-group-description";
     description.textContent = group.description;
@@ -1557,8 +1617,8 @@ function renderEvaluationWorkspace() {
         card.className = `evaluation-criterion${result.value === "No cumple" ? " failed" : result.value === "Cumple" ? " passed" : result.value === "No aplica" ? " na" : ""}`;
         refreshEvaluationSummary();
       });
-      observation.addEventListener("input", () => { record.observation = observation.value; });
-      adjustment.addEventListener("input", () => { record.adjustment = adjustment.value; });
+      observation.addEventListener("input", () => { record.observation = observation.value; refreshEvaluationSummary(); });
+      adjustment.addEventListener("input", () => { record.adjustment = adjustment.value; refreshEvaluationSummary(); });
       findingStatus.addEventListener("change", () => { record.findingStatus = findingStatus.value; refreshEvaluationSummary(); });
       card.append(question, grid);
       details.append(card);
