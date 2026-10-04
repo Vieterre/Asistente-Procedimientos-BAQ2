@@ -11,7 +11,7 @@
 </div></header>
 <main>
 <section class="login-wrap" id="loginView" aria-labelledby="loginTitle"><div class="login-panel">
-<h1 id="loginTitle">Ingresar</h1><form id="loginForm" autocomplete="on">
+<h1 id="loginTitle">Ingresar</h1><form id="loginForm" method="post" autocomplete="on">
 <label for="loginUsername">Nombre de usuario</label><input id="loginUsername" name="username" autocomplete="username" required maxlength="32" spellcheck="false">
 <label for="loginPassword">Contraseña</label><input id="loginPassword" name="password" type="password" autocomplete="current-password" required>
 <label for="loginOtp">Código del autenticador <span class="optional">solo administrador</span></label><input id="loginOtp" name="otp" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" spellcheck="false">

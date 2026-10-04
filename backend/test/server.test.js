@@ -88,6 +88,7 @@ test("private consoles serve only their own assets with a restrictive policy", a
       assert.ok((await response.text()).length > 100);
     }
     const accountsHtml = await (await fetch(base + "/accounts")).text();
+    assert.match(accountsHtml, /<form id="loginForm" method="post"/);
     const accountsScript = await (await fetch(base + "/accounts.js")).text();
     for (const id of ["processDialog", "processTitle", "processOptions", "processMessage", "saveProcessButton", "closeProcessButton", "cancelProcessButton"]) {
       assert.match(accountsHtml, new RegExp(`id="${id}"`));
@@ -97,6 +98,7 @@ test("private consoles serve only their own assets with a restrictive policy", a
     assert.match(accountsScript, /\/api\/admin\/users\/\$\{encodeURIComponent\(user\.id\)\}\/processes/);
     assert.match(accountsScript, /method: "PUT", csrf: true, body: \{ processCodes \}/);
     const draftHtml = await (await fetch(base + "/drafts")).text();
+    assert.match(draftHtml, /<form id="loginForm" method="post"/);
     const draftScript = await (await fetch(base + "/drafts.js")).text();
     const draftIds = draftScript.match(/const ids = \[([\s\S]*?)\];/)?.[1];
     assert.ok(draftIds);
