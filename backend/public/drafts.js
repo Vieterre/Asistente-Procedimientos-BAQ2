@@ -2403,10 +2403,20 @@ async function submitEvaluationDecision(decision) {
 ui.returnEvaluationButton.addEventListener("click", () => submitEvaluationDecision("devolver"));
 ui.unfavorableEvaluationButton.addEventListener("click", () => submitEvaluationDecision("no_favorable"));
 ui.favorableEvaluationButton.addEventListener("click", () => submitEvaluationDecision("favorable"));
-function reportTable(headers, records, valuesForRecord) {
+function reportTable(headers, records, valuesForRecord, { variant = "", columnWidths = [] } = {}) {
   const table = document.createElement("table");
   table.className = "preview-report-table";
   table.dataset.columns = String(headers.length);
+  if (variant) table.dataset.variant = variant;
+  if (columnWidths.length === headers.length) {
+    const colgroup = document.createElement("colgroup");
+    columnWidths.forEach(width => {
+      const col = document.createElement("col");
+      col.style.width = width;
+      colgroup.append(col);
+    });
+    table.append(colgroup);
+  }
   const thead = document.createElement("thead");
   const header = document.createElement("tr");
   headers.forEach(label => {
@@ -2550,6 +2560,11 @@ function showPreview({ branding = "standard" } = {}) {
   const activityHeaders = ["N.º", "Tipo", "Actividad", "Descripción / rutas", "Responsable", "Punto de control"];
   if (showEvidence) activityHeaders.push("Registro / evidencia");
   if (showSystem) activityHeaders.push("Sistema / herramienta");
+  const activityColumnWidths = showEvidence && showSystem
+    ? ["4%", "8%", "14%", "24%", "15%", "18%", "9%", "8%"]
+    : showEvidence || showSystem
+      ? ["4%", "8%", "16%", "25%", "16%", "20%", "11%"]
+      : ["4%", "8%", "18%", "27%", "17%", "26%"];
   const activityTable = reportTable(activityHeaders, activityRows, (activity, index) => {
     const description = [activity.descripcion || ""];
     if (activity.tipo === "Decisión") description.push(`Sí → ${destinations.get(activity.decisionSi) || "Sin destino"}`, `No → ${destinations.get(activity.decisionNo) || "Sin destino"}`);
@@ -2563,7 +2578,7 @@ function showPreview({ branding = "standard" } = {}) {
     if (showEvidence) row.push(activity.evidencia || activity.controlEvidencia || "");
     if (showSystem) row.push(activity.sistema || "");
     return row;
-  });
+  }, { variant: "activities", columnWidths: activityColumnWidths });
   const approvals = reportTable(["Elaboró", "Revisó", "Aprobó"], [{}], () => [
     [ui.draftPreparedBy.value, ui.draftPreparedName.value && `Nombre: ${ui.draftPreparedName.value}`].filter(Boolean).join("\n"),
     [ui.draftReviewedBy.value, ui.draftReviewedName.value && `Nombre: ${ui.draftReviewedName.value}`].filter(Boolean).join("\n"),

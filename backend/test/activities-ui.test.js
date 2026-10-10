@@ -161,7 +161,13 @@ test("print reports preserve table headers, prevent row splits, and fit the flow
     readFile(join(root, "backend/public/drafts.css"), "utf8")
   ]);
   assert.match(script, /table\.dataset\.columns = String\(headers\.length\)/);
+  assert.match(script, /table\.dataset\.variant = variant/);
+  assert.match(script, /variant: "activities", columnWidths: activityColumnWidths/);
+  assert.match(script, /\["4%", "8%", "14%", "24%", "15%", "18%", "9%", "8%"\]/);
   assert.match(css, /@page\{size:A4 landscape;margin:12mm\}/);
+  assert.match(css, /\.preview-report-table\[data-variant="activities"\]\{table-layout:fixed\}/);
+  assert.match(css, /\.preview-report-table\[data-variant="activities"\] th:first-child/);
+  assert.match(css, /\.preview-report-table\[data-variant="activities"\] th:nth-child\(2\)/);
   assert.match(css, /\.preview-toolbar,\.preview-state\{display:none!important\}/);
   assert.match(css, /\.preview-report-table thead\{display:table-header-group\}/);
   assert.match(css, /\.preview-report-table tr\{break-inside:avoid-page;page-break-inside:avoid\}/);
