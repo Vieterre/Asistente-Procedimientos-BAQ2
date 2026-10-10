@@ -154,3 +154,17 @@ test("reports keep institutional branding exclusive and standard reports unbrand
   assert.match(script, /\/api\/reports\/procedures\/\$\{encodeURIComponent\(id\)\}/);
   assert.match(css, /\.preview-document-header\.standard\{/);
 });
+
+test("print reports preserve table headers, prevent row splits, and fit the flowchart on paper", async () => {
+  const [script, css] = await Promise.all([
+    readFile(join(root, "backend/public/drafts.js"), "utf8"),
+    readFile(join(root, "backend/public/drafts.css"), "utf8")
+  ]);
+  assert.match(script, /table\.dataset\.columns = String\(headers\.length\)/);
+  assert.match(css, /@page\{size:A4 landscape;margin:12mm\}/);
+  assert.match(css, /\.preview-toolbar,\.preview-state\{display:none!important\}/);
+  assert.match(css, /\.preview-report-table thead\{display:table-header-group\}/);
+  assert.match(css, /\.preview-report-table tr\{break-inside:avoid-page;page-break-inside:avoid\}/);
+  assert.match(css, /\.preview-report-flow\{break-before:page;page-break-before:always\}/);
+  assert.match(css, /\.preview-diagram svg\{display:block;width:100%!important;max-width:100%!important;height:auto!important;max-height:165mm/);
+});

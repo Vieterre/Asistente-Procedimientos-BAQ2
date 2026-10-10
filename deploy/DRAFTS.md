@@ -137,7 +137,10 @@ cambios, responsables y flujograma. Permite imprimir desde el navegador. El
 flujograma se ajusta al ancho de la preliminar al abrirse y permite ampliarlo,
 reducirlo o volver al ajuste al ancho; estos controles se ocultan al imprimir.
 El editor usa la paleta azul y verde y los encabezados del prototipo para mantener
-continuidad visual; la preliminar no equivale aun a la exportacion PDF oficial.
+continuidad visual. Al imprimir o guardar como PDF, el reporte usa A4 horizontal,
+repite los encabezados de las tablas en cada hoja, evita dividir filas, reserva
+una hoja para el flujograma y lo ajusta al ancho imprimible. La preliminar no
+equivale aun a la exportacion PDF oficial con firma o radicado.
 
 La seccion Actividades incluye las cuatro reglas metodologicas del modelado del
 formulario original: actividad y punto de control, decision, independencia entre

@@ -2406,6 +2406,7 @@ ui.favorableEvaluationButton.addEventListener("click", () => submitEvaluationDec
 function reportTable(headers, records, valuesForRecord) {
   const table = document.createElement("table");
   table.className = "preview-report-table";
+  table.dataset.columns = String(headers.length);
   const thead = document.createElement("thead");
   const header = document.createElement("tr");
   headers.forEach(label => {
