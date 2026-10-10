@@ -2,6 +2,7 @@ const ids = [
   "loginView", "loginForm", "loginUsername", "loginPassword", "loginOtp", "loginMessage",
   "workspace", "sessionControls", "sessionIdentity", "notificationCenter", "notificationBell", "notificationPopover", "notificationCount", "emptyNotifications", "notificationList", "markAllNotificationsRead", "logoutButton", "welcomeText",
   "pageHeading", "analyticsButton", "analyticsSection", "backFromAnalytics", "refreshAnalytics", "analyticsFilters", "analyticsPeriod", "analyticsProcess", "analyticsRole", "analyticsMessage", "analyticsMetrics", "analyticsByDay", "analyticsByProcess", "emptyAnalyticsDays", "emptyAnalyticsProcesses",
+  "institutionalReportsButton", "institutionalReportsSection", "institutionalReportsCount", "institutionalReportsMessage", "emptyInstitutionalReports", "institutionalReportsList", "backFromInstitutionalReports", "refreshInstitutionalReports",
   "passwordRequired", "draftWorkspace", "draftForm", "editorTitle", "editorStatus", "submitReviewButton", "submitReviewDialog", "submitReviewForm", "reviewEvaluatorSelect", "submitReviewMessage", "cancelSubmitReview", "confirmSubmitReview",
   "evaluatorInbox", "evaluatorDraftCount", "evaluatorInboxMessage", "emptyEvaluatorInbox", "evaluatorDraftList", "refreshEvaluatorInbox", "evaluatorDetail", "evaluatorDetailTitle", "evaluatorDetailStatus", "backToEvaluatorInbox", "startEvaluationButton",
   "evaluationWorkspace", "evaluationProgress", "evaluationScore", "evaluationLevel", "evaluationVariableResults", "evaluationCriteriaGroups", "evaluationConcept", "evaluationMessage", "saveEvaluationButton", "returnEvaluationButton", "unfavorableEvaluationButton", "favorableEvaluationButton",
@@ -13,7 +14,7 @@ const ids = [
   "documentsSection", "annexApplicability", "addAnnexButton", "annexNotApplicableMessage", "emptyAnnexes", "annexesList",
   "addChangeButton", "emptyChanges", "changesList", "draftPreparedBy", "draftPreparedName", "draftReviewedBy", "draftReviewedName",
   "draftApprovedBy", "draftApprovedName", "roleSeparationMessage", "saveDocumentsButton", "documentsMessage",
-  "previewButton", "previewDialog", "previewState", "previewContent", "printPreviewButton", "closePreviewButton", "methodTooltip"
+  "previewButton", "previewDialog", "previewTitle", "previewState", "previewContent", "printPreviewButton", "closePreviewButton", "methodTooltip"
 ];
 const ui = Object.fromEntries(ids.map(id => [id, document.getElementById(id)]));
 const csrfKey = "drafts_csrf";
@@ -63,6 +64,7 @@ let evaluationRubric = null;
 let currentEvaluation = null;
 let returnedEvaluation = null;
 let returnedResponsesDirty = false;
+let previewBranding = "standard";
 let dirty = false;
 let flowReviewVersion = 0;
 let flowZoom = 100;
@@ -1077,7 +1079,7 @@ function renderFlow() {
     }
   }
 
-  for (const item of activityRows) {
+  for (const [index, item] of activityRows.entries()) {
     const position = positions.get(item.uid);
     if (!position) continue;
     const { x, y } = position;
@@ -1089,6 +1091,11 @@ function renderFlow() {
     const textValue = item.tipo === "Conector" ? String(item.connectorId || "?") : item.tipo === "Decisión" ? String(item.descripcion || item.actividad || "Decisión") : String(item.actividad || item.tipo);
     const lines = flowLines(textValue, item.tipo === "Decisión" ? 15 : 24);
     lines.forEach((line, lineIndex) => group.append(svgNode("text", { x, y: y + (lineIndex - (lines.length - 1) / 2) * 17 + 5, class: "flow-text", "text-anchor": "middle" }, line)));
+    const activityNumber = displayActivityNumber(item, index);
+    if (activityNumber) {
+      group.append(svgNode("circle", { cx: x - 90, cy: y - 30, r: 13, class: "flow-activity-number" }));
+      group.append(svgNode("text", { x: x - 90, y: y - 26, class: "flow-activity-number-text", "text-anchor": "middle" }, activityNumber));
+    }
     if (item.tieneControl) group.append(svgNode("text", { x, y: y + 32, class: "flow-note", "text-anchor": "middle" }, "CONTROL"));
     svg.append(group);
     const evidence = String(item.evidencia || item.controlEvidencia || "").trim();
@@ -1272,6 +1279,7 @@ function showAnalytics() {
   ui.notificationPopover.hidden = true;
   ui.notificationBell.setAttribute("aria-expanded", "false");
   ui.analyticsSection.hidden = false;
+  ui.institutionalReportsSection.hidden = true;
   ui.pageHeading.hidden = true;
   ui.draftWorkspace.hidden = true;
   ui.evaluatorInbox.hidden = true;
@@ -1291,6 +1299,83 @@ function hideAnalytics() {
   if (currentUserRole !== "evaluador") renderFlow();
 }
 
+function renderInstitutionalReports(reports) {
+  ui.institutionalReportsCount.textContent = `${reports.length} procedimiento${reports.length === 1 ? "" : "s"} favorable${reports.length === 1 ? "" : "s"}`;
+  ui.emptyInstitutionalReports.hidden = reports.length > 0;
+  ui.institutionalReportsList.replaceChildren(...reports.map(report => {
+    const item = document.createElement("li");
+    item.className = "draft-item";
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "draft-open";
+    const info = document.createElement("span");
+    info.className = "draft-info";
+    const name = document.createElement("strong");
+    name.textContent = report.name;
+    const details = document.createElement("small");
+    details.textContent = `${report.code || "Código pendiente"} · ${report.processCode} · versión ${report.version || "1.0"}`;
+    const action = document.createElement("span");
+    action.className = "draft-status";
+    action.textContent = "Generar PDF institucional";
+    info.append(name, details);
+    button.append(info, action);
+    button.addEventListener("click", () => openInstitutionalReport(report.id));
+    item.append(button);
+    return item;
+  }));
+}
+
+async function loadInstitutionalReports() {
+  setMessage(ui.institutionalReportsMessage, "Consultando procedimientos favorables...");
+  try {
+    const { reports } = await request("/api/admin/institutional-reports");
+    renderInstitutionalReports(reports);
+    setMessage(ui.institutionalReportsMessage, reports.length ? "Selecciona un procedimiento para generar su PDF institucional." : "", Boolean(reports.length));
+  } catch (error) {
+    handleRequestError(error, ui.institutionalReportsMessage);
+  }
+}
+
+function showInstitutionalReports() {
+  if (currentUserRole !== "administrador") return;
+  ui.notificationPopover.hidden = true;
+  ui.notificationBell.setAttribute("aria-expanded", "false");
+  ui.analyticsSection.hidden = true;
+  ui.institutionalReportsSection.hidden = false;
+  ui.pageHeading.hidden = true;
+  ui.draftWorkspace.hidden = true;
+  ui.evaluatorInbox.hidden = true;
+  ui.evaluatorDetail.hidden = true;
+  ui.flowSection.hidden = true;
+  ui.documentsSection.hidden = true;
+  loadInstitutionalReports();
+}
+
+function hideInstitutionalReports() {
+  ui.institutionalReportsSection.hidden = true;
+  ui.pageHeading.hidden = false;
+  ui.draftWorkspace.hidden = currentUserRole === "evaluador";
+  ui.documentsSection.hidden = currentUserRole === "evaluador";
+  ui.flowSection.hidden = currentUserRole === "evaluador";
+  if (currentUserRole !== "evaluador") renderFlow();
+}
+
+async function openInstitutionalReport(id) {
+  if (dirty && !window.confirm("Hay cambios sin guardar. ¿Descartarlos y abrir este procedimiento?")) return;
+  try {
+    const { procedure, branding } = await request(`/api/reports/procedures/${encodeURIComponent(id)}`);
+    populateDraft(procedure);
+    ui.institutionalReportsSection.hidden = true;
+    ui.pageHeading.hidden = false;
+    ui.draftWorkspace.hidden = false;
+    ui.documentsSection.hidden = false;
+    ui.flowSection.hidden = false;
+    showPreview({ branding });
+  } catch (error) {
+    handleRequestError(error, ui.institutionalReportsMessage);
+  }
+}
+
 function clearSession() {
   flowReviewVersion += 1;
   clearInterval(notificationTimer);
@@ -1303,6 +1388,7 @@ function clearSession() {
   currentEvaluation = null;
   returnedEvaluation = null;
   returnedResponsesDirty = false;
+  previewBranding = "standard";
   ui.evaluationWorkspace.hidden = true;
   ui.returnedEvaluation.hidden = true;
   normRows = [];
@@ -1321,12 +1407,15 @@ function clearSession() {
   dirty = false;
   ui.workspace.hidden = true;
   ui.analyticsSection.hidden = true;
+  ui.institutionalReportsSection.hidden = true;
   ui.pageHeading.hidden = false;
   ui.analyticsButton.hidden = true;
+  ui.institutionalReportsButton.hidden = true;
   ui.notificationPopover.hidden = true;
   ui.notificationBell.setAttribute("aria-expanded", "false");
   ui.notificationCount.hidden = true;
   ui.notificationList.replaceChildren();
+  ui.institutionalReportsList.replaceChildren();
   ui.previewButton.hidden = true;
   ui.submitReviewButton.hidden = true;
   ui.submitReviewButton.disabled = true;
@@ -1356,8 +1445,10 @@ async function startSession(user) {
   ui.passwordRequired.hidden = !user.mustChangePassword;
   ui.documentsSection.hidden = true;
   ui.analyticsSection.hidden = true;
+  ui.institutionalReportsSection.hidden = true;
   ui.pageHeading.hidden = false;
   ui.analyticsButton.hidden = user.role !== "administrador";
+  ui.institutionalReportsButton.hidden = user.role !== "administrador";
   ui.notificationPopover.hidden = true;
   ui.notificationBell.setAttribute("aria-expanded", "false");
   currentUserRole = user.role;
@@ -2414,11 +2505,14 @@ function createPreviewDiagramControls(diagram, svg) {
   return { toolbar, fitToWidth };
 }
 
-function showPreview() {
+function showPreview({ branding = "standard" } = {}) {
+  previewBranding = branding === "institutional" ? "institutional" : "standard";
+  const institutional = previewBranding === "institutional";
   const content = ui.previewContent;
   const process = ui.processCode.selectedOptions[0]?.textContent || "Sin proceso seleccionado";
   const header = document.createElement("header");
   header.className = "preview-document-header";
+  if (!institutional) header.classList.add("standard");
   const agency = document.createElement("div");
   agency.className = "preview-agency-mark";
   agency.textContent = "AP";
@@ -2442,7 +2536,7 @@ function showPreview() {
     cell.append(strong, text);
     meta.append(cell);
   }
-  header.append(agency, title, meta);
+  header.append(...(institutional ? [agency, title, meta] : [title, meta]));
 
   const definitions = ui.draftDefinitions.value.split(/\r?\n/).map(line => line.trim()).filter(Boolean).map(line => {
     const split = line.indexOf(":");
@@ -2508,7 +2602,10 @@ function showPreview() {
     reportSection("9", "Control de cambios", reportTable(["Versión", "Fecha", "Razón de la actualización"], changeRows, row => [row.version, row.fecha, row.razon])),
     approvals);
   content.replaceChildren(report);
-  ui.previewState.textContent = !currentDraft ? "Vista de un borrador no guardado." : dirty ? "Vista con cambios sin guardar." : `Borrador guardado · revisión ${currentDraft.revision}.`;
+  ui.previewTitle.textContent = institutional ? "Reporte institucional" : "Reporte del procedimiento";
+  ui.printPreviewButton.textContent = institutional ? "Generar PDF institucional" : "Generar reporte PDF";
+  const state = !currentDraft ? "Vista de un borrador no guardado." : dirty ? "Vista con cambios sin guardar." : `Borrador guardado · revisión ${currentDraft.revision}.`;
+  ui.previewState.textContent = institutional ? `Reporte institucional autorizado. ${state}` : state;
   ui.previewDialog.showModal();
   requestAnimationFrame(fitPreviewDiagram);
 }
@@ -2517,6 +2614,9 @@ ui.previewButton.addEventListener("click", showPreview);
 ui.analyticsButton.addEventListener("click", showAnalytics);
 ui.backFromAnalytics.addEventListener("click", hideAnalytics);
 ui.refreshAnalytics.addEventListener("click", loadAnalytics);
+ui.institutionalReportsButton.addEventListener("click", showInstitutionalReports);
+ui.backFromInstitutionalReports.addEventListener("click", hideInstitutionalReports);
+ui.refreshInstitutionalReports.addEventListener("click", loadInstitutionalReports);
 ui.analyticsFilters.addEventListener("submit", event => {
   event.preventDefault();
   loadAnalytics();

@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { createAppServer } from "../src/server.js";
-import { createDraft, getAssignedProcedure, getOwnDraft, listAssignedProcedures, listOwnDrafts, listProcessEvaluators, startAssignedEvaluation, submitOwnDraft, updateOwnDraft } from "../src/domain/drafts.js";
+import { createDraft, getAssignedProcedure, getOwnDraft, getProcedureReport, listAssignedProcedures, listInstitutionalReports, listOwnDrafts, listProcessEvaluators, startAssignedEvaluation, submitOwnDraft, updateOwnDraft } from "../src/domain/drafts.js";
 import { reviewFlow, reviewFlowCompleteness } from "../src/domain/flow-review.js";
 import { hashToken } from "../src/security/auth.js";
 
@@ -234,6 +234,34 @@ test("list and detail are scoped to the owner", async () => {
   assert.ok(queries.every(call => call.sql.includes("created_by_user_id") &&
     (call.params.includes(author.id) || call.params.includes(other.id))));
   assert.ok(queries.every(call => call.sql.includes("user_processes")));
+});
+
+test("reports distinguish institutional administration from standard owner and evaluator access", async () => {
+  const reportRow = {
+    ...row,
+    status: "concepto_favorable",
+    created_by_user_id: author.id,
+    assigned_evaluator_id: evaluator.id,
+    author_process_access: true,
+    evaluator_process_access: true
+  };
+  const pool = {
+    async query(sql) {
+      if (sql.includes("WHERE status = $1")) return { rows: [reportRow] };
+      if (sql.includes("FROM procedures p")) return { rows: [reportRow] };
+      throw new Error(`Unexpected SQL: ${sql}`);
+    }
+  };
+  const admin = { id: "55555555-5555-4555-8555-555555555555", role: "administrador", mustChangePassword: false };
+
+  assert.equal((await listInstitutionalReports(pool, admin))[0].id, draftId);
+  assert.equal((await getProcedureReport(pool, admin, draftId)).branding, "institutional");
+  assert.equal((await getProcedureReport(pool, author, draftId)).branding, "standard");
+  assert.equal((await getProcedureReport(pool, evaluator, draftId)).branding, "standard");
+  await assert.rejects(listInstitutionalReports(pool, author), { code: "forbidden", status: 403 });
+  await assert.rejects(getProcedureReport(pool, other, draftId), { code: "forbidden", status: 403 });
+  reportRow.evaluator_process_access = false;
+  await assert.rejects(getProcedureReport(pool, evaluator, draftId), { code: "forbidden", status: 403 });
 });
 
 test("update rejects another author, locked status, and stale revision", async () => {
@@ -751,6 +779,55 @@ test("active process catalog requires an authenticated procedure author", async 
     role = "evaluador";
     assert.equal((await fetch(url, { headers: { cookie } })).status, 403);
     assert.equal(catalogReads, 3);
+  } finally {
+    await new Promise(resolve => server.close(resolve));
+  }
+});
+
+test("report routes authorize institutional and standard formats by role", async () => {
+  const tokens = { admin: "report-admin", author: "report-author", evaluator: "report-evaluator" };
+  const sessions = new Map([
+    [hashToken(tokens.admin), { id: "55555555-5555-4555-8555-555555555555", username: "admin", display_name: "Administración", role: "administrador" }],
+    [hashToken(tokens.author), { id: author.id, username: "author", display_name: "Elaborador", role: "elaborador" }],
+    [hashToken(tokens.evaluator), { id: evaluator.id, username: "evaluator", display_name: "Evaluador", role: "evaluador" }]
+  ]);
+  const reportRow = {
+    ...row,
+    status: "concepto_favorable",
+    created_by_user_id: author.id,
+    assigned_evaluator_id: evaluator.id,
+    author_process_access: true,
+    evaluator_process_access: true
+  };
+  const poolFactory = () => ({
+    async query(sql, params) {
+      if (sql.includes("FROM app_sessions s")) {
+        const session = sessions.get(params[0]);
+        return { rows: session ? [{ session_id: draftId, csrf_token_hash: hashToken("csrf"), email: null, must_change_password: false, ...session }] : [] };
+      }
+      if (sql.startsWith("UPDATE app_sessions SET last_seen_at")) return { rows: [] };
+      if (sql.includes("WHERE status = $1")) return { rows: [reportRow] };
+      if (sql.includes("FROM procedures p")) return { rows: [reportRow] };
+      throw new Error(`Unexpected SQL: ${sql}`);
+    },
+    async end() {}
+  });
+  const server = createAppServer({ poolFactory, secureCookies: false });
+  await new Promise(resolve => server.listen(0, "127.0.0.1", resolve));
+  const base = `http://127.0.0.1:${server.address().port}`;
+  const headersFor = token => ({ cookie: `__Host-asistente_session=${token}` });
+  try {
+    assert.equal((await fetch(`${base}/api/reports/procedures/${draftId}`)).status, 401);
+    const authorReport = await fetch(`${base}/api/reports/procedures/${draftId}`, { headers: headersFor(tokens.author) });
+    assert.equal(authorReport.status, 200);
+    assert.equal((await authorReport.json()).branding, "standard");
+    const evaluatorReport = await fetch(`${base}/api/reports/procedures/${draftId}`, { headers: headersFor(tokens.evaluator) });
+    assert.equal((await evaluatorReport.json()).branding, "standard");
+    const adminReport = await fetch(`${base}/api/reports/procedures/${draftId}`, { headers: headersFor(tokens.admin) });
+    assert.equal((await adminReport.json()).branding, "institutional");
+    const reportList = await fetch(`${base}/api/admin/institutional-reports`, { headers: headersFor(tokens.admin) });
+    assert.equal((await reportList.json()).reports.length, 1);
+    assert.equal((await fetch(`${base}/api/admin/institutional-reports`, { headers: headersFor(tokens.author) })).status, 403);
   } finally {
     await new Promise(resolve => server.close(resolve));
   }

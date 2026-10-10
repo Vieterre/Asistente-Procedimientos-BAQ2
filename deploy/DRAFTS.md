@@ -31,6 +31,11 @@ cuentas no cambia y el prototipo publico continua guardando localmente.
   marcan avisos propios como leidos y requieren CSRF.
 - `GET /api/admin/analytics`: entrega agregados por periodo, proceso y rol;
   solo Administracion puede consultarlos.
+- `GET /api/admin/institutional-reports`: lista los procedimientos con concepto
+  favorable para que solo Administración abra el reporte institucional.
+- `GET /api/reports/procedures/:id`: entrega un reporte institucional solo a
+  Administración y uno estándar al Elaborador propietario o al Evaluador
+  asignado al proceso.
 - `GET /api/admin/users/:id/processes` y `PUT /api/admin/users/:id/processes`:
   Administracion consulta y reemplaza los procesos asignados a una cuenta de
   Elaborador o Evaluador. La escritura exige CSRF, valida procesos activos y
@@ -168,9 +173,14 @@ reenviar se conserva la matriz y las respuestas en una nueva iteracion, y el
 Evaluador debe iniciar y revisar de nuevo. Un concepto favorable exige al menos
 90 puntos, ningun incumplimiento critico y ningun hallazgo abierto; un concepto
 no favorable cierra una evaluacion completa que no alcance esas condiciones.
-Las decisiones finales dejan el procedimiento en solo lectura. La exportacion
-de un informe de evaluacion y la creacion de una nueva version a partir de un
-concepto favorable siguen pendientes.
+Las decisiones finales dejan el procedimiento en solo lectura. Administración
+puede abrir la bandeja de Reportes institucionales y generar el reporte de un
+procedimiento con concepto favorable, con la marca AP de la referencia. El
+Elaborador propietario y el Evaluador asignado al proceso pueden generar el
+reporte estándar sin marca; el servidor rechaza cualquier intento de obtener el
+formato institucional desde esas cuentas. La generación usa el diálogo de
+impresión del navegador para guardar el PDF. La creación de una nueva versión a
+partir de un concepto favorable sigue pendiente.
 
 `D1 · Analitica` es exclusivo de Administracion. Presenta borradores creados,
 ediciones guardadas, envios a revision y evaluaciones iniciadas, con filtros de
@@ -211,7 +221,9 @@ persistencia tras cerrar sesion. Esto no certifica equivalencia completa:
 2. Antes de aplicar `008_procedure_codes`, compruebe que no existan codigos
    repetidos ni codigos heredados fuera del patron; la migracion se detiene sin
    cambios si encuentra un valor que no pueda validar.
-3. Actualice el checkout del servicio y ejecute `npm test`.
+3. Actualice el checkout del servicio y ejecute `npm test`. La actualización de
+   reportes no añade una migración ni permisos SQL; si las migraciones ya están
+   al día, continúe con el reinicio del servicio.
 4. Desde `/opt/asistente-backend-test`, aplique las migraciones y registre sus
    checksums usando la cuenta local de PostgreSQL:
    `runuser -u postgres -- env DATABASE_URL='postgresql://postgres@localhost/asistente_procedimientos?host=/var/run/postgresql' node backend/src/tools/migrate.js`

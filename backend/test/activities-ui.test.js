@@ -123,6 +123,10 @@ test("reference-aligned editor keeps generated codes, confirmation prompts, help
   assert.match(script, /function displayActivityNumber\(activity, index\)/);
   assert.match(script, /activity\?\.tipo !== "Actividad"/);
   assert.match(script, /const row = \[displayActivityNumber\(activity, index\)/);
+  assert.match(script, /const activityNumber = displayActivityNumber\(item, index\)/);
+  assert.match(script, /class: "flow-activity-number"/);
+  assert.match(script, /class: "flow-activity-number-text"/);
+  assert.match(css, /\.flow-activity-number\{fill:#004488/);
   assert.match(script, /function confirmDeletion\(kind, value\)/);
   assert.match(script, /¿Está seguro de eliminar el registro de normatividad/);
   assert.match(script, /¿Está seguro de eliminar la actividad/);
@@ -132,4 +136,21 @@ test("reference-aligned editor keeps generated codes, confirmation prompts, help
   assert.match(script, /Nombre y número completo de la norma, resolución, decreto, acuerdo, circular, política, guía o estándar aplicable/);
   assert.match(css, /\.method-tooltip\.visible\{display:block\}/);
   assert.match(css, /\.help-tip\{/);
+});
+
+test("reports keep institutional branding exclusive and standard reports unbranded", async () => {
+  const [html, script, css] = await Promise.all([
+    readFile(join(root, "backend/public/drafts.html"), "utf8"),
+    readFile(join(root, "backend/public/drafts.js"), "utf8"),
+    readFile(join(root, "backend/public/drafts.css"), "utf8")
+  ]);
+  for (const id of ["institutionalReportsButton", "institutionalReportsSection", "institutionalReportsList", "previewTitle"]) {
+    assert.match(html, new RegExp(`id="${id}"`));
+  }
+  assert.match(script, /function showPreview\(\{ branding = "standard" \} = \{\}\)/);
+  assert.match(script, /previewBranding = branding === "institutional"/);
+  assert.match(script, /header\.append\(\.\.\.\(institutional \? \[agency, title, meta\] : \[title, meta\]\)\)/);
+  assert.match(script, /\/api\/admin\/institutional-reports/);
+  assert.match(script, /\/api\/reports\/procedures\/\$\{encodeURIComponent\(id\)\}/);
+  assert.match(css, /\.preview-document-header\.standard\{/);
 });

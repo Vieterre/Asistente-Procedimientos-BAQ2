@@ -7,7 +7,7 @@ import { AuthError, SESSION_COOKIE, changePassword, cookieOptions, getSession, h
 import { ACTIONS, canPerform } from "./domain/permissions.js";
 import { UserManagementError, createAccount, getAccountProcessAssignments, listAccounts, resetAccountPassword, setAccountActive, setAccountProcessAssignments } from "./security/admin-users.js";
 import { clientIp } from "./security/client-ip.js";
-import { DraftError, createDraft, getAssignedProcedure, getOwnDraft, listAssignedProcedures, listOwnDrafts, listProcessEvaluators, startAssignedEvaluation, submitOwnDraft, updateOwnDraft } from "./domain/drafts.js";
+import { DraftError, createDraft, getAssignedProcedure, getOwnDraft, getProcedureReport, listAssignedProcedures, listInstitutionalReports, listOwnDrafts, listProcessEvaluators, startAssignedEvaluation, submitOwnDraft, updateOwnDraft } from "./domain/drafts.js";
 import { decideAssignedEvaluation, evaluationRubric, getAssignedEvaluation, getOwnEvaluationFeedback, saveAssignedEvaluation, saveAuthorEvaluationResponses } from "./domain/evaluations.js";
 import { reviewFlow, reviewFlowCompleteness } from "./domain/flow-review.js";
 import { AnalyticsError, getAdminAnalytics } from "./domain/analytics.js";
@@ -317,10 +317,13 @@ export function createAppServer({ poolFactory = createPool, secureCookies, trust
       }
 
       const draftId = /^\/api\/procedures\/([0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12})$/.exec(url.pathname)?.[1];
+      const reportDraftId = /^\/api\/reports\/procedures\/([0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12})$/.exec(url.pathname)?.[1];
       const submitDraftId = /^\/api\/procedures\/([0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12})\/submit$/.exec(url.pathname)?.[1];
       const responseDraftId = /^\/api\/procedures\/([0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12})\/evaluation-responses$/.exec(url.pathname)?.[1];
       const assignedDraftMatch = /^\/api\/evaluator\/procedures\/([0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12})(?:\/(start|evaluation|decision))?$/.exec(url.pathname);
-      if ((url.pathname === "/api/procedures" && ["GET", "POST"].includes(req.method)) ||
+      if ((url.pathname === "/api/admin/institutional-reports" && req.method === "GET") ||
+          (reportDraftId && req.method === "GET") ||
+          (url.pathname === "/api/procedures" && ["GET", "POST"].includes(req.method)) ||
           (url.pathname === "/api/evaluators" && req.method === "GET") ||
           (url.pathname === "/api/evaluator/rubric" && req.method === "GET") ||
           (url.pathname === "/api/evaluator/inbox" && req.method === "GET") ||
@@ -353,7 +356,11 @@ export function createAppServer({ poolFactory = createPool, secureCookies, trust
               return;
             }
           }
-          if (url.pathname === "/api/evaluators") {
+          if (url.pathname === "/api/admin/institutional-reports") {
+            sendJson(res, 200, { ok: true, reports: await listInstitutionalReports(pool, session.user) });
+          } else if (reportDraftId) {
+            sendJson(res, 200, { ok: true, ...await getProcedureReport(pool, session.user, reportDraftId) });
+          } else if (url.pathname === "/api/evaluators") {
             if (!canPerform(session.user, ACTIONS.CREATE_PROCEDURE)) {
               sendJson(res, 403, { ok: false, error: "forbidden" });
               return;

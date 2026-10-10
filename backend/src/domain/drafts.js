@@ -124,6 +124,58 @@ export async function getOwnDraft(pool, user, id) {
   return publicDraft(result.rows[0], true);
 }
 
+export async function listInstitutionalReports(pool, user) {
+  if (user.role !== ROLES.ADMIN || !canPerform(user, ACTIONS.GENERATE_BRANDED_PDF, {
+    procedure: { status: PROCEDURE_STATUS.FAVORABLE }
+  })) {
+    throw new DraftError("forbidden", 403);
+  }
+  const result = await pool.query(
+    `SELECT id, code, name, process_code, version, status, revision, updated_at
+       FROM procedures
+      WHERE status = $1
+      ORDER BY updated_at DESC, name`,
+    [PROCEDURE_STATUS.FAVORABLE]
+  );
+  return result.rows.map(row => publicDraft(row));
+}
+
+export async function getProcedureReport(pool, user, id) {
+  const result = await pool.query(
+    `SELECT p.id, p.code, p.name, p.process_code, p.version, p.status, p.revision,
+            p.updated_at, p.current_payload, p.created_by_user_id, p.assigned_evaluator_id,
+            EXISTS (SELECT 1 FROM user_processes up
+                     WHERE up.user_id = p.created_by_user_id AND up.process_code = p.process_code) AS author_process_access,
+            EXISTS (SELECT 1 FROM user_processes up
+                     WHERE up.user_id = $2 AND up.process_code = p.process_code) AS evaluator_process_access
+       FROM procedures p
+      WHERE p.id = $1`,
+    [id, user.id]
+  );
+  const row = result.rows[0];
+  if (!row) throw new DraftError("draft_not_found", 404);
+
+  const procedure = {
+    status: row.status,
+    processCode: row.process_code,
+    createdByUserId: row.created_by_user_id,
+    assignedEvaluatorId: row.assigned_evaluator_id
+  };
+  const institutional = user.role === ROLES.ADMIN;
+  const action = institutional ? ACTIONS.GENERATE_BRANDED_PDF : ACTIONS.GENERATE_UNBRANDED_PDF;
+  const permissionUser = user.role === ROLES.EVALUADOR && row.evaluator_process_access
+    ? { ...user, processCodes: [row.process_code] }
+    : user;
+  const authorHasAccess = user.role !== ROLES.ELABORADOR || row.author_process_access;
+  if (!authorHasAccess || !canPerform(permissionUser, action, { procedure })) {
+    throw new DraftError("forbidden", 403);
+  }
+  return {
+    procedure: publicDraft(row, true),
+    branding: institutional ? "institutional" : "standard"
+  };
+}
+
 export async function createDraft(pool, user, { name, processCode, consecutive, payload }) {
   if (!canPerform(user, ACTIONS.CREATE_PROCEDURE)) throw new DraftError("forbidden", 403);
   const cleanName = validateDraft({ name, payload });

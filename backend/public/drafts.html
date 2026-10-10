@@ -18,7 +18,7 @@
 <p class="form-message" id="loginMessage" role="alert" hidden></p><button class="primary-button full" type="submit">Ingresar</button>
 </form></div></section>
 <div id="workspace" hidden>
-<div class="page-heading" id="pageHeading"><div><h1>Borradores</h1><p id="welcomeText"></p></div><div class="section-actions"><button class="secondary-button" id="analyticsButton" type="button" hidden>D1 · Analítica</button><a class="secondary-button" href="/accounts">Cuentas</a></div></div>
+<div class="page-heading" id="pageHeading"><div><h1>Borradores</h1><p id="welcomeText"></p></div><div class="section-actions"><button class="secondary-button" id="analyticsButton" type="button" hidden>D1 · Analítica</button><button class="secondary-button" id="institutionalReportsButton" type="button" hidden>Reportes institucionales</button><a class="secondary-button" href="/accounts">Cuentas</a></div></div>
 <p class="notice" id="passwordRequired" hidden>Esta cuenta debe cambiar su contraseña antes de continuar. <a href="/accounts">Ir a Cuentas</a></p>
 <section class="analytics-section" id="analyticsSection" aria-labelledby="analyticsTitle" hidden>
 <div class="section-heading"><div><h2 id="analyticsTitle">D1 · Analítica</h2><p>Actividad registrada por el backend. No incluye datos locales del prototipo ni actividad anterior a su captura.</p></div><div class="section-actions"><button class="secondary-button" id="backFromAnalytics" type="button">Volver a Borradores</button><button class="secondary-button" id="refreshAnalytics" type="button">Actualizar</button></div></div>
@@ -26,6 +26,10 @@
 <p class="form-message" id="analyticsMessage" role="status" hidden></p>
 <div class="analytics-metrics" id="analyticsMetrics" aria-live="polite"></div>
 <div class="analytics-tables"><section aria-labelledby="analyticsByDayTitle"><h3 id="analyticsByDayTitle">Actividad por día</h3><div class="table-scroll"><table><thead><tr><th>Fecha</th><th>Borradores creados</th><th>Ediciones</th><th>Envíos</th><th>Evaluaciones iniciadas</th></tr></thead><tbody id="analyticsByDay"></tbody></table></div><p class="empty-state" id="emptyAnalyticsDays" hidden>No hay eventos registrados en este periodo.</p></section><section aria-labelledby="analyticsByProcessTitle"><h3 id="analyticsByProcessTitle">Actividad por proceso</h3><div class="table-scroll"><table><thead><tr><th>Proceso</th><th>Creados</th><th>Ediciones</th><th>Envíos</th><th>Evaluaciones</th></tr></thead><tbody id="analyticsByProcess"></tbody></table></div><p class="empty-state" id="emptyAnalyticsProcesses" hidden>No hay eventos por proceso para estos filtros.</p></section></div>
+</section>
+<section class="list-section" id="institutionalReportsSection" aria-labelledby="institutionalReportsTitle" hidden>
+<div class="section-heading"><div><h2 id="institutionalReportsTitle">Reportes institucionales</h2><p id="institutionalReportsCount">0 procedimientos favorables</p></div><div class="section-actions"><button class="secondary-button" id="backFromInstitutionalReports" type="button">Volver a Borradores</button><button class="secondary-button" id="refreshInstitutionalReports" type="button">Actualizar</button></div></div>
+<p class="form-message" id="institutionalReportsMessage" role="status" hidden></p><p class="empty-state" id="emptyInstitutionalReports">No hay procedimientos con concepto favorable.</p><ol class="draft-list" id="institutionalReportsList"></ol>
 </section>
 <section class="work-layout" id="draftWorkspace" hidden>
 <section class="editor-section" aria-labelledby="editorTitle">
@@ -97,7 +101,7 @@
 </section>
 <div class="form-actions"><button class="primary-button" id="saveDocumentsButton" type="button">Guardar borrador</button><p class="form-message" id="documentsMessage" role="status" hidden></p></div>
 </section></div>
-<dialog id="previewDialog" class="preview-dialog" aria-labelledby="previewTitle"><div class="preview-toolbar"><h2 id="previewTitle">Vista preliminar</h2><div class="section-actions"><button class="secondary-button" id="printPreviewButton" type="button">Imprimir</button><button class="secondary-button" id="closePreviewButton" type="button">Cerrar</button></div></div><p id="previewState" class="preview-state"></p><div id="previewContent" class="preview-content"></div></dialog>
+<dialog id="previewDialog" class="preview-dialog" aria-labelledby="previewTitle"><div class="preview-toolbar"><h2 id="previewTitle">Vista preliminar</h2><div class="section-actions"><button class="secondary-button" id="printPreviewButton" type="button">Generar reporte PDF</button><button class="secondary-button" id="closePreviewButton" type="button">Cerrar</button></div></div><p id="previewState" class="preview-state"></p><div id="previewContent" class="preview-content"></div></dialog>
 <dialog id="submitReviewDialog" class="review-submit-dialog" aria-labelledby="submitReviewTitle"><form id="submitReviewForm" method="dialog"><h2 id="submitReviewTitle">Enviar para revisión</h2><p>Selecciona un Evaluador asignado al proceso. Al enviar, el borrador quedará bloqueado mientras se revisa.</p><label for="reviewEvaluatorSelect">Evaluador</label><select id="reviewEvaluatorSelect" required><option value="">Cargando evaluadores...</option></select><p id="submitReviewMessage" class="form-message" role="alert" hidden></p><div class="section-actions"><button class="secondary-button" id="cancelSubmitReview" type="button">Cancelar</button><button class="primary-button" id="confirmSubmitReview" type="submit">Confirmar envío</button></div></form></dialog>
 <div class="method-tooltip" id="methodTooltip" role="tooltip" aria-hidden="true"></div>
 </main></body></html>

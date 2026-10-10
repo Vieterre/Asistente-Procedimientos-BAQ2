@@ -88,6 +88,21 @@ test("administrator can generate branded PDF only for favorable procedures", () 
   );
 });
 
+test("evaluator can generate a standard report only for an assigned procedure in its process", () => {
+  const procedure = {
+    status: PROCEDURE_STATUS.IN_REVIEW,
+    assignedEvaluatorId: evaluator.id,
+    processCode: "DE"
+  };
+  assert.equal(canPerform(evaluator, ACTIONS.GENERATE_UNBRANDED_PDF, { procedure }), true);
+  assert.equal(canPerform(evaluator, ACTIONS.GENERATE_UNBRANDED_PDF, {
+    procedure: { ...procedure, assignedEvaluatorId: "u-other" }
+  }), false);
+  assert.equal(canPerform(evaluator, ACTIONS.GENERATE_UNBRANDED_PDF, {
+    procedure: { ...procedure, processCode: "PD" }
+  }), false);
+});
+
 test("evaluator cannot create, edit, or review unassigned procedures", () => {
   assert.equal(canPerform(evaluator, ACTIONS.CREATE_PROCEDURE), false);
   assert.equal(

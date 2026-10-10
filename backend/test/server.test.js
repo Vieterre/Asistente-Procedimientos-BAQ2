@@ -114,7 +114,7 @@ test("private consoles serve only their own assets with a restrictive policy", a
     for (const id of ["flowCanvas", "zoomOutButton", "zoomInButton", "fitFlowButton", "resetFlowZoomButton", "flowZoomValue", "previewButton", "previewDialog", "previewContent", "printPreviewButton"]) {
       assert.match(draftHtml, new RegExp(`id="${id}"`));
     }
-    for (const id of ["notificationBell", "notificationPopover", "notificationCount", "markAllNotificationsRead", "analyticsButton", "analyticsSection", "analyticsPeriod", "analyticsProcess", "analyticsRole", "analyticsByDay", "analyticsByProcess"]) {
+    for (const id of ["notificationBell", "notificationPopover", "notificationCount", "markAllNotificationsRead", "analyticsButton", "analyticsSection", "analyticsPeriod", "analyticsProcess", "analyticsRole", "analyticsByDay", "analyticsByProcess", "institutionalReportsButton", "institutionalReportsSection", "institutionalReportsList"]) {
       assert.match(draftHtml, new RegExp(`id="${id}"`));
     }
     assert.match(draftHtml, /Reglas metodológicas del modelado/);
@@ -126,6 +126,8 @@ test("private consoles serve only their own assets with a restrictive policy", a
     assert.match(draftScript, /ui\.submitReviewButton\.disabled = !canSubmit/);
     assert.match(draftScript, /\/api\/notifications\/read-all/);
     assert.match(draftScript, /\/api\/admin\/analytics\?/);
+    assert.match(draftScript, /\/api\/admin\/institutional-reports/);
+    assert.match(draftScript, /\/api\/reports\/procedures/);
     assert.match(draftScript, /user\.role !== "administrador"/);
     assert.match(draftScript, /60_000/);
     assert.match(draftScript, /processGroupDefinitions = \[/);

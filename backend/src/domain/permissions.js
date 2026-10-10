@@ -92,6 +92,7 @@ export function canPerform(user, action, context = {}) {
 
   if (user.role === ROLES.EVALUADOR) {
     if (!assignedToEvaluation(user, procedure) || !hasProcessAccess(user, procedure)) return false;
+    if (action === ACTIONS.GENERATE_UNBRANDED_PDF) return true;
     if (action === ACTIONS.READ_ASSIGNED_PROCEDURE) return isAssignedReviewStatus(procedure?.status) || isApproved(procedure?.status);
     if (action === ACTIONS.START_EVALUATION) {
       return [PROCEDURE_STATUS.SUBMITTED, PROCEDURE_STATUS.CORRECTED].includes(procedure?.status);
