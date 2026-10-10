@@ -145,7 +145,7 @@ test("flow completeness rejects vague custom responsibilities", () => {
 });
 
 const row = {
-  id: draftId, code: null, name: "Borrador", process_code: "DE", version: "1.0",
+  id: draftId, code: "DE-P-001", name: "Borrador", process_code: "DE", version: "1.0",
   status: "borrador", revision: 1, updated_at: new Date(), current_payload: { fields: { nombre: "Borrador" } }
 };
 
@@ -176,7 +176,7 @@ test("author creates an audited draft for an active process", async () => {
     release() {}
   };
   const result = await createDraft({ connect: async () => client }, author, {
-    name: " Borrador ", processCode: "DE", payload: row.current_payload
+    name: " Borrador ", processCode: "DE", consecutive: "1", payload: row.current_payload
   });
   assert.equal(result.name, "Borrador");
   assert.equal(result.revision, 1);
@@ -184,6 +184,7 @@ test("author creates an audited draft for an active process", async () => {
   assert.deepEqual(processCheck.params, ["DE", author.id, false]);
   assert.match(processCheck.sql, /user_processes/);
   assert.equal(calls.find(call => call.sql.startsWith("INSERT INTO procedures")).params[1], "Borrador");
+  assert.equal(calls.find(call => call.sql.startsWith("INSERT INTO procedures")).params[2], "DE-P-001");
   assert.deepEqual(calls.slice(-2).map(call => call.sql.startsWith("INSERT INTO audit_events") ? "AUDIT" : call.sql), ["AUDIT", "COMMIT"]);
 });
 
@@ -191,6 +192,7 @@ test("draft creation rejects bad data and processes without access", async () =>
   const noConnect = { connect: async () => { throw new Error("should not connect"); } };
   await assert.rejects(createDraft(noConnect, author, { name: "", processCode: "DE", payload: {} }), { code: "invalid_draft" });
   await assert.rejects(createDraft(noConnect, author, { name: "Ok", processCode: "??", payload: {} }), { code: "invalid_process" });
+  await assert.rejects(createDraft(noConnect, author, { name: "Ok", processCode: "DE", consecutive: "1000", payload: {} }), { code: "invalid_procedure_code" });
   await assert.rejects(createDraft(noConnect, { ...author, mustChangePassword: true }, { name: "Ok", processCode: "DE", payload: {} }), { code: "forbidden" });
   let rolledBack = false;
   let assigned = false;
@@ -264,9 +266,36 @@ test("update rejects another author, locked status, and stale revision", async (
   assert.ok(calls.some(sql => sql.startsWith("SELECT id, status") && sql.includes("user_processes")));
 });
 
+test("procedure code is generated from the process, required on submission, and fixed after the first submission", async () => {
+  let updated = false;
+  const procedure = { ...row, code: "DE-P-001", process_code: "DE", status: "devuelto_para_ajustes", revision: 3, created_by_user_id: author.id };
+  const pool = { connect: async () => ({
+    async query(sql, params) {
+      if (["BEGIN", "COMMIT", "ROLLBACK"].includes(sql)) return { rows: [] };
+      if (sql.startsWith("SELECT id, status")) return { rows: [{ ...procedure }] };
+      if (sql.startsWith("UPDATE procedures")) { updated = true; return { rows: [{ ...procedure, code: params[2] }] }; }
+      if (sql.startsWith("INSERT INTO audit_events")) return { rows: [] };
+      throw new Error(`Unexpected SQL: ${sql}`);
+    },
+    release() {}
+  }) };
+
+  await assert.rejects(updateOwnDraft(pool, author, draftId, {
+    name: procedure.name, consecutive: "2", payload: procedure.current_payload, revision: 3
+  }), { code: "procedure_code_locked", status: 409 });
+  assert.equal(updated, false);
+
+  procedure.status = "borrador";
+  const saved = await updateOwnDraft(pool, author, draftId, {
+    name: procedure.name, consecutive: "2", payload: procedure.current_payload, revision: 3
+  });
+  assert.equal(saved.code, "DE-P-002");
+  assert.equal(updated, true);
+});
+
 test("author can submit a complete draft to an evaluator assigned to its process", async () => {
   const calls = [];
-  const procedure = { ...row, process_code: "PD", revision: 4, current_payload: completePayload, created_by_user_id: author.id };
+  const procedure = { ...row, code: "PD-P-001", process_code: "PD", revision: 4, current_payload: completePayload, created_by_user_id: author.id };
   const pool = { connect: async () => ({
     async query(sql, params) {
       calls.push({ sql, params });
@@ -286,6 +315,24 @@ test("author can submit a complete draft to an evaluator assigned to its process
   const notification = calls.find(call => call.sql.startsWith("INSERT INTO user_notifications"));
   assert.equal(notification.params[1], evaluator.id);
   assert.equal(notification.params[2], draftId);
+});
+
+test("submission requires a generated procedure code", async () => {
+  const procedure = { ...row, code: null, process_code: "PD", revision: 4, current_payload: completePayload, created_by_user_id: author.id };
+  const pool = { connect: async () => ({
+    async query(sql) {
+      if (["BEGIN", "COMMIT", "ROLLBACK"].includes(sql)) return { rows: [] };
+      if (sql.startsWith("SELECT p.id")) return { rows: [procedure] };
+      if (sql.startsWith("SELECT 1 FROM app_users")) return { rows: [{ "?column?": 1 }] };
+      throw new Error(`Unexpected SQL: ${sql}`);
+    },
+    release() {}
+  }) };
+  await assert.rejects(submitOwnDraft(pool, author, draftId, { evaluatorId: evaluator.id, revision: 4 }), error => {
+    assert.equal(error.code, "submission_incomplete");
+    assert.ok(error.details.includes("Genera el código del procedimiento antes de enviarlo."));
+    return true;
+  });
 });
 
 test("a returned draft requires answers and carries them into the next evaluation round", async () => {
@@ -337,7 +384,7 @@ test("evaluator choices require process access and include only eligible assigne
 });
 
 test("submission rejects incomplete drafts, stale revisions, and evaluators outside the process", async () => {
-  const procedure = { ...row, process_code: "PD", revision: 4, current_payload: { ...completePayload, fields: {} }, created_by_user_id: author.id };
+  const procedure = { ...row, code: "PD-P-001", process_code: "PD", revision: 4, current_payload: { ...completePayload, fields: {} }, created_by_user_id: author.id };
   let evaluatorAssigned = true;
   let procedureUpdates = 0;
   const pool = { connect: async () => ({
@@ -397,7 +444,7 @@ test("submission allows methodological flow warnings while preserving blocking f
   assert.ok(warnings.every(issue => issue.severity === "warning"));
 
   const procedure = {
-    ...row, process_code: "PD", revision: 4, current_payload: { ...completePayload, activities },
+    ...row, code: "PD-P-001", process_code: "PD", revision: 4, current_payload: { ...completePayload, activities },
     created_by_user_id: author.id
   };
   let updated = false;
@@ -543,14 +590,14 @@ test("draft HTTP routes create, read, and update with a live author session", as
       if (["BEGIN", "COMMIT", "ROLLBACK"].includes(sql)) return { rows: [] };
       if (sql.startsWith("SELECT 1 FROM processes")) return { rows: [{ "?column?": 1 }] };
       if (sql.startsWith("INSERT INTO procedures")) {
-        saved = { ...row, id: params[0], name: params[1], process_code: params[2], current_payload: JSON.parse(params[5]) };
+        saved = { ...row, id: params[0], name: params[1], code: params[2], process_code: params[3], current_payload: JSON.parse(params[6]) };
         return { rows: [saved] };
       }
       if (sql.startsWith("SELECT id, status")) return { rows: [saved && {
-        id: saved.id, status: saved.status, created_by_user_id: author.id, revision: saved.revision
+        id: saved.id, status: saved.status, code: saved.code, process_code: saved.process_code, created_by_user_id: author.id, revision: saved.revision
       }].filter(Boolean) };
       if (sql.startsWith("UPDATE procedures")) {
-        saved = { ...saved, name: params[1], current_payload: JSON.parse(params[2]), revision: saved.revision + 1 };
+        saved = { ...saved, name: params[1], code: params[2], current_payload: JSON.parse(params[3]), revision: saved.revision + 1 };
         return { rows: [saved] };
       }
       if (sql.startsWith("INSERT INTO audit_events")) return { rows: [] };
@@ -577,11 +624,12 @@ test("draft HTTP routes create, read, and update with a live author session", as
   const base = `http://127.0.0.1:${server.address().port}/api/procedures`;
   const headers = { cookie: `__Host-asistente_session=${token}`, "x-csrf-token": csrf, "content-type": "application/json" };
   try {
-    const created = await fetch(base, { method: "POST", headers, body: JSON.stringify({ name: "Borrador", processCode: "DE", payload: { fields: { nombre: "Borrador" } } }) });
+    const created = await fetch(base, { method: "POST", headers, body: JSON.stringify({ name: "Borrador", processCode: "DE", consecutive: "1", payload: { fields: { nombre: "Borrador" } } }) });
     assert.equal(created.status, 201);
     const procedure = (await created.json()).procedure;
     assert.equal(procedure.status, "borrador");
     assert.equal(procedure.revision, 1);
+    assert.equal(procedure.code, "DE-P-001");
     const detail = await fetch(`${base}/${procedure.id}`, { headers });
     assert.equal((await detail.json()).procedure.payload.fields.nombre, "Borrador");
     const updated = await fetch(`${base}/${procedure.id}`, { method: "PUT", headers, body: JSON.stringify({
@@ -612,6 +660,7 @@ test("draft HTTP routes create, read, and update with a live author session", as
           { uid: "end", tipo: "Fin", actividad: "Solicitud cerrada", descripcion: "Respuesta de prueba" }
         ]
       },
+      consecutive: "1",
       revision: 1
     }) });
     assert.equal(updated.status, 200);

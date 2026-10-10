@@ -106,3 +106,30 @@ test("preview flowchart fits the available width and keeps accessible zoom contr
   assert.match(css, /@media print\{\.preview-diagram-toolbar\{display:none!important\}\}/);
   assert.match(css, /\.preview-diagram svg\{height:auto\}/);
 });
+
+test("reference-aligned editor keeps generated codes, confirmation prompts, helps, and boundary numbering", async () => {
+  const [html, script, css] = await Promise.all([
+    readFile(join(root, "backend/public/drafts.html"), "utf8"),
+    readFile(join(root, "backend/public/drafts.js"), "utf8"),
+    readFile(join(root, "backend/public/drafts.css"), "utf8")
+  ]);
+
+  for (const id of ["draftConsecutive", "draftCode", "draftCodeStatus", "methodTooltip"]) {
+    assert.match(html, new RegExp(`id="${id}"`));
+  }
+  assert.match(html, /Registre normas, lineamientos, políticas, procedimientos internos o requisitos externos que deban cumplirse durante la ejecución del procedimiento/);
+  assert.match(script, /function procedureCode\(processCode, consecutive\)/);
+  assert.match(script, /return `\$\{processCode\}-P-\$\{String\(number\)\.padStart\(3, "0"\)\}`/);
+  assert.match(script, /function displayActivityNumber\(activity, index\)/);
+  assert.match(script, /activity\?\.tipo !== "Actividad"/);
+  assert.match(script, /const row = \[displayActivityNumber\(activity, index\)/);
+  assert.match(script, /function confirmDeletion\(kind, value\)/);
+  assert.match(script, /¿Está seguro de eliminar el registro de normatividad/);
+  assert.match(script, /¿Está seguro de eliminar la actividad/);
+  assert.match(script, /Esta acción no se puede deshacer/);
+  assert.match(script, /function setupMethodTooltip\(\)/);
+  assert.match(script, /CÓDIGO DEL PROCESO \+ P \(Procedimiento\) \+ CONSECUTIVO/);
+  assert.match(script, /Nombre y número completo de la norma, resolución, decreto, acuerdo, circular, política, guía o estándar aplicable/);
+  assert.match(css, /\.method-tooltip\.visible\{display:block\}/);
+  assert.match(css, /\.help-tip\{/);
+});

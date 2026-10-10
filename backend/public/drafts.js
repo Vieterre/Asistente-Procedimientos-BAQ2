@@ -6,14 +6,14 @@ const ids = [
   "evaluatorInbox", "evaluatorDraftCount", "evaluatorInboxMessage", "emptyEvaluatorInbox", "evaluatorDraftList", "refreshEvaluatorInbox", "evaluatorDetail", "evaluatorDetailTitle", "evaluatorDetailStatus", "backToEvaluatorInbox", "startEvaluationButton",
   "evaluationWorkspace", "evaluationProgress", "evaluationScore", "evaluationLevel", "evaluationVariableResults", "evaluationCriteriaGroups", "evaluationConcept", "evaluationMessage", "saveEvaluationButton", "returnEvaluationButton", "unfavorableEvaluationButton", "favorableEvaluationButton",
   "returnedEvaluation", "returnedEvaluationSummary", "returnedEvaluationConcept", "returnedFindings", "saveEvaluationResponses", "returnedEvaluationMessage",
-  "draftName", "processCode", "draftObjective", "draftScope", "draftDefinitions", "draftConditions", "saveDraftButton", "editorMessage",
+  "draftName", "processCode", "draftConsecutive", "draftCode", "draftCodeStatus", "draftObjective", "draftScope", "draftDefinitions", "draftConditions", "saveDraftButton", "editorMessage",
   "newDraftButton", "addNormButton", "normsList", "emptyNorms", "addBoundaryButton", "addActivityButton", "addDecisionButton", "addConnectorButton", "activitiesList", "emptyActivities", "reviewFlowButton", "flowReviewResult", "refreshDraftsButton", "draftCount", "listMessage", "emptyDrafts",
   "draftList", "flowSection", "flowSummary", "showFlowEvidence", "refreshFlowButton", "flowCanvas", "flowSvg",
   "zoomOutButton", "zoomInButton", "fitFlowButton", "resetFlowZoomButton", "flowZoomValue",
   "documentsSection", "annexApplicability", "addAnnexButton", "annexNotApplicableMessage", "emptyAnnexes", "annexesList",
   "addChangeButton", "emptyChanges", "changesList", "draftPreparedBy", "draftPreparedName", "draftReviewedBy", "draftReviewedName",
   "draftApprovedBy", "draftApprovedName", "roleSeparationMessage", "saveDocumentsButton", "documentsMessage",
-  "previewButton", "previewDialog", "previewState", "previewContent", "printPreviewButton", "closePreviewButton"
+  "previewButton", "previewDialog", "previewState", "previewContent", "printPreviewButton", "closePreviewButton", "methodTooltip"
 ];
 const ui = Object.fromEntries(ids.map(id => [id, document.getElementById(id)]));
 const csrfKey = "drafts_csrf";
@@ -28,6 +28,9 @@ const errorMessages = {
   forbidden: "Esta cuenta no tiene permiso para gestionar borradores.",
   invalid_draft: "Revisa el nombre del procedimiento.",
   invalid_process: "Selecciona un proceso activo.",
+  invalid_procedure_code: "Indica un consecutivo entre 1 y 999 para generar el código del procedimiento.",
+  procedure_code_taken: "El código ya está asignado a otro procedimiento. Elige otro consecutivo.",
+  procedure_code_locked: "El código queda fijo después de enviar el procedimiento a evaluación.",
   draft_not_found: "El borrador ya no está disponible.",
   draft_locked: "Este procedimiento ya no se puede editar desde esta pantalla.",
   draft_conflict: "El borrador cambió en otra sesión. Vuelve a abrirlo antes de guardar.",
@@ -117,12 +120,14 @@ const controlFields = [
 ];
 const annexTypes = ["Formato", "Instructivo", "Manual", "Guía", "Guía técnica", "Matriz", "Base de datos", "Documento relacionado", "Otro"];
 const helpById = {
-  draftName: "Use un verbo de acción específico y verificable, un objeto y un complemento cuando sea necesario. Evite un nombre demasiado largo.",
-  processCode: "Seleccione el proceso organizacional al que pertenece el procedimiento.",
-  draftObjective: "Explique para qué existe el procedimiento y qué resultado pretende lograr.",
-  draftScope: "Indique dónde inicia y finaliza; precise áreas, usuarios, límites o exclusiones.",
-  draftDefinitions: "Registre términos y siglas en orden alfabético. Escriba cada término seguido de dos puntos y su definición.",
-  draftConditions: "Registre reglas o restricciones que aplican a todo el procedimiento y no a una actividad específica.",
+  draftName: "Use un verbo de acción específico y verificable, un solo objeto y, cuando sea necesario, un complemento que precise el alcance. Máximo 12 palabras, mayúscula solo en la primera letra y sin punto final.",
+  processCode: "Seleccione el proceso organizacional. La aplicación utilizará su código para construir y validar automáticamente el código del procedimiento.",
+  draftConsecutive: "Corresponde al número consecutivo del procedimiento dentro del proceso. La aplicación lo completa a tres dígitos: 1 se convierte en 001.",
+  draftCode: "Se genera con la estructura: CÓDIGO DEL PROCESO + P (Procedimiento) + CONSECUTIVO. Ejemplo: MM-GD-SE-P-006.",
+  draftObjective: "Explique para qué existe el procedimiento y qué resultado pretende lograr. Debe ser claro, específico y coherente con el proceso. Ejemplo: Establecer los lineamientos para planificar un trabajo de auditoría basado en riesgos.",
+  draftScope: "Delimite el procedimiento indicando dónde inicia y dónde finaliza. Puede incluir áreas, usuarios, límites, exclusiones, ámbito territorial o temporal.",
+  draftDefinitions: "Registre los términos, siglas y conceptos en orden alfabético. Escriba cada término seguido de dos puntos y su definición. Ejemplo: PAA: Plan Anual de Auditoría.",
+  draftConditions: "Reglas, políticas operativas, restricciones, condiciones previas o criterios que aplican transversalmente al procedimiento y no corresponden a una actividad específica.",
   annexApplicability: "Elija No aplica solo si este procedimiento no utiliza documentos anexos. Cambiar a No aplica elimina las filas de anexos tras confirmación.",
   draftPreparedBy: "Cargo que prepara o actualiza técnicamente el procedimiento. Debe ser distinto de quien revisa y aprueba.",
   draftReviewedBy: "Cargo que verifica coherencia, suficiencia y cumplimiento. Debe ser distinto de quien elabora y aprueba.",
@@ -132,34 +137,34 @@ const helpById = {
   draftApprovedName: "Nombre de la persona que aprobó, si ya se conoce."
 };
 const normHelp = {
-  "Tipo": "Interna si procede de la organización; Externa si proviene de otra autoridad u organismo.",
-  "Norma": "Escriba el nombre y número completo de la norma, resolución, política o guía aplicable.",
-  "Año": "Año de expedición o de la versión vigente.",
-  "Descripción": "Resuma el objeto o asunto regulado por la norma.",
-  "Artículo / sección": "Indique el artículo, numeral o sección que sustenta este procedimiento.",
-  "Entidad emisora": "Autoridad, entidad o dependencia que expide la norma."
+  "Tipo": "Seleccione Interna cuando la norma o lineamiento sea expedido por la organización, y Externa cuando provenga de una autoridad u organismo externo.",
+  "Norma": "Nombre y número completo de la norma, resolución, decreto, acuerdo, circular, política, guía o estándar aplicable.",
+  "Año": "Año de expedición o versión vigente del documento normativo.",
+  "Descripción": "Describa brevemente el objeto o asunto regulado. Ejemplo: Por el cual se actualiza el Modelo Integrado de Planeación y Gestión.",
+  "Artículo / sección": "Artículo, numeral, capítulo o sección específica que soporta el procedimiento.",
+  "Entidad emisora": "Autoridad, entidad, dependencia u organismo que expide la norma o lineamiento."
 };
 const activityHelp = {
-  "Nombre": "Para Inicio registre un nombre breve; para Fin, el nombre del resultado o cierre.",
-  "Evento que inicia el procedimiento": "Describa el hecho o condición que activa el procedimiento.",
-  "Resultado o condición de cierre": "Describa el producto o condición con la que termina el procedimiento.",
-  "Actividad": "Use un nombre corto y concreto para la acción o tarea.",
-  "Descripción": "Describa qué se hace, cómo se hace y el resultado esperado.",
-  "Responsable": "Cargo o rol que ejecuta la actividad; se utilizará para el carril del flujograma.",
-  "Registro / evidencia": "Soporte opcional de la ejecución: correo, formato, acta o registro de sistema.",
-  "Sistema / herramienta": "Aplicativo, archivo o medio utilizado para ejecutar la actividad.",
-  "Pregunta de decisión": "Plantee una condición concreta que pueda responderse Sí o No.",
-  "Punto de control": "Marque esta opción solo si la actividad incorpora una verificación crítica frente a un riesgo o requisito.",
-  "Ruta Sí": "Seleccione la actividad o destino cuando la condición se cumple.",
-  "Ruta No": "Si se repite un control, dirija primero esta ruta a una actividad que corrija o complemente la información.",
-  "Identificador": "Código corto y único para reconocer el conector.",
-  "Continuar el flujo en": "Seleccione el elemento donde continúa el flujo después del conector.",
-  "Propósito del control": "El verbo orienta la acción, pero por sí solo no convierte la actividad en un punto de control.",
-  "Responsable del control": "Rol que ejecuta o verifica el control; puede coincidir con el responsable de la actividad.",
-  "Periodicidad": "Frecuencia del control: por trámite, diariamente, mensualmente, por auditoría, etc.",
-  "Ejecución del control": "Explique qué se revisa, contra qué criterio y cómo se realiza la verificación.",
-  "Tratamiento de desviaciones": "Indique qué ocurre ante un incumplimiento: devolver, corregir, escalar o solicitar ajustes.",
-  "Evidencia del control": "Soporte que demuestra la ejecución del control: firma, correo, acta o registro."
+  "Nombre": "Nombre corto y concreto de la actividad. Ejemplo: Revisar solicitud documental.",
+  "Evento que inicia el procedimiento": "La ayuda cambia según el tipo seleccionado. Para Inicio registre el evento activador y para Fin el resultado o condición de cierre.",
+  "Resultado o condición de cierre": "La ayuda cambia según el tipo seleccionado. Para Inicio registre el evento activador y para Fin el resultado o condición de cierre.",
+  "Actividad": "Nombre corto y concreto de la actividad. Ejemplo: Revisar solicitud documental.",
+  "Descripción": "La ayuda cambia según el tipo seleccionado. Para Inicio registre el evento activador y para Fin el resultado o condición de cierre.",
+  "Responsable": "Seleccione de la lista el cargo o rol que ejecuta la actividad. Este rol alimenta los carriles del flujograma.",
+  "Registro / evidencia": "Opcional. Soporte que demuestra la ejecución de la actividad: formato, correo, acta, registro de sistema, informe, etc.",
+  "Sistema / herramienta": "Opcional. Aplicativo, plataforma, archivo, herramienta tecnológica o medio utilizado.",
+  "Pregunta de decisión": "La decisión es un elemento de bifurcación del flujo que evalúa una condición y determina la ruta que debe seguir el procedimiento de acuerdo con el resultado obtenido.",
+  "Punto de control": "Marque Sí solo cuando la actividad o decisión incorpore una verificación crítica asociada a un riesgo o requisito. Una decisión puede tener o no punto de control.",
+  "Ruta Sí": "Seleccione la actividad o destino que sigue cuando la condición se cumple.",
+  "Ruta No": "La ruta No debe conducir primero a una actividad que modifique, corrija o complemente la información. Solo después de ese ajuste puede repetirse el punto de control.",
+  "Identificador": "El Conector permite continuar el flujo en otro punto o evitar cruces de líneas.",
+  "Continuar el flujo en": "El Conector permite continuar el flujo en otro punto o evitar cruces de líneas.",
+  "Propósito del control": "Seleccione la acción que mejor representa el propósito del control. El verbo orienta su identificación, pero no determina por sí solo que la actividad constituya un punto de control.",
+  "Responsable del control": "Seleccione de la lista el cargo o rol que ejecuta la actividad. Este rol alimenta los carriles del flujograma.",
+  "Periodicidad": "Frecuencia con la que se ejecuta el control: por cada trámite, diariamente, mensual, por cada auditoría, etc.",
+  "Ejecución del control": "Describa cómo se realiza la verificación: qué se revisa, contra qué criterio y qué acción ejecuta el responsable.",
+  "Tratamiento de desviaciones": "Indique qué ocurre cuando el control identifica incumplimientos o desviaciones: devolver, corregir, escalar, solicitar ajustes, etc.",
+  "Evidencia del control": "Soporte que demuestra que el control fue ejecutado: correo, firma, formato aprobado, registro del sistema, acta, entre otros."
 };
 const annexHelp = {
   "Documento": "Nombre completo del documento que complementa o soporta el procedimiento.",
@@ -175,25 +180,59 @@ const changeHelp = {
 
 function installMethodHelps(root) {
   for (const label of root.querySelectorAll("label[for]")) {
-    if (label.nextElementSibling?.classList.contains("method-help")) continue;
+    if (label.nextElementSibling?.classList.contains("help-tip")) continue;
     const text = label.closest(".norm-row") ? normHelp[label.textContent.trim()]
       : label.closest(".activity-row") ? activityHelp[label.textContent.trim()]
       : label.closest(".annex-row") ? annexHelp[label.textContent.trim()]
       : label.closest(".change-row") ? changeHelp[label.textContent.trim()]
       : helpById[label.htmlFor];
     if (!text) continue;
-    const details = document.createElement("details");
-    details.className = "method-help";
-    const summary = document.createElement("summary");
-    summary.textContent = "i";
-    summary.title = "Ayuda metodológica";
-    summary.setAttribute("aria-label", `Ayuda para ${label.textContent.trim()}`);
-    const explanation = document.createElement("p");
-    explanation.textContent = text;
-    details.append(summary, explanation);
-    label.classList.add("method-label");
-    label.after(details);
+    const help = document.createElement("span");
+    help.className = "help-tip";
+    help.tabIndex = 0;
+    help.textContent = "i";
+    help.dataset.tip = text;
+    help.setAttribute("role", "button");
+    help.setAttribute("aria-label", `Ayuda para ${label.textContent.trim()}`);
+    label.after(help);
   }
+}
+
+function setupMethodTooltip() {
+  const tooltip = ui.methodTooltip;
+  if (!tooltip) return;
+  const close = () => {
+    tooltip.classList.remove("visible");
+    tooltip.setAttribute("aria-hidden", "true");
+  };
+  const show = source => {
+    const message = source?.dataset?.tip;
+    if (!message) return;
+    tooltip.textContent = message;
+    tooltip.classList.add("visible");
+    tooltip.setAttribute("aria-hidden", "false");
+    const rect = source.getBoundingClientRect();
+    const width = Math.min(340, window.innerWidth - 24);
+    const left = Math.min(window.innerWidth - width - 12, Math.max(12, rect.left));
+    const top = Math.min(window.innerHeight - 24, rect.bottom + 8);
+    tooltip.style.left = `${left}px`;
+    tooltip.style.top = `${top}px`;
+  };
+  document.addEventListener("pointerover", event => {
+    const source = event.target.closest(".help-tip");
+    if (source) show(source);
+  });
+  document.addEventListener("pointerout", event => {
+    if (event.target.closest(".help-tip")) close();
+  });
+  document.addEventListener("focusin", event => {
+    const source = event.target.closest(".help-tip");
+    if (source) show(source);
+  });
+  document.addEventListener("focusout", event => {
+    if (event.target.closest(".help-tip")) close();
+  });
+  window.addEventListener("scroll", close, true);
 }
 
 function showRoleSeparation() {
@@ -242,6 +281,33 @@ function suggestNextChangeVersion(changes, fallback = "1.0") {
   return `${major}.${minor + 1}`;
 }
 
+function procedureCode(processCode, consecutive) {
+  const value = String(consecutive ?? "").trim();
+  if (!/^[0-9]{1,3}$/.test(value)) return "";
+  const number = Number(value);
+  if (!processCode || number < 1 || number > 999) return "";
+  return `${processCode}-P-${String(number).padStart(3, "0")}`;
+}
+
+function procedureConsecutive(code, processCode) {
+  const match = new RegExp(`^${String(processCode || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}-P-([0-9]{3})$`).exec(String(code || ""));
+  return match ? String(Number(match[1])) : "";
+}
+
+function syncProcedureCode() {
+  const code = procedureCode(ui.processCode.value, ui.draftConsecutive.value);
+  ui.draftCode.value = code;
+  const codeLocked = Boolean(currentDraft?.code && currentDraft.status !== "borrador");
+  ui.draftCodeStatus.textContent = codeLocked
+    ? "El código permanece fijo después del envío a evaluación."
+    : code ? "Código generado automáticamente." : "Selecciona el proceso e indica un consecutivo entre 1 y 999.";
+}
+
+function displayActivityNumber(activity, index) {
+  if (activity?.tipo !== "Actividad") return "";
+  return String(activityRows.slice(0, index + 1).filter(item => item?.tipo === "Actividad").length);
+}
+
 function markDirty() {
   dirty = true;
   flowReviewVersion += 1;
@@ -284,6 +350,25 @@ function showFlowReview(issues, completenessIssues = []) {
   result.hidden = false;
 }
 
+function confirmDeletion(kind, value) {
+  const label = String(value || "").trim();
+  const messages = {
+    norma: label
+      ? `¿Está seguro de eliminar el registro de normatividad “${label}”? Esta acción no se puede deshacer.`
+      : "¿Está seguro de eliminar este registro de normatividad? Esta acción no se puede deshacer.",
+    actividad: label
+      ? `¿Está seguro de eliminar la actividad “${label}”? Esta acción no se puede deshacer.`
+      : "¿Está seguro de eliminar este registro de actividad? Esta acción no se puede deshacer.",
+    anexo: label
+      ? `¿Está seguro de eliminar el documento anexo “${label}”? Esta acción no se puede deshacer.`
+      : "¿Está seguro de eliminar este documento anexo? Esta acción no se puede deshacer.",
+    cambio: label
+      ? `¿Está seguro de eliminar el cambio de versión “${label}”? Esta acción no se puede deshacer.`
+      : "¿Está seguro de eliminar este registro de cambio? Esta acción no se puede deshacer."
+  };
+  return window.confirm(messages[kind]);
+}
+
 function renderNorms() {
   ui.emptyNorms.hidden = normRows.length > 0;
   ui.normsList.replaceChildren(...normRows.map((norm, index) => {
@@ -299,7 +384,7 @@ function renderNorms() {
     remove.textContent = "Eliminar";
     remove.setAttribute("aria-label", "Eliminar norma " + (index + 1));
     remove.addEventListener("click", () => {
-      if (!window.confirm("¿Eliminar esta norma del borrador?")) return;
+      if (!confirmDeletion("norma", norm.norma)) return;
       normRows.splice(index, 1);
       renderNorms();
       markDirty();
@@ -411,7 +496,7 @@ function renderAnnexes() {
     remove.textContent = "Eliminar";
     remove.setAttribute("aria-label", "Eliminar anexo " + (index + 1));
     remove.addEventListener("click", () => {
-      if (!window.confirm("¿Eliminar este anexo del borrador?")) return;
+      if (!confirmDeletion("anexo", annex.documento)) return;
       annexRows.splice(index, 1);
       renderAnnexes();
       markDirty();
@@ -443,7 +528,7 @@ function renderChanges() {
     remove.textContent = "Eliminar";
     remove.setAttribute("aria-label", "Eliminar cambio " + (index + 1));
     remove.addEventListener("click", () => {
-      if (!window.confirm("¿Eliminar este cambio del borrador?")) return;
+      if (!confirmDeletion("cambio", change.version)) return;
       changeRows.splice(index, 1);
       renderChanges();
       markDirty();
@@ -633,7 +718,7 @@ function renderActivities() {
     const heading = document.createElement("div");
     heading.className = "activity-heading";
     const title = document.createElement("h4");
-    title.textContent = activity.tipo === "Actividad" ? "Actividad " + (index + 1)
+    title.textContent = activity.tipo === "Actividad" ? "Actividad " + displayActivityNumber(activity, index)
       : activity.tipo === "Conector" ? "Conector " + String(activity.connectorId || "")
       : String(activity.tipo || "Elemento del flujo");
     heading.append(title);
@@ -674,13 +759,13 @@ function renderActivities() {
       remove.type = "button";
       remove.className = "secondary-button";
       remove.textContent = "Eliminar";
-      remove.setAttribute("aria-label", "Eliminar actividad " + (index + 1));
+      remove.setAttribute("aria-label", `Eliminar ${activity.tipo.toLocaleLowerCase("es-CO")} ${displayActivityNumber(activity, index) || "del flujo"}`);
       remove.addEventListener("click", () => {
         if (activityRows.some(other => other !== activity && [other.decisionSi, other.decisionNo, other.connectorDestino].includes(activity.uid))) {
           window.alert("Esta actividad es destino de una ruta. Cambia primero esa ruta.");
           return;
         }
-        if (!window.confirm("¿Eliminar esta actividad del borrador?")) return;
+        if (!confirmDeletion("actividad", activity.actividad || activity.descripcion)) return;
         activityRows.splice(index, 1);
         renderActivities();
         markDirty();
@@ -1336,6 +1421,7 @@ async function loadProcesses() {
       ui.analyticsProcess.replaceChildren(allProcesses, ...groups.map(group => group.cloneNode(true)));
     }
     ui.processCode.disabled = Boolean(currentDraft);
+    syncProcedureCode();
   } catch (error) {
     handleRequestError(error, ui.editorMessage);
   }
@@ -1694,7 +1780,7 @@ async function loadEvaluatorInbox() {
       const name = document.createElement("strong");
       name.textContent = procedure.name;
       const detail = document.createElement("small");
-      detail.textContent = `${procedure.processCode} · ${statusLabel(procedure.status)}`;
+      detail.textContent = `${procedure.code || "Código pendiente"} · ${procedure.processCode} · ${statusLabel(procedure.status)}`;
       const status = document.createElement("span");
       status.className = "draft-status";
       status.textContent = "Revisar";
@@ -1728,7 +1814,7 @@ function renderDrafts(drafts) {
     const details = document.createElement("small");
     const updatedAt = new Date(draft.updatedAt);
     const date = Number.isNaN(updatedAt.valueOf()) ? "" : updatedAt.toLocaleString("es-CO");
-    details.textContent = draft.processCode + (date ? " · " + date : "");
+    details.textContent = `${draft.code || "Código pendiente"} · ${draft.processCode}` + (date ? " · " + date : "");
 
     const status = document.createElement("span");
     status.className = "draft-status";
@@ -1789,6 +1875,8 @@ function populateDraft(procedure) {
   option.textContent = `${processNames.get(procedure.processCode) || procedure.processCode} (${procedure.processCode})`;
   ui.processCode.replaceChildren(option);
   ui.processCode.value = procedure.processCode;
+  ui.draftConsecutive.value = procedureConsecutive(procedure.code, procedure.processCode);
+  syncProcedureCode();
   ui.editorTitle.textContent = "Editar borrador";
   ui.editorStatus.textContent = `${statusLabel(procedure.status)} · revisión ${procedure.revision}`;
   ui.saveDraftButton.textContent = "Guardar cambios";
@@ -1804,6 +1892,8 @@ function populateDraft(procedure) {
 function applyDraftEditability() {
   const editable = ["elaborador", "administrador"].includes(currentUserRole) && (!currentDraft || ["borrador", "devuelto_para_ajustes"].includes(currentDraft.status));
   for (const control of ui.draftForm.querySelectorAll("input, select, textarea, button")) control.disabled = !editable;
+  ui.draftCode.disabled = false;
+  ui.draftConsecutive.disabled = !editable || Boolean(currentDraft?.code && currentDraft.status !== "borrador");
   for (const control of ui.documentsSection.querySelectorAll("input, select, textarea, button")) control.disabled = !editable;
   ui.saveDraftButton.hidden = !editable;
   ui.saveDocumentsButton.hidden = !editable;
@@ -1826,7 +1916,7 @@ async function openAssignedProcedure(id) {
     ui.evaluatorInbox.hidden = true;
     ui.evaluatorDetail.hidden = false;
     ui.evaluatorDetailTitle.textContent = procedure.name;
-    ui.evaluatorDetailStatus.textContent = `${procedure.processCode} · ${statusLabel(procedure.status)} · revisión ${procedure.revision}`;
+    ui.evaluatorDetailStatus.textContent = `${procedure.code || "Código pendiente"} · ${procedure.processCode} · ${statusLabel(procedure.status)} · revisión ${procedure.revision}`;
     ui.startEvaluationButton.hidden = procedure.status !== "enviado_a_evaluacion" && procedure.status !== "subsanado";
     ui.previewButton.hidden = false;
     renderEvaluationWorkspace();
@@ -1860,6 +1950,7 @@ function newDraft() {
   populateApprovalRoleSelect(ui.draftApprovedBy, "", ["Directivo"]);
   for (const [inputId] of textFields) ui[inputId].value = "";
   showRoleSeparation();
+  syncProcedureCode();
   ui.processCode.disabled = false;
   ui.editorTitle.textContent = "Nuevo borrador";
   ui.editorStatus.textContent = "Borrador no guardado";
@@ -1903,6 +1994,8 @@ ui.loginForm.addEventListener("submit", async event => {
 
 ui.draftForm.addEventListener("input", markDirty);
 ui.draftForm.addEventListener("change", markDirty);
+ui.processCode.addEventListener("change", syncProcedureCode);
+ui.draftConsecutive.addEventListener("input", syncProcedureCode);
 for (const inputId of ["draftPreparedBy", "draftReviewedBy", "draftApprovedBy"]) {
   ui[inputId].addEventListener("change", showRoleSeparation);
 }
@@ -2003,13 +2096,13 @@ ui.draftForm.addEventListener("submit", async event => {
     changes: changeRows.map(change => ({ ...change })),
     settings: { ...(currentPayload.settings && typeof currentPayload.settings === "object" && !Array.isArray(currentPayload.settings) ? currentPayload.settings : {}), annexesNotApplicable }
   };
-  const body = { name, processCode: ui.processCode.value, payload };
+  const body = { name, processCode: ui.processCode.value, consecutive: ui.draftConsecutive.value, payload };
 
   try {
     const result = currentDraft
       ? await request("/api/procedures/" + encodeURIComponent(currentDraft.id), {
           method: "PUT",
-          body: { name, payload, revision: currentDraft.revision },
+          body: { name, consecutive: ui.draftConsecutive.value, payload, revision: currentDraft.revision },
           csrf: true
         })
       : await request("/api/procedures", { method: "POST", body, csrf: true });
@@ -2026,6 +2119,8 @@ ui.draftForm.addEventListener("submit", async event => {
     renderChanges();
     ui.processCode.value = currentDraft.processCode;
     ui.processCode.disabled = true;
+    ui.draftConsecutive.value = procedureConsecutive(currentDraft.code, currentDraft.processCode);
+    syncProcedureCode();
     ui.editorTitle.textContent = "Editar borrador";
     ui.editorStatus.textContent = currentDraft.status + " · revisión " + currentDraft.revision;
     ui.saveDraftButton.textContent = "Guardar cambios";
@@ -2338,7 +2433,7 @@ function showPreview() {
   title.append(titleLabel, name, processLabel);
   const meta = document.createElement("div");
   meta.className = "preview-document-meta";
-  for (const [label, value] of [["Código", ui.processCode.value || "Pendiente"], ["Versión", changeRows.at(-1)?.version || "1.0"], ["Estado", currentDraft?.status || "Borrador"]]) {
+  for (const [label, value] of [["Código", ui.draftCode.value || "Pendiente"], ["Versión", changeRows.at(-1)?.version || "1.0"], ["Estado", currentDraft?.status || "Borrador"]]) {
     const cell = document.createElement("div");
     const strong = document.createElement("strong");
     strong.textContent = label;
@@ -2369,7 +2464,7 @@ function showPreview() {
       ["Propósito", activity.controlAccion], ["Ejecución", activity.controlEjecucion],
       ["Desviación", activity.controlDesviacion], ["Evidencia", activity.controlEvidencia]
     ].filter(([, value]) => String(value || "").trim()).map(([label, value]) => `${label}: ${value}`).join("\n") || "Control sin detalle" : "No aplica";
-    const row = [String(index + 1), activity.tipo || "", activity.actividad || "", description.join("\n"), activity.responsable || "", control];
+    const row = [displayActivityNumber(activity, index), activity.tipo || "", activity.actividad || "", description.join("\n"), activity.responsable || "", control];
     if (showEvidence) row.push(activity.evidencia || activity.controlEvidencia || "");
     if (showSystem) row.push(activity.sistema || "");
     return row;
@@ -2478,4 +2573,5 @@ populateApprovalRoleSelect(ui.draftPreparedBy);
 populateApprovalRoleSelect(ui.draftReviewedBy);
 populateApprovalRoleSelect(ui.draftApprovedBy, "", ["Directivo"]);
 installMethodHelps(document);
+setupMethodTooltip();
 if (csrfToken) request("/api/auth/me").then(({ user }) => startSession(user)).catch(clearSession);

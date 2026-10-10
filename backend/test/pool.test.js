@@ -41,14 +41,14 @@ test("database check rejects an incomplete schema", async () => {
   assert.equal(await checkDatabase(pool), false);
 });
 
-test("database check requires the evaluation notifications migration before reporting ready", async () => {
+test("database check requires the procedure codes migration before reporting ready", async () => {
   const pool = {
     async query(sql, params) {
       if (sql.includes("to_regclass")) return { rows: [{
         users_ready: true, procedures_ready: true, migrations_ready: true,
         sessions_ready: true, notifications_ready: true
       }] };
-      return { rows: params[0] === "007_evaluation_notifications" ? [] : [{ "?column?": 1 }] };
+      return { rows: params[0] === "008_procedure_codes" ? [] : [{ "?column?": 1 }] };
     }
   };
   assert.equal(await checkDatabase(pool), false);

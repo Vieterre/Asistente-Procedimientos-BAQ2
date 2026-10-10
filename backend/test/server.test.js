@@ -108,7 +108,7 @@ test("private consoles serve only their own assets with a restrictive policy", a
     assert.match(draftHtml, /id="flowSvg"/);
     assert.match(draftHtml, /id="refreshFlowButton"/);
     assert.match(draftHtml, /id="showFlowEvidence"/);
-    for (const id of ["documentsSection", "annexApplicability", "addAnnexButton", "annexesList", "addChangeButton", "changesList", "saveDocumentsButton", "submitReviewButton", "submitReviewDialog", "reviewEvaluatorSelect", "evaluatorInbox", "evaluatorDraftList", "evaluatorDetail", "startEvaluationButton"]) {
+    for (const id of ["draftConsecutive", "draftCode", "draftCodeStatus", "methodTooltip", "documentsSection", "annexApplicability", "addAnnexButton", "annexesList", "addChangeButton", "changesList", "saveDocumentsButton", "submitReviewButton", "submitReviewDialog", "reviewEvaluatorSelect", "evaluatorInbox", "evaluatorDraftList", "evaluatorDetail", "startEvaluationButton"]) {
       assert.match(draftHtml, new RegExp(`id="${id}"`));
     }
     for (const id of ["flowCanvas", "zoomOutButton", "zoomInButton", "fitFlowButton", "resetFlowZoomButton", "flowZoomValue", "previewButton", "previewDialog", "previewContent", "printPreviewButton"]) {
@@ -131,6 +131,9 @@ test("private consoles serve only their own assets with a restrictive policy", a
     assert.match(draftScript, /processGroupDefinitions = \[/);
     assert.match(draftScript, /buildProcessOptionGroups\(processes\)/);
     assert.match(draftScript, /processNames\.get\(procedure\.processCode\)/);
+    assert.match(draftScript, /function procedureCode\(processCode, consecutive\)/);
+    assert.match(draftScript, /-P-\$\{String\(number\)\.padStart\(3, "0"\)\}/);
+    assert.match(draftScript, /function setupMethodTooltip\(\)/);
     assert.match(draftScript, /ui\.showFlowEvidence\.addEventListener\("change", renderFlow\)/);
     const draftCss = await (await fetch(base + "/drafts.css")).text();
     assert.match(draftCss, /\.site-header\{position:sticky;top:0/);

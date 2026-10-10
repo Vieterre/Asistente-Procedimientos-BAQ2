@@ -16,6 +16,7 @@ export async function runMigrations(pool = createPool()) {
   const fifthMigration = await readFile(join(migrationsDir, "005_draft_revision.sql"), "utf8");
   const sixthMigration = await readFile(join(migrationsDir, "006_user_notifications.sql"), "utf8");
   const seventhMigration = await readFile(join(migrationsDir, "007_evaluation_notifications.sql"), "utf8");
+  const eighthMigration = await readFile(join(migrationsDir, "008_procedure_codes.sql"), "utf8");
   const migrations = [
     ["001_initial_schema", schema],
     ["002_sessions", secondMigration],
@@ -23,7 +24,8 @@ export async function runMigrations(pool = createPool()) {
     ["004_usernames", fourthMigration],
     ["005_draft_revision", fifthMigration],
     ["006_user_notifications", sixthMigration],
-    ["007_evaluation_notifications", seventhMigration]
+    ["007_evaluation_notifications", seventhMigration],
+    ["008_procedure_codes", eighthMigration]
   ];
   const client = await pool.connect();
 

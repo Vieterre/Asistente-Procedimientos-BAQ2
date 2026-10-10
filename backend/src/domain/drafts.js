@@ -14,7 +14,18 @@ export class DraftError extends Error {
   }
 }
 
-function submissionIssues(name, payload) {
+const PROCEDURE_CODE_PATTERN = /^[A-Z]{2,3}-P-\d{3}$/;
+
+function procedureCode(processCode, consecutive) {
+  if (consecutive === undefined || consecutive === null || String(consecutive).trim() === "") return null;
+  const value = String(consecutive).trim();
+  if (!/^\d{1,3}$/.test(value) || Number(value) < 1 || Number(value) > 999) {
+    throw new DraftError("invalid_procedure_code", 400);
+  }
+  return `${processCode}-P-${String(Number(value)).padStart(3, "0")}`;
+}
+
+function submissionIssues(name, payload, code) {
   const fields = payload.fields && typeof payload.fields === "object" && !Array.isArray(payload.fields) ? payload.fields : {};
   const issues = [];
   for (const [key, label] of [["objetivo", "Objetivo"], ["alcance", "Alcance"], ["definiciones", "Definiciones"], ["condiciones", "Condiciones generales"]]) {
@@ -57,6 +68,7 @@ function submissionIssues(name, payload) {
     issues.push("Completa Elaboró, Revisó y Aprobó con cargos distintos.");
   }
   if (!String(name || "").trim()) issues.push("Escribe el nombre del procedimiento.");
+  if (!PROCEDURE_CODE_PATTERN.test(String(code || ""))) issues.push("Genera el código del procedimiento antes de enviarlo.");
   return issues;
 }
 
@@ -112,12 +124,13 @@ export async function getOwnDraft(pool, user, id) {
   return publicDraft(result.rows[0], true);
 }
 
-export async function createDraft(pool, user, { name, processCode, payload }) {
+export async function createDraft(pool, user, { name, processCode, consecutive, payload }) {
   if (!canPerform(user, ACTIONS.CREATE_PROCEDURE)) throw new DraftError("forbidden", 403);
   const cleanName = validateDraft({ name, payload });
   if (typeof processCode !== "string" || !/^[A-Z]{2,3}$/.test(processCode)) {
     throw new DraftError("invalid_process", 400);
   }
+  const code = procedureCode(processCode, consecutive);
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
@@ -129,10 +142,10 @@ export async function createDraft(pool, user, { name, processCode, payload }) {
     );
     if (!process.rows.length) throw new DraftError("invalid_process", 400);
     const result = await client.query(
-      `INSERT INTO procedures (id, name, process_code, status, created_by_user_id, current_payload)
-       VALUES ($1, $2, $3, $4, $5, $6::jsonb)
+      `INSERT INTO procedures (id, name, code, process_code, status, created_by_user_id, current_payload)
+       VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb)
        RETURNING id, code, name, process_code, version, status, revision, updated_at, current_payload`,
-      [randomUUID(), cleanName, processCode, PROCEDURE_STATUS.DRAFT, user.id, JSON.stringify(payload)]
+      [randomUUID(), cleanName, code, processCode, PROCEDURE_STATUS.DRAFT, user.id, JSON.stringify(payload)]
     );
     await client.query(
       `INSERT INTO audit_events (id, actor_user_id, event_type, entity_type, entity_id)
@@ -143,20 +156,23 @@ export async function createDraft(pool, user, { name, processCode, payload }) {
     return publicDraft(result.rows[0], true);
   } catch (error) {
     await client.query("ROLLBACK");
+    if (error?.code === "23505" && error?.constraint === "procedures_code_unique") {
+      throw new DraftError("procedure_code_taken", 409);
+    }
     throw error;
   } finally {
     client.release();
   }
 }
 
-export async function updateOwnDraft(pool, user, id, { name, payload, revision }) {
+export async function updateOwnDraft(pool, user, id, { name, consecutive, payload, revision }) {
   const cleanName = validateDraft({ name, payload });
   if (!Number.isSafeInteger(revision) || revision < 1) throw new DraftError("invalid_revision", 400);
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
     const found = await client.query(
-      `SELECT id, status, created_by_user_id, revision
+      `SELECT id, status, code, process_code, created_by_user_id, revision
        FROM procedures p WHERE id = $1 AND created_by_user_id = $2
          AND ($3 OR EXISTS (SELECT 1 FROM user_processes up
                             WHERE up.user_id = $2 AND up.process_code = p.process_code))
@@ -169,10 +185,14 @@ export async function updateOwnDraft(pool, user, id, { name, payload, revision }
       throw new DraftError("draft_locked", 403);
     }
     if (procedure.revision !== revision) throw new DraftError("draft_conflict", 409);
+    const code = consecutive === undefined ? procedure.code : procedureCode(procedure.process_code, consecutive);
+    if (procedure.status !== PROCEDURE_STATUS.DRAFT && procedure.code && code !== procedure.code) {
+      throw new DraftError("procedure_code_locked", 409);
+    }
     const result = await client.query(
-      `UPDATE procedures SET name = $2, current_payload = $3::jsonb, revision = revision + 1, updated_at = now()
+      `UPDATE procedures SET name = $2, code = $3, current_payload = $4::jsonb, revision = revision + 1, updated_at = now()
        WHERE id = $1 RETURNING id, code, name, process_code, version, status, revision, updated_at, current_payload`,
-      [id, cleanName, JSON.stringify(payload)]
+      [id, cleanName, code, JSON.stringify(payload)]
     );
     await client.query(
       `INSERT INTO audit_events (id, actor_user_id, event_type, entity_type, entity_id)
@@ -183,6 +203,9 @@ export async function updateOwnDraft(pool, user, id, { name, payload, revision }
     return publicDraft(result.rows[0], true);
   } catch (error) {
     await client.query("ROLLBACK");
+    if (error?.code === "23505" && error?.constraint === "procedures_code_unique") {
+      throw new DraftError("procedure_code_taken", 409);
+    }
     throw error;
   } finally {
     client.release();
@@ -227,7 +250,7 @@ export async function submitOwnDraft(pool, user, id, { evaluatorId, revision }) 
     const procedure = found.rows[0];
     if (!procedure) throw new DraftError("draft_not_found", 404);
     if (procedure.revision !== revision) throw new DraftError("draft_conflict", 409);
-    const issues = submissionIssues(procedure.name, procedure.current_payload);
+    const issues = submissionIssues(procedure.name, procedure.current_payload, procedure.code);
     let nextEvaluationPayload = { rubricVersion: EVALUATION_RUBRIC_VERSION, iteration: 1 };
     if (procedure.status === PROCEDURE_STATUS.RETURNED) {
       const previous = await client.query(

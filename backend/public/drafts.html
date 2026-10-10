@@ -31,14 +31,18 @@
 <section class="editor-section" aria-labelledby="editorTitle">
 <div class="section-heading"><div><h2 id="editorTitle">Nuevo borrador</h2><p id="editorStatus">Borrador no guardado</p></div><button class="secondary-button" id="newDraftButton" type="button">Nuevo</button></div>
 <form id="draftForm">
-<div class="field"><label for="draftName">Nombre del procedimiento</label><input id="draftName" maxlength="200" required></div>
+<div class="procedure-identification">
+<div class="field procedure-name"><label for="draftName">Nombre del procedimiento</label><input id="draftName" maxlength="200" required></div>
 <div class="field"><label for="processCode">Proceso</label><select id="processCode" required><option value="">Cargando procesos...</option></select><small class="field-hint">El Elaborador ve los procesos asignados; Administración, el catálogo activo.</small></div>
+<div class="field"><label for="draftConsecutive">Consecutivo</label><input id="draftConsecutive" type="number" min="1" max="999" inputmode="numeric" placeholder="Ej. 6"><small class="field-hint">Se exige para enviar a evaluación.</small></div>
+<div class="field"><label for="draftCode">Código</label><input id="draftCode" readonly placeholder="Se genera automáticamente"><small class="field-hint" id="draftCodeStatus"></small></div>
+</div>
 <div class="field"><label for="draftObjective">Objetivo</label><textarea id="draftObjective" rows="5" maxlength="10000"></textarea></div>
 <div class="field"><label for="draftScope">Alcance</label><textarea id="draftScope" rows="5" maxlength="10000"></textarea></div>
 <div class="field"><label for="draftDefinitions">Definiciones</label><textarea id="draftDefinitions" rows="5" maxlength="10000"></textarea></div>
 <div class="field"><label for="draftConditions">Condiciones generales</label><textarea id="draftConditions" rows="5" maxlength="10000"></textarea></div>
 <section class="norms-section" aria-labelledby="normsTitle">
-<div class="section-heading"><div><h3 id="normsTitle">Normatividad</h3></div><button class="secondary-button" id="addNormButton" type="button">Agregar norma</button></div>
+<div class="section-heading"><div><h3 id="normsTitle">Normatividad <span class="help-tip" tabindex="0" data-tip="Registre normas, lineamientos, políticas, procedimientos internos o requisitos externos que deban cumplirse durante la ejecución del procedimiento." aria-label="Ayuda metodológica sobre normatividad">i</span></h3></div><button class="secondary-button" id="addNormButton" type="button">Agregar norma</button></div>
 <p class="empty-state" id="emptyNorms">Todavía no hay normas registradas.</p><div id="normsList"></div>
 </section>
 <section class="activities-section" aria-labelledby="activitiesTitle">
@@ -95,4 +99,5 @@
 </section></div>
 <dialog id="previewDialog" class="preview-dialog" aria-labelledby="previewTitle"><div class="preview-toolbar"><h2 id="previewTitle">Vista preliminar</h2><div class="section-actions"><button class="secondary-button" id="printPreviewButton" type="button">Imprimir</button><button class="secondary-button" id="closePreviewButton" type="button">Cerrar</button></div></div><p id="previewState" class="preview-state"></p><div id="previewContent" class="preview-content"></div></dialog>
 <dialog id="submitReviewDialog" class="review-submit-dialog" aria-labelledby="submitReviewTitle"><form id="submitReviewForm" method="dialog"><h2 id="submitReviewTitle">Enviar para revisión</h2><p>Selecciona un Evaluador asignado al proceso. Al enviar, el borrador quedará bloqueado mientras se revisa.</p><label for="reviewEvaluatorSelect">Evaluador</label><select id="reviewEvaluatorSelect" required><option value="">Cargando evaluadores...</option></select><p id="submitReviewMessage" class="form-message" role="alert" hidden></p><div class="section-actions"><button class="secondary-button" id="cancelSubmitReview" type="button">Cancelar</button><button class="primary-button" id="confirmSubmitReview" type="submit">Confirmar envío</button></div></form></dialog>
+<div class="method-tooltip" id="methodTooltip" role="tooltip" aria-hidden="true"></div>
 </main></body></html>

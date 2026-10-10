@@ -1,16 +1,17 @@
 # Borradores en el entorno de pruebas
 
 La pantalla privada `/drafts` usa la sesion real para crear, listar, abrir y actualizar borradores propios. La evaluacion se activa solo despues de aplicar la migracion
-`007_evaluation_notifications` y los permisos de `grant-drafts-test.sql`. La consola de
+`008_procedure_codes` y los permisos de `grant-drafts-test.sql`. La consola de
 cuentas no cambia y el prototipo publico continua guardando localmente.
 
 ## Contrato
 
 - `GET /api/processes`: lista codigo y nombre de los procesos activos para el formulario.
 - `GET /api/procedures`: lista los procedimientos propios sin el contenido.
-- `POST /api/procedures`: crea un borrador con `name`, `processCode` y `payload`.
+- `POST /api/procedures`: crea un borrador con `name`, `processCode`, `consecutive`
+  opcional y `payload`.
 - `GET /api/procedures/:id`: devuelve un borrador propio con su contenido.
-- `PUT /api/procedures/:id`: actualiza `name` y `payload` de un borrador propio;
+- `PUT /api/procedures/:id`: actualiza `name`, `consecutive` y `payload` de un borrador propio;
   exige `revision` y devuelve `409 draft_conflict` si otra edicion gano antes.
 - `GET /api/evaluators?processCode=PD`: devuelve evaluadores activos asignados al proceso.
 - `POST /api/procedures/:id/submit`: valida el contenido, asigna evaluador, cambia
@@ -46,6 +47,13 @@ al catalogo activo completo. Los 13 codigos, nombres, agrupaciones y orden se
 contrastan con `processGroups` del formulario original.
 Esta pantalla sigue siendo solo de pruebas.
 
+Cada procedimiento puede usar el código institucional derivado del formulario
+original: `CODIGO_PROCESO-P-CONSECUTIVO`, por ejemplo `PD-P-006`. El
+consecutivo acepta de 1 a 999 y se completa a tres dígitos. Puede quedar vacío
+en un borrador incompleto, pero es obligatorio para enviarlo a evaluación. La
+base evita códigos repetidos y el código queda fijo después del primer envío;
+un borrador histórico sin código puede recibirlo al guardarse de nuevo.
+
 Antes de reiniciar el servicio actualizado, compruebe que la cuenta de prueba
 `planeacionprueba` tenga asignado el proceso del borrador de prueba y exista un
 Evaluador activo asignado a ese mismo proceso en `user_processes`. Aplique de
@@ -70,7 +78,10 @@ control y registrar responsable, periodicidad, proposito, ejecucion,
 desviaciones y evidencia. Los borradores nuevos incluyen Inicio y Fin con
 nombre y descripcion editables; los borradores anteriores pueden completarlos
 sin duplicar los nodos existentes. Inicio y Fin no se eliminan desde esta
-pantalla. El formulario completo sigue sin conectarse; no usar estas
+pantalla ni llevan número: solo las actividades ordinarias se enumeran. Las
+ayudas contextuales y las confirmaciones de eliminación reproducen los textos
+metodológicos del formulario original; toda eliminación pide confirmación y
+advierte que no se puede deshacer. El formulario completo sigue sin conectarse; no usar estas
 rutas ni los controles como validacion de un flujo publicable.
 El boton Revisar flujo comprueba Inicio, Fin, identificadores y destinos de
 decisiones y conectores, exige rutas Si/No diferentes y revisa la continuidad
@@ -197,19 +208,22 @@ persistencia tras cerrar sesion. Esto no certifica equivalencia completa:
 ## Activacion
 
 1. Respalde la base activa y verifique el respaldo antes de la migracion.
-2. Actualice el checkout del servicio y ejecute `npm test`.
-3. Desde `/opt/asistente-backend-test`, aplique las migraciones y registre sus
+2. Antes de aplicar `008_procedure_codes`, compruebe que no existan codigos
+   repetidos ni codigos heredados fuera del patron; la migracion se detiene sin
+   cambios si encuentra un valor que no pueda validar.
+3. Actualice el checkout del servicio y ejecute `npm test`.
+4. Desde `/opt/asistente-backend-test`, aplique las migraciones y registre sus
    checksums usando la cuenta local de PostgreSQL:
    `runuser -u postgres -- env DATABASE_URL='postgresql://postgres@localhost/asistente_procedimientos?host=/var/run/postgresql' node backend/src/tools/migrate.js`
-4. Aplique los permisos de la version actualizada:
+5. Aplique los permisos de la version actualizada:
    `runuser -u postgres -- psql -w -h /var/run/postgresql -U postgres -d asistente_procedimientos -v ON_ERROR_STOP=1 -f deploy/grant-drafts-test.sql`
-5. Reinicie solo `asistente-procedimientos-test.service` y verifique
+6. Reinicie solo `asistente-procedimientos-test.service` y verifique
    `/health/db`, la consola de cuentas, y los rechazos `401` sin sesion y
    `403` sin CSRF para las escrituras.
-6. Abra `/drafts`: confirme que `planeacionprueba` ve solo `PD`, que el envio
+7. Abra `/drafts`: confirme que `planeacionprueba` ve solo `PD`, que el envio
    genera una notificacion para el Evaluador, que iniciar evaluacion avisa al
    Elaborador y que `D1 · Analitica` solo aparece para Administracion.
-7. Con cuentas ficticias asignadas al mismo proceso, pruebe guardar la matriz
+8. Con cuentas ficticias asignadas al mismo proceso, pruebe guardar la matriz
    parcialmente, rechazar una decision incompleta, devolver un hallazgo,
    responderlo y reenviarlo, e iniciar la nueva iteracion. Verifique luego un
    concepto favorable y otro no favorable en procedimientos de prueba distintos.

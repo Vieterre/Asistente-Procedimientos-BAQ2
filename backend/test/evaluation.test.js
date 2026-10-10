@@ -92,7 +92,7 @@ function evaluationPool() {
 function fullCyclePool() {
   const calls = [];
   const procedure = {
-    id: procedureId, code: "PD-001", name: "Procedimiento de prueba", process_code: "PD", version: "1.0",
+    id: procedureId, code: "PD-P-001", name: "Procedimiento de prueba", process_code: "PD", version: "1.0",
     status: PROCEDURE_STATUS.DRAFT, revision: 1, current_payload: structuredClone(completeDraftPayload),
     created_by_user_id: author.id, assigned_evaluator_id: null, updated_at: new Date()
   };
