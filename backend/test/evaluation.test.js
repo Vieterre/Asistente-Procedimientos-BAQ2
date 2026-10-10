@@ -10,6 +10,7 @@ import {
   validateEvaluation
 } from "../src/domain/evaluation-rubric.js";
 import { decideAssignedEvaluation, saveAssignedEvaluation, saveAuthorEvaluationResponses } from "../src/domain/evaluations.js";
+import { startAssignedEvaluation, submitOwnDraft } from "../src/domain/drafts.js";
 import { PROCEDURE_STATUS } from "../src/domain/workflow.js";
 import { createAppServer } from "../src/server.js";
 import { hashToken } from "../src/security/auth.js";
@@ -24,6 +25,22 @@ function criteriaWith(result = "Cumple") {
     findingStatus: result === "No cumple" ? "Pendiente" : "Cerrado", response: ""
   }]));
 }
+
+const completeDraftPayload = {
+  fields: {
+    objetivo: "Resolver solicitudes", alcance: "Desde la recepción hasta la respuesta",
+    definiciones: "Solicitud: petición recibida", condiciones: "Aplicar la normativa vigente",
+    elaboro: "Profesional", reviso: "Jefe", aprobo: "Director"
+  },
+  norms: [{ tipo: "Interna", norma: "Manual", anio: "2026", descripcion: "Regula el trámite", articulo: "1", entidad: "Entidad" }],
+  activities: [
+    { uid: "start", tipo: "Inicio", descripcion: "Solicitud recibida" },
+    { uid: "work", tipo: "Actividad", actividad: "Revisar solicitud", descripcion: "Verifica la información", responsable: "Profesional" },
+    { uid: "end", tipo: "Fin", descripcion: "Solicitud revisada" }
+  ],
+  annexes: [], changes: [{ version: "1.0", fecha: "2026-10-10", razon: "Creación inicial" }],
+  settings: { annexesNotApplicable: true }
+};
 
 function evaluationPool() {
   const calls = [];
@@ -70,6 +87,89 @@ function evaluationPool() {
     release() {}
   };
   return { calls, procedure, evaluation, connect: async () => client };
+}
+
+function fullCyclePool() {
+  const calls = [];
+  const procedure = {
+    id: procedureId, code: "PD-001", name: "Procedimiento de prueba", process_code: "PD", version: "1.0",
+    status: PROCEDURE_STATUS.DRAFT, revision: 1, current_payload: structuredClone(completeDraftPayload),
+    created_by_user_id: author.id, assigned_evaluator_id: null, updated_at: new Date()
+  };
+  const evaluations = [];
+  const latestEvaluation = () => evaluations.at(-1);
+  const client = {
+    async query(sql, params = []) {
+      calls.push({ sql, params });
+      if (["BEGIN", "COMMIT", "ROLLBACK"].includes(sql)) return { rows: [] };
+      if (sql.startsWith("SELECT p.id, p.code")) return { rows: params[1] === author.id ? [{ ...procedure }] : [] };
+      if (sql.startsWith("SELECT p.id, p.status")) {
+        return { rows: params[1] === evaluator.id ? [{ ...procedure }] : [] };
+      }
+      if (sql.startsWith("SELECT p.id, p.version") || sql.startsWith("SELECT p.id, p.name")) {
+        return { rows: params[1] === evaluator.id ? [{ ...procedure }] : [] };
+      }
+      if (sql.startsWith("SELECT id, version, status FROM procedures")) {
+        return { rows: params[1] === author.id ? [{ ...procedure }] : [] };
+      }
+      if (sql.startsWith("SELECT id, status, criteria_payload FROM evaluations")) {
+        return { rows: latestEvaluation() ? [{ ...latestEvaluation() }] : [] };
+      }
+      if (sql.startsWith("SELECT id, status, score, critical_failures")) {
+        return { rows: latestEvaluation() ? [{ ...latestEvaluation() }] : [] };
+      }
+      if (sql.startsWith("SELECT 1 FROM app_users")) {
+        return { rows: params[0] === evaluator.id ? [{ "?column?": 1 }] : [] };
+      }
+      if (sql.startsWith("UPDATE procedures SET status = $2, assigned_evaluator_id")) {
+        procedure.status = params[1];
+        procedure.assigned_evaluator_id = params[2];
+        procedure.revision += 1;
+        return { rows: [{ ...procedure }] };
+      }
+      if (sql.startsWith("UPDATE procedures SET status = $2, revision = revision")) {
+        procedure.status = params[1];
+        procedure.revision += 1;
+        return { rows: [{ ...procedure }] };
+      }
+      if (sql.startsWith("UPDATE procedures SET status = $2, updated_at")) {
+        procedure.status = params[1];
+        return { rows: [] };
+      }
+      if (sql.startsWith("INSERT INTO evaluations")) {
+        evaluations.push({
+          id: params[0], status: params[3], score: null, critical_failures: 0, open_findings: 0, concept: "",
+          criteria_payload: JSON.parse(params[4]), created_at: new Date(), updated_at: new Date()
+        });
+        return { rows: [] };
+      }
+      if (sql.startsWith("UPDATE evaluations SET status = $2, updated_at")) {
+        latestEvaluation().status = params[1];
+        return { rows: [] };
+      }
+      if (sql.startsWith("UPDATE evaluations") && sql.includes("RETURNING")) {
+        Object.assign(latestEvaluation(), {
+          score: params[1], critical_failures: params[2], open_findings: params[3], concept: params[4],
+          criteria_payload: JSON.parse(params[5])
+        });
+        return { rows: [{ ...latestEvaluation() }] };
+      }
+      if (sql.startsWith("UPDATE evaluations SET criteria_payload = $2")) {
+        latestEvaluation().criteria_payload = JSON.parse(params[1]);
+        return { rows: [] };
+      }
+      if (sql.startsWith("UPDATE evaluations SET status = $2, score")) {
+        Object.assign(latestEvaluation(), {
+          status: params[1], score: params[2], critical_failures: params[3], open_findings: params[4]
+        });
+        return { rows: [] };
+      }
+      if (sql.startsWith("INSERT INTO audit_events") || sql.startsWith("INSERT INTO user_notifications")) return { rows: [] };
+      throw new Error(`Unexpected SQL: ${sql}`);
+    },
+    release() {}
+  };
+  return { calls, procedure, evaluations, connect: async () => client };
 }
 
 test("original evaluation rubric has 31 criteria, nine variables, and 100 percent total weight", () => {
@@ -156,6 +256,44 @@ test("returning findings lets the author answer before a new review", async () =
   assert.equal(answer.missingResponses, 0);
   assert.equal(pool.evaluation.criteria_payload.criteria.act1.response, "Reordené las actividades");
   await assert.rejects(saveAuthorEvaluationResponses(pool, evaluator, procedureId, { act1: "Otro" }), { code: "forbidden" });
+});
+
+test("complete review cycle preserves responses and reaches a favorable concept only after reevaluation", async () => {
+  const pool = fullCyclePool();
+  const submitted = await submitOwnDraft(pool, author, procedureId, { evaluatorId: evaluator.id, revision: 1 });
+  assert.equal(submitted.status, PROCEDURE_STATUS.SUBMITTED);
+  assert.equal(pool.evaluations.length, 1);
+  assert.equal(pool.evaluations[0].criteria_payload.iteration, 1);
+
+  await startAssignedEvaluation(pool, evaluator, procedureId);
+  assert.equal(pool.procedure.status, PROCEDURE_STATUS.IN_REVIEW);
+  const firstReview = criteriaWith();
+  firstReview.act1 = {
+    result: "No cumple", observation: "La secuencia no es clara", adjustment: "Reordenar actividades",
+    findingStatus: "Pendiente", response: ""
+  };
+  await saveAssignedEvaluation(pool, evaluator, procedureId, { criteria: firstReview, concept: "Se requiere ajustar la secuencia." });
+  await decideAssignedEvaluation(pool, evaluator, procedureId, { decision: "devolver" });
+  assert.equal(pool.procedure.status, PROCEDURE_STATUS.RETURNED);
+
+  await saveAuthorEvaluationResponses(pool, author, procedureId, { act1: "Se reordenaron las actividades." });
+  const resubmitted = await submitOwnDraft(pool, author, procedureId, {
+    evaluatorId: evaluator.id, revision: pool.procedure.revision
+  });
+  assert.equal(resubmitted.status, PROCEDURE_STATUS.SUBMITTED);
+  assert.equal(pool.evaluations.length, 2);
+  assert.equal(pool.evaluations[1].criteria_payload.iteration, 2);
+  assert.equal(pool.evaluations[1].criteria_payload.criteria.act1.response, "Se reordenaron las actividades.");
+  assert.equal(pool.evaluations[1].criteria_payload.criteria.act1.findingStatus, "Respondido");
+
+  await startAssignedEvaluation(pool, evaluator, procedureId);
+  await saveAssignedEvaluation(pool, evaluator, procedureId, { criteria: criteriaWith(), concept: "Cumple los criterios metodológicos." });
+  const decision = await decideAssignedEvaluation(pool, evaluator, procedureId, { decision: "favorable" });
+  assert.equal(decision.status, PROCEDURE_STATUS.FAVORABLE);
+  assert.equal(pool.procedure.status, PROCEDURE_STATUS.FAVORABLE);
+  assert.equal(pool.evaluations[1].status, PROCEDURE_STATUS.FAVORABLE);
+  assert.ok(pool.calls.some(call => call.sql.startsWith("INSERT INTO user_notifications") && call.params[3] === "procedure_returned_for_corrections"));
+  assert.ok(pool.calls.some(call => call.sql.startsWith("INSERT INTO user_notifications") && call.params[3] === "procedure_favorable_concept_issued"));
 });
 
 test("complete failing review can issue a non-favorable concept", async () => {
