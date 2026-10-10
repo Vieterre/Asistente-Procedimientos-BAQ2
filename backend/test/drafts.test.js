@@ -385,6 +385,41 @@ test("submission rejects incomplete drafts, stale revisions, and evaluators outs
   await assert.rejects(submitOwnDraft(pool, author, draftId, { evaluatorId: evaluator.id, revision: 3 }), { code: "draft_conflict", status: 409 });
 });
 
+test("submission allows methodological flow warnings while preserving blocking flow errors", async () => {
+  const activities = [
+    { uid: "start", tipo: "Inicio", actividad: "Inicio", descripcion: "Solicitud recibida" },
+    { uid: "choice", tipo: "Decisión", actividad: "¿La solicitud cumple?", descripcion: "¿La solicitud cumple?", responsable: "Profesional", decisionSi: "end", decisionNo: "adjust" },
+    { uid: "adjust", tipo: "Actividad", actividad: "Ajustar solicitud", descripcion: "Completa la información requerida", responsable: "Profesional" },
+    { uid: "end", tipo: "Fin", actividad: "Fin", descripcion: "Solicitud tramitada" }
+  ];
+  const warnings = reviewFlow(activities);
+  assert.ok(warnings.length > 0);
+  assert.ok(warnings.every(issue => issue.severity === "warning"));
+
+  const procedure = {
+    ...row, process_code: "PD", revision: 4, current_payload: { ...completePayload, activities },
+    created_by_user_id: author.id
+  };
+  let updated = false;
+  const pool = { connect: async () => ({
+    async query(sql) {
+      if (["BEGIN", "COMMIT", "ROLLBACK"].includes(sql)) return { rows: [] };
+      if (sql.startsWith("SELECT p.id")) return { rows: [procedure] };
+      if (sql.startsWith("SELECT 1 FROM app_users")) return { rows: [{ "?column?": 1 }] };
+      if (sql.startsWith("UPDATE procedures")) {
+        updated = true;
+        return { rows: [{ ...procedure, status: "enviado_a_evaluacion", revision: 5, assigned_evaluator_id: evaluator.id }] };
+      }
+      if (sql.startsWith("INSERT INTO evaluations") || sql.startsWith("INSERT INTO audit_events") || sql.startsWith("INSERT INTO user_notifications")) return { rows: [] };
+      throw new Error(`Unexpected SQL: ${sql}`);
+    },
+    release() {}
+  }) };
+  const submitted = await submitOwnDraft(pool, author, draftId, { evaluatorId: evaluator.id, revision: 4 });
+  assert.equal(submitted.status, "enviado_a_evaluacion");
+  assert.equal(updated, true);
+});
+
 test("evaluator inbox and start action are limited to assigned processes", async () => {
   const queries = [];
   const pool = {
