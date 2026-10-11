@@ -245,6 +245,8 @@ test("preview and printed reports preserve readable paragraphs and stable table 
   assert.match(css, /\.field textarea[^}]*text-align:justify/);
   assert.match(css, /\.preview-paragraph[^}]*text-align:justify/);
   assert.match(css, /\.preview-report-table\{max-width:100%;table-layout:fixed\}/);
+  assert.match(script, /variant: "definitions",\s*columnWidths: \["32%", "68%"\]/);
+  assert.match(css, /\.preview-report-table td\{text-align:justify/);
   assert.match(css, /@media print\{\.preview-content\{overflow:visible\}/);
 });
 

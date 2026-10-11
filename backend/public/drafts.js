@@ -2910,7 +2910,10 @@ function showPreview({ branding = "standard" } = {}) {
     const split = line.indexOf(":");
     return split > 0 ? [line.slice(0, split).trim(), line.slice(split + 1).trim()] : ["Definición", line];
   });
-  const definitionTable = reportTable(["Término", "Definición"], definitions, row => row);
+  const definitionTable = reportTable(["Término", "Definición"], definitions, row => row, {
+    variant: "definitions",
+    columnWidths: ["32%", "68%"]
+  });
   const destinations = new Map(activityRows.map(activity => [activity.uid, activity.actividad || activity.tipo || "Destino"]));
   const showEvidence = activityRows.some(activity => String(activity.evidencia || activity.controlEvidencia || "").trim());
   const showSystem = activityRows.some(activity => String(activity.sistema || "").trim());
