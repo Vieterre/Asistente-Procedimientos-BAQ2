@@ -418,6 +418,13 @@ export function createAppServer({ poolFactory = createPool, secureCookies, trust
           } else if (error instanceof DraftError) {
             sendJson(res, error.status, { ok: false, error: error.code, ...(error.details ? { details: error.details } : {}) });
           } else {
+            console.error("Procedure request failed", {
+              method: req.method,
+              path: url.pathname,
+              code: error?.code,
+              constraint: error?.constraint,
+              message: error?.message
+            });
             sendJson(res, 503, { ok: false, error: "procedure_unavailable" });
           }
         } finally {
