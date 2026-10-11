@@ -155,6 +155,28 @@ test("reports keep institutional branding exclusive and standard reports unbrand
   assert.match(css, /\.preview-document-header\.standard\{/);
 });
 
+test("preview report preserves the original nine-section order", async () => {
+  const script = await readFile(join(root, "backend/public/drafts.js"), "utf8");
+  const sectionMarkers = [
+    'reportSection("1", "Objetivo"',
+    'reportSection("2", "Alcance"',
+    'reportSection("3", "Términos y definiciones"',
+    'reportSection("4", "Condiciones generales"',
+    'reportSection("5", "Normatividad"',
+    'reportSection("6", "Descripción del procedimiento"',
+    'flowHeading.textContent = "7. FLUJOGRAMA"',
+    'reportSection("8", "Documentos anexos"',
+    'reportSection("9", "Control de cambios"'
+  ];
+  let previousIndex = -1;
+  for (const marker of sectionMarkers) {
+    const index = script.indexOf(marker);
+    assert.notEqual(index, -1, `missing report section: ${marker}`);
+    assert.ok(index > previousIndex, `report section is out of order: ${marker}`);
+    previousIndex = index;
+  }
+});
+
 test("print reports preserve table headers, prevent row splits, and fit the flowchart on paper", async () => {
   const [script, css] = await Promise.all([
     readFile(join(root, "backend/public/drafts.js"), "utf8"),
@@ -173,4 +195,7 @@ test("print reports preserve table headers, prevent row splits, and fit the flow
   assert.match(css, /\.preview-report-table tr\{break-inside:avoid-page;page-break-inside:avoid\}/);
   assert.match(css, /\.preview-report-flow\{break-before:page;page-break-before:always\}/);
   assert.match(css, /\.preview-diagram svg\{display:block;width:100%!important;max-width:100%!important;height:auto!important;max-height:165mm/);
+  assert.match(script, /function printableReportTitle\(\)/);
+  assert.match(script, /document\.title = printableReportTitle\(\)/);
+  assert.match(script, /window\.addEventListener\("afterprint", restoreTitle, \{ once: true \}\)/);
 });

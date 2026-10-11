@@ -2626,6 +2626,25 @@ function showPreview({ branding = "standard" } = {}) {
   requestAnimationFrame(fitPreviewDiagram);
 }
 
+function printableReportTitle() {
+  const code = String(ui.draftCode.value || "").trim();
+  const name = String(ui.draftName.value || "").trim();
+  return [code || "Procedimiento", name].filter(Boolean).join(" - ");
+}
+
+function printPreviewReport() {
+  const previousTitle = document.title;
+  let restoreTimer;
+  const restoreTitle = () => {
+    document.title = previousTitle;
+    if (restoreTimer) window.clearTimeout(restoreTimer);
+  };
+  document.title = printableReportTitle();
+  window.addEventListener("afterprint", restoreTitle, { once: true });
+  restoreTimer = window.setTimeout(restoreTitle, 60_000);
+  window.print();
+}
+
 ui.previewButton.addEventListener("click", showPreview);
 ui.analyticsButton.addEventListener("click", showAnalytics);
 ui.backFromAnalytics.addEventListener("click", hideAnalytics);
@@ -2664,7 +2683,7 @@ document.addEventListener("visibilitychange", () => {
   if (!document.hidden && currentUserRole) refreshNotifications();
 });
 ui.closePreviewButton.addEventListener("click", () => ui.previewDialog.close());
-ui.printPreviewButton.addEventListener("click", () => window.print());
+ui.printPreviewButton.addEventListener("click", printPreviewReport);
 ui.refreshDraftsButton.addEventListener("click", loadDrafts);
 ui.refreshFlowButton.addEventListener("click", renderFlow);
 ui.showFlowEvidence.addEventListener("change", renderFlow);
