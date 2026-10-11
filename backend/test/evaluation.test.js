@@ -47,7 +47,7 @@ function evaluationPool() {
   const procedure = {
     id: procedureId, version: "1.0", status: PROCEDURE_STATUS.IN_REVIEW,
     assigned_evaluator_id: evaluator.id, created_by_user_id: author.id,
-    process_code: "PD", name: "Procedimiento de prueba"
+    process_code: "PD", name: "Formular la prueba metodológica"
   };
   const evaluation = {
     id: "44444444-4444-4444-8444-444444444444", status: PROCEDURE_STATUS.IN_REVIEW,
@@ -92,7 +92,7 @@ function evaluationPool() {
 function fullCyclePool() {
   const calls = [];
   const procedure = {
-    id: procedureId, code: "PD-P-001", name: "Procedimiento de prueba", process_code: "PD", version: "1.0",
+    id: procedureId, code: "PD-P-001", name: "Formular la prueba metodológica", process_code: "PD", version: "1.0",
     status: PROCEDURE_STATUS.DRAFT, revision: 1, current_payload: structuredClone(completeDraftPayload),
     created_by_user_id: author.id, assigned_evaluator_id: null, updated_at: new Date()
   };

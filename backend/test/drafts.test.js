@@ -224,10 +224,9 @@ test("author creates an audited draft for an active process", async () => {
   assert.deepEqual(calls.slice(-2).map(call => call.sql.startsWith("INSERT INTO audit_events") ? "AUDIT" : call.sql), ["AUDIT", "COMMIT"]);
 });
 
-test("draft creation rejects bad data and processes without access", async () => {
+test("draft creation accepts partial content and rejects malformed data or processes without access", async () => {
   const noConnect = { connect: async () => { throw new Error("should not connect"); } };
-  await assert.rejects(createDraft(noConnect, author, { name: "", processCode: "DE", payload: {} }), { code: "invalid_draft" });
-  await assert.rejects(createDraft(noConnect, author, { name: "Fomento al Desarrollo Económico y Competitividad", processCode: "DE", payload: {} }), { code: "invalid_draft" });
+  await assert.rejects(createDraft(noConnect, author, { name: "", processCode: "DE", payload: null }), { code: "invalid_draft" });
   await assert.rejects(createDraft(noConnect, author, { name: "Formular el borrador de prueba", processCode: "??", payload: {} }), { code: "invalid_process" });
   await assert.rejects(createDraft(noConnect, author, { name: "Formular el borrador de prueba", processCode: "DE", consecutive: "1000", payload: {} }), { code: "invalid_procedure_code" });
   await assert.rejects(createDraft(noConnect, { ...author, mustChangePassword: true }, { name: "Formular el borrador de prueba", processCode: "DE", payload: {} }), { code: "forbidden" });
@@ -252,6 +251,7 @@ test("draft creation rejects bad data and processes without access", async () =>
   assert.equal(rolledBack, true);
   assigned = true;
   assert.equal((await createDraft(pool, author, { name: "Formular el borrador de prueba", processCode: "DE", payload: {} })).status, "borrador");
+  assert.equal((await createDraft(pool, author, { name: "Fomento al Desarrollo Económico y Competitividad", processCode: "DE", payload: {} })).status, "borrador");
 });
 
 test("procedure names follow the original structure rules", () => {
@@ -262,6 +262,32 @@ test("procedure names follow the original structure rules", () => {
   assert.ok(procedureNameIssues("Formular el procedimiento de compras").some(issue => issue.includes("No incluyas")));
   assert.ok(procedureNameIssues("formular la solicitud.").some(issue => issue.includes("mayúscula")));
   assert.ok(procedureNameIssues("formular la solicitud.").some(issue => issue.includes("punto final")));
+});
+
+test("submission applies name methodology after a partial draft has been saved", async () => {
+  const procedure = {
+    ...row,
+    name: "Fomento al Desarrollo Económico y Competitividad",
+    code: "PD-P-001",
+    process_code: "PD",
+    revision: 4,
+    current_payload: completePayload,
+    created_by_user_id: author.id
+  };
+  const pool = { connect: async () => ({
+    async query(sql) {
+      if (["BEGIN", "COMMIT", "ROLLBACK"].includes(sql)) return { rows: [] };
+      if (sql.startsWith("SELECT p.id")) return { rows: [procedure] };
+      if (sql.startsWith("SELECT 1 FROM app_users")) return { rows: [{ "?column?": 1 }] };
+      throw new Error(`Unexpected SQL: ${sql}`);
+    },
+    release() {}
+  }) };
+  await assert.rejects(submitOwnDraft(pool, author, draftId, { evaluatorId: evaluator.id, revision: 4 }), error => {
+    assert.equal(error.code, "submission_incomplete");
+    assert.ok(error.details.some(issue => issue.includes("infinitivo")));
+    return true;
+  });
 });
 
 test("list and detail are scoped to the owner", async () => {

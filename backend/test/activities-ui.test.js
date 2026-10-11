@@ -224,6 +224,30 @@ test("preview separates every general condition into an individual report item",
   assert.match(script, /reportSection\("4", "Condiciones generales", reportConditionList\(ui\.draftConditions\.value\)\)/);
 });
 
+test("preview and printed reports preserve readable paragraphs and stable table alignment", async () => {
+  const [script, css] = await Promise.all([
+    readFile(join(root, "backend/public/drafts.js"), "utf8"),
+    readFile(join(root, "backend/public/drafts.css"), "utf8")
+  ]);
+  const source = script.match(/function reportParagraphs[\s\S]*?(?=\nfunction previewFitScale\()/)?.[0];
+  assert.ok(source, "paragraph helper should be present");
+  const document = {
+    createElement() {
+      return { className: "", textContent: "", children: [], append(...items) { this.children.push(...items); } };
+    }
+  };
+  const reportParagraphs = runInNewContext(`${source}\nreportParagraphs`, { document });
+  const paragraphs = reportParagraphs("Primer párrafo.\n\nSegundo párrafo.");
+  assert.equal(paragraphs.className, "preview-text-block");
+  assert.deepEqual(paragraphs.children.map(item => item.textContent), ["Primer párrafo.", "Segundo párrafo."]);
+  assert.match(script, /reportSection\("1", "Objetivo", reportParagraphs\(ui\.draftObjective\.value\)\)/);
+  assert.match(script, /reportSection\("2", "Alcance", reportParagraphs\(ui\.draftScope\.value\)\)/);
+  assert.match(css, /\.field textarea[^}]*text-align:justify/);
+  assert.match(css, /\.preview-paragraph[^}]*text-align:justify/);
+  assert.match(css, /\.preview-report-table\{max-width:100%;table-layout:fixed\}/);
+  assert.match(css, /@media print\{\.preview-content\{overflow:visible\}/);
+});
+
 test("reports keep institutional branding exclusive and standard reports unbranded", async () => {
   const [html, script, css] = await Promise.all([
     readFile(join(root, "backend/public/drafts.html"), "utf8"),

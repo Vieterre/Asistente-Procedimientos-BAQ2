@@ -332,14 +332,14 @@ function procedureNameIssues(value) {
   return issues;
 }
 
-function syncProcedureNameValidity({ report = false } = {}) {
+function syncProcedureNameValidity() {
   const issues = procedureNameIssues(ui.draftName.value);
   const message = issues[0] || "Nombre con estructura válida.";
-  ui.draftName.setCustomValidity(issues[0] || "");
+  // El aviso metodológico orienta mientras se edita; el bloqueo ocurre al enviar a evaluación.
+  ui.draftName.setCustomValidity("");
   ui.draftName.setAttribute("aria-invalid", String(Boolean(issues.length)));
   ui.draftNameStatus.textContent = message;
   ui.draftNameStatus.classList.toggle("is-invalid", Boolean(issues.length));
-  if (report && issues.length) ui.draftName.reportValidity();
   return issues;
 }
 
@@ -2474,12 +2474,7 @@ ui.draftForm.addEventListener("submit", async event => {
   button.disabled = true;
 
   const name = ui.draftName.value.trim();
-  const nameIssues = syncProcedureNameValidity({ report: true });
-  if (nameIssues.length) {
-    setMessage(ui.editorMessage, nameIssues.join("\n"));
-    button.disabled = false;
-    return;
-  }
+  syncProcedureNameValidity();
   const fields = currentPayload.fields && typeof currentPayload.fields === "object" && !Array.isArray(currentPayload.fields)
     ? currentPayload.fields
     : {};
@@ -2807,6 +2802,19 @@ function reportConditionList(value) {
   return list;
 }
 
+function reportParagraphs(value) {
+  const block = document.createElement("div");
+  block.className = "preview-text-block";
+  const paragraphs = String(value || "").split(/\r?\n+/).map(paragraph => paragraph.trim()).filter(Boolean);
+  for (const paragraph of paragraphs.length ? paragraphs : ["Sin información registrada."]) {
+    const item = document.createElement("p");
+    item.className = "preview-paragraph";
+    item.textContent = paragraph;
+    block.append(item);
+  }
+  return block;
+}
+
 function previewFitScale(viewportWidth, contentWidth) {
   const available = Number(viewportWidth);
   const total = Number(contentWidth);
@@ -2936,8 +2944,8 @@ function showPreview({ branding = "standard" } = {}) {
   const report = document.createElement("article");
   report.className = "preview-report";
   report.append(header,
-    reportSection("1", "Objetivo", document.createTextNode(ui.draftObjective.value || "Sin información registrada.")),
-    reportSection("2", "Alcance", document.createTextNode(ui.draftScope.value || "Sin información registrada.")),
+    reportSection("1", "Objetivo", reportParagraphs(ui.draftObjective.value)),
+    reportSection("2", "Alcance", reportParagraphs(ui.draftScope.value)),
     reportSection("3", "Términos y definiciones", definitionTable),
     reportSection("4", "Condiciones generales", reportConditionList(ui.draftConditions.value)),
     reportSection("5", "Normatividad", reportTable(["Tipo", "Norma", "Año", "Descripción de la norma", "Artículo / sección", "Entidad emisora"], normRows, row => [row.tipo, row.norma, row.anio, row.descripcion, row.articulo, row.entidad])),

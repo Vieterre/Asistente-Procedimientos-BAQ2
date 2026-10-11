@@ -150,7 +150,7 @@ function submissionIssues(name, payload, code) {
   if (roles.some(role => typeof role !== "string" || !role.trim()) || new Set(roles.map(role => String(role).trim().toLocaleLowerCase("es-CO"))).size !== roles.length) {
     issues.push("Completa Elaboró, Revisó y Aprobó con cargos distintos.");
   }
-  if (!String(name || "").trim()) issues.push("Escribe el nombre del procedimiento.");
+  issues.push(...procedureNameIssues(name));
   if (!PROCEDURE_CODE_PATTERN.test(String(code || ""))) issues.push("Genera el código del procedimiento antes de enviarlo.");
   return issues;
 }
@@ -161,9 +161,10 @@ function validPayload(payload) {
 
 function validateDraft({ name, payload }) {
   const cleanName = typeof name === "string" ? name.trim() : "";
-  const issues = procedureNameIssues(cleanName);
+  const issues = [];
   if (cleanName.length > 200) issues.push("El nombre supera la longitud permitida.");
-  if (issues.length || !validPayload(payload)) throw new DraftError("invalid_draft", 400, issues);
+  if (!validPayload(payload)) issues.push("El contenido del borrador no es válido.");
+  if (issues.length) throw new DraftError("invalid_draft", 400, issues);
   return cleanName;
 }
 
