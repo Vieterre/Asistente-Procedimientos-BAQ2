@@ -50,7 +50,7 @@ test("flow review checks the negative route and required control details", () =>
   let issues = reviewFlow(activities);
   assert.ok(issues.some(issue => issue.index === 1 && issue.message.includes("ruta No")));
   assert.ok(issues.some(issue => issue.index === 2 && issue.message.includes("campos obligatorios")));
-  activities.splice(2, 0, { uid: "correction", tipo: "Actividad" });
+  activities.splice(2, 0, { uid: "correction", tipo: "Actividad", actividad: "Ajustar solicitud", descripcion: "Completa la información requerida" });
   activities[1].decisionNo = "correction";
   Object.assign(activities[3], {
     controlResponsable: "Profesional", controlPeriodicidad: "Cada trámite", controlAccion: "Verifica",
@@ -59,6 +59,32 @@ test("flow review checks the negative route and required control details", () =>
   issues = reviewFlow(activities);
   assert.ok(issues.every(issue => issue.severity === "warning"));
   assert.ok(issues.some(issue => issue.message.includes("no reconvergen")));
+});
+
+test("flow review traces the negative route until a control and keeps controls on activities", () => {
+  const control = {
+    uid: "control", tipo: "Actividad", tieneControl: true,
+    controlResponsable: "Profesional", controlPeriodicidad: "Cada trámite", controlAccion: "Verifica",
+    controlEjecucion: "Compara", controlDesviacion: "Devuelve", controlEvidencia: "Registro"
+  };
+  const activities = [
+    { uid: "start", tipo: "Inicio" },
+    { uid: "choice", tipo: "Decisión", decisionSi: "end", decisionNo: "connector" },
+    { uid: "connector", tipo: "Conector", connectorId: "A", connectorDestino: "control" },
+    control,
+    { uid: "end", tipo: "Fin" }
+  ];
+  let issues = reviewFlow(activities);
+  assert.ok(issues.some(issue => issue.index === 1 && issue.message.includes("ruta No debe pasar primero")));
+
+  activities.splice(3, 0, { uid: "correction", tipo: "Actividad", actividad: "Ajustar información", descripcion: "Completa los datos requeridos" });
+  activities[2].connectorDestino = "correction";
+  issues = reviewFlow(activities);
+  assert.ok(!issues.some(issue => issue.message.includes("ruta No debe pasar primero")));
+
+  activities[1].tieneControl = true;
+  issues = reviewFlow(activities);
+  assert.ok(issues.some(issue => issue.index === 1 && issue.message === "El punto de control debe estar asociado a una actividad."));
 });
 
 test("flow review rejects missing or duplicate connector labels", () => {

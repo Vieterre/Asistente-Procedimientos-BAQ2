@@ -1,3 +1,12 @@
+function isCorrectionActivity(item) {
+  if (item?.tipo !== "Actividad") return false;
+  const text = `${item.actividad || ""} ${item.descripcion || ""}`
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+  return /\b(correg|correcc|ajust|modific|complement|subsan)/.test(text);
+}
+
 export function reviewFlow(activities) {
   if (!Array.isArray(activities) || activities.length > 500 || activities.some(item => item === null || typeof item !== "object" || Array.isArray(item))) {
     return [{ index: null, message: "El flujo no tiene un formato válido." }];
@@ -48,10 +57,11 @@ export function reviewFlow(activities) {
     if (item.tipo === "Decisión" && item.decisionSi && item.decisionSi === item.decisionNo) {
       issues.push({ index, message: "Las rutas Sí y No deben tener destinos diferentes." });
     }
-    if (item.tipo === "Decisión" && byId.get(item.decisionNo)?.tieneControl === true) {
-      issues.push({ index, message: "La ruta No debe pasar por una actividad de corrección antes de llegar a un punto de control." });
-    }
     if (item.tieneControl === true) {
+      if (item.tipo !== "Actividad") {
+        issues.push({ index, message: "El punto de control debe estar asociado a una actividad." });
+        continue;
+      }
       const required = ["controlResponsable", "controlPeriodicidad", "controlAccion", "controlEjecucion", "controlDesviacion", "controlEvidencia"];
       if (required.some(key => typeof item[key] !== "string" || !item[key].trim())) {
         issues.push({ index, message: "El punto de control tiene campos obligatorios incompletos." });
@@ -72,6 +82,27 @@ export function reviewFlow(activities) {
       : item.tipo === "Conector" ? [item.connectorDestino]
       : item.tipo === "Fin" ? [] : [activities[index + 1]?.uid];
     edges.set(item.uid, targets.filter(target => byId.has(target) && target !== start.uid));
+  }
+  const reachesControlWithoutCorrection = origin => {
+    const seen = new Set();
+    const pending = [{ id: origin, corrected: false }];
+    while (pending.length) {
+      const { id, corrected } = pending.pop();
+      const node = byId.get(id);
+      if (!node) continue;
+      const correctedHere = corrected || isCorrectionActivity(node);
+      const state = `${id}:${correctedHere}`;
+      if (seen.has(state)) continue;
+      seen.add(state);
+      if (node.tieneControl === true && !correctedHere) return true;
+      for (const target of edges.get(id) || []) pending.push({ id: target, corrected: correctedHere });
+    }
+    return false;
+  };
+  for (const [index, item] of activities.entries()) {
+    if (item.tipo === "Decisión" && byId.has(item.decisionNo) && reachesControlWithoutCorrection(item.decisionNo)) {
+      issues.push({ index, message: "La ruta No debe pasar primero por una actividad que corrija, modifique o complemente la información antes de repetir un punto de control." });
+    }
   }
   const walk = (origin, graph) => {
     const seen = new Set();

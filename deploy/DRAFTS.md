@@ -86,8 +86,9 @@ sin duplicar los nodos existentes. Inicio y Fin no se eliminan desde esta
 pantalla ni llevan número: solo las actividades ordinarias se enumeran. Las
 ayudas contextuales y las confirmaciones de eliminación reproducen los textos
 metodológicos del formulario original; toda eliminación pide confirmación y
-advierte que no se puede deshacer. El formulario completo sigue sin conectarse; no usar estas
-rutas ni los controles como validacion de un flujo publicable.
+advierte que no se puede deshacer. Al enviar a evaluacion, el servidor vuelve a
+calcular estas reglas sobre el borrador guardado; una interfaz modificada no
+puede omitir las condiciones bloqueantes.
 El boton Revisar flujo comprueba Inicio, Fin, identificadores y destinos de
 decisiones y conectores, exige rutas Si/No diferentes y revisa la continuidad
 segun el orden de actividades y los destinos explicitados. Senala elementos
@@ -95,16 +96,18 @@ inalcanzables, rutas sin salida hacia Fin y ciclos cerrados. Usa los cambios
 en pantalla, sin guardar ni impedir que se conserve un borrador incompleto.
 Los pasos interiores pueden subir y bajar sin modificar sus identificadores
 ni las rutas que los referencian; Inicio y Fin permanecen fijos. Tambien
-senala rutas No que van directamente a un punto de control, controles
-con atributos obligatorios incompletos e identificadores de conector ausentes
-o duplicados. Los retornos que aun pueden llegar a Fin y las bifurcaciones
-que no reconvergen antes de Fin se muestran como avisos, no como errores.
+bloquea cualquier ruta No que llegue a un punto de control sin pasar primero
+por una actividad de correccion, ajuste, modificacion, complemento o
+subsanacion; exige que los controles pertenezcan a actividades y tengan sus
+atributos obligatorios, e identifica conectores ausentes o duplicados. Los
+retornos que aun pueden llegar a Fin y las bifurcaciones que no reconvergen
+antes de Fin se muestran como avisos, no como errores.
 La respuesta muestra por separado campos por completar: descripcion de Inicio
 y Fin, nombre y descripcion de actividades, pregunta de decisiones y
 responsables de actividades y decisiones. No modifica el borrador ni bloquea
 su guardado; sirve para distinguir coherencia de rutas de completitud previa
-a publicacion.
-Todavia no sustituye las reglas completas ni el flujograma del prototipo.
+a publicacion. La revision no sustituye los criterios de redaccion o calidad
+metodologica que correspondan a la evaluacion tecnica.
 La vista Flujograma de pruebas dibuja el orden actual por responsable, las
 rutas Si/No, los destinos de conectores y los puntos de control. La opcion
 Mostrar evidencias dibuja el registro o evidencia asociado sin cambiar el
@@ -197,9 +200,11 @@ no reconstruyen actividad historica del navegador.
 El revisor de pruebas y `analyzeFlowGraph` del prototipo comparten el mismo
 criterio basico de aristas: Inicio y actividades siguen al elemento siguiente;
 decisiones siguen sus rutas Si/No; conectores siguen su destino; Fin no tiene
-salida. Ambos identifican elementos inalcanzables, ciclos sin salida,
-identificadores de conector repetidos y rutas No directas a un control.
-El revisor de pruebas tambien rechaza tipos de elemento desconocidos.
+salida. Ambos identifican elementos inalcanzables, ciclos sin salida e
+identificadores de conector repetidos. El revisor de pruebas ademas recorre
+la ruta No completa hasta el siguiente punto de control, exige una actividad
+correctiva previa, rechaza tipos de elemento desconocidos y evita que una
+decision o conector se use como punto de control.
 
 La prueba manual de un borrador ficticio cubrio guardado, reordenamiento,
 eliminacion protegida, rutas, correccion de ciclos, comparacion visual y
