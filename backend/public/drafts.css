@@ -94,3 +94,4 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 @media(max-width:760px){.evaluation-variable-results{grid-template-columns:repeat(2,minmax(0,1fr))}.evaluation-criterion-grid{grid-template-columns:1fr}.evaluation-criterion-grid .wide{grid-column:auto}}
 @media(max-width:480px){.evaluation-variable-results{grid-template-columns:1fr}.evaluation-actions button{width:100%}.evaluation-group>summary{grid-template-columns:20px minmax(0,1fr) auto;padding:10px}.evaluation-group-progress{grid-column:1/-1}.evaluation-group>.evaluation-criterion{margin:0 8px 8px}}
 @media(max-width:760px){.procedure-identification{grid-template-columns:1fr}}
+.field-hint.is-invalid{color:#b43f32;font-weight:650}.field-hint.is-warning{color:#8a5a00;font-weight:650}.preview-condition-list{display:grid;gap:7px;margin:0;padding-left:24px;line-height:1.5}.preview-condition-list li{padding-left:3px}

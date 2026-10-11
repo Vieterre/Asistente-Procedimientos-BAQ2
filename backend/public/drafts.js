@@ -7,7 +7,7 @@ const ids = [
   "evaluatorInbox", "evaluatorDraftCount", "evaluatorInboxMessage", "emptyEvaluatorInbox", "evaluatorDraftList", "refreshEvaluatorInbox", "evaluatorDetail", "evaluatorDetailTitle", "evaluatorDetailStatus", "backToEvaluatorInbox", "startEvaluationButton",
   "evaluationWorkspace", "evaluationProgress", "evaluationScore", "evaluationLevel", "evaluationVariableResults", "evaluationCriteriaGroups", "evaluationConcept", "evaluationMessage", "saveEvaluationButton", "returnEvaluationButton", "unfavorableEvaluationButton", "favorableEvaluationButton",
   "returnedEvaluation", "returnedEvaluationSummary", "returnedEvaluationConcept", "returnedFindings", "saveEvaluationResponses", "returnedEvaluationMessage",
-  "draftName", "processCode", "draftConsecutive", "draftCode", "draftCodeStatus", "draftObjective", "draftScope", "draftDefinitions", "draftConditions", "saveDraftButton", "reloadDraftButton", "editorMessage",
+  "draftName", "draftNameStatus", "processCode", "draftConsecutive", "draftCode", "draftCodeStatus", "draftObjective", "draftScope", "draftDefinitions", "draftDefinitionsStatus", "draftConditions", "saveDraftButton", "reloadDraftButton", "editorMessage",
   "newDraftButton", "addNormButton", "normsList", "emptyNorms", "addBoundaryButton", "addActivityButton", "addDecisionButton", "addConnectorButton", "activitiesList", "emptyActivities", "reviewFlowButton", "flowReviewResult", "refreshDraftsButton", "draftCount", "listMessage", "emptyDrafts",
   "draftList", "flowSection", "flowSummary", "showFlowEvidence", "refreshFlowButton", "flowCanvas", "flowSvg",
   "zoomOutButton", "zoomInButton", "fitFlowButton", "resetFlowZoomButton", "flowZoomValue",
@@ -294,6 +294,77 @@ function procedureCode(processCode, consecutive) {
 function procedureConsecutive(code, processCode) {
   const match = new RegExp(`^${String(processCode || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}-P-([0-9]{3})$`).exec(String(code || ""));
   return match ? String(Number(match[1])) : "";
+}
+
+const genericProcedureVerbs = new Set(["gestionar", "administrar", "realizar"]);
+const procedureTypeWords = new Set(["procedimiento", "proceso", "tramite", "instructivo", "formato"]);
+const genericProcedureObjects = new Set(["informe", "informes", "contrato", "contratos", "solicitud", "solicitudes", "documento", "documentos", "registro", "registros"]);
+
+function normalizeProcedureWord(value) {
+  return String(value || "").normalize("NFD").replace(/\p{Diacritic}/gu, "").toLocaleLowerCase("es-CO");
+}
+
+function procedureNameIssues(value) {
+  const name = String(value || "").trim();
+  if (!name) return ["Escribe el nombre del procedimiento."];
+  const words = name.match(/[\p{L}\p{N}]+/gu) || [];
+  const normalizedWords = words.map(normalizeProcedureWord);
+  const issues = [];
+  if (words.length > 12) issues.push("El nombre puede tener máximo 12 palabras.");
+  if (words.length < 2) issues.push("Incluye el objeto sobre el que actúa el procedimiento.");
+  if (!/^[a-zñ]+(?:ar|er|ir)$/i.test(normalizedWords[0] || "")) {
+    issues.push("Inicia con un verbo específico en infinitivo, por ejemplo: Formular, Elaborar, Supervisar o Evaluar.");
+  } else if (genericProcedureVerbs.has(normalizedWords[0])) {
+    issues.push("No uses verbos genéricos como Gestionar, Administrar o Realizar.");
+  }
+  if (procedureTypeWords.has(normalizedWords.find(word => procedureTypeWords.has(word)))) {
+    issues.push("No incluyas Procedimiento, Proceso, Trámite, Instructivo ni Formato en el nombre.");
+  }
+  if (words.length === 2 && genericProcedureObjects.has(normalizedWords[1])) {
+    issues.push("Precisa el complemento del objeto genérico, por ejemplo el tipo o alcance de la solicitud.");
+  }
+  if (/\.$/.test(name)) issues.push("No uses punto final en el nombre.");
+  if (/^\p{Ll}/u.test(name) || words.slice(1).some(word => /^\p{Lu}\p{Ll}/u.test(word))) {
+    issues.push("Usa mayúscula solo en la primera letra; conserva las siglas institucionales en mayúscula.");
+  }
+  return issues;
+}
+
+function syncProcedureNameValidity({ report = false } = {}) {
+  const issues = procedureNameIssues(ui.draftName.value);
+  const message = issues[0] || "Nombre con estructura válida.";
+  ui.draftName.setCustomValidity(issues[0] || "");
+  ui.draftName.setAttribute("aria-invalid", String(Boolean(issues.length)));
+  ui.draftNameStatus.textContent = message;
+  ui.draftNameStatus.classList.toggle("is-invalid", Boolean(issues.length));
+  if (report && issues.length) ui.draftName.reportValidity();
+  return issues;
+}
+
+function definitionEntries(value) {
+  return String(value || "").split(/\r?\n/).map(line => line.trim()).filter(Boolean).map(line => {
+    const split = line.indexOf(":");
+    return split > 0 ? { term: line.slice(0, split).trim(), line } : null;
+  }).filter(Boolean);
+}
+
+function alphabeticalDefinitionSuggestion(value) {
+  const entries = definitionEntries(value);
+  if (entries.length < 2) return null;
+  const collator = new Intl.Collator("es-CO", { sensitivity: "base" });
+  const suggested = [...entries].sort((left, right) => collator.compare(left.term, right.term));
+  return entries.every((entry, index) => entry.line === suggested[index].line) ? null : suggested.map(entry => entry.term);
+}
+
+function syncDefinitionsAlphabeticalSuggestion() {
+  const suggestedTerms = alphabeticalDefinitionSuggestion(ui.draftDefinitions.value);
+  const message = suggestedTerms
+    ? `Sugerencia: ordene las definiciones alfabéticamente así: ${suggestedTerms.join(", ")}.`
+    : "Registre cada término seguido de dos puntos y su definición.";
+  ui.draftDefinitions.setAttribute("aria-invalid", String(Boolean(suggestedTerms)));
+  ui.draftDefinitionsStatus.textContent = message;
+  ui.draftDefinitionsStatus.classList.toggle("is-warning", Boolean(suggestedTerms));
+  return suggestedTerms;
 }
 
 function syncProcedureCode() {
@@ -2005,6 +2076,8 @@ async function openDraft(id, discardChanges = false) {
     ui.evaluatorInbox.hidden = true;
     ui.evaluatorDetail.hidden = true;
     ui.draftWorkspace.hidden = false;
+    syncProcedureNameValidity();
+    syncDefinitionsAlphabeticalSuggestion();
     ui.draftName.focus();
     return true;
   } catch (error) {
@@ -2053,6 +2126,8 @@ function populateDraft(procedure) {
     else if (inputId === "draftApprovedBy") populateApprovalRoleSelect(ui[inputId], value, ["Directivo"]);
     else ui[inputId].value = value;
   }
+  syncProcedureNameValidity();
+  syncDefinitionsAlphabeticalSuggestion();
   showRoleSeparation();
   const option = document.createElement("option");
   option.value = procedure.processCode;
@@ -2146,6 +2221,8 @@ function newDraft() {
   setMessage(ui.editorMessage, "");
   ui.flowReviewResult.hidden = true;
   ui.flowReviewResult.replaceChildren();
+  syncProcedureNameValidity();
+  syncDefinitionsAlphabeticalSuggestion();
   applyDraftEditability();
   ui.draftName.focus();
 }
@@ -2273,6 +2350,12 @@ ui.draftForm.addEventListener("submit", async event => {
   button.disabled = true;
 
   const name = ui.draftName.value.trim();
+  const nameIssues = syncProcedureNameValidity({ report: true });
+  if (nameIssues.length) {
+    setMessage(ui.editorMessage, nameIssues.join("\n"));
+    button.disabled = false;
+    return;
+  }
   const fields = currentPayload.fields && typeof currentPayload.fields === "object" && !Array.isArray(currentPayload.fields)
     ? currentPayload.fields
     : {};
@@ -2338,6 +2421,9 @@ ui.draftForm.addEventListener("submit", async event => {
     button.disabled = false;
   }
 });
+
+ui.draftName.addEventListener("input", () => syncProcedureNameValidity());
+ui.draftDefinitions.addEventListener("input", () => syncDefinitionsAlphabeticalSuggestion());
 
 ui.reloadDraftButton.addEventListener("click", reloadCurrentDraft);
 
@@ -2568,6 +2654,21 @@ function reportSection(number, title, content) {
   return section;
 }
 
+function reportConditionList(value) {
+  const entries = String(value || "").split(/\r?\n+/).flatMap(line =>
+    line.match(/[^.!?]+(?:[.!?]+(?=\s|$)|$)/g) || []
+  ).map(entry => entry.trim().replace(/^(?:[-*]|\d+[.)])\s*/, "")).filter(Boolean);
+  if (!entries.length) return document.createTextNode("Sin información registrada.");
+  const list = document.createElement("ol");
+  list.className = "preview-condition-list";
+  for (const entry of entries) {
+    const item = document.createElement("li");
+    item.textContent = entry;
+    list.append(item);
+  }
+  return list;
+}
+
 function previewFitScale(viewportWidth, contentWidth) {
   const available = Number(viewportWidth);
   const total = Number(contentWidth);
@@ -2700,7 +2801,7 @@ function showPreview({ branding = "standard" } = {}) {
     reportSection("1", "Objetivo", document.createTextNode(ui.draftObjective.value || "Sin información registrada.")),
     reportSection("2", "Alcance", document.createTextNode(ui.draftScope.value || "Sin información registrada.")),
     reportSection("3", "Términos y definiciones", definitionTable),
-    reportSection("4", "Condiciones generales", document.createTextNode(ui.draftConditions.value || "Sin información registrada.")),
+    reportSection("4", "Condiciones generales", reportConditionList(ui.draftConditions.value)),
     reportSection("5", "Normatividad", reportTable(["Tipo", "Norma", "Año", "Descripción de la norma", "Artículo / sección", "Entidad emisora"], normRows, row => [row.tipo, row.norma, row.anio, row.descripcion, row.articulo, row.entidad])),
     reportSection("6", "Descripción del procedimiento", activityTable));
 

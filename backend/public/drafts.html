@@ -36,14 +36,14 @@
 <div class="section-heading"><div><h2 id="editorTitle">Nuevo borrador</h2><p id="editorStatus">Borrador no guardado</p></div><button class="secondary-button" id="newDraftButton" type="button">Nuevo</button></div>
 <form id="draftForm">
 <div class="procedure-identification">
-<div class="field procedure-name"><label for="draftName">Nombre del procedimiento</label><input id="draftName" maxlength="200" required></div>
+<div class="field procedure-name"><label for="draftName">Nombre del procedimiento</label><input id="draftName" maxlength="200" required aria-describedby="draftNameStatus"><small class="field-hint" id="draftNameStatus">Inicie con un verbo específico en infinitivo y describa una sola acción con su objeto. Máximo 12 palabras.</small></div>
 <div class="field"><label for="processCode">Proceso</label><select id="processCode" required><option value="">Cargando procesos...</option></select><small class="field-hint">El Elaborador ve los procesos asignados; Administración, el catálogo activo.</small></div>
 <div class="field"><label for="draftConsecutive">Consecutivo</label><input id="draftConsecutive" type="number" min="1" max="999" inputmode="numeric" placeholder="Ej. 6"><small class="field-hint">Se exige para enviar a evaluación.</small></div>
 <div class="field"><label for="draftCode">Código</label><input id="draftCode" readonly placeholder="Se genera automáticamente"><small class="field-hint" id="draftCodeStatus"></small></div>
 </div>
 <div class="field"><label for="draftObjective">Objetivo</label><textarea id="draftObjective" rows="5" maxlength="10000"></textarea></div>
 <div class="field"><label for="draftScope">Alcance</label><textarea id="draftScope" rows="5" maxlength="10000"></textarea></div>
-<div class="field"><label for="draftDefinitions">Definiciones</label><textarea id="draftDefinitions" rows="5" maxlength="10000"></textarea></div>
+<div class="field"><label for="draftDefinitions">Definiciones</label><textarea id="draftDefinitions" rows="5" maxlength="10000" aria-describedby="draftDefinitionsStatus"></textarea><small class="field-hint" id="draftDefinitionsStatus">Registre cada término seguido de dos puntos y su definición.</small></div>
 <div class="field"><label for="draftConditions">Condiciones generales</label><textarea id="draftConditions" rows="5" maxlength="10000"></textarea></div>
 <section class="norms-section" aria-labelledby="normsTitle">
 <div class="section-heading"><div><h3 id="normsTitle">Normatividad <span class="help-tip" tabindex="0" data-tip="Registre normas, lineamientos, políticas, procedimientos internos o requisitos externos que deban cumplirse durante la ejecución del procedimiento." aria-label="Ayuda metodológica sobre normatividad">i</span></h3></div><button class="secondary-button" id="addNormButton" type="button">Agregar norma</button></div>

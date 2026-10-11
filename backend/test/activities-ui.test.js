@@ -154,6 +154,52 @@ test("reference-aligned editor keeps generated codes, confirmation prompts, help
   assert.match(css, /\.help-tip\{/);
 });
 
+test("editor validates names and suggests alphabetical definitions without overwriting them", async () => {
+  const [html, script, css] = await Promise.all([
+    readFile(join(root, "backend/public/drafts.html"), "utf8"),
+    readFile(join(root, "backend/public/drafts.js"), "utf8"),
+    readFile(join(root, "backend/public/drafts.css"), "utf8")
+  ]);
+  for (const id of ["draftNameStatus", "draftDefinitionsStatus"]) {
+    assert.match(html, new RegExp(`id="${id}"`));
+  }
+  assert.match(script, /function procedureNameIssues\(value\)/);
+  assert.match(script, /function alphabeticalDefinitionSuggestion\(value\)/);
+  assert.match(script, /Sugerencia: ordene las definiciones alfabéticamente así/);
+  assert.match(script, /ui\.draftDefinitions\.addEventListener\("input", \(\) => syncDefinitionsAlphabeticalSuggestion\(\)\)/);
+  assert.match(css, /\.field-hint\.is-invalid/);
+  assert.match(css, /\.field-hint\.is-warning/);
+
+  const nameSource = script.match(/const genericProcedureVerbs[\s\S]*?(?=\nfunction syncProcedureNameValidity\()/)?.[0];
+  assert.ok(nameSource, "name validation helper should be present");
+  const nameIssues = runInNewContext(`${nameSource}\nprocedureNameIssues`);
+  assert.equal(nameIssues("Fomentar el desarrollo económico y la competitividad").length, 0);
+  assert.ok(nameIssues("Fomento al Desarrollo Económico y Competitividad").some(issue => issue.includes("infinitivo")));
+
+  const definitionSource = script.match(/function definitionEntries[\s\S]*?(?=\nfunction syncDefinitionsAlphabeticalSuggestion\()/)?.[0];
+  assert.ok(definitionSource, "definition ordering helper should be present");
+  const suggest = runInNewContext(`${definitionSource}\nalphabeticalDefinitionSuggestion`);
+  assert.deepEqual(Array.from(suggest("Zonal: criterio territorial\nAlcance: límite del procedimiento")), ["Alcance", "Zonal"]);
+  assert.equal(suggest("Alcance: límite del procedimiento\nZonal: criterio territorial"), null);
+});
+
+test("preview separates every general condition into an individual report item", async () => {
+  const script = await readFile(join(root, "backend/public/drafts.js"), "utf8");
+  const source = script.match(/function reportConditionList[\s\S]*?(?=\nfunction previewFitScale\()/)?.[0];
+  assert.ok(source, "condition report helper should be present");
+  const document = {
+    createTextNode(textContent) { return { textContent }; },
+    createElement() {
+      return { className: "", textContent: "", children: [], append(...items) { this.children.push(...items); } };
+    }
+  };
+  const reportConditionList = runInNewContext(`${source}\nreportConditionList`, { document });
+  const list = reportConditionList("Primera condición. Segunda condición.\nTercera condición.");
+  assert.equal(list.className, "preview-condition-list");
+  assert.deepEqual(list.children.map(item => item.textContent), ["Primera condición.", "Segunda condición.", "Tercera condición."]);
+  assert.match(script, /reportSection\("4", "Condiciones generales", reportConditionList\(ui\.draftConditions\.value\)\)/);
+});
+
 test("reports keep institutional branding exclusive and standard reports unbranded", async () => {
   const [html, script, css] = await Promise.all([
     readFile(join(root, "backend/public/drafts.html"), "utf8"),

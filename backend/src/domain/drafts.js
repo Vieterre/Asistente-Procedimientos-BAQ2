@@ -15,6 +15,44 @@ export class DraftError extends Error {
 }
 
 const PROCEDURE_CODE_PATTERN = /^[A-Z]{2,3}-P-\d{3}$/;
+const GENERIC_PROCEDURE_VERBS = new Set(["gestionar", "administrar", "realizar"]);
+const PROCEDURE_TYPE_WORDS = new Set(["procedimiento", "proceso", "tramite", "instructivo", "formato"]);
+const GENERIC_PROCEDURE_OBJECTS = new Set(["informe", "informes", "contrato", "contratos", "solicitud", "solicitudes", "documento", "documentos", "registro", "registros"]);
+
+function normalizedWord(value) {
+  return String(value || "").normalize("NFD").replace(/\p{Diacritic}/gu, "").toLocaleLowerCase("es-CO");
+}
+
+function procedureNameWords(value) {
+  return String(value || "").trim().match(/[\p{L}\p{N}]+/gu) || [];
+}
+
+export function procedureNameIssues(value) {
+  const name = String(value || "").trim();
+  if (!name) return ["Escribe el nombre del procedimiento."];
+
+  const words = procedureNameWords(name);
+  const normalizedWords = words.map(normalizedWord);
+  const issues = [];
+  if (words.length > 12) issues.push("El nombre puede tener máximo 12 palabras.");
+  if (words.length < 2) issues.push("Incluye el objeto sobre el que actúa el procedimiento.");
+  if (!/^[a-zñ]+(?:ar|er|ir)$/i.test(normalizedWords[0] || "")) {
+    issues.push("Inicia con un verbo específico en infinitivo, por ejemplo: Formular, Elaborar, Supervisar o Evaluar.");
+  } else if (GENERIC_PROCEDURE_VERBS.has(normalizedWords[0])) {
+    issues.push("No uses verbos genéricos como Gestionar, Administrar o Realizar.");
+  }
+  if (PROCEDURE_TYPE_WORDS.has(normalizedWords.find(word => PROCEDURE_TYPE_WORDS.has(word)))) {
+    issues.push("No incluyas Procedimiento, Proceso, Trámite, Instructivo ni Formato en el nombre.");
+  }
+  if (words.length === 2 && GENERIC_PROCEDURE_OBJECTS.has(normalizedWords[1])) {
+    issues.push("Precisa el complemento del objeto genérico, por ejemplo el tipo o alcance de la solicitud.");
+  }
+  if (/\.$/.test(name)) issues.push("No uses punto final en el nombre.");
+  if (/^\p{Ll}/u.test(name) || words.slice(1).some(word => /^\p{Lu}\p{Ll}/u.test(word))) {
+    issues.push("Usa mayúscula solo en la primera letra; conserva las siglas institucionales en mayúscula.");
+  }
+  return issues;
+}
 
 function procedureCode(processCode, consecutive) {
   if (consecutive === undefined || consecutive === null || String(consecutive).trim() === "") return null;
@@ -94,10 +132,11 @@ function validPayload(payload) {
 }
 
 function validateDraft({ name, payload }) {
-  if (typeof name !== "string" || !name.trim() || name.trim().length > 200 || !validPayload(payload)) {
-    throw new DraftError("invalid_draft", 400);
-  }
-  return name.trim();
+  const cleanName = typeof name === "string" ? name.trim() : "";
+  const issues = procedureNameIssues(cleanName);
+  if (cleanName.length > 200) issues.push("El nombre supera la longitud permitida.");
+  if (issues.length || !validPayload(payload)) throw new DraftError("invalid_draft", 400, issues);
+  return cleanName;
 }
 
 function publicDraft(row, includePayload = false) {

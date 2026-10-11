@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { createAppServer } from "../src/server.js";
-import { createDraft, getAssignedProcedure, getOwnDraft, getProcedureReport, listAssignedProcedures, listInstitutionalReports, listOwnDrafts, listProcessEvaluators, startAssignedEvaluation, submitOwnDraft, updateOwnDraft } from "../src/domain/drafts.js";
+import { createDraft, getAssignedProcedure, getOwnDraft, getProcedureReport, listAssignedProcedures, listInstitutionalReports, listOwnDrafts, listProcessEvaluators, procedureNameIssues, startAssignedEvaluation, submitOwnDraft, updateOwnDraft } from "../src/domain/drafts.js";
 import { reviewFlow, reviewFlowCompleteness } from "../src/domain/flow-review.js";
 import { hashToken } from "../src/security/auth.js";
 
@@ -181,8 +181,8 @@ test("flow completeness rejects vague custom responsibilities", () => {
 });
 
 const row = {
-  id: draftId, code: "DE-P-001", name: "Borrador", process_code: "DE", version: "1.0",
-  status: "borrador", revision: 1, updated_at: new Date(), current_payload: { fields: { nombre: "Borrador" } }
+  id: draftId, code: "DE-P-001", name: "Formular el borrador de prueba", process_code: "DE", version: "1.0",
+  status: "borrador", revision: 1, updated_at: new Date(), current_payload: { fields: { nombre: "Formular el borrador de prueba" } }
 };
 
 const evaluator = { id: "44444444-4444-4444-8444-444444444444", role: "evaluador", mustChangePassword: false };
@@ -212,14 +212,14 @@ test("author creates an audited draft for an active process", async () => {
     release() {}
   };
   const result = await createDraft({ connect: async () => client }, author, {
-    name: " Borrador ", processCode: "DE", consecutive: "1", payload: row.current_payload
+    name: " Formular el borrador de prueba ", processCode: "DE", consecutive: "1", payload: row.current_payload
   });
-  assert.equal(result.name, "Borrador");
+  assert.equal(result.name, "Formular el borrador de prueba");
   assert.equal(result.revision, 1);
   const processCheck = calls.find(call => call.sql.startsWith("SELECT 1 FROM processes"));
   assert.deepEqual(processCheck.params, ["DE", author.id, false]);
   assert.match(processCheck.sql, /user_processes/);
-  assert.equal(calls.find(call => call.sql.startsWith("INSERT INTO procedures")).params[1], "Borrador");
+  assert.equal(calls.find(call => call.sql.startsWith("INSERT INTO procedures")).params[1], "Formular el borrador de prueba");
   assert.equal(calls.find(call => call.sql.startsWith("INSERT INTO procedures")).params[2], "DE-P-001");
   assert.deepEqual(calls.slice(-2).map(call => call.sql.startsWith("INSERT INTO audit_events") ? "AUDIT" : call.sql), ["AUDIT", "COMMIT"]);
 });
@@ -227,9 +227,10 @@ test("author creates an audited draft for an active process", async () => {
 test("draft creation rejects bad data and processes without access", async () => {
   const noConnect = { connect: async () => { throw new Error("should not connect"); } };
   await assert.rejects(createDraft(noConnect, author, { name: "", processCode: "DE", payload: {} }), { code: "invalid_draft" });
-  await assert.rejects(createDraft(noConnect, author, { name: "Ok", processCode: "??", payload: {} }), { code: "invalid_process" });
-  await assert.rejects(createDraft(noConnect, author, { name: "Ok", processCode: "DE", consecutive: "1000", payload: {} }), { code: "invalid_procedure_code" });
-  await assert.rejects(createDraft(noConnect, { ...author, mustChangePassword: true }, { name: "Ok", processCode: "DE", payload: {} }), { code: "forbidden" });
+  await assert.rejects(createDraft(noConnect, author, { name: "Fomento al Desarrollo Económico y Competitividad", processCode: "DE", payload: {} }), { code: "invalid_draft" });
+  await assert.rejects(createDraft(noConnect, author, { name: "Formular el borrador de prueba", processCode: "??", payload: {} }), { code: "invalid_process" });
+  await assert.rejects(createDraft(noConnect, author, { name: "Formular el borrador de prueba", processCode: "DE", consecutive: "1000", payload: {} }), { code: "invalid_procedure_code" });
+  await assert.rejects(createDraft(noConnect, { ...author, mustChangePassword: true }, { name: "Formular el borrador de prueba", processCode: "DE", payload: {} }), { code: "forbidden" });
   let rolledBack = false;
   let assigned = false;
   const pool = { connect: async () => ({
@@ -247,10 +248,20 @@ test("draft creation rejects bad data and processes without access", async () =>
     },
     release() {}
   }) };
-  await assert.rejects(createDraft(pool, author, { name: "Ok", processCode: "DE", payload: {} }), { code: "invalid_process" });
+  await assert.rejects(createDraft(pool, author, { name: "Formular el borrador de prueba", processCode: "DE", payload: {} }), { code: "invalid_process" });
   assert.equal(rolledBack, true);
   assigned = true;
-  assert.equal((await createDraft(pool, author, { name: "Ok", processCode: "DE", payload: {} })).status, "borrador");
+  assert.equal((await createDraft(pool, author, { name: "Formular el borrador de prueba", processCode: "DE", payload: {} })).status, "borrador");
+});
+
+test("procedure names follow the original structure rules", () => {
+  assert.deepEqual(procedureNameIssues("Fomentar el desarrollo económico y la competitividad"), []);
+  assert.ok(procedureNameIssues("Fomento al Desarrollo Económico y Competitividad").some(issue => issue.includes("infinitivo")));
+  assert.ok(procedureNameIssues("Gestionar solicitudes").some(issue => issue.includes("verbos genéricos")));
+  assert.ok(procedureNameIssues("Elaborar informes").some(issue => issue.includes("complemento")));
+  assert.ok(procedureNameIssues("Formular el procedimiento de compras").some(issue => issue.includes("No incluyas")));
+  assert.ok(procedureNameIssues("formular la solicitud.").some(issue => issue.includes("mayúscula")));
+  assert.ok(procedureNameIssues("formular la solicitud.").some(issue => issue.includes("punto final")));
 });
 
 test("list and detail are scoped to the owner", async () => {
@@ -316,7 +327,7 @@ test("update rejects another author, locked status, and stale revision", async (
     },
     release() {}
   }) };
-  const details = { name: "Nuevo", payload: { fields: {} }, revision: 1 };
+  const details = { name: "Actualizar el borrador", payload: { fields: {} }, revision: 1 };
   await assert.rejects(updateOwnDraft(pool, other, draftId, details), { code: "draft_not_found" });
   status = "en_evaluacion";
   await assert.rejects(updateOwnDraft(pool, author, draftId, details), { code: "draft_locked" });
@@ -605,7 +616,7 @@ test("draft HTTP routes require session, password change, and CSRF", async () =>
     mustChange = false;
     const list = await fetch(url, { headers: { cookie } });
     assert.equal(list.status, 200);
-    assert.equal((await list.json()).procedures[0].name, "Borrador");
+    assert.equal((await list.json()).procedures[0].name, "Formular el borrador de prueba");
     const write = await fetch(url, { method: "POST", headers: { cookie, "content-type": "application/json" }, body: "{}" });
     assert.equal(write.status, 403);
     const invalid = await fetch(url, { method: "POST", headers: { cookie, "x-csrf-token": csrf, "content-type": "application/json" }, body: "{}" });
@@ -703,18 +714,18 @@ test("draft HTTP routes create, read, and update with a live author session", as
   const base = `http://127.0.0.1:${server.address().port}/api/procedures`;
   const headers = { cookie: `__Host-asistente_session=${token}`, "x-csrf-token": csrf, "content-type": "application/json" };
   try {
-    const created = await fetch(base, { method: "POST", headers, body: JSON.stringify({ name: "Borrador", processCode: "DE", consecutive: "1", payload: { fields: { nombre: "Borrador" } } }) });
+    const created = await fetch(base, { method: "POST", headers, body: JSON.stringify({ name: "Formular el borrador de prueba", processCode: "DE", consecutive: "1", payload: { fields: { nombre: "Formular el borrador de prueba" } } }) });
     assert.equal(created.status, 201);
     const procedure = (await created.json()).procedure;
     assert.equal(procedure.status, "borrador");
     assert.equal(procedure.revision, 1);
     assert.equal(procedure.code, "DE-P-001");
     const detail = await fetch(`${base}/${procedure.id}`, { headers });
-    assert.equal((await detail.json()).procedure.payload.fields.nombre, "Borrador");
+    assert.equal((await detail.json()).procedure.payload.fields.nombre, "Formular el borrador de prueba");
     const updated = await fetch(`${base}/${procedure.id}`, { method: "PUT", headers, body: JSON.stringify({
-      name: "Nuevo",
+      name: "Actualizar el borrador",
       payload: {
-        fields: { nombre: "Nuevo", objetivo: "Objetivo", alcance: "Alcance", definiciones: "Definiciones", condiciones: "Condiciones",
+        fields: { nombre: "Actualizar el borrador", objetivo: "Objetivo", alcance: "Alcance", definiciones: "Definiciones", condiciones: "Condiciones",
           elaboro: "Profesional Universitario", elaboroNombre: "Persona A", reviso: "Jefe de Oficina", revisoNombre: "Persona B",
           aprobo: "Director", aproboNombre: "Persona C" },
         norms: [
@@ -746,7 +757,7 @@ test("draft HTTP routes create, read, and update with a live author session", as
     assert.equal((await updated.json()).procedure.revision, 2);
     const reopened = await fetch(`${base}/${procedure.id}`, { headers });
     const reopenedPayload = (await reopened.json()).procedure.payload;
-    assert.deepEqual(reopenedPayload.fields, { nombre: "Nuevo", objetivo: "Objetivo", alcance: "Alcance", definiciones: "Definiciones", condiciones: "Condiciones",
+    assert.deepEqual(reopenedPayload.fields, { nombre: "Actualizar el borrador", objetivo: "Objetivo", alcance: "Alcance", definiciones: "Definiciones", condiciones: "Condiciones",
       elaboro: "Profesional Universitario", elaboroNombre: "Persona A", reviso: "Jefe de Oficina", revisoNombre: "Persona B",
       aprobo: "Director", aproboNombre: "Persona C" });
     assert.equal(reopenedPayload.annexes.length, 2);
@@ -770,7 +781,7 @@ test("draft HTTP routes create, read, and update with a live author session", as
     assert.equal(reopenedPayload.norms.length, 2);
     assert.equal(reopenedPayload.norms[0].norma, "Norma de prueba");
     assert.equal(reopenedPayload.norms[1].tipo, "Interna");
-    const conflict = await fetch(`${base}/${procedure.id}`, { method: "PUT", headers, body: JSON.stringify({ name: "Viejo", payload: {}, revision: 1 }) });
+    const conflict = await fetch(`${base}/${procedure.id}`, { method: "PUT", headers, body: JSON.stringify({ name: "Actualizar el borrador previo", payload: {}, revision: 1 }) });
     assert.equal(conflict.status, 409);
   } finally {
     await new Promise(resolve => server.close(resolve));
