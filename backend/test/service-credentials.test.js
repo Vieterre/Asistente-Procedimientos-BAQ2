@@ -94,6 +94,18 @@ test("production service is isolated from the testing database and credentials",
   assert.doesNotMatch(unit, /^Environment=.*(?:PASSWORD|ENCRYPTION_KEY)/m);
 });
 
+test("application grant scripts include health, authentication, and session lifecycle permissions", () => {
+  for (const [file, role] of [
+    ["../../deploy/grant-drafts-test.sql", "asistente_app_test"],
+    ["../../deploy/grant-drafts-production.sql", "asistente_app_prod"]
+  ]) {
+    const grants = readFileSync(new URL(file, import.meta.url), "utf8");
+    assert.match(grants, new RegExp(`GRANT SELECT ON public\\.schema_migrations TO ${role};`));
+    assert.match(grants, new RegExp(`GRANT SELECT, INSERT, UPDATE ON public\\.app_sessions TO ${role};`));
+    assert.match(grants, new RegExp(`GRANT SELECT, INSERT, UPDATE ON public\\.app_users TO ${role};`));
+  }
+});
+
 test("test-domain Nginx configuration keeps ACME staging separate from HTTPS proxying", () => {
   const http = readFileSync(new URL("../../deploy/asistente-test-http.nginx.conf", import.meta.url), "utf8");
   const https = readFileSync(new URL("../../deploy/asistente-test-https.nginx.conf", import.meta.url), "utf8");

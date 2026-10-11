@@ -2,7 +2,11 @@ GRANT SELECT (code, name, active) ON public.processes TO asistente_app_test;
 GRANT SELECT (user_id, process_code) ON public.user_processes TO asistente_app_test;
 GRANT INSERT (user_id, process_code) ON public.user_processes TO asistente_app_test;
 GRANT DELETE ON public.user_processes TO asistente_app_test;
-GRANT SELECT (id, display_name, role, active, must_change_password) ON public.app_users TO asistente_app_test;
+-- Authentication, session lifecycle, and the health endpoint require these tables.
+-- The migration history remains read-only for the application role.
+GRANT SELECT ON public.schema_migrations TO asistente_app_test;
+GRANT SELECT, INSERT, UPDATE ON public.app_sessions TO asistente_app_test;
+GRANT SELECT, INSERT, UPDATE ON public.app_users TO asistente_app_test;
 
 GRANT SELECT (
   id, code, name, process_code, version, status, revision, updated_at,
