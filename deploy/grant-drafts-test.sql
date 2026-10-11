@@ -14,7 +14,7 @@ GRANT SELECT (
 ) ON public.procedures TO asistente_app_test;
 
 GRANT INSERT (
-  id, name, process_code, status, created_by_user_id, current_payload
+  id, name, code, process_code, status, created_by_user_id, current_payload
 ) ON public.procedures TO asistente_app_test;
 
 GRANT UPDATE (

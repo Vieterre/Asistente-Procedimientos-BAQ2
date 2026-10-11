@@ -103,6 +103,7 @@ test("application grant scripts include health, authentication, and session life
     assert.match(grants, new RegExp(`GRANT SELECT ON public\\.schema_migrations TO ${role};`));
     assert.match(grants, new RegExp(`GRANT SELECT, INSERT, UPDATE ON public\\.app_sessions TO ${role};`));
     assert.match(grants, new RegExp(`GRANT SELECT, INSERT, UPDATE ON public\\.app_users TO ${role};`));
+    assert.match(grants, new RegExp(`GRANT INSERT \\([\\s\\S]*?id, name, code, process_code[\\s\\S]*?\\) ON public\\.procedures TO ${role};`));
   }
 });
 
