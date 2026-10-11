@@ -82,6 +82,18 @@ test("private service listens on loopback and receives secrets as credentials", 
   assert.doesNotMatch(unit, /^Environment=.*(?:PASSWORD|ENCRYPTION_KEY)/m);
 });
 
+test("production service is isolated from the testing database and credentials", () => {
+  const unit = readFileSync(new URL("../../deploy/asistente-procedimientos-production.service", import.meta.url), "utf8");
+  assert.match(unit, /^DynamicUser=yes$/m);
+  assert.match(unit, /^Environment=HOST=127\.0\.0\.1$/m);
+  assert.match(unit, /^Environment=PORT=3001$/m);
+  assert.match(unit, /^Environment=PGDATABASE=asistente_procedimientos_prod$/m);
+  assert.match(unit, /^Environment=PGUSER=asistente_app_prod$/m);
+  assert.match(unit, /^LoadCredential=pg_password:\/etc\/asistente-procedimientos-production\/pg\.password$/m);
+  assert.match(unit, /^LoadCredential=mfa_key:\/etc\/asistente-procedimientos-production\/mfa\.key$/m);
+  assert.doesNotMatch(unit, /^Environment=.*(?:PASSWORD|ENCRYPTION_KEY)/m);
+});
+
 test("test-domain Nginx configuration keeps ACME staging separate from HTTPS proxying", () => {
   const http = readFileSync(new URL("../../deploy/asistente-test-http.nginx.conf", import.meta.url), "utf8");
   const https = readFileSync(new URL("../../deploy/asistente-test-https.nginx.conf", import.meta.url), "utf8");
@@ -94,4 +106,26 @@ test("test-domain Nginx configuration keeps ACME staging separate from HTTPS pro
   assert.match(https, /proxy_set_header X-Forwarded-For \$remote_addr;/);
   assert.match(https, /return 302 \/accounts;/);
   assert.match(https, /proxy_pass http:\/\/127\.0\.0\.1:3000;/);
+  for (const path of ["/drafts", "/drafts.css", "/drafts.js"]) {
+    assert.ok(https.includes(`location = ${path} {`));
+  }
+});
+
+test("production-domain Nginx configuration exposes only the application routes", () => {
+  const http = readFileSync(new URL("../../deploy/civicflow-http.nginx.conf", import.meta.url), "utf8");
+  const https = readFileSync(new URL("../../deploy/civicflow-https.nginx.conf", import.meta.url), "utf8");
+  for (const config of [http, https]) {
+    assert.match(config, /server_name civicflow-assistants1\.vieterre\.tech;/);
+    assert.match(config, /location \^~ \/\.well-known\/acme-challenge\//);
+  }
+  assert.doesNotMatch(http, /proxy_pass|listen 443/);
+  assert.match(https, /proxy_set_header X-Real-IP \$remote_addr;/);
+  assert.match(https, /proxy_set_header X-Forwarded-For \$remote_addr;/);
+  assert.match(https, /return 302 \/accounts;/);
+  assert.match(https, /proxy_pass http:\/\/127\.0\.0\.1:3001;/);
+  for (const path of ["/accounts", "/accounts.css", "/accounts.js", "/drafts", "/drafts.css", "/drafts.js"]) {
+    assert.ok(https.includes(`location = ${path} {`));
+  }
+  assert.match(https, /location \^~ \/api\//);
+  assert.match(https, /location \/ \{\s*return 404;/);
 });
