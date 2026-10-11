@@ -12,22 +12,31 @@ const draftId = "33333333-3333-4333-8333-333333333333";
 test("flow review detects missing boundaries, broken routes, and duplicate identifiers", () => {
   const broken = reviewFlow([
     { uid: "start", tipo: "Inicio" },
+    { uid: "work", tipo: "Actividad" },
     { uid: "choice", tipo: "Decisión", decisionSi: "end", decisionNo: "missing" },
     { uid: "connector", tipo: "Conector", connectorDestino: "" },
     { uid: "end", tipo: "Fin" }
   ]);
-  assert.ok(broken.some(issue => issue.index === 1 && issue.message === "Ruta No: el destino no es válido."));
-  assert.ok(broken.some(issue => issue.index === 2 && issue.message === "Destino del conector: selecciona un destino."));
-  assert.deepEqual(reviewFlow([{ uid: "same", tipo: "Inicio" }, { uid: "same", tipo: "Fin" }]), [
-    { index: 1, message: "El identificador del elemento está repetido." }
+  assert.ok(broken.some(issue => issue.index === 2 && issue.message === "Ruta No: el destino no es válido."));
+  assert.ok(broken.some(issue => issue.index === 3 && issue.message === "Destino del conector: selecciona un destino."));
+  assert.deepEqual(reviewFlow([{ uid: "same", tipo: "Inicio" }, { uid: "work", tipo: "Actividad" }, { uid: "same", tipo: "Fin" }]), [
+    { index: 2, message: "El identificador del elemento está repetido." }
   ]);
-  assert.equal(reviewFlow([{ uid: "start", tipo: "Inicio" }]).length, 1);
-  assert.deepEqual(reviewFlow([{ uid: "start", tipo: "Inicio" }, { uid: "end", tipo: "Fin" }]), []);
+  assert.equal(reviewFlow([{ uid: "start", tipo: "Inicio" }]).length, 2);
+  assert.deepEqual(reviewFlow([{ uid: "start", tipo: "Inicio" }, { uid: "end", tipo: "Fin" }]), [
+    { index: null, message: "El flujograma debe incluir al menos una actividad." }
+  ]);
+  assert.deepEqual(reviewFlow([
+    { uid: "start", tipo: "Inicio" },
+    { uid: "work", tipo: "Actividad" },
+    { uid: "end", tipo: "Fin" }
+  ]), []);
 });
 
 test("flow review rejects identical decision routes and cycles without an exit", () => {
   const activities = [
     { uid: "start", tipo: "Inicio" },
+    { uid: "work", tipo: "Actividad" },
     { uid: "choice", tipo: "Decisión", decisionSi: "loop", decisionNo: "loop" },
     { uid: "loop", tipo: "Conector", connectorId: "A", connectorDestino: "choice" },
     { uid: "end", tipo: "Fin" }
@@ -35,8 +44,8 @@ test("flow review rejects identical decision routes and cycles without an exit",
   const issues = reviewFlow(activities);
   assert.ok(issues.some(issue => issue.message === "Las rutas Sí y No deben tener destinos diferentes."));
   assert.ok(issues.some(issue => issue.message === "Hay un ciclo sin salida hacia Fin."));
-  assert.ok(issues.some(issue => issue.index === 3 && issue.message === "No se puede alcanzar este elemento desde Inicio."));
-  activities[1].decisionNo = "end";
+  assert.ok(issues.some(issue => issue.index === 4 && issue.message === "No se puede alcanzar este elemento desde Inicio."));
+  activities[2].decisionNo = "end";
   assert.ok(reviewFlow(activities).every(issue => issue.severity === "warning"));
 });
 
@@ -90,14 +99,15 @@ test("flow review traces the negative route until a control and keeps controls o
 test("flow review rejects missing or duplicate connector labels", () => {
   const activities = [
     { uid: "start", tipo: "Inicio" },
+    { uid: "work", tipo: "Actividad" },
     { uid: "one", tipo: "Conector", connectorId: "A", connectorDestino: "two" },
     { uid: "two", tipo: "Conector", connectorId: " a ", connectorDestino: "end" },
     { uid: "end", tipo: "Fin" }
   ];
-  assert.ok(reviewFlow(activities).some(issue => issue.index === 2 && issue.message === "El identificador del conector está repetido."));
-  activities[2].connectorId = "";
-  assert.ok(reviewFlow(activities).some(issue => issue.index === 2 && issue.message === "El conector necesita un identificador."));
-  activities[2].connectorId = "B";
+  assert.ok(reviewFlow(activities).some(issue => issue.index === 3 && issue.message === "El identificador del conector está repetido."));
+  activities[3].connectorId = "";
+  assert.ok(reviewFlow(activities).some(issue => issue.index === 3 && issue.message === "El conector necesita un identificador."));
+  activities[3].connectorId = "B";
   assert.deepEqual(reviewFlow(activities), []);
 });
 
@@ -472,6 +482,19 @@ test("submission rejects incomplete drafts, stale revisions, and evaluators outs
   assert.equal(procedureUpdates, 0, "an invalid flow must never be submitted");
   procedure.current_payload = {
     ...completePayload,
+    activities: [
+      { uid: "start", tipo: "Inicio", descripcion: "Solicitud recibida" },
+      { uid: "end", tipo: "Fin", descripcion: "Solicitud atendida" }
+    ]
+  };
+  await assert.rejects(submitOwnDraft(pool, author, draftId, { evaluatorId: evaluator.id, revision: 4 }), error => {
+    assert.equal(error.code, "submission_incomplete");
+    assert.ok(error.details.includes("Corrige las observaciones del flujo antes de enviar."));
+    return true;
+  });
+  assert.equal(procedureUpdates, 0, "a diagram without activities must never be submitted");
+  procedure.current_payload = {
+    ...completePayload,
     changes: [...completePayload.changes, { version: "1.0", fecha: "2026-10-03", razon: "Actualización" }]
   };
   await assert.rejects(submitOwnDraft(pool, author, draftId, { evaluatorId: evaluator.id, revision: 4 }), error => {
@@ -594,7 +617,9 @@ test("draft HTTP routes require session, password change, and CSRF", async () =>
     const review = await fetch(reviewUrl, { method: "POST", headers: { cookie, "x-csrf-token": csrf, "content-type": "application/json" }, body: reviewBody });
     assert.equal(review.status, 200);
     const reviewResult = await review.json();
-    assert.deepEqual(reviewResult.issues, []);
+    assert.deepEqual(reviewResult.issues, [
+      { index: null, message: "El flujograma debe incluir al menos una actividad." }
+    ]);
     assert.deepEqual(reviewResult.completenessIssues, [
       { index: 0, message: "Describe el evento que inicia el procedimiento." },
       { index: 1, message: "Describe el resultado o condición de cierre." }

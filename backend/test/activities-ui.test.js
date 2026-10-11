@@ -87,6 +87,22 @@ test("sending for evaluation reviews flow errors before opening the evaluator se
     "flow errors should stop the flow before fetching evaluators");
 });
 
+test("flow review separates blocking errors from methodological notices and locates items to correct", async () => {
+  const [script, css] = await Promise.all([
+    readFile(join(root, "backend/public/drafts.js"), "utf8"),
+    readFile(join(root, "backend/public/drafts.css"), "utf8")
+  ]);
+  assert.match(script, /function focusFlowItem\(index\)/);
+  assert.match(script, /collapsedActivityUids\.delete\(activity\.uid\)/);
+  assert.match(script, /focus\.textContent = "Ir al elemento"/);
+  assert.match(script, /focus\.addEventListener\("click", \(\) => focusFlowItem\(issue\.index\)\)/);
+  assert.match(script, /flow-review-summary flow-review-errors/);
+  assert.match(script, /flow-review-summary flow-review-warnings/);
+  assert.match(css, /\.flow-review-summary\.flow-review-errors/);
+  assert.match(css, /\.flow-review-summary\.flow-review-warnings/);
+  assert.match(css, /\.flow-review-summary\.flow-review-ok/);
+});
+
 test("preview flowchart fits the available width and keeps accessible zoom controls", async () => {
   const [script, css] = await Promise.all([
     readFile(join(root, "backend/public/drafts.js"), "utf8"),

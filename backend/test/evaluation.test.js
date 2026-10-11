@@ -255,7 +255,37 @@ test("returning findings lets the author answer before a new review", async () =
   const answer = await saveAuthorEvaluationResponses(pool, author, procedureId, { act1: "Reordené las actividades" });
   assert.equal(answer.missingResponses, 0);
   assert.equal(pool.evaluation.criteria_payload.criteria.act1.response, "Reordené las actividades");
+  assert.deepEqual(pool.evaluation.criteria_payload.criteria.act1.trace.map(entry => entry.action), ["Ajuste solicitado", "Respuesta del Elaborador"]);
+  assert.equal(pool.evaluation.criteria_payload.criteria.act1.trace[0].iteration, 1);
   await assert.rejects(saveAuthorEvaluationResponses(pool, evaluator, procedureId, { act1: "Otro" }), { code: "forbidden" });
+});
+
+test("a new requested adjustment clears the previous response and records its own trace", async () => {
+  const pool = evaluationPool();
+  const firstReview = criteriaWith();
+  firstReview.act1 = {
+    result: "No cumple", observation: "La secuencia no es clara", adjustment: "Reordenar actividades",
+    findingStatus: "Pendiente", response: ""
+  };
+  await saveAssignedEvaluation(pool, evaluator, procedureId, { criteria: firstReview, concept: "Se requiere ajustar la secuencia." });
+  await decideAssignedEvaluation(pool, evaluator, procedureId, { decision: "devolver" });
+  await saveAuthorEvaluationResponses(pool, author, procedureId, { act1: "Se reordenaron las actividades." });
+  await saveAuthorEvaluationResponses(pool, author, procedureId, { act1: "" });
+  assert.equal(pool.evaluation.criteria_payload.criteria.act1.findingStatus, "Pendiente");
+
+  pool.procedure.status = PROCEDURE_STATUS.IN_REVIEW;
+  pool.evaluation.status = PROCEDURE_STATUS.IN_REVIEW;
+  const secondReview = criteriaWith();
+  secondReview.act1 = {
+    result: "No cumple", observation: "La secuencia sigue sin identificar la actividad final", adjustment: "Precisar la actividad final",
+    findingStatus: "Respondido", response: ""
+  };
+  await saveAssignedEvaluation(pool, evaluator, procedureId, { criteria: secondReview, concept: "Se requiere un ajuste adicional." });
+
+  const record = pool.evaluation.criteria_payload.criteria.act1;
+  assert.equal(record.response, "");
+  assert.equal(record.findingStatus, "Pendiente");
+  assert.deepEqual(record.trace.map(entry => entry.action), ["Ajuste solicitado", "Respuesta del Elaborador", "Respuesta retirada", "Ajuste solicitado"]);
 });
 
 test("complete review cycle preserves responses and reaches a favorable concept only after reevaluation", async () => {
@@ -288,6 +318,7 @@ test("complete review cycle preserves responses and reaches a favorable concept 
 
   await startAssignedEvaluation(pool, evaluator, procedureId);
   await saveAssignedEvaluation(pool, evaluator, procedureId, { criteria: criteriaWith(), concept: "Cumple los criterios metodológicos." });
+  assert.deepEqual(pool.evaluations[1].criteria_payload.criteria.act1.trace.map(entry => entry.action), ["Ajuste solicitado", "Respuesta del Elaborador", "Hallazgo cerrado"]);
   const decision = await decideAssignedEvaluation(pool, evaluator, procedureId, { decision: "favorable" });
   assert.equal(decision.status, PROCEDURE_STATUS.FAVORABLE);
   assert.equal(pool.procedure.status, PROCEDURE_STATUS.FAVORABLE);

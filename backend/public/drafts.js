@@ -7,7 +7,7 @@ const ids = [
   "evaluatorInbox", "evaluatorDraftCount", "evaluatorInboxMessage", "emptyEvaluatorInbox", "evaluatorDraftList", "refreshEvaluatorInbox", "evaluatorDetail", "evaluatorDetailTitle", "evaluatorDetailStatus", "backToEvaluatorInbox", "startEvaluationButton",
   "evaluationWorkspace", "evaluationProgress", "evaluationScore", "evaluationLevel", "evaluationVariableResults", "evaluationCriteriaGroups", "evaluationConcept", "evaluationMessage", "saveEvaluationButton", "returnEvaluationButton", "unfavorableEvaluationButton", "favorableEvaluationButton",
   "returnedEvaluation", "returnedEvaluationSummary", "returnedEvaluationConcept", "returnedFindings", "saveEvaluationResponses", "returnedEvaluationMessage",
-  "draftName", "processCode", "draftConsecutive", "draftCode", "draftCodeStatus", "draftObjective", "draftScope", "draftDefinitions", "draftConditions", "saveDraftButton", "editorMessage",
+  "draftName", "processCode", "draftConsecutive", "draftCode", "draftCodeStatus", "draftObjective", "draftScope", "draftDefinitions", "draftConditions", "saveDraftButton", "reloadDraftButton", "editorMessage",
   "newDraftButton", "addNormButton", "normsList", "emptyNorms", "addBoundaryButton", "addActivityButton", "addDecisionButton", "addConnectorButton", "activitiesList", "emptyActivities", "reviewFlowButton", "flowReviewResult", "refreshDraftsButton", "draftCount", "listMessage", "emptyDrafts",
   "draftList", "flowSection", "flowSummary", "showFlowEvidence", "refreshFlowButton", "flowCanvas", "flowSvg",
   "zoomOutButton", "zoomInButton", "fitFlowButton", "resetFlowZoomButton", "flowZoomValue",
@@ -324,8 +324,13 @@ function showFlowReview(issues, completenessIssues = []) {
   const errors = issues.filter(issue => issue.severity !== "warning");
   const warnings = issues.filter(issue => issue.severity === "warning");
   const summary = document.createElement("p");
-  summary.textContent = errors.length
-    ? `${errors.length} observación${errors.length === 1 ? "" : "es"} por corregir en el flujo.${warnings.length ? ` ${warnings.length} aviso${warnings.length === 1 ? "" : "s"} adicional${warnings.length === 1 ? "" : "es"}.` : ""}`
+  summary.className = errors.length || completenessIssues.length ? "flow-review-summary flow-review-errors" : warnings.length ? "flow-review-summary flow-review-warnings" : "flow-review-summary flow-review-ok";
+  const blockingSummary = [
+    errors.length ? `${errors.length} observación${errors.length === 1 ? "" : "es"} por corregir en el flujo` : "",
+    completenessIssues.length ? `${completenessIssues.length} campo${completenessIssues.length === 1 ? "" : "s"} obligatorio${completenessIssues.length === 1 ? "" : "s"} por completar` : ""
+  ].filter(Boolean).join(". ");
+  summary.textContent = blockingSummary
+    ? `${blockingSummary}.${warnings.length ? ` ${warnings.length} aviso${warnings.length === 1 ? "" : "s"} adicional${warnings.length === 1 ? "" : "es"}.` : ""}`
     : `Las rutas y los nodos del flujo son coherentes.${warnings.length ? ` ${warnings.length} aviso${warnings.length === 1 ? "" : "s"} para revisar.` : ""}`;
   result.append(summary);
   if (issues.length) {
@@ -333,6 +338,14 @@ function showFlowReview(issues, completenessIssues = []) {
     for (const issue of issues) {
       const item = document.createElement("li");
       item.textContent = (issue.severity === "warning" ? "Aviso: " : "") + (Number.isInteger(issue.index) ? `Elemento ${issue.index + 1}: ` : "") + issue.message;
+      if (Number.isInteger(issue.index)) {
+        const focus = document.createElement("button");
+        focus.type = "button";
+        focus.className = "flow-review-focus";
+        focus.textContent = "Ir al elemento";
+        focus.addEventListener("click", () => focusFlowItem(issue.index));
+        item.append(" ", focus);
+      }
       list.append(item);
     }
     result.append(list);
@@ -345,11 +358,30 @@ function showFlowReview(issues, completenessIssues = []) {
     for (const issue of completenessIssues) {
       const item = document.createElement("li");
       item.textContent = `Elemento ${issue.index + 1}: ${issue.message}`;
+      if (Number.isInteger(issue.index)) {
+        const focus = document.createElement("button");
+        focus.type = "button";
+        focus.className = "flow-review-focus";
+        focus.textContent = "Ir al elemento";
+        focus.addEventListener("click", () => focusFlowItem(issue.index));
+        item.append(" ", focus);
+      }
       list.append(item);
     }
     result.append(list);
   }
   result.hidden = false;
+}
+
+function focusFlowItem(index) {
+  const activity = activityRows[index];
+  if (!activity) return;
+  collapsedActivityUids.delete(activity.uid);
+  renderActivities();
+  const row = ui.activitiesList.querySelectorAll(".activity-row")[index];
+  if (!row) return;
+  row.scrollIntoView({ behavior: "smooth", block: "center" });
+  row.querySelector("input, select, textarea, button")?.focus({ preventScroll: true });
 }
 
 function confirmDeletion(kind, value) {
@@ -1419,6 +1451,7 @@ function clearSession() {
   ui.previewButton.hidden = true;
   ui.submitReviewButton.hidden = true;
   ui.submitReviewButton.disabled = true;
+  ui.reloadDraftButton.hidden = true;
   ui.evaluatorInbox.hidden = true;
   ui.evaluatorDetail.hidden = true;
   ui.evaluationWorkspace.hidden = true;
@@ -1780,6 +1813,8 @@ function renderEvaluationWorkspace() {
         response.textContent = `Respuesta del Elaborador: ${record.response}`;
         grid.append(response);
       }
+      const trace = createFindingTrace(record);
+      if (trace) grid.append(trace);
       result.addEventListener("change", () => {
         const oldDefault = standardEvaluationObservation(criterion.question, record.result);
         record.result = result.value;
@@ -1816,6 +1851,43 @@ function standardEvaluationObservation(question, result) {
   return result === "Cumple" ? `Se verifica el cumplimiento del criterio: ${statement}.` : `No se evidencia el cumplimiento del criterio: ${statement}.`;
 }
 
+function findingTraceEntries(record) {
+  return Array.isArray(record?.trace)
+    ? record.trace.filter(entry => entry && typeof entry === "object" && entry.action).slice(-40)
+    : [];
+}
+
+function findingTraceDetail(entry) {
+  if (entry.action === "Ajuste solicitado") return entry.adjustment ? `Ajuste requerido: ${entry.adjustment}` : "Ajuste requerido registrado.";
+  if (entry.action === "Respuesta del Elaborador") return entry.response ? `Respuesta: ${entry.response}` : "Respuesta registrada.";
+  if (entry.action === "Respuesta retirada") return "La respuesta se retiró y el hallazgo volvió a estar pendiente.";
+  if (entry.action === "Hallazgo cerrado") return `Resultado: ${entry.result || "Cumple"} · Estado: ${entry.findingStatus || "Cerrado"}`;
+  return `Resultado: ${entry.result || "Sin cambio"} · Estado: ${entry.findingStatus || "En verificación"}`;
+}
+
+function createFindingTrace(record) {
+  const entries = findingTraceEntries(record);
+  if (!entries.length) return null;
+  const section = document.createElement("section");
+  section.className = "finding-trace";
+  const title = document.createElement("h5");
+  title.textContent = "Trazabilidad del hallazgo";
+  const list = document.createElement("ol");
+  for (const entry of entries) {
+    const item = document.createElement("li");
+    const heading = document.createElement("strong");
+    const date = new Date(entry.at);
+    const timestamp = Number.isNaN(date.valueOf()) ? "Sin fecha" : date.toLocaleString("es-CO");
+    heading.textContent = `${entry.action} · ${entry.actor || entry.role || "Usuario"} · revisión ${Number(entry.iteration || 1)} · ${timestamp}`;
+    const detail = document.createElement("p");
+    detail.textContent = findingTraceDetail(entry);
+    item.append(heading, detail);
+    list.append(item);
+  }
+  section.append(title, list);
+  return section;
+}
+
 function renderReturnedEvaluation() {
   ui.returnedEvaluation.hidden = !returnedEvaluation || !["devuelto_para_ajustes", "concepto_favorable", "concepto_no_favorable"].includes(currentDraft?.status);
   if (ui.returnedEvaluation.hidden) return;
@@ -1834,6 +1906,8 @@ function renderReturnedEvaluation() {
     const adjustment = document.createElement("p");
     adjustment.textContent = `Ajuste requerido: ${record.adjustment || "Sin detalle"}`;
     item.append(title, observation, adjustment);
+    const trace = createFindingTrace(record);
+    if (trace) item.append(trace);
     const grid = document.createElement("div");
     const response = document.createElement("textarea");
     response.id = `authorResponse-${id}`;
@@ -1919,8 +1993,8 @@ function renderDrafts(drafts) {
   }));
 }
 
-async function openDraft(id) {
-  if (dirty && !window.confirm("Hay cambios sin guardar. ¿Descartarlos y abrir este procedimiento?")) return;
+async function openDraft(id, discardChanges = false) {
+  if (!discardChanges && dirty && !window.confirm("Hay cambios sin guardar. ¿Descartarlos y abrir este procedimiento?")) return false;
   setMessage(ui.listMessage, "");
 
   try {
@@ -1931,8 +2005,26 @@ async function openDraft(id) {
     ui.evaluatorDetail.hidden = true;
     ui.draftWorkspace.hidden = false;
     ui.draftName.focus();
+    return true;
   } catch (error) {
     handleRequestError(error, ui.listMessage);
+    return false;
+  }
+}
+
+async function reloadCurrentDraft() {
+  if (!currentDraft) return;
+  if (!window.confirm("Se reemplazarán los cambios que están en pantalla por la última versión guardada. ¿Desea continuar?")) return;
+  const id = currentDraft.id;
+  ui.reloadDraftButton.disabled = true;
+  try {
+    if (await openDraft(id, true)) {
+      ui.reloadDraftButton.hidden = true;
+      setMessage(ui.editorMessage, "Se cargó la última versión guardada. Puedes revisar y volver a editar.", true);
+      await loadDrafts();
+    }
+  } finally {
+    ui.reloadDraftButton.disabled = false;
   }
 }
 
@@ -1972,6 +2064,7 @@ function populateDraft(procedure) {
   ui.editorStatus.textContent = `${statusLabel(procedure.status)} · revisión ${procedure.revision}`;
   ui.saveDraftButton.textContent = "Guardar cambios";
   ui.saveDocumentsButton.textContent = "Guardar cambios";
+  ui.reloadDraftButton.hidden = true;
   dirty = false;
   setMessage(ui.editorMessage, "");
   ui.flowReviewResult.hidden = true;
@@ -2047,6 +2140,7 @@ function newDraft() {
   ui.editorStatus.textContent = "Borrador no guardado";
   ui.saveDraftButton.textContent = "Guardar borrador";
   ui.saveDocumentsButton.textContent = "Guardar borrador";
+  ui.reloadDraftButton.hidden = true;
   dirty = false;
   setMessage(ui.editorMessage, "");
   ui.flowReviewResult.hidden = true;
@@ -2085,6 +2179,11 @@ ui.loginForm.addEventListener("submit", async event => {
 
 ui.draftForm.addEventListener("input", markDirty);
 ui.draftForm.addEventListener("change", markDirty);
+window.addEventListener("beforeunload", event => {
+  if (!dirty) return;
+  event.preventDefault();
+  event.returnValue = "";
+});
 ui.processCode.addEventListener("change", syncProcedureCode);
 ui.draftConsecutive.addEventListener("input", syncProcedureCode);
 for (const inputId of ["draftPreparedBy", "draftReviewedBy", "draftApprovedBy"]) {
@@ -2216,20 +2315,30 @@ ui.draftForm.addEventListener("submit", async event => {
     ui.editorStatus.textContent = currentDraft.status + " · revisión " + currentDraft.revision;
     ui.saveDraftButton.textContent = "Guardar cambios";
     ui.saveDocumentsButton.textContent = "Guardar cambios";
+    ui.reloadDraftButton.hidden = true;
     dirty = false;
     applyDraftEditability();
     setMessage(ui.editorMessage, "Borrador guardado.", true);
     setMessage(ui.documentsMessage, "Borrador guardado.", true);
     await loadDrafts();
   } catch (error) {
-    handleRequestError(error, ui.editorMessage);
-    if (!["unauthenticated", "csrf_failed", "password_change_required"].includes(error.code)) {
-      setMessage(ui.documentsMessage, errorText(error));
+    if (error.code === "draft_conflict" && currentDraft) {
+      ui.reloadDraftButton.hidden = false;
+      const message = "El borrador cambió en otra sesión. Tus cambios siguen en pantalla; recarga la última versión para compararlos antes de continuar.";
+      setMessage(ui.editorMessage, message);
+      setMessage(ui.documentsMessage, message);
+    } else {
+      handleRequestError(error, ui.editorMessage);
+      if (!["unauthenticated", "csrf_failed", "password_change_required"].includes(error.code)) {
+        setMessage(ui.documentsMessage, errorText(error));
+      }
     }
   } finally {
     button.disabled = false;
   }
 });
+
+ui.reloadDraftButton.addEventListener("click", reloadCurrentDraft);
 
 ui.newDraftButton.addEventListener("click", newDraft);
 async function saveReturnedResponses() {

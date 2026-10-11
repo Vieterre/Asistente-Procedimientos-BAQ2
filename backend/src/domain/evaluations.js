@@ -14,6 +14,35 @@ import {
 } from "./evaluation-rubric.js";
 import { DraftError } from "./drafts.js";
 
+const TRACE_LIMIT = 40;
+
+function actorLabel(user) {
+  const name = String(user?.displayName || user?.username || "").trim();
+  if (name) return name;
+  if (user?.role === ROLES.EVALUADOR) return "Evaluador";
+  if (user?.role === ROLES.ELABORADOR) return "Elaborador";
+  return "Usuario";
+}
+
+function findingTrace(record) {
+  if (!Array.isArray(record?.trace)) return [];
+  return record.trace
+    .filter(entry => entry && typeof entry === "object" && typeof entry.action === "string")
+    .slice(-TRACE_LIMIT)
+    .map(entry => ({ ...entry }));
+}
+
+function appendFindingTrace(record, action, user, iteration, detail = {}) {
+  record.trace = [...findingTrace(record), {
+    action,
+    at: new Date().toISOString(),
+    actor: actorLabel(user),
+    role: user.role,
+    iteration,
+    ...detail
+  }].slice(-TRACE_LIMIT);
+}
+
 function criteriaFromPayload(payload) {
   const parsed = payload && typeof payload === "object" && !Array.isArray(payload) ? payload : {};
   const source = parsed.criteria && typeof parsed.criteria === "object" && !Array.isArray(parsed.criteria) ? parsed.criteria : {};
@@ -113,8 +142,38 @@ export async function saveAssignedEvaluation(pool, user, procedureId, { criteria
     if (normalized.issues.length) throw new DraftError("invalid_evaluation", 400, normalized.issues);
     if (typeof concept !== "string" || concept.length > 5000) throw new DraftError("invalid_evaluation", 400);
     const previousCriteria = criteriaFromPayload(existing.criteria_payload);
+    const iteration = Number(existing.criteria_payload?.iteration || 1);
     for (const [id, record] of Object.entries(normalized.criteria)) {
-      record.response = previousCriteria[id]?.response || "";
+      const previous = previousCriteria[id] || {};
+      record.response = previous.response || "";
+      record.trace = findingTrace(previous);
+      const hasPreviousRequest = record.trace.some(entry => entry.action === "Ajuste solicitado");
+      const adjustmentRequested = record.result === "No cumple" && (
+        previous.result !== "No cumple" ||
+        previous.observation !== record.observation ||
+        previous.adjustment !== record.adjustment ||
+        !hasPreviousRequest
+      );
+      if (adjustmentRequested) {
+        record.response = "";
+        record.findingStatus = "Pendiente";
+        appendFindingTrace(record, "Ajuste solicitado", user, iteration, {
+          observation: record.observation,
+          adjustment: record.adjustment
+        });
+      } else if (previous.result === "No cumple" && record.result !== "No cumple") {
+        record.findingStatus = "Cerrado";
+        appendFindingTrace(record, "Hallazgo cerrado", user, iteration, {
+          result: record.result,
+          findingStatus: record.findingStatus
+        });
+      } else if (previous.result === "No cumple" && previous.response &&
+        previous.findingStatus !== record.findingStatus) {
+        appendFindingTrace(record, "Verificación del ajuste", user, iteration, {
+          result: record.result,
+          findingStatus: record.findingStatus
+        });
+      }
     }
     const metrics = evaluationMetrics(normalized.criteria, procedure.version);
     const previousPayload = existing.criteria_payload && typeof existing.criteria_payload === "object" ? existing.criteria_payload : {};
@@ -170,11 +229,26 @@ export async function saveAuthorEvaluationResponses(pool, user, procedureId, res
     const evaluation = result.rows[0];
     if (!evaluation || evaluation.status !== PROCEDURE_STATUS.RETURNED) throw new DraftError("draft_locked", 403);
     const criteria = criteriaFromPayload(evaluation.criteria_payload);
+    const iteration = Number(evaluation.criteria_payload?.iteration || 1);
     const allowedIds = new Set(Object.keys(criteria));
     if (Object.keys(responses).some(id => !allowedIds.has(id))) throw new DraftError("invalid_evaluation_response", 400);
     for (const [id, response] of Object.entries(responses)) {
       if (typeof response !== "string" || response.length > 5000) throw new DraftError("invalid_evaluation_response", 400);
-      if (criteria[id].result === "No cumple") criteria[id].response = response.trim();
+      if (criteria[id].result === "No cumple") {
+        const normalizedResponse = response.trim();
+        if (normalizedResponse !== String(criteria[id].response || "")) {
+          criteria[id].response = normalizedResponse;
+          if (normalizedResponse) {
+            criteria[id].findingStatus = "Respondido";
+            appendFindingTrace(criteria[id], "Respuesta del Elaborador", user, iteration, {
+              response: normalizedResponse
+            });
+          } else {
+            criteria[id].findingStatus = "Pendiente";
+            appendFindingTrace(criteria[id], "Respuesta retirada", user, iteration);
+          }
+        }
+      }
     }
     const criteriaPayload = { ...evaluation.criteria_payload, criteria };
     await client.query(

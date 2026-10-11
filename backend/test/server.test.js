@@ -145,6 +145,12 @@ test("private consoles serve only their own assets with a restrictive policy", a
     assert.match(draftScript, /\/api\/procedures\/\$\{encodeURIComponent\(currentDraft\.id\)\}\/submit/);
     assert.match(draftScript, /\/api\/evaluator\/inbox/);
     assert.match(draftScript, /function evaluationGroupState\(group\)/);
+    assert.match(draftScript, /function createFindingTrace\(record\)/);
+    assert.match(draftScript, /Trazabilidad del hallazgo/);
+    assert.match(draftScript, /function reloadCurrentDraft\(\)/);
+    assert.match(draftScript, /window\.addEventListener\("beforeunload"/);
+    assert.match(draftScript, /Tus cambios siguen en pantalla/);
+    assert.match(draftHtml, /id="reloadDraftButton"/);
     for (const state of ["Pendiente", "En proceso", "Completa"]) {
       assert.ok(draftScript.includes(`label: "${state}"`));
     }

@@ -41,6 +41,9 @@ export function reviewFlow(activities) {
     const count = activities.filter(item => item.tipo === type).length;
     if (count !== 1) issues.push({ index: null, message: `Debe haber exactamente un elemento ${type}.` });
   }
+  if (!activities.some(item => item.tipo === "Actividad")) {
+    issues.push({ index: null, message: "El flujograma debe incluir al menos una actividad." });
+  }
 
   for (const [index, item] of activities.entries()) {
     const routes = item.tipo === "Decisión"
