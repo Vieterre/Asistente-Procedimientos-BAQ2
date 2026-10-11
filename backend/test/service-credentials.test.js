@@ -19,8 +19,8 @@ test("service credentials supply the database password and MFA key", async () =>
   const secret = generateTotpSecret();
   let pool;
   try {
-    writeFileSync(join(directory, "pg_password"), pgPassword);
-    writeFileSync(join(directory, "mfa_key"), mfaKey);
+    writeFileSync(join(directory, "pg_password"), `${pgPassword}\n`);
+    writeFileSync(join(directory, "mfa_key"), `${mfaKey}\r\n`);
     process.env.CREDENTIALS_DIRECTORY = directory;
     delete process.env.PGPASSWORD;
     delete process.env.MFA_ENCRYPTION_KEY;
