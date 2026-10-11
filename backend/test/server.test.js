@@ -147,6 +147,7 @@ test("private consoles serve only their own assets with a restrictive policy", a
     assert.match(draftScript, /function evaluationGroupState\(group\)/);
     assert.match(draftScript, /function createFindingTrace\(record\)/);
     assert.match(draftScript, /Trazabilidad del hallazgo/);
+    assert.match(draftScript, /Reenvío a evaluación/);
     assert.match(draftScript, /function reloadCurrentDraft\(\)/);
     assert.match(draftScript, /window\.addEventListener\("beforeunload"/);
     assert.match(draftScript, /Tus cambios siguen en pantalla/);

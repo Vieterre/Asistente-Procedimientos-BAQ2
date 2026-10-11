@@ -25,6 +25,23 @@ function procedureCode(processCode, consecutive) {
   return `${processCode}-P-${String(Number(value)).padStart(3, "0")}`;
 }
 
+function traceActor(user) {
+  return String(user.displayName || user.username || user.id || "Elaborador").trim();
+}
+
+function recordResubmissionTrace(record, user, iteration) {
+  if (record?.result !== "No cumple" || !record.response) return;
+  const trace = Array.isArray(record.trace) ? structuredClone(record.trace).slice(-39) : [];
+  trace.push({
+    action: "Reenvío a evaluación",
+    at: new Date().toISOString(),
+    actor: traceActor(user),
+    role: user.role,
+    iteration
+  });
+  record.trace = trace;
+}
+
 function submissionIssues(name, payload, code) {
   const fields = payload.fields && typeof payload.fields === "object" && !Array.isArray(payload.fields) ? payload.fields : {};
   const issues = [];
@@ -318,12 +335,16 @@ export async function submitOwnDraft(pool, user, id, { evaluatorId, revision }) 
         throw new DraftError("correction_responses_required", 400, missingResponses);
       }
       const copiedCriteria = structuredClone(criteria);
+      const nextIteration = Number(stored?.iteration || 1) + 1;
       for (const record of Object.values(copiedCriteria)) {
-        if (record?.result === "No cumple" && record.response) record.findingStatus = "Respondido";
+        if (record?.result === "No cumple" && record.response) {
+          record.findingStatus = "Respondido";
+          recordResubmissionTrace(record, user, nextIteration);
+        }
       }
       nextEvaluationPayload = {
         ...nextEvaluationPayload,
-        iteration: Number(stored?.iteration || 1) + 1,
+        iteration: nextIteration,
         previousEvaluationId: previous.rows[0].id,
         criteria: copiedCriteria
       };

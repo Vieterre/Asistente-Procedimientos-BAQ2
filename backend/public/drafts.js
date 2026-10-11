@@ -1860,6 +1860,7 @@ function findingTraceEntries(record) {
 function findingTraceDetail(entry) {
   if (entry.action === "Ajuste solicitado") return entry.adjustment ? `Ajuste requerido: ${entry.adjustment}` : "Ajuste requerido registrado.";
   if (entry.action === "Respuesta del Elaborador") return entry.response ? `Respuesta: ${entry.response}` : "Respuesta registrada.";
+  if (entry.action === "Reenvío a evaluación") return "El procedimiento fue reenviado para verificar este ajuste.";
   if (entry.action === "Respuesta retirada") return "La respuesta se retiró y el hallazgo volvió a estar pendiente.";
   if (entry.action === "Hallazgo cerrado") return `Resultado: ${entry.result || "Cumple"} · Estado: ${entry.findingStatus || "Cerrado"}`;
   return `Resultado: ${entry.result || "Sin cambio"} · Estado: ${entry.findingStatus || "En verificación"}`;

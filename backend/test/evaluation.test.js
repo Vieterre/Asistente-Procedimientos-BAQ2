@@ -315,10 +315,14 @@ test("complete review cycle preserves responses and reaches a favorable concept 
   assert.equal(pool.evaluations[1].criteria_payload.iteration, 2);
   assert.equal(pool.evaluations[1].criteria_payload.criteria.act1.response, "Se reordenaron las actividades.");
   assert.equal(pool.evaluations[1].criteria_payload.criteria.act1.findingStatus, "Respondido");
+  assert.deepEqual(pool.evaluations[1].criteria_payload.criteria.act1.trace.map(entry => entry.action), [
+    "Ajuste solicitado", "Respuesta del Elaborador", "Reenvío a evaluación"
+  ]);
+  assert.equal(pool.evaluations[1].criteria_payload.criteria.act1.trace.at(-1).iteration, 2);
 
   await startAssignedEvaluation(pool, evaluator, procedureId);
   await saveAssignedEvaluation(pool, evaluator, procedureId, { criteria: criteriaWith(), concept: "Cumple los criterios metodológicos." });
-  assert.deepEqual(pool.evaluations[1].criteria_payload.criteria.act1.trace.map(entry => entry.action), ["Ajuste solicitado", "Respuesta del Elaborador", "Hallazgo cerrado"]);
+  assert.deepEqual(pool.evaluations[1].criteria_payload.criteria.act1.trace.map(entry => entry.action), ["Ajuste solicitado", "Respuesta del Elaborador", "Reenvío a evaluación", "Hallazgo cerrado"]);
   const decision = await decideAssignedEvaluation(pool, evaluator, procedureId, { decision: "favorable" });
   assert.equal(decision.status, PROCEDURE_STATUS.FAVORABLE);
   assert.equal(pool.procedure.status, PROCEDURE_STATUS.FAVORABLE);
