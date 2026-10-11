@@ -2518,7 +2518,7 @@ function renderFlow(){
     const lineGap=16,startText=y+visualH/2-(label.length-1)*lineGap/2+5;
     label.forEach((ln,j)=>parts.push(`<text x="${p.cx}" y="${startText+j*lineGap}" text-anchor="middle" fill="${a.tipo==="Conector"?"#3F6178":"#004488"}" font-size="${a.tipo==="Conector"?18:12.5}" font-weight="${["Actividad","Decisión"].includes(a.tipo)?400:(j===0?700:500)}">${esc(ln)}</text>`));
     if(a.tipo==="Actividad")parts.push(`<circle cx="${p.cx-p.w/2+12}" cy="${y+10}" r="13" fill="#004488" stroke="#fff" stroke-width="2"/><text x="${p.cx-p.w/2+12}" y="${y+14}" text-anchor="middle" fill="#fff" font-size="10" font-weight="700">${displayedActivityNumber(a)}</text>`);
-    parts.push(`<text x="${p.cx}" y="${y+visualH+16}" text-anchor="middle" fill="#777777" font-size="9" font-weight="700" letter-spacing=".7">${esc(String(a.tipo||"").toUpperCase())}</text>`);
+    if(a.tipo!=="Actividad")parts.push(`<text x="${p.cx}" y="${y+visualH+16}" text-anchor="middle" fill="#777777" font-size="9" font-weight="700" letter-spacing=".7">${esc(String(a.tipo||"").toUpperCase())}</text>`);
 
     if(a.tieneControl){
       parts.push(`<rect x="${p.cx+p.w/2-78}" y="${y+8}" width="68" height="18" rx="4" fill="#14755F"/><text x="${p.cx+p.w/2-44}" y="${y+21}" text-anchor="middle" fill="#fff" font-size="9" font-weight="700">CONTROL</text>`);
