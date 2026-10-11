@@ -39,7 +39,7 @@ const completeDraftPayload = {
     { uid: "end", tipo: "Fin", descripcion: "Solicitud revisada" }
   ],
   annexes: [], changes: [{ version: "1.0", fecha: "2026-10-10", razon: "Creación inicial" }],
-  settings: { annexesNotApplicable: true }
+  settings: { annexesNotApplicable: true, normativityConfirmedMissingTypes: ["Externa"] }
 };
 
 function evaluationPool() {

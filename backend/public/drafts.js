@@ -8,7 +8,7 @@ const ids = [
   "evaluationWorkspace", "evaluationProgress", "evaluationScore", "evaluationLevel", "evaluationVariableResults", "evaluationCriteriaGroups", "evaluationConcept", "evaluationMessage", "saveEvaluationButton", "returnEvaluationButton", "unfavorableEvaluationButton", "favorableEvaluationButton",
   "returnedEvaluation", "returnedEvaluationSummary", "returnedEvaluationConcept", "returnedFindings", "saveEvaluationResponses", "returnedEvaluationMessage",
   "draftName", "draftNameStatus", "processCode", "draftConsecutive", "draftCode", "draftCodeStatus", "draftObjective", "draftScope", "draftDefinitions", "draftDefinitionsStatus", "draftConditions", "saveDraftButton", "reloadDraftButton", "editorMessage",
-  "newDraftButton", "addNormButton", "normsList", "emptyNorms", "addBoundaryButton", "addActivityButton", "addDecisionButton", "addConnectorButton", "activitiesList", "emptyActivities", "reviewFlowButton", "flowReviewResult", "refreshDraftsButton", "draftCount", "listMessage", "emptyDrafts",
+  "procedureProgress", "newDraftButton", "addNormButton", "normsList", "emptyNorms", "normReview", "addBoundaryButton", "addActivityButton", "addDecisionButton", "addConnectorButton", "activitiesList", "emptyActivities", "reviewFlowButton", "flowReviewResult", "refreshDraftsButton", "draftCount", "listMessage", "emptyDrafts",
   "draftList", "flowSection", "flowSummary", "showFlowEvidence", "refreshFlowButton", "flowCanvas", "flowSvg",
   "zoomOutButton", "zoomInButton", "fitFlowButton", "resetFlowZoomButton", "flowZoomValue",
   "documentsSection", "annexApplicability", "addAnnexButton", "annexNotApplicableMessage", "emptyAnnexes", "annexesList",
@@ -77,6 +77,8 @@ const collapsedActivityUids = new Set();
 let annexRows = [];
 let changeRows = [];
 let annexesNotApplicable = false;
+let normativityConfirmedMissingTypes = [];
+let lastFlowReviewPassed = false;
 let processNames = new Map();
 const processGroupDefinitions = [
   { label: "MACROPROCESOS – PROCESOS MISIONALES · DESARROLLO ECONÓMICO", codes: ["PD", "GT"] },
@@ -367,6 +369,98 @@ function syncDefinitionsAlphabeticalSuggestion() {
   return suggestedTerms;
 }
 
+function definitionsAreComplete(value) {
+  const entries = String(value || "").split(/\r?\n/).map(line => line.trim()).filter(Boolean);
+  return entries.length > 0 && entries.every(line => {
+    const separator = line.indexOf(":");
+    return separator > 0 && Boolean(line.slice(separator + 1).trim());
+  }) && !alphabeticalDefinitionSuggestion(value);
+}
+
+const normTypes = ["Interna", "Externa"];
+
+function normRowIsComplete(norm) {
+  return Boolean(norm) && normTypes.includes(norm.tipo) && normFields.every(([key]) => activityTextIsFilled(norm[key]));
+}
+
+function normTypeLabel(types) {
+  return types.map(type => `norma ${type.toLocaleLowerCase("es-CO")}`).join(" y ");
+}
+
+function normativityState() {
+  const incomplete = normRows.some(norm => !normRowIsComplete(norm));
+  const registeredTypes = new Set(normRows.filter(normRowIsComplete).map(norm => norm.tipo));
+  const missingTypes = normTypes.filter(type => !registeredTypes.has(type));
+  const confirmations = new Set(normativityConfirmedMissingTypes.filter(type => normTypes.includes(type)));
+  const pendingConfirmation = missingTypes.filter(type => !confirmations.has(type));
+  return { incomplete, missingTypes, pendingConfirmation, complete: !incomplete && pendingConfirmation.length === 0 };
+}
+
+function renderNormativityReview() {
+  const state = normativityState();
+  ui.normReview.replaceChildren();
+  ui.normReview.hidden = false;
+  if (state.incomplete) {
+    ui.normReview.className = "norm-review norm-review-warning";
+    ui.normReview.textContent = "Completa o elimina las normas incompletas antes de validar la normatividad.";
+    return;
+  }
+  if (!state.missingTypes.length) {
+    ui.normReview.className = "norm-review norm-review-success";
+    ui.normReview.textContent = "Normatividad validada: hay registros internos y externos completos.";
+    return;
+  }
+  if (!state.pendingConfirmation.length) {
+    ui.normReview.className = "norm-review norm-review-success";
+    ui.normReview.textContent = `Normatividad validada: se confirmó la ausencia de ${normTypeLabel(state.missingTypes)} aplicable.`;
+    return;
+  }
+  ui.normReview.className = "norm-review norm-review-warning";
+  const text = document.createElement("p");
+  text.textContent = `No se identifica ${normTypeLabel(state.missingTypes)}. Revisa la fuente normativa antes de validar esta sección.`;
+  const confirm = document.createElement("button");
+  confirm.type = "button";
+  confirm.className = "secondary-button";
+  confirm.textContent = "Confirmar revisión de normatividad";
+  confirm.addEventListener("click", () => {
+    const categories = normTypeLabel(state.missingTypes);
+    if (!window.confirm(`No se registra ${categories}. Confirma que revisaste la normatividad y que no existen registros internos o externos pendientes para este procedimiento.`)) return;
+    normativityConfirmedMissingTypes = [...state.missingTypes];
+    renderNormativityReview();
+    markDirty();
+  });
+  ui.normReview.append(text, confirm);
+}
+
+function documentSectionIsComplete() {
+  const annexesComplete = annexesNotApplicable || (annexRows.length > 0 && annexRows.every(annex =>
+    annex && ["documento", "tipo", "codigo", "observacion"].every(key => activityTextIsFilled(annex[key]))));
+  const changesComplete = changeRows.length > 0 && changeRows.every(change =>
+    change && ["version", "fecha", "razon"].every(key => activityTextIsFilled(change[key])));
+  const roles = [ui.draftPreparedBy.value, ui.draftReviewedBy.value, ui.draftApprovedBy.value]
+    .map(value => String(value || "").trim().toLocaleLowerCase("es-CO"));
+  return annexesComplete && changesComplete && roles.every(Boolean) && new Set(roles).size === roles.length;
+}
+
+function refreshProcedureProgress() {
+  if (!ui.procedureProgress) return;
+  const state = {
+    identification: procedureNameIssues(ui.draftName.value).length === 0 && Boolean(procedureCode(ui.processCode.value, ui.draftConsecutive.value)),
+    context: [ui.draftObjective.value, ui.draftScope.value, ui.draftConditions.value].every(activityTextIsFilled) && definitionsAreComplete(ui.draftDefinitions.value),
+    norms: normativityState().complete,
+    activities: activityRows.some(activity => activity?.tipo === "Actividad") && activityRows.every(activityRowIsComplete),
+    flow: lastFlowReviewPassed,
+    documents: documentSectionIsComplete()
+  };
+  for (const [section, complete] of Object.entries(state)) {
+    const check = ui.procedureProgress.querySelector(`[data-progress-state="${section}"]`);
+    if (!check) continue;
+    check.classList.toggle("is-complete", complete);
+    check.setAttribute("aria-label", complete ? "Cumple las reglas" : "Pendiente de reglas");
+    check.title = complete ? "Cumple las reglas" : "Pendiente de reglas";
+  }
+}
+
 function syncProcedureCode() {
   const code = procedureCode(ui.processCode.value, ui.draftConsecutive.value);
   ui.draftCode.value = code;
@@ -384,9 +478,11 @@ function displayActivityNumber(activity, index) {
 function markDirty() {
   dirty = true;
   flowReviewVersion += 1;
+  lastFlowReviewPassed = false;
   setMessage(ui.editorMessage, "");
   ui.flowReviewResult.replaceChildren();
   ui.flowReviewResult.hidden = true;
+  refreshProcedureProgress();
 }
 
 function showFlowReview(issues, completenessIssues = []) {
@@ -394,6 +490,7 @@ function showFlowReview(issues, completenessIssues = []) {
   result.replaceChildren();
   const errors = issues.filter(issue => issue.severity !== "warning");
   const warnings = issues.filter(issue => issue.severity === "warning");
+  lastFlowReviewPassed = errors.length === 0 && completenessIssues.length === 0;
   const summary = document.createElement("p");
   summary.className = errors.length || completenessIssues.length ? "flow-review-summary flow-review-errors" : warnings.length ? "flow-review-summary flow-review-warnings" : "flow-review-summary flow-review-ok";
   const blockingSummary = [
@@ -442,6 +539,7 @@ function showFlowReview(issues, completenessIssues = []) {
     result.append(list);
   }
   result.hidden = false;
+  refreshProcedureProgress();
 }
 
 function focusFlowItem(index) {
@@ -536,6 +634,7 @@ function renderNorms() {
     return row;
   }));
   installMethodHelps(ui.normsList);
+  renderNormativityReview();
 }
 
 function todayLocal() {
@@ -1481,6 +1580,7 @@ async function openInstitutionalReport(id) {
 
 function clearSession() {
   flowReviewVersion += 1;
+  lastFlowReviewPassed = false;
   clearInterval(notificationTimer);
   notificationTimer = null;
   csrfToken = "";
@@ -1495,6 +1595,7 @@ function clearSession() {
   ui.evaluationWorkspace.hidden = true;
   ui.returnedEvaluation.hidden = true;
   normRows = [];
+  normativityConfirmedMissingTypes = [];
   renderNorms();
   collapsedActivityUids.clear();
   activityRows = [];
@@ -1713,6 +1814,7 @@ function evaluationGroupState(group) {
 function localEvaluationMetrics() {
   if (!evaluationRubric || !currentEvaluation) return null;
   let answered = 0;
+  let completed = 0;
   let failures = 0;
   let criticalFailures = 0;
   let openFindings = 0;
@@ -1724,9 +1826,11 @@ function localEvaluationMetrics() {
     for (const criterion of group.criteria) {
       const record = currentEvaluation.criteria[criterion.id] || {};
       const notApplicable = record.result === "No aplica" && criterion.newProcedureNotApplicable && /^0*1(?:\.0+)*$/.test(String(currentDraft?.version || "1.0"));
+      const criterionComplete = evaluationCriterionComplete(criterion);
       if (record.result) { answered += 1; groupAnswered += 1; }
+      if (criterionComplete) completed += 1;
       if (!notApplicable) applicable += 1;
-      if (record.result === "Cumple") passed += 1;
+      if (criterionComplete && record.result === "Cumple") passed += 1;
       if (record.result === "No cumple") {
         failures += 1;
         if (criterion.critical) criticalFailures += 1;
@@ -1739,15 +1843,15 @@ function localEvaluationMetrics() {
       score: Math.round(score * 10) / 10, state: evaluationGroupState(group) };
   });
   const score = Math.round(weighted * 10) / 10;
-  const complete = answered === evaluationCriteriaList().length;
-  return { answered, total: evaluationCriteriaList().length, failures, criticalFailures, openFindings, score,
+  const complete = completed === evaluationCriteriaList().length;
+  return { answered, completed, total: evaluationCriteriaList().length, failures, criticalFailures, openFindings, score,
     level: !complete ? "Pendiente" : score <= 39 ? "Bajo" : score < 90 ? "Medio" : "Alto", groups };
 }
 
 function refreshEvaluationSummary() {
   const metrics = localEvaluationMetrics();
   if (!metrics) return;
-  ui.evaluationProgress.textContent = `${metrics.answered} de ${metrics.total} criterios evaluados · ${metrics.failures} incumplidos · ${metrics.criticalFailures} críticos`;
+  ui.evaluationProgress.textContent = `${metrics.completed} de ${metrics.total} criterios validados · ${metrics.failures} incumplidos · ${metrics.criticalFailures} críticos`;
   ui.evaluationScore.textContent = `${metrics.score.toFixed(1)}%`;
   ui.evaluationLevel.textContent = metrics.level;
   ui.evaluationVariableResults.replaceChildren(...metrics.groups.map(group => {
@@ -1761,11 +1865,11 @@ function refreshEvaluationSummary() {
     state.textContent = group.state.label;
     const result = document.createElement("span");
     result.className = "evaluation-variable-score";
-    result.textContent = `${group.answered}/${group.total} · ${group.score.toFixed(1)}% · peso ${group.weight}%`;
+    result.textContent = `${group.state.completed}/${group.total} · ${group.score.toFixed(1)}% · peso ${group.weight}%`;
     const toggle = document.createElement("span");
     toggle.className = "evaluation-variable-toggle";
     toggle.setAttribute("aria-hidden", "true");
-    toggle.textContent = "+";
+    toggle.textContent = group.state.className === "group-complete" ? "✓" : "+";
     item.append(name, toggle, state, result);
     item.addEventListener("click", () => {
       const details = [...ui.evaluationCriteriaGroups.children].find(element => element.dataset.groupId === group.id);
@@ -1781,7 +1885,7 @@ function refreshEvaluationSummary() {
     if (!details) return;
     details.className = `evaluation-group ${group.state.className}`;
     details.querySelector(".evaluation-group-status").textContent = group.state.label;
-    details.querySelector(".evaluation-group-score").textContent = `${group.answered}/${group.total} · ${group.score.toFixed(1)}%`;
+    details.querySelector(".evaluation-group-score").textContent = `${group.state.completed}/${group.total} · ${group.score.toFixed(1)}%`;
     details.querySelector(".evaluation-group-progress-fill").style.width = `${Math.round(group.state.completed / group.total * 100)}%`;
   });
 }
@@ -2104,10 +2208,14 @@ async function reloadCurrentDraft() {
 
 function populateDraft(procedure) {
   flowReviewVersion += 1;
+  lastFlowReviewPassed = false;
   currentDraft = procedure;
   returnedEvaluation = procedure.evaluation || null;
   returnedResponsesDirty = false;
   currentPayload = procedure.payload && typeof procedure.payload === "object" && !Array.isArray(procedure.payload) ? procedure.payload : {};
+  normativityConfirmedMissingTypes = Array.isArray(currentPayload.settings?.normativityConfirmedMissingTypes)
+    ? currentPayload.settings.normativityConfirmedMissingTypes.filter(type => normTypes.includes(type))
+    : [];
   normRows = Array.isArray(currentPayload.norms) ? currentPayload.norms.map(norm => norm && typeof norm === "object" && !Array.isArray(norm) ? { ...norm } : {}) : [];
   renderNorms();
   collapsedActivityUids.clear();
@@ -2147,6 +2255,7 @@ function populateDraft(procedure) {
   ui.flowReviewResult.replaceChildren();
   renderReturnedEvaluation();
   applyDraftEditability();
+  refreshProcedureProgress();
 }
 
 function applyDraftEditability() {
@@ -2188,12 +2297,14 @@ async function openAssignedProcedure(id) {
 function newDraft() {
   if (dirty && !window.confirm("Hay cambios sin guardar. ¿Descartarlos?")) return;
   flowReviewVersion += 1;
+  lastFlowReviewPassed = false;
   currentDraft = null;
   returnedEvaluation = null;
   returnedResponsesDirty = false;
   ui.returnedEvaluation.hidden = true;
   currentPayload = { fields: {}, norms: [], activities: [], annexes: [], changes: [], settings: {} };
   normRows = [];
+  normativityConfirmedMissingTypes = [];
   renderNorms();
   collapsedActivityUids.clear();
   activityRows = [boundaryRecord("Inicio"), boundaryRecord("Fin")];
@@ -2224,6 +2335,7 @@ function newDraft() {
   syncProcedureNameValidity();
   syncDefinitionsAlphabeticalSuggestion();
   applyDraftEditability();
+  refreshProcedureProgress();
   ui.draftName.focus();
 }
 
@@ -2262,8 +2374,14 @@ window.addEventListener("beforeunload", event => {
   event.preventDefault();
   event.returnValue = "";
 });
-ui.processCode.addEventListener("change", syncProcedureCode);
-ui.draftConsecutive.addEventListener("input", syncProcedureCode);
+ui.processCode.addEventListener("change", () => {
+  syncProcedureCode();
+  refreshProcedureProgress();
+});
+ui.draftConsecutive.addEventListener("input", () => {
+  syncProcedureCode();
+  refreshProcedureProgress();
+});
 for (const inputId of ["draftPreparedBy", "draftReviewedBy", "draftApprovedBy"]) {
   ui[inputId].addEventListener("change", showRoleSeparation);
 }
@@ -2301,6 +2419,12 @@ ui.addNormButton.addEventListener("click", () => {
   renderNorms();
   markDirty();
   ui.normsList.lastElementChild?.querySelector("input")?.focus();
+});
+ui.procedureProgress.addEventListener("click", event => {
+  const button = event.target.closest("button[data-progress-target]");
+  const target = button?.dataset.progressTarget;
+  if (!target) return;
+  document.getElementById(target)?.scrollIntoView({ behavior: "smooth", block: "start" });
 });
 function addFlowItem(record) {
   const endIndex = activityRows.findIndex(activity => activity.tipo === "Fin");
@@ -2368,7 +2492,11 @@ ui.draftForm.addEventListener("submit", async event => {
     activities: activityRows.map(activity => ({ ...activity })),
     annexes: annexRows.map(annex => ({ ...annex })),
     changes: changeRows.map(change => ({ ...change })),
-    settings: { ...(currentPayload.settings && typeof currentPayload.settings === "object" && !Array.isArray(currentPayload.settings) ? currentPayload.settings : {}), annexesNotApplicable }
+    settings: {
+      ...(currentPayload.settings && typeof currentPayload.settings === "object" && !Array.isArray(currentPayload.settings) ? currentPayload.settings : {}),
+      annexesNotApplicable,
+      normativityConfirmedMissingTypes: [...normativityConfirmedMissingTypes]
+    }
   };
   const body = { name, processCode: ui.processCode.value, consecutive: ui.draftConsecutive.value, payload };
 
@@ -2383,12 +2511,16 @@ ui.draftForm.addEventListener("submit", async event => {
 
     currentDraft = result.procedure;
     currentPayload = result.procedure.payload;
+    normativityConfirmedMissingTypes = Array.isArray(currentPayload.settings?.normativityConfirmedMissingTypes)
+      ? currentPayload.settings.normativityConfirmedMissingTypes.filter(type => normTypes.includes(type))
+      : [];
     normRows = Array.isArray(currentPayload.norms) ? currentPayload.norms.map(norm => ({ ...norm })) : [];
     activityRows = Array.isArray(currentPayload.activities) ? currentPayload.activities.map(activity => ({ ...activity })) : [];
     renderFlow();
     annexRows = Array.isArray(currentPayload.annexes) ? currentPayload.annexes.map(annex => ({ ...annex })) : [];
     changeRows = Array.isArray(currentPayload.changes) ? currentPayload.changes.map(change => ({ ...change })) : [];
     annexesNotApplicable = currentPayload.settings?.annexesNotApplicable === true;
+    renderNormativityReview();
     renderAnnexes();
     renderChanges();
     ui.processCode.value = currentDraft.processCode;
@@ -2402,6 +2534,7 @@ ui.draftForm.addEventListener("submit", async event => {
     ui.reloadDraftButton.hidden = true;
     dirty = false;
     applyDraftEditability();
+    refreshProcedureProgress();
     setMessage(ui.editorMessage, "Borrador guardado.", true);
     setMessage(ui.documentsMessage, "Borrador guardado.", true);
     await loadDrafts();
@@ -2458,6 +2591,11 @@ ui.submitReviewButton.addEventListener("click", async () => {
   if (!currentDraft) return;
   if (dirty) {
     setMessage(ui.editorMessage, "Guarda los cambios antes de enviar el procedimiento.");
+    return;
+  }
+  if (!normativityState().complete) {
+    setMessage(ui.editorMessage, "Completa las normas registradas o confirma la revisión de las categorías interna y externa antes de enviar.");
+    ui.normReview.scrollIntoView({ behavior: "smooth", block: "nearest" });
     return;
   }
   setMessage(ui.submitReviewMessage, "");

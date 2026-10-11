@@ -15,6 +15,7 @@ export class DraftError extends Error {
 }
 
 const PROCEDURE_CODE_PATTERN = /^[A-Z]{2,3}-P-\d{3}$/;
+const NORM_TYPES = ["Interna", "Externa"];
 const GENERIC_PROCEDURE_VERBS = new Set(["gestionar", "administrar", "realizar"]);
 const PROCEDURE_TYPE_WORDS = new Set(["procedimiento", "proceso", "tramite", "instructivo", "formato"]);
 const GENERIC_PROCEDURE_OBJECTS = new Set(["informe", "informes", "contrato", "contratos", "solicitud", "solicitudes", "documento", "documentos", "registro", "registros"]);
@@ -80,26 +81,53 @@ function recordResubmissionTrace(record, user, iteration) {
   record.trace = trace;
 }
 
+function definitionIssues(value) {
+  const entries = String(value || "").split(/\r?\n/).map(line => line.trim()).filter(Boolean);
+  if (!entries.length) return [];
+  const parsed = entries.map(line => {
+    const separator = line.indexOf(":");
+    return separator > 0 && line.slice(separator + 1).trim() ? { term: line.slice(0, separator).trim(), line } : null;
+  });
+  if (parsed.some(entry => !entry)) return ["Registra cada definición con el término, dos puntos y su definición."];
+  const collator = new Intl.Collator("es-CO", { sensitivity: "base" });
+  const ordered = [...parsed].sort((left, right) => collator.compare(left.term, right.term));
+  if (!parsed.every((entry, index) => entry.line === ordered[index].line)) {
+    return ["Ordena las definiciones alfabéticamente antes de enviar."];
+  }
+  return [];
+}
+
 function submissionIssues(name, payload, code) {
   const fields = payload.fields && typeof payload.fields === "object" && !Array.isArray(payload.fields) ? payload.fields : {};
   const issues = [];
   for (const [key, label] of [["objetivo", "Objetivo"], ["alcance", "Alcance"], ["definiciones", "Definiciones"], ["condiciones", "Condiciones generales"]]) {
     if (typeof fields[key] !== "string" || !fields[key].trim()) issues.push(`Completa ${label.toLocaleLowerCase("es-CO")}.`);
   }
+  issues.push(...definitionIssues(fields.definiciones));
   const norms = Array.isArray(payload.norms) ? payload.norms : [];
-  if (!norms.length) issues.push("Registra al menos una norma aplicable.");
+  const registeredNormTypes = new Set();
   norms.forEach((norm, index) => {
-    if (!norm || ["tipo", "norma", "anio", "descripcion", "articulo", "entidad"].some(key => typeof norm[key] !== "string" || !norm[key].trim())) {
+    if (!norm || !NORM_TYPES.includes(norm.tipo) || ["norma", "anio", "descripcion", "articulo", "entidad"].some(key => typeof norm[key] !== "string" || !norm[key].trim())) {
       issues.push(`Completa todos los datos de la norma ${index + 1}.`);
+    } else {
+      registeredNormTypes.add(norm.tipo);
     }
   });
+  const settings = payload.settings && typeof payload.settings === "object" && !Array.isArray(payload.settings) ? payload.settings : {};
+  const confirmedMissingNormTypes = new Set(Array.isArray(settings.normativityConfirmedMissingTypes)
+    ? settings.normativityConfirmedMissingTypes.filter(type => NORM_TYPES.includes(type))
+    : []);
+  const pendingNormConfirmations = NORM_TYPES.filter(type => !registeredNormTypes.has(type) && !confirmedMissingNormTypes.has(type));
+  if (pendingNormConfirmations.length) {
+    issues.push(`Confirma la revisión de ${pendingNormConfirmations.map(type => `la normatividad ${type.toLocaleLowerCase("es-CO")}`).join(" y ")} antes de enviar.`);
+  }
   const activities = Array.isArray(payload.activities) ? payload.activities : [];
   const flowIssues = reviewFlow(activities).filter(issue => issue.severity !== "warning");
   const completeness = reviewFlowCompleteness(activities);
   if (flowIssues.length) issues.push("Corrige las observaciones del flujo antes de enviar.");
   if (completeness.length) issues.push("Completa los datos obligatorios de las actividades y decisiones.");
   if (!activities.length) issues.push("Registra las actividades del procedimiento.");
-  const annexesNotApplicable = payload.settings?.annexesNotApplicable === true;
+  const annexesNotApplicable = settings.annexesNotApplicable === true;
   const annexes = Array.isArray(payload.annexes) ? payload.annexes : [];
   if (!annexesNotApplicable && !annexes.length) issues.push("Registra al menos un documento anexo o confirma No aplica.");
   annexes.forEach((annex, index) => {

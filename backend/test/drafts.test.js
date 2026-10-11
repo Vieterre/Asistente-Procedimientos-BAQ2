@@ -195,7 +195,7 @@ const completePayload = {
     { uid: "end", tipo: "Fin", descripcion: "Solicitud revisada" }
   ],
   annexes: [], changes: [{ version: "1.0", fecha: "2026-10-03", razon: "Creación inicial" }],
-  settings: { annexesNotApplicable: true }
+  settings: { annexesNotApplicable: true, normativityConfirmedMissingTypes: ["Externa"] }
 };
 
 test("author creates an audited draft for an active process", async () => {
@@ -406,6 +406,34 @@ test("submission requires a generated procedure code", async () => {
   await assert.rejects(submitOwnDraft(pool, author, draftId, { evaluatorId: evaluator.id, revision: 4 }), error => {
     assert.equal(error.code, "submission_incomplete");
     assert.ok(error.details.includes("Genera el código del procedimiento antes de enviarlo."));
+    return true;
+  });
+});
+
+test("submission requires confirmation for every absent norm category", async () => {
+  const procedure = {
+    ...row,
+    code: "PD-P-001",
+    process_code: "PD",
+    revision: 4,
+    current_payload: {
+      ...completePayload,
+      settings: { annexesNotApplicable: true, normativityConfirmedMissingTypes: [] }
+    },
+    created_by_user_id: author.id
+  };
+  const pool = { connect: async () => ({
+    async query(sql) {
+      if (["BEGIN", "COMMIT", "ROLLBACK"].includes(sql)) return { rows: [] };
+      if (sql.startsWith("SELECT p.id")) return { rows: [procedure] };
+      if (sql.startsWith("SELECT 1 FROM app_users")) return { rows: [{ "?column?": 1 }] };
+      throw new Error(`Unexpected SQL: ${sql}`);
+    },
+    release() {}
+  }) };
+  await assert.rejects(submitOwnDraft(pool, author, draftId, { evaluatorId: evaluator.id, revision: 4 }), error => {
+    assert.equal(error.code, "submission_incomplete");
+    assert.ok(error.details.includes("Confirma la revisión de la normatividad externa antes de enviar."));
     return true;
   });
 });

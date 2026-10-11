@@ -163,12 +163,17 @@ test("editor validates names and suggests alphabetical definitions without overw
   for (const id of ["draftNameStatus", "draftDefinitionsStatus"]) {
     assert.match(html, new RegExp(`id="${id}"`));
   }
+  assert.match(html, /class="name-guide"/);
+  assert.match(html, /Cómo formular correctamente el nombre/);
+  assert.match(html, /Estructura recomendada/);
+  assert.match(html, /Supervisar la ejecución de los contratos de prestación de servicios/);
   assert.match(script, /function procedureNameIssues\(value\)/);
   assert.match(script, /function alphabeticalDefinitionSuggestion\(value\)/);
   assert.match(script, /Sugerencia: ordene las definiciones alfabéticamente así/);
   assert.match(script, /ui\.draftDefinitions\.addEventListener\("input", \(\) => syncDefinitionsAlphabeticalSuggestion\(\)\)/);
   assert.match(css, /\.field-hint\.is-invalid/);
   assert.match(css, /\.field-hint\.is-warning/);
+  assert.match(css, /\.name-guide\[open\] summary::before/);
 
   const nameSource = script.match(/const genericProcedureVerbs[\s\S]*?(?=\nfunction syncProcedureNameValidity\()/)?.[0];
   assert.ok(nameSource, "name validation helper should be present");
@@ -181,6 +186,25 @@ test("editor validates names and suggests alphabetical definitions without overw
   const suggest = runInNewContext(`${definitionSource}\nalphabeticalDefinitionSuggestion`);
   assert.deepEqual(Array.from(suggest("Zonal: criterio territorial\nAlcance: límite del procedimiento")), ["Alcance", "Zonal"]);
   assert.equal(suggest("Alcance: límite del procedimiento\nZonal: criterio territorial"), null);
+});
+
+test("section checks require methodological rules and evaluator progress counts valid criteria", async () => {
+  const [html, script, css] = await Promise.all([
+    readFile(join(root, "backend/public/drafts.html"), "utf8"),
+    readFile(join(root, "backend/public/drafts.js"), "utf8"),
+    readFile(join(root, "backend/public/drafts.css"), "utf8")
+  ]);
+  assert.match(html, /id="procedureProgress"/);
+  assert.match(html, /id="normReview"/);
+  assert.match(html, /data-progress-state="norms"/);
+  assert.match(script, /function definitionsAreComplete\(value\)/);
+  assert.match(script, /function normativityState\(\)/);
+  assert.match(script, /normativityConfirmedMissingTypes/);
+  assert.match(script, /lastFlowReviewPassed/);
+  assert.match(script, /metrics\.completed} de \$\{metrics\.total\} criterios validados/);
+  assert.match(script, /group\.state\.className === "group-complete" \? "✓" : "\+"/);
+  assert.match(css, /\.procedure-progress-check\.is-complete/);
+  assert.match(css, /\.norm-review-warning/);
 });
 
 test("preview separates every general condition into an individual report item", async () => {
