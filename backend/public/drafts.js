@@ -2729,7 +2729,7 @@ function showPreview({ branding = "standard" } = {}) {
     approvals);
   content.replaceChildren(report);
   ui.previewTitle.textContent = institutional ? "Reporte institucional" : "Reporte del procedimiento";
-  ui.printPreviewButton.textContent = institutional ? "Generar PDF institucional" : "Generar reporte PDF";
+  ui.printPreviewButton.textContent = institutional ? "Imprimir o guardar PDF institucional" : "Imprimir o guardar como PDF";
   const state = !currentDraft ? "Vista de un borrador no guardado." : dirty ? "Vista con cambios sin guardar." : `Borrador guardado · revisión ${currentDraft.revision}.`;
   ui.previewState.textContent = institutional ? `Reporte institucional autorizado. ${state}` : state;
   ui.previewDialog.showModal();

@@ -169,6 +169,9 @@ test("reports keep institutional branding exclusive and standard reports unbrand
   assert.match(script, /\/api\/admin\/institutional-reports/);
   assert.match(script, /\/api\/reports\/procedures\/\$\{encodeURIComponent\(id\)\}/);
   assert.match(css, /\.preview-document-header\.standard\{/);
+  assert.match(html, />Imprimir o guardar como PDF</);
+  assert.match(script, /"Imprimir o guardar como PDF"/);
+  assert.match(script, /"Imprimir o guardar PDF institucional"/);
 });
 
 test("preview report preserves the original nine-section order", async () => {
@@ -207,10 +210,10 @@ test("print reports preserve table headers, prevent row splits, and fit the flow
   assert.match(css, /\.preview-report-table\[data-variant="activities"\] th:first-child/);
   assert.match(css, /\.preview-report-table\[data-variant="activities"\] th:nth-child\(2\)/);
   assert.match(css, /\.preview-toolbar,\.preview-state\{display:none!important\}/);
-  assert.match(css, /\.preview-report-table thead\{display:table-header-group\}/);
   assert.match(css, /\.preview-report-table tr\{break-inside:avoid-page;page-break-inside:avoid\}/);
   assert.match(css, /\.preview-report-flow\{break-before:page;page-break-before:always\}/);
-  assert.match(css, /\.preview-diagram svg\{display:block;width:100%!important;max-width:100%!important;height:auto!important;max-height:165mm/);
+  assert.match(css, /\.preview-report-table thead\{display:table-header-group;break-inside:avoid-page;page-break-inside:avoid\}/);
+  assert.match(css, /\.preview-diagram svg\{display:block;width:auto!important;max-width:100%!important;height:auto!important;max-height:165mm/);
   assert.match(script, /function printableReportTitle\(\)/);
   assert.match(script, /document\.title = printableReportTitle\(\)/);
   assert.match(script, /window\.addEventListener\("afterprint", restoreTitle, \{ once: true \}\)/);
