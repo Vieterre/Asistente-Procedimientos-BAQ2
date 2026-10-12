@@ -265,7 +265,13 @@ function syncApprovalOther(select, selectedOther) {
 function showRoleSeparation() {
   const roles = [ui.draftPreparedBy, ui.draftReviewedBy, ui.draftApprovedBy].map(approvalRoleValue).map(value => value.toLocaleLowerCase("es-CO")).filter(Boolean);
   const repeated = roles.length > new Set(roles).size;
-  setMessage(ui.roleSeparationMessage, repeated ? "Elaboró, Revisó y Aprobó deben corresponder a cargos distintos." : "");
+  const messages = [];
+  if (repeated) messages.push("Elaboró, Revisó y Aprobó deben corresponder a cargos distintos.");
+  if (approvalRoleValue(ui.draftApprovedBy) && !activityTextIsFilled(ui.draftApprovedName.value)) {
+    messages.push("Debe establecer el nombre del directivo responsable de la aprobación.");
+  }
+  setMessage(ui.roleSeparationMessage, messages.join(" "));
+  ui.roleSeparationMessage.classList.toggle("is-warning", messages.length > 0);
 }
 
 function populateApprovalRoleSelect(select, selected = "", allowedLevels = null, allowOther = false) {
@@ -2525,6 +2531,10 @@ for (const inputId of ["draftPreparedOther", "draftReviewedOther"]) {
     refreshProcedureProgress();
   });
 }
+ui.draftApprovedName.addEventListener("input", () => {
+  showRoleSeparation();
+  refreshProcedureProgress();
+});
 ui.annexApplicability.addEventListener("change", () => {
   if (ui.annexApplicability.value === "no_aplica") {
     if (!window.confirm("Confirma que este procedimiento no contiene anexos? Los anexos registrados se eliminarán de esta sección.")) {
