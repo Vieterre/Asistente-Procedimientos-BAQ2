@@ -86,6 +86,7 @@ test("private consoles serve only their own assets with a restrictive policy", a
       assert.match(response.headers.get("content-type"), new RegExp(type));
       assert.equal(response.headers.get("cache-control"), "no-store");
       assert.match(response.headers.get("content-security-policy"), /default-src 'none'/);
+      assert.match(response.headers.get("content-security-policy"), /img-src 'self'/);
       assert.ok((await response.text()).length > 100);
     }
     const accountsHtml = await (await fetch(base + "/accounts")).text();

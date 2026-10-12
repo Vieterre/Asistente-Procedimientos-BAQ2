@@ -559,7 +559,7 @@ export function createAppServer({ poolFactory = createPool, secureCookies, trust
         res.writeHead(200, securityHeaders({
           "Content-Type": contentType,
           "Cache-Control": "no-store",
-          "Content-Security-Policy": "default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; form-action 'self'; base-uri 'none'; frame-ancestors 'none'"
+          "Content-Security-Policy": "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src 'self'; form-action 'self'; base-uri 'none'; frame-ancestors 'none'"
         }));
         res.end(body);
         return;
