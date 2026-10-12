@@ -138,7 +138,27 @@ test("decision nodes keep the complete question inside an expanded diamond", asy
   assert.ok(layout.lines.length > 2);
   assert.ok(layout.halfHeight > 44);
   assert.doesNotMatch(layout.lines.join(" "), /…/);
-  assert.match(script, /const itemHeights = activityRows\.map\(item => Math\.max\(rowHeight, flowNodeHalfHeight\(item\) \* 2 \+ 44\)\)/);
+  assert.match(script, /const itemHeights = activityRows\.map\(item => \{/);
+  assert.match(script, /showEvidence && evidence \? 102 : 44/);
+});
+
+test("activity and control nodes keep the complete label inside expanded rectangles", async () => {
+  const script = await readFile(join(root, "backend/public/drafts.js"), "utf8");
+  const helpers = script.match(/function flowLines\([\s\S]*?(?=\nfunction renderFlow\(\))/)?.[0];
+  assert.ok(helpers, "flow text helpers should be present");
+  const layoutFor = runInNewContext(`${helpers}\nrectangularNodeLayout`);
+  for (const item of [
+    { tipo: "Actividad", actividad: "Notificar al ciudadano de no procedencia del trámite" },
+    { tipo: "Actividad", actividad: "Verificar los requisitos habilitantes del trámite", tieneControl: true }
+  ]) {
+    const layout = layoutFor(item);
+    assert.equal(layout.lines.join(" "), item.actividad);
+    assert.ok(layout.lines.length >= 2);
+    if (item.tieneControl) assert.ok(layout.halfHeight > 42, "the control label reserves vertical space");
+    assert.ok(layout.halfHeight > 42);
+    assert.doesNotMatch(layout.lines.join(" "), /…/);
+  }
+  assert.match(script, /const nodeBottom = flowNodeHalfHeight\(item\)/);
 });
 
 test("reference-aligned editor keeps generated codes, confirmation prompts, helps, and boundary numbering", async () => {

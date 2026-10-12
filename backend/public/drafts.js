@@ -1299,12 +1299,23 @@ function decisionLayout(item) {
   };
 }
 
+function rectangularNodeLayout(item) {
+  const lines = flowLines(String(item?.actividad || item?.tipo || "Sin nombre"), 24, Infinity);
+  const hasControl = item?.tieneControl === true;
+  return {
+    lines,
+    halfWidth: 102,
+    halfHeight: Math.max(42, lines.length * 8.5 + 20 + (hasControl ? 14 : 0)),
+    textOffset: hasControl ? -7 : 0
+  };
+}
+
 function flowNodeHalfHeight(item) {
-  return item?.tipo === "Decisión" ? decisionLayout(item).halfHeight : item?.tipo === "Conector" ? 27 : 42;
+  return item?.tipo === "Decisión" ? decisionLayout(item).halfHeight : item?.tipo === "Conector" ? 27 : rectangularNodeLayout(item).halfHeight;
 }
 
 function flowNodeHalfWidth(item) {
-  return item?.tipo === "Decisión" ? decisionLayout(item).halfWidth : item?.tipo === "Conector" ? 28 : 102;
+  return item?.tipo === "Decisión" ? decisionLayout(item).halfWidth : item?.tipo === "Conector" ? 28 : rectangularNodeLayout(item).halfWidth;
 }
 
 function renderFlow() {
@@ -1323,7 +1334,10 @@ function renderFlow() {
   const laneWidth = showEvidence ? 360 : 260;
   const rowHeight = showEvidence ? 168 : 132;
   const width = Math.max(760, roles.length * laneWidth + 160);
-  const itemHeights = activityRows.map(item => Math.max(rowHeight, flowNodeHalfHeight(item) * 2 + 44));
+  const itemHeights = activityRows.map(item => {
+    const evidence = String(item.evidencia || item.controlEvidencia || "").trim();
+    return Math.max(rowHeight, flowNodeHalfHeight(item) * 2 + (showEvidence && evidence ? 102 : 44));
+  });
   const height = 118 + itemHeights.reduce((total, itemHeight) => total + itemHeight, 0) + 32;
   flowIntrinsicWidth = width;
   flowIntrinsicHeight = height;
@@ -1395,29 +1409,31 @@ function renderFlow() {
     const { x, y } = position;
     const group = svgNode("g");
     group.append(svgNode("title", {}, `${item.tipo}: ${item.actividad || item.descripcion || "Sin nombre"}${item.responsable ? ` · ${item.responsable}` : ""}`));
-    const layout = item.tipo === "Decisión" ? decisionLayout(item) : null;
-    if (layout) group.append(svgNode("polygon", { points: `${x},${y - layout.halfHeight} ${x + layout.halfWidth},${y} ${x},${y + layout.halfHeight} ${x - layout.halfWidth},${y}`, class: "flow-node decision" }));
+    const layout = item.tipo === "Decisión" ? decisionLayout(item) : item.tipo === "Conector" ? null : rectangularNodeLayout(item);
+    if (item.tipo === "Decisión") group.append(svgNode("polygon", { points: `${x},${y - layout.halfHeight} ${x + layout.halfWidth},${y} ${x},${y + layout.halfHeight} ${x - layout.halfWidth},${y}`, class: "flow-node decision" }));
     else if (item.tipo === "Conector") group.append(svgNode("circle", { cx: x, cy: y, r: 27, class: "flow-node connector" }));
-    else group.append(svgNode("rect", { x: x - 102, y: y - 42, width: 204, height: 84, rx: ["Inicio", "Fin"].includes(item.tipo) ? 28 : 5, class: `flow-node${["Inicio", "Fin"].includes(item.tipo) ? " boundary" : ""}${item.tieneControl ? " control" : ""}` }));
+    else group.append(svgNode("rect", { x: x - layout.halfWidth, y: y - layout.halfHeight, width: layout.halfWidth * 2, height: layout.halfHeight * 2, rx: ["Inicio", "Fin"].includes(item.tipo) ? 28 : 5, class: `flow-node${["Inicio", "Fin"].includes(item.tipo) ? " boundary" : ""}${item.tieneControl ? " control" : ""}` }));
     const textValue = item.tipo === "Conector" ? String(item.connectorId || "?") : item.tipo === "Decisión" ? String(item.descripcion || item.actividad || "Decisión") : String(item.actividad || item.tipo);
     const lines = layout ? layout.lines : flowLines(textValue, 24);
-    lines.forEach((line, lineIndex) => group.append(svgNode("text", { x, y: y + (lineIndex - (lines.length - 1) / 2) * 17 + 5, class: "flow-text", "text-anchor": "middle" }, line)));
+    const textOffset = layout?.textOffset || 0;
+    lines.forEach((line, lineIndex) => group.append(svgNode("text", { x, y: y + textOffset + (lineIndex - (lines.length - 1) / 2) * 17 + 5, class: "flow-text", "text-anchor": "middle" }, line)));
     const activityNumber = displayActivityNumber(item, index);
     if (activityNumber) {
       group.append(svgNode("circle", { cx: x - 90, cy: y - 30, r: 13, class: "flow-activity-number" }));
       group.append(svgNode("text", { x: x - 90, y: y - 26, class: "flow-activity-number-text", "text-anchor": "middle" }, activityNumber));
     }
-    if (item.tieneControl) group.append(svgNode("text", { x, y: y + 32, class: "flow-note", "text-anchor": "middle" }, "CONTROL"));
+    if (item.tieneControl) group.append(svgNode("text", { x, y: y + flowNodeHalfHeight(item) - 11, class: "flow-note", "text-anchor": "middle" }, "CONTROL"));
     svg.append(group);
     const evidence = String(item.evidencia || item.controlEvidencia || "").trim();
     if (showEvidence && evidence && !["Inicio", "Conector", "Fin"].includes(item.tipo)) {
       const record = svgNode("g");
       record.append(svgNode("title", {}, `Registro / evidencia: ${evidence}`));
-      record.append(svgNode("line", { x1: x + 65, y1: y + 43, x2: x + 65, y2: y + 57, class: "flow-record-link" }));
-      record.append(svgNode("path", { d: `M ${x + 30} ${y + 57} h 130 v 54 q -16 -7 -32 0 q -16 7 -32 0 q -16 -7 -33 0 q -16 7 -33 0 z`, class: "flow-record" }));
-      record.append(svgNode("text", { x: x + 95, y: y + 73, class: "flow-record-caption", "text-anchor": "middle" }, "REGISTRO / EVIDENCIA"));
+      const nodeBottom = flowNodeHalfHeight(item);
+      record.append(svgNode("line", { x1: x + 65, y1: y + nodeBottom + 1, x2: x + 65, y2: y + nodeBottom + 15, class: "flow-record-link" }));
+      record.append(svgNode("path", { d: `M ${x + 30} ${y + nodeBottom + 15} h 130 v 54 q -16 -7 -32 0 q -16 7 -32 0 q -16 -7 -33 0 q -16 7 -33 0 z`, class: "flow-record" }));
+      record.append(svgNode("text", { x: x + 95, y: y + nodeBottom + 31, class: "flow-record-caption", "text-anchor": "middle" }, "REGISTRO / EVIDENCIA"));
       const lines = flowLines(evidence, 20);
-      lines.forEach((line, lineIndex) => record.append(svgNode("text", { x: x + 95, y: y + 88 + lineIndex * 11, class: "flow-record-text", "text-anchor": "middle" }, line)));
+      lines.forEach((line, lineIndex) => record.append(svgNode("text", { x: x + 95, y: y + nodeBottom + 46 + lineIndex * 11, class: "flow-record-text", "text-anchor": "middle" }, line)));
       svg.append(record);
     }
   }
