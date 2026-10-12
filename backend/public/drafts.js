@@ -3223,11 +3223,14 @@ function showPreview({ branding = "standard" } = {}) {
   if (!institutional) header.classList.add("standard");
   const agency = document.createElement("div");
   agency.className = "preview-agency-mark";
-  agency.textContent = "AP";
+  const agencyLogo = document.createElement("img");
+  agencyLogo.src = "/institutional-logo.png";
+  agencyLogo.alt = "Alcaldía de Barranquilla";
+  agency.append(agencyLogo);
   const title = document.createElement("div");
   title.className = "preview-document-title";
   const titleLabel = document.createElement("strong");
-  titleLabel.textContent = "PROCEDIMIENTO";
+  titleLabel.textContent = institutional ? "PROCEDIMIENTO INSTITUCIONAL" : "PROCEDIMIENTO";
   const name = document.createElement("h2");
   name.textContent = ui.draftName.value.trim() || "Nombre del procedimiento";
   const processLabel = document.createElement("span");
@@ -3235,7 +3238,10 @@ function showPreview({ branding = "standard" } = {}) {
   title.append(titleLabel, name, processLabel);
   const meta = document.createElement("div");
   meta.className = "preview-document-meta";
-  for (const [label, value] of [["Código", ui.draftCode.value || "Pendiente"], ["Versión", changeRows.at(-1)?.version || "1.0"], ["Estado", currentDraft?.status || "Borrador"]]) {
+  const reportCode = currentDraft?.code || ui.draftCode.value || "Sin código asignado";
+  const reportVersion = currentDraft?.version || changeRows.at(-1)?.version || "1.0";
+  const reportStatus = statusLabel(currentDraft?.status || "borrador");
+  for (const [label, value] of [["Código", reportCode], ["Versión", reportVersion], ["Estado", reportStatus]]) {
     const cell = document.createElement("div");
     const strong = document.createElement("strong");
     strong.textContent = label;
