@@ -240,7 +240,11 @@ function setupMethodTooltip() {
 }
 
 function approvalOtherInput(select) {
-  return ui[`${select.id}Other`];
+  const otherInputIds = {
+    draftPreparedBy: "draftPreparedOther",
+    draftReviewedBy: "draftReviewedOther"
+  };
+  return ui[otherInputIds[select?.id]];
 }
 
 function approvalRoleValue(select) {

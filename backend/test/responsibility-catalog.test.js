@@ -37,6 +37,9 @@ test("activity, decision, and control responsibility groups match the original c
   assert.match(draftsScript, /value && !responsibilityRoleNames\.has\(value\)/);
   assert.match(draftsScript, /inputId === "draftPreparedBy" \|\| inputId === "draftReviewedBy"\) populateApprovalRoleSelect\(ui\[inputId\], value, null, true\)/);
   assert.match(draftsScript, /if \(allowOther\) options\.push\(new Option\("Otro — ¿Cuál\?", "__otro__"\)\)/);
+  assert.match(draftsScript, /draftPreparedBy: "draftPreparedOther"/);
+  assert.match(draftsScript, /draftReviewedBy: "draftReviewedOther"/);
+  assert.match(draftsScript, /return ui\[otherInputIds\[select\?\.id\]\];/);
   assert.match(draftsScript, /inputId === "draftApprovedBy"\) populateApprovalRoleSelect\(ui\[inputId\], value, \["Directivo"\]\)/);
   assert.match(draftsScript, /Valor guardado anteriormente/);
   for (const id of ["draftPreparedBy", "draftReviewedBy", "draftApprovedBy"]) {
