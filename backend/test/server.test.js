@@ -79,7 +79,6 @@ test("private consoles serve only their own assets with a restrictive policy", a
       ["/drafts", "text/html"],
       ["/drafts.css", "text/css"],
       ["/drafts.js", "text/javascript"],
-      ["/evaluation-report.css", "text/css"]
     ]) {
       const response = await fetch(base + path);
       assert.equal(response.status, 200);

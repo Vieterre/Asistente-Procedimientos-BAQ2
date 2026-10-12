@@ -3010,7 +3010,7 @@ function exportEvaluationReport() {
     setMessage(ui.evaluationMessage, "El navegador bloqueó la ventana de exportación. Permite las ventanas emergentes e inténtalo de nuevo.");
     return;
   }
-  const stylesheetUrl = new URL("/evaluation-report.css", window.location.origin).href;
+  const stylesheetUrl = new URL("/drafts.css", window.location.origin).href;
   popup.document.open();
   popup.document.write(`<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Informe de evaluación</title><link rel="stylesheet" href="${stylesheetUrl}"></head><body></body></html>`);
   popup.document.close();
