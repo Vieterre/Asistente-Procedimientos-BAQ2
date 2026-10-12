@@ -318,7 +318,13 @@ test("print reports preserve table headers, prevent row splits, and fit the flow
   assert.match(css, /\.preview-diagram svg\{display:block;width:auto!important;max-width:100%!important;height:auto!important;max-height:165mm/);
   assert.match(script, /function printableReportTitle\(\)/);
   assert.match(script, /document\.title = printableReportTitle\(\)/);
+  assert.match(script, /const printRoot = document\.createElement\("div"\)/);
+  assert.match(script, /printRoot\.append\(report\.cloneNode\(true\)\)/);
+  assert.match(script, /document\.documentElement\.classList\.add\("printing-report"\)/);
+  assert.match(script, /document\.documentElement\.classList\.remove\("printing-report"\)/);
   assert.match(script, /ui\.previewDialog\.scrollTop = 0;/);
   assert.ok(script.includes("await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));"));
   assert.match(script, /window\.addEventListener\("afterprint", restoreTitle, \{ once: true \}\)/);
+  assert.match(css, /html\.printing-report body>:not\(\.print-report-root\)\{display:none!important\}/);
+  assert.match(css, /html\.printing-report body>\.print-report-root\{display:block!important;position:static!important;width:auto!important/);
 });

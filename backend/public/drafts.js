@@ -2995,15 +2995,27 @@ function printableReportTitle() {
 }
 
 async function printPreviewReport() {
+  const report = ui.previewContent.querySelector(".preview-report");
+  if (!report) return;
   const previousTitle = document.title;
   let restoreTimer;
+  const printRoot = document.createElement("div");
+  printRoot.className = "print-report-root";
+  printRoot.append(report.cloneNode(true));
+  const cleanup = () => {
+    document.documentElement.classList.remove("printing-report");
+    printRoot.remove();
+  };
   const restoreTitle = () => {
     document.title = previousTitle;
     if (restoreTimer) window.clearTimeout(restoreTimer);
+    cleanup();
   };
   document.title = printableReportTitle();
   window.addEventListener("afterprint", restoreTitle, { once: true });
   restoreTimer = window.setTimeout(restoreTitle, 60_000);
+  document.body.append(printRoot);
+  document.documentElement.classList.add("printing-report");
   ui.previewDialog.scrollTop = 0;
   ui.previewContent.scrollTop = 0;
   window.scrollTo(0, 0);
