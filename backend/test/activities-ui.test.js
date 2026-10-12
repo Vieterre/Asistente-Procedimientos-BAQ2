@@ -249,7 +249,8 @@ test("preview and printed reports preserve readable paragraphs and stable table 
   assert.match(css, /\.preview-report-table td\{text-align:justify/);
   assert.match(css, /\.preview-report\{min-width:0;max-width:100%;font-size:12px/);
   assert.match(css, /\.preview-condition-list\{box-sizing:border-box[^}]*list-style-type:lower-alpha/);
-  assert.match(css, /@media print\{\.preview-report\{font-size:9pt\}\.preview-report-table,.preview-report-table\[data-columns="6"\],.preview-report-table\[data-columns="8"\]\{font-size:9pt\}\}/);
+  assert.match(css, /\.preview-report :is\(\.preview-text-block,\.preview-paragraph,\.preview-condition-list,\.preview-condition-list li,\.preview-report-table,\.preview-report-table th,\.preview-report-table td\)\{font-family:var\(--report-content-font\);font-size:var\(--report-content-size\);line-height:1\.55\}/);
+  assert.match(css, /@media print\{\.preview-report\{--report-content-size:9pt\}/);
   assert.match(css, /@media print\{\.preview-content\{overflow:visible\}/);
 });
 
