@@ -5,7 +5,7 @@ const ids = [
   "institutionalReportsButton", "institutionalReportsSection", "institutionalReportsCount", "institutionalReportsMessage", "emptyInstitutionalReports", "institutionalReportsList", "backFromInstitutionalReports", "refreshInstitutionalReports",
   "passwordRequired", "draftWorkspace", "draftForm", "editorTitle", "editorStatus", "submitReviewButton", "submitReviewDialog", "submitReviewForm", "reviewEvaluatorSelect", "submitReviewMessage", "cancelSubmitReview", "confirmSubmitReview",
   "evaluatorInbox", "evaluatorDraftCount", "evaluatorInboxMessage", "emptyEvaluatorInbox", "evaluatorDraftList", "refreshEvaluatorInbox", "evaluatorDetail", "evaluatorDetailTitle", "evaluatorDetailStatus", "backToEvaluatorInbox", "startEvaluationButton",
-  "evaluationWorkspace", "evaluationProgress", "evaluationScore", "evaluationLevel", "evaluationVariableResults", "evaluationCriteriaGroups", "evaluationAutoConcept", "evaluationConcept", "evaluationMessage", "saveEvaluationButton", "returnEvaluationButton", "favorableEvaluationButton",
+  "evaluationWorkspace", "evaluationProgress", "evaluationScore", "evaluationLevel", "evaluationVariableResults", "evaluationCriteriaGroups", "evaluationAutoConcept", "evaluationConcept", "evaluationMessage", "exportEvaluationReportButton", "saveEvaluationButton", "returnEvaluationButton", "favorableEvaluationButton",
   "returnedEvaluation", "returnedEvaluationSummary", "returnedEvaluationConcept", "returnedFindings", "saveEvaluationResponses", "returnedEvaluationMessage",
   "draftName", "draftNameStatus", "processCode", "draftConsecutive", "draftCode", "draftCodeStatus", "draftObjective", "draftScope", "draftDefinitions", "draftDefinitionsStatus", "draftConditions", "saveDraftButton", "reloadDraftButton", "editorMessage",
   "procedureProgress", "newDraftButton", "addNormButton", "normsList", "emptyNorms", "normReview", "addBoundaryButton", "addActivityButton", "addDecisionButton", "addConnectorButton", "activitiesList", "emptyActivities", "reviewFlowButton", "flowReviewResult", "refreshDraftsButton", "draftCount", "listMessage", "emptyDrafts",
@@ -2174,6 +2174,7 @@ function renderEvaluationWorkspace() {
   }));
   ui.evaluationConcept.value = currentEvaluation.conceptComplement || "";
   ui.evaluationConcept.disabled = !editable;
+  ui.exportEvaluationReportButton.hidden = currentUserRole !== "evaluador";
   for (const button of [ui.saveEvaluationButton, ui.returnEvaluationButton, ui.favorableEvaluationButton]) button.hidden = !editable;
   setMessage(ui.evaluationMessage, "");
   refreshEvaluationSummary();
@@ -2920,6 +2921,106 @@ async function submitEvaluationDecision(decision) {
 
 ui.returnEvaluationButton.addEventListener("click", () => submitEvaluationDecision("devolver"));
 ui.favorableEvaluationButton.addEventListener("click", () => submitEvaluationDecision("favorable"));
+
+function evaluationReportConcept(metrics) {
+  const automatic = automaticEvaluationConcept(metrics);
+  const complement = String(ui.evaluationConcept.value || currentEvaluation?.conceptComplement || "").trim();
+  if (automatic && complement) return `${automatic}\n\nComplemento del evaluador:\n${complement}`;
+  if (automatic) return automatic;
+  if (complement) return complement;
+  return "La evaluación está en curso. Aún no hay un concepto técnico definitivo.";
+}
+
+function evaluationReportCell(value) {
+  const cell = document.createElement("td");
+  cell.textContent = String(value || "Sin información registrada.");
+  return cell;
+}
+
+function buildEvaluationReport() {
+  const metrics = localEvaluationMetrics();
+  if (!metrics || !currentDraft || !evaluationRubric) return null;
+  const report = document.createElement("article");
+  report.className = "evaluation-pdf-report";
+  const title = document.createElement("h1");
+  title.textContent = "INFORME DE EVALUACIÓN DE ADECUACIÓN";
+  const process = ui.processCode.selectedOptions[0]?.textContent || processNames.get(currentDraft.processCode) || currentDraft.processCode || "Proceso pendiente";
+  const meta = document.createElement("dl");
+  meta.className = "evaluation-pdf-meta";
+  const metadata = [
+    ["Procedimiento", currentDraft.name || "Sin nombre"],
+    ["Código y versión", `${currentDraft.code || "Código pendiente"} · versión ${currentDraft.version || "1.0"}`],
+    ["Proceso", process],
+    ["Evaluador", ui.sessionIdentity.textContent || "Sin identificar"],
+    ["Estado", statusLabel(currentDraft.status)],
+    ["Resultado", `${metrics.score.toFixed(1)}% · ${metrics.level} · ${metrics.completed}/${metrics.total} criterios validados`],
+    ["Generado", new Date().toLocaleString("es-CO")]
+  ];
+  for (const [label, value] of metadata) {
+    const term = document.createElement("dt");
+    term.textContent = label;
+    const definition = document.createElement("dd");
+    definition.textContent = value;
+    meta.append(term, definition);
+  }
+  const conceptTitle = document.createElement("h2");
+  conceptTitle.textContent = "Concepto técnico";
+  const concept = document.createElement("p");
+  concept.className = "evaluation-pdf-concept";
+  concept.textContent = evaluationReportConcept(metrics);
+  const criteriaTitle = document.createElement("h2");
+  criteriaTitle.textContent = "Detalle de criterios";
+  const table = document.createElement("table");
+  const headers = ["N.º", "Variable", "Criterio", "Resultado", "Observación", "Ajuste requerido", "Respuesta y ubicación", "Estado"];
+  const head = document.createElement("thead");
+  const headRow = document.createElement("tr");
+  headers.forEach(header => {
+    const cell = document.createElement("th");
+    cell.scope = "col";
+    cell.textContent = header;
+    headRow.append(cell);
+  });
+  head.append(headRow);
+  const body = document.createElement("tbody");
+  let number = 0;
+  for (const group of evaluationRubric.groups) {
+    for (const criterion of group.criteria) {
+      number += 1;
+      const record = currentEvaluation.criteria[criterion.id] || {};
+      const response = [
+        record.response && `Acción: ${record.response}`,
+        record.adjustmentLocation && `Ubicación: ${record.adjustmentLocation}`
+      ].filter(Boolean).join("\n");
+      const row = document.createElement("tr");
+      [number, group.name, criterion.question, record.result || "Pendiente", record.observation, record.adjustment, response, record.findingStatus || "Pendiente"]
+        .forEach(value => row.append(evaluationReportCell(value)));
+      body.append(row);
+    }
+  }
+  table.append(head, body);
+  report.append(title, meta, conceptTitle, concept, criteriaTitle, table);
+  return report;
+}
+
+function exportEvaluationReport() {
+  const report = buildEvaluationReport();
+  if (!report) return;
+  const popup = window.open("", "_blank");
+  if (!popup) {
+    setMessage(ui.evaluationMessage, "El navegador bloqueó la ventana de exportación. Permite las ventanas emergentes e inténtalo de nuevo.");
+    return;
+  }
+  const style = popup.document.createElement("style");
+  style.textContent = `@page{size:A4 landscape;margin:10mm}*{box-sizing:border-box}body{margin:0;font-family:"Estrategia Sans",Aptos,"Segoe UI",Arial,sans-serif;color:#243746;font-size:9pt;line-height:1.4}h1,h2{color:#004488}h1{margin:0 0 14px;text-align:center;font-size:16pt}h2{margin:16px 0 7px;font-size:12pt}.evaluation-pdf-meta{display:grid;grid-template-columns:max-content 1fr;gap:5px 12px;margin:0;padding:10px;border:1px solid #b8c7cc;background:#f7f9fa}.evaluation-pdf-meta dt{font-weight:700;color:#004488}.evaluation-pdf-meta dd{margin:0}.evaluation-pdf-concept{margin:0;padding:10px;border-left:4px solid #1d9a7c;background:#f3faf7;white-space:pre-wrap}table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:7.5pt}th,td{border:1px solid #b8c7cc;padding:5px;vertical-align:top;text-align:left;white-space:pre-wrap;overflow-wrap:anywhere}th{background:#004488;color:#fff;font-weight:700}thead{display:table-header-group}tr,td,th{break-inside:avoid-page;page-break-inside:avoid}`;
+  popup.document.title = `Informe de evaluación - ${currentDraft.code || "procedimiento"}`;
+  popup.document.head.append(style);
+  popup.document.body.append(report);
+  popup.focus();
+  popup.addEventListener("load", () => popup.print(), { once: true });
+  window.setTimeout(() => popup.print(), 150);
+}
+
+ui.exportEvaluationReportButton.addEventListener("click", exportEvaluationReport);
 function reportTable(headers, records, valuesForRecord, { variant = "", columnWidths = [] } = {}) {
   const table = document.createElement("table");
   table.className = "preview-report-table";

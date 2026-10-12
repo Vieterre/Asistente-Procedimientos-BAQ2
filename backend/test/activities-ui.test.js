@@ -345,6 +345,20 @@ test("reports keep institutional branding exclusive and standard reports unbrand
   assert.match(script, /"Imprimir o guardar PDF institucional"/);
 });
 
+test("evaluator can export the evaluation report with its findings and traceability", async () => {
+  const [html, script] = await Promise.all([
+    readFile(join(root, "backend/public/drafts.html"), "utf8"),
+    readFile(join(root, "backend/public/drafts.js"), "utf8")
+  ]);
+  assert.match(html, /id="exportEvaluationReportButton"[^>]*>Exportar informe de evaluación en PDF/);
+  assert.match(script, /function buildEvaluationReport\(\)/);
+  assert.match(script, /"INFORME DE EVALUACIÓN DE ADECUACIÓN"/);
+  assert.match(script, /"Respuesta y ubicación"/);
+  assert.match(script, /currentUserRole !== "evaluador"/);
+  assert.match(script, /ui\.exportEvaluationReportButton\.addEventListener\("click", exportEvaluationReport\)/);
+  assert.match(script, /@page\{size:A4 landscape/);
+});
+
 test("preview report preserves the original nine-section order", async () => {
   const script = await readFile(join(root, "backend/public/drafts.js"), "utf8");
   const sectionMarkers = [
