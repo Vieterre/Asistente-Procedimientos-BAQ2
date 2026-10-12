@@ -1270,7 +1270,7 @@ function fitFlow() {
   ui.flowCanvas.scrollTo({ left: 0, top: 0, behavior: "smooth" });
 }
 
-function flowLines(value, maxLength = 22) {
+function flowLines(value, maxLength = 22, maxLines = 2) {
   const chunks = String(value || "").match(/\S+|\s+/g) || [];
   const lines = [];
   let line = "";
@@ -1285,8 +1285,26 @@ function flowLines(value, maxLength = 22) {
     line = line ? line + " " + chunk : chunk;
   }
   if (line) lines.push(line);
-  if (lines.length > 2) return [lines[0], lines[1].slice(0, maxLength - 1) + "…"];
+  if (Number.isFinite(maxLines) && lines.length > maxLines) return [...lines.slice(0, Math.max(0, maxLines - 1)), lines[maxLines - 1].slice(0, maxLength - 1) + "…"];
   return lines.length ? lines : ["Sin nombre"];
+}
+
+function decisionLayout(item) {
+  const lines = flowLines(String(item?.descripcion || item?.actividad || "Decisión"), 16, Infinity);
+  const longestLine = Math.max(...lines.map(line => line.length), 1);
+  return {
+    lines,
+    halfWidth: Math.max(77, longestLine * 4.5 + 20),
+    halfHeight: Math.max(44, lines.length * 9 + 18)
+  };
+}
+
+function flowNodeHalfHeight(item) {
+  return item?.tipo === "Decisión" ? decisionLayout(item).halfHeight : item?.tipo === "Conector" ? 27 : 42;
+}
+
+function flowNodeHalfWidth(item) {
+  return item?.tipo === "Decisión" ? decisionLayout(item).halfWidth : item?.tipo === "Conector" ? 28 : 102;
 }
 
 function renderFlow() {
@@ -1305,7 +1323,8 @@ function renderFlow() {
   const laneWidth = showEvidence ? 360 : 260;
   const rowHeight = showEvidence ? 168 : 132;
   const width = Math.max(760, roles.length * laneWidth + 160);
-  const height = 150 + activityRows.length * rowHeight;
+  const itemHeights = activityRows.map(item => Math.max(rowHeight, flowNodeHalfHeight(item) * 2 + 44));
+  const height = 118 + itemHeights.reduce((total, itemHeight) => total + itemHeight, 0) + 32;
   flowIntrinsicWidth = width;
   flowIntrinsicHeight = height;
   svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
@@ -1329,13 +1348,16 @@ function renderFlow() {
     svg.append(label);
   }
 
+  let nextY = 118;
   const positions = new Map(activityRows.map((item, index) => {
     const itemRoles = String(item.responsable || "").split(";").map(role => role.trim()).filter(Boolean);
     if (!itemRoles.length) itemRoles.push("Sin responsable");
     const lanes = itemRoles.map(role => roles.indexOf(role)).filter(lane => lane >= 0);
     const center = ["Inicio", "Fin", "Conector"].includes(item.tipo) ? width / 2
       : lanes.length ? 80 + (Math.min(...lanes) + Math.max(...lanes) + 1) * laneWidth / 2 : 80 + laneWidth / 2;
-    return [item.uid, { x: center, y: 118 + index * rowHeight, index, item }];
+    const y = nextY + itemHeights[index] / 2;
+    nextY += itemHeights[index];
+    return [item.uid, { x: center, y, index, item }];
   }));
 
   for (const [index, item] of activityRows.entries()) {
@@ -1352,13 +1374,13 @@ function renderFlow() {
       const side = label === "No" || target.index <= index ? -1 : 1;
       let points;
       if (outer) {
-        const fromX = source.x + side * (item.tipo === "Conector" ? 27 : item.tipo === "Decisión" ? 77 : 102);
-        const toX = target.x + side * (target.item.tipo === "Conector" ? 28 : 104);
+        const fromX = source.x + side * flowNodeHalfWidth(item);
+        const toX = target.x + side * flowNodeHalfWidth(target.item);
         const rail = side < 0 ? 35 : width - 35;
         points = `${fromX},${source.y} ${rail},${source.y} ${rail},${target.y} ${toX},${target.y}`;
       } else {
         const mid = (source.y + target.y) / 2;
-        points = `${source.x},${source.y + 42} ${source.x},${mid} ${target.x},${mid} ${target.x},${target.y - 46}`;
+        points = `${source.x},${source.y + flowNodeHalfHeight(item)} ${source.x},${mid} ${target.x},${mid} ${target.x},${target.y - flowNodeHalfHeight(target.item) - 4}`;
       }
       const edge = svgNode("polyline", { points, class: `flow-edge ${branch}`, "marker-end": `url(#${label === "Sí" ? "flowYes" : label === "No" ? "flowNo" : "flowArrow"})` });
       edge.append(svgNode("title", {}, `${item.actividad || item.tipo} → ${target.item.actividad || target.item.tipo}${label ? ` (${label})` : ""}`));
@@ -1373,11 +1395,12 @@ function renderFlow() {
     const { x, y } = position;
     const group = svgNode("g");
     group.append(svgNode("title", {}, `${item.tipo}: ${item.actividad || item.descripcion || "Sin nombre"}${item.responsable ? ` · ${item.responsable}` : ""}`));
-    if (item.tipo === "Decisión") group.append(svgNode("polygon", { points: `${x},${y - 44} ${x + 77},${y} ${x},${y + 44} ${x - 77},${y}`, class: "flow-node decision" }));
+    const layout = item.tipo === "Decisión" ? decisionLayout(item) : null;
+    if (layout) group.append(svgNode("polygon", { points: `${x},${y - layout.halfHeight} ${x + layout.halfWidth},${y} ${x},${y + layout.halfHeight} ${x - layout.halfWidth},${y}`, class: "flow-node decision" }));
     else if (item.tipo === "Conector") group.append(svgNode("circle", { cx: x, cy: y, r: 27, class: "flow-node connector" }));
     else group.append(svgNode("rect", { x: x - 102, y: y - 42, width: 204, height: 84, rx: ["Inicio", "Fin"].includes(item.tipo) ? 28 : 5, class: `flow-node${["Inicio", "Fin"].includes(item.tipo) ? " boundary" : ""}${item.tieneControl ? " control" : ""}` }));
     const textValue = item.tipo === "Conector" ? String(item.connectorId || "?") : item.tipo === "Decisión" ? String(item.descripcion || item.actividad || "Decisión") : String(item.actividad || item.tipo);
-    const lines = flowLines(textValue, item.tipo === "Decisión" ? 15 : 24);
+    const lines = layout ? layout.lines : flowLines(textValue, 24);
     lines.forEach((line, lineIndex) => group.append(svgNode("text", { x, y: y + (lineIndex - (lines.length - 1) / 2) * 17 + 5, class: "flow-text", "text-anchor": "middle" }, line)));
     const activityNumber = displayActivityNumber(item, index);
     if (activityNumber) {

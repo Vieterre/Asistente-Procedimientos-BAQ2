@@ -127,6 +127,20 @@ test("preview flowchart fits the available width and keeps accessible zoom contr
   assert.match(css, /\.preview-diagram svg\{height:auto\}/);
 });
 
+test("decision nodes keep the complete question inside an expanded diamond", async () => {
+  const script = await readFile(join(root, "backend/public/drafts.js"), "utf8");
+  const helpers = script.match(/function flowLines\([\s\S]*?(?=\nfunction renderFlow\(\))/)?.[0];
+  assert.ok(helpers, "flow text helpers should be present");
+  const layoutFor = runInNewContext(`${helpers}\ndecisionLayout`);
+  const question = "¿Cumple con los requisitos habilitantes mínimos?";
+  const layout = layoutFor({ tipo: "Decisión", descripcion: question });
+  assert.equal(layout.lines.join(" "), question);
+  assert.ok(layout.lines.length > 2);
+  assert.ok(layout.halfHeight > 44);
+  assert.doesNotMatch(layout.lines.join(" "), /…/);
+  assert.match(script, /const itemHeights = activityRows\.map\(item => Math\.max\(rowHeight, flowNodeHalfHeight\(item\) \* 2 \+ 44\)\)/);
+});
+
 test("reference-aligned editor keeps generated codes, confirmation prompts, helps, and boundary numbering", async () => {
   const [html, script, css] = await Promise.all([
     readFile(join(root, "backend/public/drafts.html"), "utf8"),
