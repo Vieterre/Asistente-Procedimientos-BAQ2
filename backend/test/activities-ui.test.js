@@ -23,6 +23,8 @@ test("activity editor has per-item collapse and a color key for flow elements", 
   assert.match(script, /collapse\.setAttribute\("aria-expanded", String\(!isCollapsed\)\)/);
   assert.match(script, /summary\.className = "activity-collapsed-summary"/);
   assert.match(script, /function activityRowIsComplete\(activity\)/);
+  assert.match(script, /function activityNameStartsWithInfinitive\(value\)/);
+  assert.match(script, /Inicie con un verbo en infinitivo, por ejemplo: Recibir y radicar\./);
   assert.match(script, /completion\.textContent = complete \? "Completa" : "Pendiente"/);
   assert.match(script, /activity\.decisionSi !== activity\.decisionNo/);
   for (const requiredControlField of ["controlPeriodicidad", "controlAccion", "controlEjecucion", "controlDesviacion", "controlEvidencia"]) {
@@ -43,6 +45,8 @@ test("collapsed activity status follows the original required-field rules", asyn
 
   const activity = { tipo: "Actividad", actividad: "Revisar", descripcion: "Verificar la solicitud", responsable: "Profesional" };
   assert.equal(isComplete(activity), true);
+  assert.equal(isComplete({ ...activity, actividad: "Recepción y radicación" }), false);
+  assert.equal(isComplete({ ...activity, actividad: "Recibir y radicar" }), true);
   assert.equal(isComplete({ ...activity, responsable: " " }), false);
   assert.equal(isComplete({ ...activity, responsable: "Todos", responsableOtro: true }), false);
   assert.equal(isComplete({ ...activity, responsable: "Coordinador de área", responsableOtro: true }), true);

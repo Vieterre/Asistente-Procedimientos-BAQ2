@@ -945,6 +945,12 @@ function activityTextIsFilled(value) {
   return String(value ?? "").trim().length > 0;
 }
 
+function activityNameStartsWithInfinitive(value) {
+  const firstWord = String(value || "").trim().split(/\s+/)[0] || "";
+  const normalized = firstWord.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("es-CO");
+  return /^[a-z]+(?:ar|er|ir)$/.test(normalized);
+}
+
 function activityResponsibilityIsComplete(activity, key, otherKey) {
   const value = String(activity[key] ?? "").trim();
   if (!value) return false;
@@ -966,7 +972,7 @@ function activityRowIsComplete(activity) {
     activityResponsibilityIsComplete(activity, "controlResponsable", "controlResponsableOtro") &&
     [activity.controlPeriodicidad, activity.controlAccion, activity.controlEjecucion, activity.controlDesviacion, activity.controlEvidencia].every(activityTextIsFilled)
   );
-  return activityTextIsFilled(activity.actividad) && activityTextIsFilled(activity.descripcion) && responsible && controlComplete;
+  return activityTextIsFilled(activity.actividad) && activityNameStartsWithInfinitive(activity.actividad) && activityTextIsFilled(activity.descripcion) && responsible && controlComplete;
 }
 
 function renderActivities() {
@@ -1150,8 +1156,24 @@ function renderActivities() {
       input.maxLength = kind === "textarea" ? 10000 : 500;
       label.htmlFor = input.id;
       label.textContent = labelText;
-      input.addEventListener("input", () => { activity[key] = input.value; markDirty(); });
+      const nameRule = key === "actividad" ? document.createElement("p") : null;
+      const syncNameRule = () => {
+        if (!nameRule) return;
+        const invalid = activityTextIsFilled(input.value) && !activityNameStartsWithInfinitive(input.value);
+        input.setAttribute("aria-invalid", String(invalid));
+        nameRule.textContent = invalid ? "Inicie con un verbo en infinitivo, por ejemplo: Recibir y radicar." : "Use un verbo en infinitivo que exprese la acción.";
+        nameRule.className = "field-hint" + (invalid ? " is-warning" : "");
+      };
+      input.addEventListener("input", () => {
+        activity[key] = input.value;
+        syncNameRule();
+        markDirty();
+      });
       field.append(label, input);
+      if (nameRule) {
+        syncNameRule();
+        field.append(nameRule);
+      }
       grid.append(field);
     }
     row.append(grid);

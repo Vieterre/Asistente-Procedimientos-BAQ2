@@ -168,6 +168,12 @@ test("flow completeness is separate from graph coherence", () => {
   activities[2].responsable = "Profesional";
   activities[3].descripcion = "Plan aprobado";
   assert.deepEqual(reviewFlowCompleteness(activities), []);
+  activities[1].actividad = "Recepción y radicación";
+  assert.deepEqual(reviewFlowCompleteness(activities), [
+    { index: 1, message: "El nombre de la actividad debe iniciar con un verbo en infinitivo, por ejemplo: Recibir y radicar." }
+  ]);
+  activities[1].actividad = "Recibir y radicar";
+  assert.deepEqual(reviewFlowCompleteness(activities), []);
 });
 
 test("flow completeness rejects vague custom responsibilities", () => {

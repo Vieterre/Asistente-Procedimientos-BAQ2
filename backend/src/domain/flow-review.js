@@ -7,6 +7,12 @@ function isCorrectionActivity(item) {
   return /\b(correg|correcc|ajust|modific|complement|subsan)/.test(text);
 }
 
+export function activityNameStartsWithInfinitive(value) {
+  const firstWord = String(value || "").trim().split(/\s+/)[0] || "";
+  const normalized = firstWord.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("es-CO");
+  return /^[a-z]+(?:ar|er|ir)$/.test(normalized);
+}
+
 export function reviewFlow(activities) {
   if (!Array.isArray(activities) || activities.length > 500 || activities.some(item => item === null || typeof item !== "object" || Array.isArray(item))) {
     return [{ index: null, message: "El flujo no tiene un formato válido." }];
@@ -189,6 +195,7 @@ export function reviewFlowCompleteness(activities) {
     }
     if (item.tipo === "Actividad") {
       if (missing(item.actividad)) issues.push({ index, message: "Escribe el nombre de la actividad." });
+      else if (!activityNameStartsWithInfinitive(item.actividad)) issues.push({ index, message: "El nombre de la actividad debe iniciar con un verbo en infinitivo, por ejemplo: Recibir y radicar." });
       if (missing(item.descripcion)) issues.push({ index, message: "Describe la actividad." });
     }
     if (item.tipo === "Decisión" && missing(item.descripcion)) {
