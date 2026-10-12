@@ -252,6 +252,8 @@ test("preview and printed reports preserve readable paragraphs and stable table 
   assert.match(css, /\.preview-report :is\(\.preview-text-block,\.preview-paragraph,\.preview-condition-list,\.preview-condition-list li,\.preview-report-table,\.preview-report-table th,\.preview-report-table td\)\{font-family:var\(--report-content-font\);font-size:var\(--report-content-size\);line-height:1\.55\}/);
   assert.match(css, /@media print\{\.preview-report\{--report-content-size:9pt\}/);
   assert.match(css, /@media print\{\.preview-content\{overflow:visible\}/);
+  assert.match(css, /\.preview-report-table tr,\.preview-report-table th,\.preview-report-table td\{break-inside:avoid-page!important;page-break-inside:avoid!important\}/);
+  assert.match(css, /\.preview-report-table thead\{display:table-header-group!important;break-inside:avoid-page!important;page-break-inside:avoid!important\}/);
 });
 
 test("reports keep institutional branding exclusive and standard reports unbranded", async () => {
