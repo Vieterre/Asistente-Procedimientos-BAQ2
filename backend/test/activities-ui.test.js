@@ -410,9 +410,10 @@ test("print reports preserve table headers, prevent row splits, and fit the flow
   assert.match(css, /\.preview-report-table\[data-variant="activities"\] th:nth-child\(2\)/);
   assert.match(css, /\.preview-toolbar,\.preview-state\{display:none!important\}/);
   assert.match(css, /\.preview-report-table tr\{break-inside:avoid-page;page-break-inside:avoid\}/);
-  assert.match(css, /\.preview-report-flow\{break-before:page;page-break-before:always\}/);
+  assert.match(css, /@page report-flowchart\{size:A4 portrait;margin:12mm\}/);
+  assert.match(css, /\.preview-report-flow\{page:report-flowchart;break-before:page;page-break-before:always\}/);
   assert.match(css, /\.preview-report-table thead\{display:table-header-group;break-inside:avoid-page;page-break-inside:avoid\}/);
-  assert.match(css, /\.preview-diagram svg\{display:block;width:auto!important;max-width:100%!important;height:auto!important;max-height:165mm/);
+  assert.match(css, /\.preview-report-flow \.preview-diagram svg\{display:block;width:auto!important;max-width:100%!important;height:auto!important;max-height:250mm/);
   assert.match(script, /function printableReportTitle\(\)/);
   assert.match(script, /document\.title = printableReportTitle\(\)/);
   assert.match(script, /const printRoot = document\.createElement\("div"\)/);
