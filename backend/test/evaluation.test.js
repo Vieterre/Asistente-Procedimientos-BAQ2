@@ -189,6 +189,12 @@ test("weighted score, critical findings, and initial-version No aplica are calcu
   assert.equal(metrics.criticalFailures, 1);
   assert.equal(metrics.openFindings, 1);
   assert.equal(evaluationIsFavorable(metrics), false);
+  const resolvedNonCriticalCriteria = criteriaWith();
+  resolvedNonCriticalCriteria.leg1 = { result: "No cumple", observation: "Falta precisión", adjustment: "Completar cita", findingStatus: "Cerrado" };
+  const resolvedNonCriticalFinding = evaluationMetrics(resolvedNonCriticalCriteria, "1.0");
+  assert.equal(resolvedNonCriticalFinding.criticalFailures, 0);
+  assert.equal(resolvedNonCriticalFinding.openFindings, 0);
+  assert.equal(evaluationIsFavorable(resolvedNonCriticalFinding), false);
   criteria.cam1.result = "No aplica";
   criteria.cam4.result = "No aplica";
   assert.equal(sanitizeEvaluationCriteria(criteria, "1.0").issues.length, 0);
@@ -232,7 +238,7 @@ test("assigned evaluator saves criteria and concept; another evaluator cannot ed
   }), { code: "draft_not_found", status: 404 });
 });
 
-test("favorable concept is atomic and rejects incomplete or critical evaluations", async () => {
+test("favorable concept is atomic and rejects incomplete or any failing evaluation", async () => {
   const pool = evaluationPool();
   await saveAssignedEvaluation(pool, evaluator, procedureId, { criteria: criteriaWith(), concept: "Concepto técnico" });
   const decision = await decideAssignedEvaluation(pool, evaluator, procedureId, { decision: "favorable" });
@@ -247,6 +253,13 @@ test("favorable concept is atomic and rejects incomplete or critical evaluations
   await saveAssignedEvaluation(critical, evaluator, procedureId, { criteria, concept: "Debe corregir" });
   await assert.rejects(decideAssignedEvaluation(critical, evaluator, procedureId, { decision: "favorable" }), { code: "evaluation_favorable_conditions_unmet" });
   assert.equal(critical.procedure.status, PROCEDURE_STATUS.IN_REVIEW);
+
+  const nonCritical = evaluationPool();
+  const nonCriticalCriteria = criteriaWith();
+  nonCriticalCriteria.leg1 = { result: "No cumple", observation: "Incumple", adjustment: "Ajustar", findingStatus: "Cerrado" };
+  await saveAssignedEvaluation(nonCritical, evaluator, procedureId, { criteria: nonCriticalCriteria, concept: "Debe corregir" });
+  await assert.rejects(decideAssignedEvaluation(nonCritical, evaluator, procedureId, { decision: "favorable" }), { code: "evaluation_favorable_conditions_unmet" });
+  assert.equal(nonCritical.procedure.status, PROCEDURE_STATUS.IN_REVIEW);
 
   const incomplete = evaluationPool();
   const partial = criteriaWith();

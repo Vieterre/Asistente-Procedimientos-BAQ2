@@ -139,7 +139,7 @@ export function evaluationMetrics(criteria, version) {
   const score = Math.round(weightedScore * 10) / 10;
   const complete = answered === EVALUATION_CRITERIA.length;
   const level = !complete ? "Pendiente" : score <= 39 ? "Bajo" : score < 90 ? "Medio" : "Alto";
-  const decision = !complete ? "Evaluación pendiente" : score < 40 ? "No cumple" : score < 90 || criticalFailures > 0 ? "Requiere ajustes" : "Cumple";
+  const decision = !complete ? "Evaluación pendiente" : score < 40 ? "No cumple" : score < 90 || failures > 0 ? "Requiere ajustes" : "Cumple";
   return { answered, total: EVALUATION_CRITERIA.length, failures, criticalFailures, openFindings, score, level, decision, complete, groups };
 }
 
@@ -166,7 +166,7 @@ export function missingCorrectionResponses(criteria) {
 }
 
 export function evaluationIsFavorable(metrics) {
-  return Boolean(metrics?.complete && Number(metrics.score) >= 90 && Number(metrics.criticalFailures) === 0 && Number(metrics.openFindings) === 0);
+  return Boolean(metrics?.complete && Number(metrics.score) >= 90 && Number(metrics.failures) === 0 && Number(metrics.criticalFailures) === 0 && Number(metrics.openFindings) === 0);
 }
 
 export function automaticTechnicalConcept(criteria, version) {

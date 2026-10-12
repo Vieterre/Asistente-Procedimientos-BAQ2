@@ -32,6 +32,7 @@ export function favorableEvaluationAllowed(evaluation) {
     evaluation &&
       evaluation.complete === true &&
       Number(evaluation.score) >= 90 &&
+      Number(evaluation.failures) === 0 &&
       Number(evaluation.criticalFailures) === 0 &&
       Number(evaluation.openFindings) === 0
   );

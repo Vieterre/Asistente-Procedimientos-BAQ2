@@ -269,6 +269,10 @@ test("evaluation combines a non-favorable decision with return and records the l
   assert.match(html, /id="evaluationAutoConcept"/);
   assert.match(html, /Complemento del evaluador \(opcional\)/);
   assert.match(script, /function automaticEvaluationConcept\(metrics\)/);
+  assert.match(script, /const favorableReady = editable && metrics\.complete && metrics\.failures === 0;/);
+  assert.match(script, /const returnReady = editable && metrics\.complete && metrics\.failures > 0;/);
+  assert.match(css, /#favorableEvaluationButton\.is-ready\{background:#1d9a7c/);
+  assert.match(css, /#returnEvaluationButton\.is-ready\{background:#bd6c12/);
   assert.match(script, /Hallazgos que requieren ajuste:/);
   assert.match(script, /Acción realizada/);
   assert.match(script, /Ubicación del ajuste/);

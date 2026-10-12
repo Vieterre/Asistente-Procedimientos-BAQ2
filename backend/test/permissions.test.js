@@ -126,14 +126,14 @@ test("evaluator can issue favorable concept only when all criteria are satisfied
   assert.equal(
     canPerform(evaluator, ACTIONS.ISSUE_FAVORABLE_CONCEPT, {
       procedure,
-      evaluation: { complete: true, score: 90, criticalFailures: 0, openFindings: 0 }
+      evaluation: { complete: true, score: 100, failures: 0, criticalFailures: 0, openFindings: 0 }
     }),
     true
   );
   assert.equal(
     canPerform(evaluator, ACTIONS.ISSUE_FAVORABLE_CONCEPT, {
       procedure,
-      evaluation: { complete: true, score: 89.99, criticalFailures: 0, openFindings: 0 }
+      evaluation: { complete: true, score: 100, failures: 1, criticalFailures: 0, openFindings: 0 }
     }),
     false
   );

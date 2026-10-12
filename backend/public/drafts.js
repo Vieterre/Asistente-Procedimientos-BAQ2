@@ -44,7 +44,7 @@ const errorMessages = {
   invalid_evaluation: "Revisa los datos de la evaluación.",
   evaluation_incomplete: "Completa los criterios, las observaciones y los ajustes requeridos.",
   evaluation_concept_required: "Escribe el concepto técnico antes de decidir.",
-  evaluation_favorable_conditions_unmet: "El concepto favorable exige al menos 90 puntos, ningún incumplimiento crítico y ningún hallazgo abierto.",
+  evaluation_favorable_conditions_unmet: "El concepto favorable exige que todos los criterios estén completos y cumplan, sin ningún resultado No cumple.",
   evaluation_no_findings: "No hay criterios incumplidos para devolver.",
   evaluation_meets_favorable_threshold: "La evaluación cumple las condiciones del concepto favorable.",
   invalid_evaluation_decision: "La decisión de evaluación no es válida.",
@@ -1990,6 +1990,13 @@ function refreshEvaluationSummary() {
   ui.evaluationProgress.textContent = `${metrics.completed} de ${metrics.total} criterios validados · ${metrics.failures} incumplidos · ${metrics.criticalFailures} críticos`;
   ui.evaluationScore.textContent = `${metrics.score.toFixed(1)}%`;
   ui.evaluationLevel.textContent = metrics.level;
+  const editable = currentUserRole === "evaluador" && currentDraft?.status === "en_evaluacion";
+  const favorableReady = editable && metrics.complete && metrics.failures === 0;
+  const returnReady = editable && metrics.complete && metrics.failures > 0;
+  ui.favorableEvaluationButton.disabled = !favorableReady;
+  ui.returnEvaluationButton.disabled = !returnReady;
+  ui.favorableEvaluationButton.classList.toggle("is-ready", favorableReady);
+  ui.returnEvaluationButton.classList.toggle("is-ready", returnReady);
   const automaticConcept = automaticEvaluationConcept(metrics);
   ui.evaluationAutoConcept.hidden = !automaticConcept;
   ui.evaluationAutoConcept.textContent = automaticConcept;
@@ -2031,7 +2038,7 @@ function refreshEvaluationSummary() {
 
 function automaticEvaluationConcept(metrics) {
   if (!currentEvaluation || !evaluationRubric) return "";
-  if (metrics.complete && metrics.score >= 90 && metrics.criticalFailures === 0 && metrics.openFindings === 0) {
+  if (metrics.complete && metrics.failures === 0) {
     return "Con base en la verificación técnica y metodológica realizada, el procedimiento cumple los criterios aplicables para su aprobación.";
   }
   const failed = evaluationRubric.groups.flatMap(group => group.criteria

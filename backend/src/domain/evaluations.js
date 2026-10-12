@@ -305,7 +305,7 @@ export async function decideAssignedEvaluation(pool, user, procedureId, { decisi
     const metrics = evaluationMetrics(criteria, procedure.version);
     const permissionContext = {
       procedure: { status: procedure.status, assignedEvaluatorId: procedure.assigned_evaluator_id, processCode: procedure.process_code },
-      evaluation: { complete: metrics.complete, score: metrics.score, criticalFailures: metrics.criticalFailures, openFindings: metrics.openFindings }
+      evaluation: { complete: metrics.complete, score: metrics.score, failures: metrics.failures, criticalFailures: metrics.criticalFailures, openFindings: metrics.openFindings }
     };
     const currentUser = { ...user, processCodes: [procedure.process_code] };
     if (!canPerform(currentUser, ACTIONS.UPDATE_EVALUATION, permissionContext)) throw new DraftError("draft_locked", 403);
