@@ -5,7 +5,7 @@ const ids = [
   "institutionalReportsButton", "institutionalReportsSection", "institutionalReportsCount", "institutionalReportsMessage", "emptyInstitutionalReports", "institutionalReportsList", "backFromInstitutionalReports", "refreshInstitutionalReports",
   "passwordRequired", "draftWorkspace", "draftForm", "editorTitle", "editorStatus", "submitReviewButton", "submitReviewDialog", "submitReviewForm", "reviewEvaluatorSelect", "submitReviewMessage", "cancelSubmitReview", "confirmSubmitReview",
   "evaluatorInbox", "evaluatorDraftCount", "evaluatorInboxMessage", "emptyEvaluatorInbox", "evaluatorDraftList", "refreshEvaluatorInbox", "evaluatorDetail", "evaluatorDetailTitle", "evaluatorDetailStatus", "backToEvaluatorInbox", "startEvaluationButton",
-  "evaluationWorkspace", "evaluationProgress", "evaluationScore", "evaluationLevel", "evaluationVariableResults", "evaluationCriteriaGroups", "evaluationConcept", "evaluationMessage", "saveEvaluationButton", "returnEvaluationButton", "unfavorableEvaluationButton", "favorableEvaluationButton",
+  "evaluationWorkspace", "evaluationProgress", "evaluationScore", "evaluationLevel", "evaluationVariableResults", "evaluationCriteriaGroups", "evaluationAutoConcept", "evaluationConcept", "evaluationMessage", "saveEvaluationButton", "returnEvaluationButton", "favorableEvaluationButton",
   "returnedEvaluation", "returnedEvaluationSummary", "returnedEvaluationConcept", "returnedFindings", "saveEvaluationResponses", "returnedEvaluationMessage",
   "draftName", "draftNameStatus", "processCode", "draftConsecutive", "draftCode", "draftCodeStatus", "draftObjective", "draftScope", "draftDefinitions", "draftDefinitionsStatus", "draftConditions", "saveDraftButton", "reloadDraftButton", "editorMessage",
   "procedureProgress", "newDraftButton", "addNormButton", "normsList", "emptyNorms", "normReview", "addBoundaryButton", "addActivityButton", "addDecisionButton", "addConnectorButton", "activitiesList", "emptyActivities", "reviewFlowButton", "flowReviewResult", "refreshDraftsButton", "draftCount", "listMessage", "emptyDrafts",
@@ -1990,6 +1990,9 @@ function refreshEvaluationSummary() {
   ui.evaluationProgress.textContent = `${metrics.completed} de ${metrics.total} criterios validados · ${metrics.failures} incumplidos · ${metrics.criticalFailures} críticos`;
   ui.evaluationScore.textContent = `${metrics.score.toFixed(1)}%`;
   ui.evaluationLevel.textContent = metrics.level;
+  const automaticConcept = automaticEvaluationConcept(metrics);
+  ui.evaluationAutoConcept.hidden = !automaticConcept;
+  ui.evaluationAutoConcept.textContent = automaticConcept;
   ui.evaluationVariableResults.replaceChildren(...metrics.groups.map(group => {
     const item = document.createElement("button");
     item.type = "button";
@@ -2024,6 +2027,21 @@ function refreshEvaluationSummary() {
     details.querySelector(".evaluation-group-score").textContent = `${group.state.completed}/${group.total} · ${group.score.toFixed(1)}%`;
     details.querySelector(".evaluation-group-progress-fill").style.width = `${Math.round(group.state.completed / group.total * 100)}%`;
   });
+}
+
+function automaticEvaluationConcept(metrics) {
+  if (!currentEvaluation || !evaluationRubric) return "";
+  if (metrics.complete && metrics.score >= 90 && metrics.criticalFailures === 0 && metrics.openFindings === 0) {
+    return "Con base en la verificación técnica y metodológica realizada, el procedimiento cumple los criterios aplicables para su aprobación.";
+  }
+  const failed = evaluationRubric.groups.flatMap(group => group.criteria
+    .filter(criterion => currentEvaluation.criteria[criterion.id]?.result === "No cumple")
+    .map(criterion => ({ ...criterion, groupName: group.name })));
+  if (!failed.length) return "";
+  return ["Hallazgos que requieren ajuste:", ...failed.map((criterion, index) => {
+    const record = currentEvaluation.criteria[criterion.id] || {};
+    return `${index + 1}. ${criterion.groupName}: ${criterion.question}\nObservación: ${record.observation || "Sin detalle registrado."}\nAjuste requerido: ${record.adjustment || "Sin detalle registrado."}`;
+  })].join("\n\n");
 }
 
 function evaluationField(grid, text, control) {
@@ -2075,7 +2093,7 @@ function renderEvaluationWorkspace() {
     details.append(heading, description);
     group.criteria.forEach(criterion => {
       const record = currentEvaluation.criteria[criterion.id] || (currentEvaluation.criteria[criterion.id] = {
-        result: "", evidence: "", observation: "", adjustment: "", findingStatus: "Pendiente", response: ""
+        result: "", evidence: "", observation: "", adjustment: "", findingStatus: "Pendiente", response: "", adjustmentLocation: ""
       });
       const card = document.createElement("div");
       card.className = `evaluation-criterion${record.result === "No cumple" ? " failed" : record.result === "Cumple" ? " passed" : record.result === "No aplica" ? " na" : ""}`;
@@ -2121,8 +2139,14 @@ function renderEvaluationWorkspace() {
       if (record.response) {
         const response = document.createElement("p");
         response.className = "field-hint";
-        response.textContent = `Respuesta del Elaborador: ${record.response}`;
+        response.textContent = `Acción realizada por el Elaborador: ${record.response}`;
         grid.append(response);
+      }
+      if (record.adjustmentLocation) {
+        const location = document.createElement("p");
+        location.className = "field-hint";
+        location.textContent = `Ubicación del ajuste: ${record.adjustmentLocation}`;
+        grid.append(location);
       }
       const trace = createFindingTrace(record);
       if (trace) grid.append(trace);
@@ -2148,9 +2172,9 @@ function renderEvaluationWorkspace() {
     });
     return details;
   }));
-  ui.evaluationConcept.value = currentEvaluation.concept || "";
+  ui.evaluationConcept.value = currentEvaluation.conceptComplement || "";
   ui.evaluationConcept.disabled = !editable;
-  for (const button of [ui.saveEvaluationButton, ui.returnEvaluationButton, ui.unfavorableEvaluationButton, ui.favorableEvaluationButton]) button.hidden = !editable;
+  for (const button of [ui.saveEvaluationButton, ui.returnEvaluationButton, ui.favorableEvaluationButton]) button.hidden = !editable;
   setMessage(ui.evaluationMessage, "");
   refreshEvaluationSummary();
 }
@@ -2170,7 +2194,10 @@ function findingTraceEntries(record) {
 
 function findingTraceDetail(entry) {
   if (entry.action === "Ajuste solicitado") return entry.adjustment ? `Ajuste requerido: ${entry.adjustment}` : "Ajuste requerido registrado.";
-  if (entry.action === "Respuesta del Elaborador") return entry.response ? `Respuesta: ${entry.response}` : "Respuesta registrada.";
+  if (entry.action === "Respuesta del Elaborador") {
+    const action = entry.response ? `Acción realizada: ${entry.response}` : "Acción realizada registrada.";
+    return entry.adjustmentLocation ? `${action}\nUbicación del ajuste: ${entry.adjustmentLocation}` : action;
+  }
   if (entry.action === "Reenvío a evaluación") return "El procedimiento fue reenviado para verificar este ajuste.";
   if (entry.action === "Respuesta retirada") return "La respuesta se retiró y el hallazgo volvió a estar pendiente.";
   if (entry.action === "Hallazgo cerrado") return `Resultado: ${entry.result || "Cumple"} · Estado: ${entry.findingStatus || "Cerrado"}`;
@@ -2226,8 +2253,17 @@ function renderReturnedEvaluation() {
     response.maxLength = 5000;
     response.value = record.response || "";
     response.disabled = !editable;
+    response.placeholder = "Describe de manera concreta qué corregiste.";
     response.addEventListener("input", () => { record.response = response.value; returnedResponsesDirty = true; });
-    evaluationField(grid, "Respuesta del Elaborador", response);
+    const location = document.createElement("input");
+    location.id = `authorLocation-${id}`;
+    location.maxLength = 5000;
+    location.value = record.adjustmentLocation || "";
+    location.disabled = !editable;
+    location.placeholder = "Ejemplo: Normatividad, norma externa 3";
+    location.addEventListener("input", () => { record.adjustmentLocation = location.value; returnedResponsesDirty = true; });
+    evaluationField(grid, "Acción realizada", response);
+    evaluationField(grid, "Ubicación del ajuste", location);
     item.append(grid);
     return item;
   }));
@@ -2713,13 +2749,13 @@ async function saveReturnedResponses() {
   if (!currentDraft || !returnedEvaluation || currentDraft.status !== "devuelto_para_ajustes") return;
   const responses = Object.fromEntries(Object.entries(returnedEvaluation.criteria)
     .filter(([, record]) => record.result === "No cumple")
-    .map(([id, record]) => [id, record.response || ""]));
+    .map(([id, record]) => [id, { action: record.response || "", location: record.adjustmentLocation || "" }]));
   const result = await request(`/api/procedures/${encodeURIComponent(currentDraft.id)}/evaluation-responses`, {
     method: "PUT", csrf: true, body: { responses }
   });
   returnedResponsesDirty = false;
   setMessage(ui.returnedEvaluationMessage, result.missingResponses
-    ? `Respuestas guardadas. Faltan ${result.missingResponses} hallazgo(s) por responder.`
+    ? `Respuestas guardadas. Faltan ${result.missingResponses} hallazgo(s) con acción o ubicación pendiente.`
     : "Respuestas guardadas.", true);
   return result;
 }
@@ -2749,9 +2785,9 @@ ui.submitReviewButton.addEventListener("click", async () => {
   setMessage(ui.submitReviewMessage, "");
   try {
     if (currentDraft.status === "devuelto_para_ajustes" && returnedEvaluation) {
-      const missing = Object.values(returnedEvaluation.criteria).filter(record => record.result === "No cumple" && !String(record.response || "").trim());
+      const missing = Object.values(returnedEvaluation.criteria).filter(record => record.result === "No cumple" && (!String(record.response || "").trim() || !String(record.adjustmentLocation || "").trim()));
       if (missing.length) {
-        setMessage(ui.editorMessage, `Responde ${missing.length} hallazgo(s) antes de reenviar.`);
+        setMessage(ui.editorMessage, `Completa la acción realizada y la ubicación de ${missing.length} hallazgo(s) antes de reenviar.`);
         ui.returnedEvaluation.scrollIntoView({ behavior: "smooth", block: "nearest" });
         return;
       }
@@ -2844,6 +2880,7 @@ async function saveCurrentEvaluation() {
     criticalFailures: evaluation.criticalFailures,
     openFindings: evaluation.openFindings,
     concept: evaluation.concept,
+    conceptComplement: evaluation.conceptComplement,
     metrics: evaluation.metrics,
     updatedAt: evaluation.updatedAt
   });
@@ -2865,8 +2902,7 @@ ui.saveEvaluationButton.addEventListener("click", async () => {
 
 async function submitEvaluationDecision(decision) {
   if (!currentDraft || currentDraft.status !== "en_evaluacion") return;
-  const label = decision === "devolver" ? "devolver para ajustes"
-    : decision === "favorable" ? "emitir concepto favorable" : "emitir concepto no favorable";
+  const label = decision === "devolver" ? "emitir concepto no favorable y devolver para ajustes" : "emitir concepto favorable";
   if (!window.confirm(`¿Confirmas ${label} para este procedimiento?`)) return;
   try {
     const id = currentDraft.id;
@@ -2883,7 +2919,6 @@ async function submitEvaluationDecision(decision) {
 }
 
 ui.returnEvaluationButton.addEventListener("click", () => submitEvaluationDecision("devolver"));
-ui.unfavorableEvaluationButton.addEventListener("click", () => submitEvaluationDecision("no_favorable"));
 ui.favorableEvaluationButton.addEventListener("click", () => submitEvaluationDecision("favorable"));
 function reportTable(headers, records, valuesForRecord, { variant = "", columnWidths = [] } = {}) {
   const table = document.createElement("table");

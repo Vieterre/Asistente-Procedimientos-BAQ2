@@ -6,10 +6,10 @@ import {
   EVALUATION_GROUPS,
   EVALUATION_RUBRIC_VERSION,
   blankEvaluationCriteria,
-  evaluationIsFavorable,
   evaluationMetrics,
   missingCorrectionResponses,
   sanitizeEvaluationCriteria,
+  technicalConcept,
   validateEvaluation
 } from "./evaluation-rubric.js";
 import { DraftError } from "./drafts.js";
@@ -58,7 +58,8 @@ function publicEvaluation(row, version) {
     score: row.score === null || row.score === undefined ? null : Number(row.score),
     criticalFailures: Number(row.critical_failures || 0),
     openFindings: Number(row.open_findings || 0),
-    concept: row.concept || "",
+    concept: technicalConcept(criteria, version, row.concept || ""),
+    conceptComplement: row.concept || "",
     criteria,
     rubricVersion: Number(criteriaPayload.rubricVersion || EVALUATION_RUBRIC_VERSION),
     iteration: Number(criteriaPayload.iteration || 1),
@@ -146,6 +147,7 @@ export async function saveAssignedEvaluation(pool, user, procedureId, { criteria
     for (const [id, record] of Object.entries(normalized.criteria)) {
       const previous = previousCriteria[id] || {};
       record.response = previous.response || "";
+      record.adjustmentLocation = previous.adjustmentLocation || "";
       record.trace = findingTrace(previous);
       const hasPreviousRequest = record.trace.some(entry => entry.action === "Ajuste solicitado");
       const adjustmentRequested = record.result === "No cumple" && (
@@ -156,6 +158,7 @@ export async function saveAssignedEvaluation(pool, user, procedureId, { criteria
       );
       if (adjustmentRequested) {
         record.response = "";
+        record.adjustmentLocation = "";
         record.findingStatus = "Pendiente";
         appendFindingTrace(record, "Ajuste solicitado", user, iteration, {
           observation: record.observation,
@@ -232,20 +235,31 @@ export async function saveAuthorEvaluationResponses(pool, user, procedureId, res
     const iteration = Number(evaluation.criteria_payload?.iteration || 1);
     const allowedIds = new Set(Object.keys(criteria));
     if (Object.keys(responses).some(id => !allowedIds.has(id))) throw new DraftError("invalid_evaluation_response", 400);
-    for (const [id, response] of Object.entries(responses)) {
-      if (typeof response !== "string" || response.length > 5000) throw new DraftError("invalid_evaluation_response", 400);
+    for (const [id, responseInput] of Object.entries(responses)) {
+      const response = typeof responseInput === "string" ? responseInput : responseInput?.action;
+      const adjustmentLocation = typeof responseInput === "string" ? "" : responseInput?.location;
+      if (typeof response !== "string" || response.length > 5000 || typeof adjustmentLocation !== "string" || adjustmentLocation.length > 5000) {
+        throw new DraftError("invalid_evaluation_response", 400);
+      }
       if (criteria[id].result === "No cumple") {
         const normalizedResponse = response.trim();
-        if (normalizedResponse !== String(criteria[id].response || "")) {
+        const normalizedLocation = adjustmentLocation.trim();
+        const wasComplete = Boolean(String(criteria[id].response || "").trim() && String(criteria[id].adjustmentLocation || "").trim());
+        const isComplete = Boolean(normalizedResponse && normalizedLocation);
+        if (normalizedResponse !== String(criteria[id].response || "") || normalizedLocation !== String(criteria[id].adjustmentLocation || "")) {
           criteria[id].response = normalizedResponse;
-          if (normalizedResponse) {
+          criteria[id].adjustmentLocation = normalizedLocation;
+          if (isComplete) {
             criteria[id].findingStatus = "Respondido";
             appendFindingTrace(criteria[id], "Respuesta del Elaborador", user, iteration, {
-              response: normalizedResponse
+              response: normalizedResponse,
+              adjustmentLocation: normalizedLocation
             });
-          } else {
+          } else if (wasComplete) {
             criteria[id].findingStatus = "Pendiente";
             appendFindingTrace(criteria[id], "Respuesta retirada", user, iteration);
+          } else {
+            criteria[id].findingStatus = "Pendiente";
           }
         }
       }
@@ -272,7 +286,7 @@ export async function saveAuthorEvaluationResponses(pool, user, procedureId, res
 
 export async function decideAssignedEvaluation(pool, user, procedureId, { decision } = {}) {
   if (user.role !== ROLES.EVALUADOR) throw new DraftError("forbidden", 403);
-  if (!["devolver", "favorable", "no_favorable"].includes(decision)) throw new DraftError("invalid_evaluation_decision", 400);
+  if (!["devolver", "favorable"].includes(decision)) throw new DraftError("invalid_evaluation_decision", 400);
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
@@ -297,19 +311,13 @@ export async function decideAssignedEvaluation(pool, user, procedureId, { decisi
     if (!canPerform(currentUser, ACTIONS.UPDATE_EVALUATION, permissionContext)) throw new DraftError("draft_locked", 403);
     const issues = validateEvaluation(criteria, procedure.version);
     if (issues.length) throw new DraftError("evaluation_incomplete", 400, issues);
-    if (!String(existing.concept || "").trim()) throw new DraftError("evaluation_concept_required", 400);
     if (decision === "devolver" && metrics.failures === 0) throw new DraftError("evaluation_no_findings", 400);
-    if (decision === "no_favorable" && evaluationIsFavorable(metrics)) throw new DraftError("evaluation_meets_favorable_threshold", 400);
-    const action = decision === "favorable" ? ACTIONS.ISSUE_FAVORABLE_CONCEPT
-      : decision === "no_favorable" ? ACTIONS.ISSUE_UNFAVORABLE_CONCEPT
-      : ACTIONS.RETURN_FOR_CORRECTIONS;
+    const action = decision === "favorable" ? ACTIONS.ISSUE_FAVORABLE_CONCEPT : ACTIONS.RETURN_FOR_CORRECTIONS;
     if (!canPerform(currentUser, action, permissionContext)) {
       throw new DraftError(decision === "favorable" ? "evaluation_favorable_conditions_unmet" : "draft_locked", decision === "favorable" ? 400 : 403);
     }
 
-    const nextStatus = decision === "devolver" ? PROCEDURE_STATUS.RETURNED
-      : decision === "favorable" ? PROCEDURE_STATUS.FAVORABLE
-      : PROCEDURE_STATUS.UNFAVORABLE;
+    const nextStatus = decision === "devolver" ? PROCEDURE_STATUS.RETURNED : PROCEDURE_STATUS.FAVORABLE;
     await client.query(
       `UPDATE evaluations SET status = $2, score = $3, critical_failures = $4,
               open_findings = $5, updated_at = now()
@@ -320,12 +328,8 @@ export async function decideAssignedEvaluation(pool, user, procedureId, { decisi
       `UPDATE procedures SET status = $2, updated_at = now() WHERE id = $1`,
       [procedureId, nextStatus]
     );
-    const eventType = decision === "devolver" ? "procedure_returned_for_corrections"
-      : decision === "favorable" ? "procedure_favorable_concept_issued"
-      : "procedure_unfavorable_concept_issued";
-    const title = decision === "devolver" ? "Procedimiento devuelto para ajustes"
-      : decision === "favorable" ? "Concepto favorable emitido"
-      : "Concepto no favorable emitido";
+    const eventType = decision === "devolver" ? "procedure_returned_for_corrections" : "procedure_favorable_concept_issued";
+    const title = decision === "devolver" ? "Procedimiento devuelto para ajustes" : "Concepto favorable emitido";
     const message = decision === "devolver"
       ? `«${procedure.name}» fue devuelto con ${metrics.failures} criterio(s) por ajustar.`
       : `La evaluación de «${procedure.name}» finalizó con ${metrics.score.toFixed(1)}%: ${title.toLocaleLowerCase("es-CO")}.`;

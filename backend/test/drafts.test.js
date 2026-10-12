@@ -493,10 +493,12 @@ test("a returned draft requires answers and carries them into the next evaluatio
     code: "correction_responses_required", details: ["act1"]
   });
   previous.criteria_payload.criteria.act1.response = "Reordené el flujo";
+  previous.criteria_payload.criteria.act1.adjustmentLocation = "Flujograma, actividad 3";
   assert.equal((await submitOwnDraft(pool, author, draftId, { evaluatorId: evaluator.id, revision: 4 })).status, "enviado_a_evaluacion");
   assert.equal(inserted.iteration, 3);
   assert.equal(inserted.previousEvaluationId, previous.id);
   assert.equal(inserted.criteria.act1.response, "Reordené el flujo");
+  assert.equal(inserted.criteria.act1.adjustmentLocation, "Flujograma, actividad 3");
   assert.equal(inserted.criteria.act1.findingStatus, "Respondido");
 });
 

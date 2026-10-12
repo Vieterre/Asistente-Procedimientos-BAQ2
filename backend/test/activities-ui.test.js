@@ -258,6 +258,24 @@ test("section checks require methodological rules and evaluator progress counts 
   assert.match(css, /\.norm-review-warning/);
 });
 
+test("evaluation combines a non-favorable decision with return and records the location of each correction", async () => {
+  const [html, script, css] = await Promise.all([
+    readFile(join(root, "backend/public/drafts.html"), "utf8"),
+    readFile(join(root, "backend/public/drafts.js"), "utf8"),
+    readFile(join(root, "backend/public/drafts.css"), "utf8")
+  ]);
+  assert.match(html, /Emitir concepto no favorable y devolver para ajustes/);
+  assert.doesNotMatch(html, /id="unfavorableEvaluationButton"/);
+  assert.match(html, /id="evaluationAutoConcept"/);
+  assert.match(html, /Complemento del evaluador \(opcional\)/);
+  assert.match(script, /function automaticEvaluationConcept\(metrics\)/);
+  assert.match(script, /Hallazgos que requieren ajuste:/);
+  assert.match(script, /Acción realizada/);
+  assert.match(script, /Ubicación del ajuste/);
+  assert.match(script, /conceptComplement: evaluation\.conceptComplement/);
+  assert.match(css, /\.evaluation-auto-concept\{/);
+});
+
 test("preview separates every general condition into an individual report item", async () => {
   const script = await readFile(join(root, "backend/public/drafts.js"), "utf8");
   const source = script.match(/function reportConditionList[\s\S]*?(?=\nfunction previewFitScale\()/)?.[0];

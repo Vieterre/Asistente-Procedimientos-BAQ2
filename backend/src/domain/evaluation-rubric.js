@@ -68,7 +68,7 @@ export function allowsNotApplicable(criterion, version) {
 
 export function blankEvaluationCriteria() {
   return Object.fromEntries(EVALUATION_CRITERIA.map(({ id }) => [id, {
-    result: "", evidence: "", observation: "", adjustment: "", findingStatus: "Pendiente", response: ""
+    result: "", evidence: "", observation: "", adjustment: "", findingStatus: "Pendiente", response: "", adjustmentLocation: ""
   }]));
 }
 
@@ -91,7 +91,7 @@ export function sanitizeEvaluationCriteria(input, version) {
     }
     const record = criteria[criterion.id];
     record.result = result;
-    for (const key of ["evidence", "observation", "adjustment", "response"]) {
+    for (const key of ["evidence", "observation", "adjustment", "response", "adjustmentLocation"]) {
       if (value[key] === undefined) continue;
       if (typeof value[key] !== "string" || value[key].length > 5000) {
         issues.push(`El campo ${key} del criterio ${criterion.id} no es válido.`);
@@ -161,10 +161,29 @@ export function validateEvaluation(criteria, version) {
 export function missingCorrectionResponses(criteria) {
   return EVALUATION_CRITERIA.filter(criterion => {
     const record = criteria?.[criterion.id] || {};
-    return record.result === "No cumple" && !String(record.response || "").trim();
+    return record.result === "No cumple" && (!String(record.response || "").trim() || !String(record.adjustmentLocation || "").trim());
   }).map(criterion => criterion.id);
 }
 
 export function evaluationIsFavorable(metrics) {
   return Boolean(metrics?.complete && Number(metrics.score) >= 90 && Number(metrics.criticalFailures) === 0 && Number(metrics.openFindings) === 0);
+}
+
+export function automaticTechnicalConcept(criteria, version) {
+  const metrics = evaluationMetrics(criteria, version);
+  if (evaluationIsFavorable(metrics)) {
+    return "Con base en la verificación técnica y metodológica realizada, el procedimiento cumple los criterios aplicables para su aprobación.";
+  }
+  const findings = EVALUATION_CRITERIA.filter(criterion => criteria?.[criterion.id]?.result === "No cumple");
+  if (!findings.length) return "";
+  return ["Hallazgos que requieren ajuste:", ...findings.map((criterion, index) => {
+    const record = criteria[criterion.id] || {};
+    return `${index + 1}. ${criterion.groupName}: ${criterion.question}\nObservación: ${record.observation || "Sin detalle registrado."}\nAjuste requerido: ${record.adjustment || "Sin detalle registrado."}`;
+  })].join("\n\n");
+}
+
+export function technicalConcept(criteria, version, complement = "") {
+  const generated = automaticTechnicalConcept(criteria, version);
+  const extra = String(complement || "").trim();
+  return [generated, extra ? `Complemento del evaluador:\n${extra}` : ""].filter(Boolean).join("\n\n");
 }

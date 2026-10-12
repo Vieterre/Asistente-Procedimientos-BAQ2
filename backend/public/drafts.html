@@ -89,9 +89,9 @@
 <p class="field-hint">Cumple: 90–100 puntos, sin incumplimientos críticos ni hallazgos abiertos. Cada variable tiene su propia ponderación.</p>
 <div class="evaluation-variable-results" id="evaluationVariableResults"></div>
 <div id="evaluationCriteriaGroups"></div>
-<div class="field evaluation-concept-field"><label for="evaluationConcept">Concepto técnico</label><textarea id="evaluationConcept" maxlength="5000" placeholder="Conclusión general y ajustes que sustentan la decisión."></textarea></div>
+<div class="field evaluation-concept-field"><label>Concepto técnico</label><p id="evaluationAutoConcept" class="evaluation-concept-text evaluation-auto-concept" hidden></p><label for="evaluationConcept">Complemento del evaluador (opcional)</label><textarea id="evaluationConcept" maxlength="5000" placeholder="Añade precisiones que complementen el concepto generado."></textarea></div>
 <p class="form-message" id="evaluationMessage" role="status" hidden></p>
-<div class="evaluation-actions"><button class="secondary-button" id="saveEvaluationButton" type="button">Guardar evaluación</button><button class="secondary-button" id="returnEvaluationButton" type="button">Devolver para ajustes</button><button class="secondary-button" id="unfavorableEvaluationButton" type="button">Concepto no favorable</button><button class="primary-button" id="favorableEvaluationButton" type="button">Concepto favorable</button></div>
+<div class="evaluation-actions"><button class="secondary-button" id="saveEvaluationButton" type="button">Guardar evaluación</button><button class="secondary-button" id="returnEvaluationButton" type="button">Emitir concepto no favorable y devolver para ajustes</button><button class="primary-button" id="favorableEvaluationButton" type="button">Concepto favorable</button></div>
 </div></section>
 <section class="flow-section" id="flowSection" aria-labelledby="flowTitle" hidden>
 <div class="section-heading"><div><h2 id="flowTitle">Flujograma</h2><p id="flowSummary"></p></div><div class="section-actions"><label class="flow-option"><input id="showFlowEvidence" type="checkbox"> Mostrar evidencias</label><button class="secondary-button" id="refreshFlowButton" type="button">Actualizar flujograma</button></div></div>

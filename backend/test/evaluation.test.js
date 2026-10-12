@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {
   EVALUATION_CRITERIA,
   EVALUATION_GROUPS,
+  automaticTechnicalConcept,
   evaluationIsFavorable,
   evaluationMetrics,
   missingCorrectionResponses,
@@ -207,11 +208,22 @@ test("completion requires each result, observation, and adjustment for failed cr
   assert.deepEqual(missingCorrectionResponses(criteria), ["con1"]);
 });
 
+test("technical concept summarizes findings and provides a favorable conclusion only when all criteria pass", () => {
+  const criteria = criteriaWith();
+  assert.equal(automaticTechnicalConcept(criteria, "1.0"), "Con base en la verificación técnica y metodológica realizada, el procedimiento cumple los criterios aplicables para su aprobación.");
+  criteria.act1 = { result: "No cumple", observation: "La secuencia no es clara", adjustment: "Reordenar actividades", findingStatus: "Pendiente", response: "", adjustmentLocation: "" };
+  assert.match(automaticTechnicalConcept(criteria, "1.0"), /Hallazgos que requieren ajuste:/);
+  assert.match(automaticTechnicalConcept(criteria, "1.0"), /Actividades: ¿Las actividades siguen una secuencia lógica/);
+  assert.match(automaticTechnicalConcept(criteria, "1.0"), /Ajuste requerido: Reordenar actividades/);
+});
+
 test("assigned evaluator saves criteria and concept; another evaluator cannot edit", async () => {
   const pool = evaluationPool();
   const saved = await saveAssignedEvaluation(pool, evaluator, procedureId, { criteria: criteriaWith(), concept: "  Favorable  " });
   assert.equal(saved.score, 100);
-  assert.equal(saved.concept, "Favorable");
+  assert.match(saved.concept, /el procedimiento cumple los criterios aplicables para su aprobación/);
+  assert.match(saved.concept, /Complemento del evaluador:\nFavorable/);
+  assert.equal(saved.conceptComplement, "Favorable");
   assert.equal(saved.metrics.answered, 31);
   assert.ok(pool.calls.some(call => call.sql.includes("JOIN user_processes") && call.sql.includes("FOR UPDATE OF p")));
   assert.ok(pool.calls.some(call => call.sql.startsWith("INSERT INTO audit_events")));
@@ -252,12 +264,13 @@ test("returning findings lets the author answer before a new review", async () =
   const decision = await decideAssignedEvaluation(pool, evaluator, procedureId, { decision: "devolver" });
   assert.equal(decision.status, PROCEDURE_STATUS.RETURNED);
   assert.equal(pool.procedure.status, PROCEDURE_STATUS.RETURNED);
-  const answer = await saveAuthorEvaluationResponses(pool, author, procedureId, { act1: "Reordené las actividades" });
+  const answer = await saveAuthorEvaluationResponses(pool, author, procedureId, { act1: { action: "Reordené las actividades", location: "Actividades, pasos 2 y 3" } });
   assert.equal(answer.missingResponses, 0);
   assert.equal(pool.evaluation.criteria_payload.criteria.act1.response, "Reordené las actividades");
+  assert.equal(pool.evaluation.criteria_payload.criteria.act1.adjustmentLocation, "Actividades, pasos 2 y 3");
   assert.deepEqual(pool.evaluation.criteria_payload.criteria.act1.trace.map(entry => entry.action), ["Ajuste solicitado", "Respuesta del Elaborador"]);
   assert.equal(pool.evaluation.criteria_payload.criteria.act1.trace[0].iteration, 1);
-  await assert.rejects(saveAuthorEvaluationResponses(pool, evaluator, procedureId, { act1: "Otro" }), { code: "forbidden" });
+  await assert.rejects(saveAuthorEvaluationResponses(pool, evaluator, procedureId, { act1: { action: "Otro", location: "Actividad 1" } }), { code: "forbidden" });
 });
 
 test("a new requested adjustment clears the previous response and records its own trace", async () => {
@@ -269,8 +282,8 @@ test("a new requested adjustment clears the previous response and records its ow
   };
   await saveAssignedEvaluation(pool, evaluator, procedureId, { criteria: firstReview, concept: "Se requiere ajustar la secuencia." });
   await decideAssignedEvaluation(pool, evaluator, procedureId, { decision: "devolver" });
-  await saveAuthorEvaluationResponses(pool, author, procedureId, { act1: "Se reordenaron las actividades." });
-  await saveAuthorEvaluationResponses(pool, author, procedureId, { act1: "" });
+  await saveAuthorEvaluationResponses(pool, author, procedureId, { act1: { action: "Se reordenaron las actividades.", location: "Actividades, pasos 2 y 3" } });
+  await saveAuthorEvaluationResponses(pool, author, procedureId, { act1: { action: "", location: "" } });
   assert.equal(pool.evaluation.criteria_payload.criteria.act1.findingStatus, "Pendiente");
 
   pool.procedure.status = PROCEDURE_STATUS.IN_REVIEW;
@@ -306,7 +319,7 @@ test("complete review cycle preserves responses and reaches a favorable concept 
   await decideAssignedEvaluation(pool, evaluator, procedureId, { decision: "devolver" });
   assert.equal(pool.procedure.status, PROCEDURE_STATUS.RETURNED);
 
-  await saveAuthorEvaluationResponses(pool, author, procedureId, { act1: "Se reordenaron las actividades." });
+  await saveAuthorEvaluationResponses(pool, author, procedureId, { act1: { action: "Se reordenaron las actividades.", location: "Actividades, pasos 2 y 3" } });
   const resubmitted = await submitOwnDraft(pool, author, procedureId, {
     evaluatorId: evaluator.id, revision: pool.procedure.revision
   });
@@ -331,13 +344,13 @@ test("complete review cycle preserves responses and reaches a favorable concept 
   assert.ok(pool.calls.some(call => call.sql.startsWith("INSERT INTO user_notifications") && call.params[3] === "procedure_favorable_concept_issued"));
 });
 
-test("complete failing review can issue a non-favorable concept", async () => {
+test("a non-favorable review always returns the procedure for adjustments", async () => {
   const pool = evaluationPool();
   await saveAssignedEvaluation(pool, evaluator, procedureId, { criteria: criteriaWith("No cumple"), concept: "No satisface los criterios" });
-  const decision = await decideAssignedEvaluation(pool, evaluator, procedureId, { decision: "no_favorable" });
-  assert.equal(decision.status, PROCEDURE_STATUS.UNFAVORABLE);
-  assert.equal(decision.metrics.score, 0);
-  assert.ok(pool.calls.some(call => call.sql.startsWith("INSERT INTO user_notifications") && call.params[3] === "procedure_unfavorable_concept_issued"));
+  await assert.rejects(decideAssignedEvaluation(pool, evaluator, procedureId, { decision: "no_favorable" }), { code: "invalid_evaluation_decision" });
+  const decision = await decideAssignedEvaluation(pool, evaluator, procedureId, { decision: "devolver" });
+  assert.equal(decision.status, PROCEDURE_STATUS.RETURNED);
+  assert.ok(pool.calls.some(call => call.sql.startsWith("INSERT INTO user_notifications") && call.params[3] === "procedure_returned_for_corrections"));
 });
 
 test("evaluation HTTP routes require a session, CSRF, and the assigned evaluator", async () => {
@@ -385,7 +398,7 @@ test("evaluation HTTP routes require a session, CSRF, and the assigned evaluator
       result: "No cumple", observation: "Hallazgo", adjustment: "Corregir", findingStatus: "Pendiente", response: ""
     };
     const responseUrl = `${base}/api/procedures/${procedureId}/evaluation-responses`;
-    const responseBody = JSON.stringify({ responses: { act1: "Se corrigió la secuencia" } });
+    const responseBody = JSON.stringify({ responses: { act1: { action: "Se corrigió la secuencia", location: "Actividades, pasos 2 y 3" } } });
     assert.equal((await fetch(responseUrl, { method: "PUT", headers: { cookie: `__Host-asistente_session=${authorToken}`, "content-type": "application/json" }, body: responseBody })).status, 403);
     assert.equal((await fetch(responseUrl, { method: "PUT", headers: { cookie: `__Host-asistente_session=${token}`, "x-csrf-token": csrf, "content-type": "application/json" }, body: responseBody })).status, 403);
     const authorResponse = await fetch(responseUrl, { method: "PUT", headers: { cookie: `__Host-asistente_session=${authorToken}`, "x-csrf-token": csrf, "content-type": "application/json" }, body: responseBody });
