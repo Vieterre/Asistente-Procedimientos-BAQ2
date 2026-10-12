@@ -359,6 +359,7 @@ test("evaluator can export the evaluation report with its findings and traceabil
   assert.match(script, /ui\.exportEvaluationReportButton\.addEventListener\("click", exportEvaluationReport\)/);
   assert.match(script, /evaluation-report\.css/);
   assert.match(script, /popup\.document\.write\(`<!doctype html/);
+  assert.match(script, /stylesheet\?\.addEventListener\("load", print/);
   assert.match(reportCss, /@page\{size:A4 landscape/);
   assert.match(reportCss, /font-family:Aptos/);
 });

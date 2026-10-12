@@ -3016,8 +3016,17 @@ function exportEvaluationReport() {
   popup.document.close();
   popup.document.title = `Informe de evaluación - ${currentDraft.code || "procedimiento"}`;
   popup.document.body.append(report);
-  popup.focus();
-  window.setTimeout(() => popup.print(), 250);
+  const stylesheet = popup.document.querySelector('link[rel="stylesheet"]');
+  let printed = false;
+  const print = () => {
+    if (printed) return;
+    printed = true;
+    popup.focus();
+    popup.print();
+  };
+  stylesheet?.addEventListener("load", print, { once: true });
+  stylesheet?.addEventListener("error", print, { once: true });
+  window.setTimeout(print, 1_500);
 }
 
 ui.exportEvaluationReportButton.addEventListener("click", exportEvaluationReport);
