@@ -18,7 +18,7 @@ GRANT INSERT (
 ) ON public.procedures TO asistente_app_prod;
 
 GRANT UPDATE (
-  name, current_payload, revision, updated_at, status, assigned_evaluator_id
+  name, code, current_payload, revision, updated_at, status, assigned_evaluator_id
 ) ON public.procedures TO asistente_app_prod;
 
 GRANT SELECT (id, procedure_id, evaluator_id, status, score, critical_failures,
