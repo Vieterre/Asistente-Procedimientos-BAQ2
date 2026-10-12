@@ -125,7 +125,9 @@ test("private consoles serve only their own assets with a restrictive policy", a
     assert.match(draftScript, /ui\.submitReviewButton\.hidden = currentUserRole !== "elaborador"/);
     assert.match(draftScript, /ui\.submitReviewButton\.disabled = !canSubmit/);
     assert.match(draftScript, /\/api\/notifications\/read-all/);
-    assert.match(draftScript, /\/api\/admin\/analytics\?/);
+    assert.match(draftScript, /"\/api\/admin\/analytics"/);
+    assert.match(draftScript, /"\/api\/evaluator\/analytics"/);
+    assert.match(draftScript, /Autocontrol de actividad y uso/);
     assert.match(draftScript, /\/api\/admin\/institutional-reports/);
     assert.match(draftScript, /\/api\/reports\/procedures/);
     assert.match(draftScript, /user\.role !== "administrador"/);
@@ -168,7 +170,7 @@ test("private consoles serve only their own assets with a restrictive policy", a
   }
 });
 
-test("notifications use session and CSRF, and analytics stays administrator-only", async () => {
+test("notifications use session and analytics is scoped by role", async () => {
   const token = "new-features-session";
   const csrf = "new-features-csrf";
   const userId = "11111111-1111-4111-8111-111111111111";
@@ -215,11 +217,16 @@ test("notifications use session and CSRF, and analytics stays administrator-only
     assert.equal((await readAll.json()).updated, 1);
 
     assert.equal((await fetch(`${base}/api/admin/analytics`, { headers })).status, 403);
+    assert.equal((await fetch(`${base}/api/evaluator/analytics`, { headers })).status, 403);
+    role = "evaluador";
+    const ownAnalytics = await fetch(`${base}/api/evaluator/analytics?periodDays=7`, { headers });
+    assert.equal(ownAnalytics.status, 200);
+    assert.equal((await ownAnalytics.json()).analytics.periodDays, 7);
     role = "administrador";
     const analytics = await fetch(`${base}/api/admin/analytics?periodDays=7`, { headers });
     assert.equal(analytics.status, 200);
     assert.equal((await analytics.json()).analytics.periodDays, 7);
-    assert.equal(calls.filter(call => call.sql.includes("FROM audit_events ae")).length, 3);
+    assert.equal(calls.filter(call => call.sql.includes("FROM audit_events ae")).length, 6);
   } finally {
     await new Promise(resolve => server.close(resolve));
   }

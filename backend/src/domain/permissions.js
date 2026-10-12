@@ -13,6 +13,7 @@ export const ACTIONS = Object.freeze({
   REACTIVATE_USER: "reactivate_user",
   ASSIGN_PROCESSES: "assign_processes",
   VIEW_ADMIN_ANALYTICS: "view_admin_analytics",
+  VIEW_OWN_ANALYTICS: "view_own_analytics",
   CONFIGURE_SYSTEM: "configure_system",
   CREATE_PROCEDURE: "create_procedure",
   EDIT_PROCEDURE: "edit_procedure",
@@ -91,6 +92,7 @@ export function canPerform(user, action, context = {}) {
   }
 
   if (user.role === ROLES.EVALUADOR) {
+    if (action === ACTIONS.VIEW_OWN_ANALYTICS) return true;
     if (!assignedToEvaluation(user, procedure) || !hasProcessAccess(user, procedure)) return false;
     if (action === ACTIONS.GENERATE_UNBRANDED_PDF) return true;
     if (action === ACTIONS.READ_ASSIGNED_PROCEDURE) return isAssignedReviewStatus(procedure?.status) || isApproved(procedure?.status);

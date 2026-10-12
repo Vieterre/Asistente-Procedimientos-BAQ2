@@ -1,7 +1,7 @@
 const ids = [
   "loginView", "loginForm", "loginUsername", "loginPassword", "loginOtp", "loginMessage",
   "workspace", "sessionControls", "sessionIdentity", "notificationCenter", "notificationBell", "notificationPopover", "notificationCount", "emptyNotifications", "notificationList", "markAllNotificationsRead", "logoutButton", "welcomeText",
-  "pageHeading", "analyticsButton", "analyticsSection", "backFromAnalytics", "refreshAnalytics", "analyticsFilters", "analyticsPeriod", "analyticsProcess", "analyticsRole", "analyticsMessage", "analyticsMetrics", "analyticsByDay", "analyticsByProcess", "emptyAnalyticsDays", "emptyAnalyticsProcesses",
+  "pageHeading", "analyticsButton", "analyticsSection", "analyticsTitle", "analyticsScope", "backFromAnalytics", "refreshAnalytics", "analyticsFilters", "analyticsPeriod", "analyticsProcess", "analyticsRole", "analyticsProcessField", "analyticsRoleField", "analyticsByProcessSection", "analyticsMessage", "analyticsMetrics", "analyticsByDay", "analyticsByProcess", "emptyAnalyticsDays", "emptyAnalyticsProcesses", "analyticsLogins", "emptyAnalyticsLogins", "analyticsUsageMetrics",
   "institutionalReportsButton", "institutionalReportsSection", "institutionalReportsCount", "institutionalReportsMessage", "emptyInstitutionalReports", "institutionalReportsList", "backFromInstitutionalReports", "refreshInstitutionalReports",
   "passwordRequired", "draftWorkspace", "draftForm", "editorTitle", "editorStatus", "submitReviewButton", "submitReviewDialog", "submitReviewForm", "reviewEvaluatorSelect", "submitReviewMessage", "cancelSubmitReview", "confirmSubmitReview",
   "evaluatorInbox", "evaluatorDraftCount", "evaluatorInboxMessage", "emptyEvaluatorInbox", "evaluatorDraftList", "refreshEvaluatorInbox", "evaluatorDetail", "evaluatorDetailTitle", "evaluatorDetailStatus", "backToEvaluatorInbox", "startEvaluationButton",
@@ -1547,10 +1547,11 @@ async function openNotification(notification) {
 }
 
 const analyticsEventLabels = [
-  ["procedure_draft_created", "Borradores creados"],
-  ["procedure_draft_updated", "Ediciones guardadas"],
-  ["procedure_submitted_for_review", "Envíos a revisión"],
-  ["procedure_evaluation_started", "Evaluaciones iniciadas"]
+  ["procedure_draft_created", "Procedimientos iniciados"],
+  ["procedure_submitted_for_review", "Envíos a evaluación"],
+  ["procedure_evaluation_started", "Evaluaciones iniciadas"],
+  ["procedure_returned_for_corrections", "Devoluciones"],
+  ["procedure_favorable_concept_issued", "Conceptos favorables"]
 ];
 
 function renderAnalytics(analytics) {
@@ -1594,18 +1595,46 @@ function renderAnalytics(analytics) {
     return tr;
   }));
   ui.emptyAnalyticsProcesses.hidden = analytics.byProcess.length > 0;
-  setMessage(ui.analyticsMessage, `Eventos del backend durante los últimos ${analytics.periodDays} días.`, true);
+  ui.analyticsLogins.replaceChildren(...analytics.usage.byDay.map(row => {
+    const tr = document.createElement("tr");
+    const date = document.createElement("th");
+    date.scope = "row";
+    date.textContent = row.day;
+    const count = document.createElement("td");
+    count.textContent = String(row.count || 0);
+    tr.append(date, count);
+    return tr;
+  }));
+  ui.emptyAnalyticsLogins.hidden = analytics.usage.byDay.length > 0;
+  const lastLogin = analytics.usage.lastLogin
+    ? new Intl.DateTimeFormat("es-CO", { dateStyle: "medium", timeStyle: "short" }).format(new Date(analytics.usage.lastLogin))
+    : "Sin registro";
+  const usageLabels = currentUserRole === "evaluador"
+    ? [["Ingresos del periodo", analytics.usage.totalLogins], ["Días con ingreso", analytics.usage.byDay.length], ["Último ingreso", lastLogin]]
+    : [["Ingresos del periodo", analytics.usage.totalLogins], ["Usuarios con ingreso", analytics.usage.activeUsers], ["Último ingreso", lastLogin]];
+  ui.analyticsUsageMetrics.replaceChildren(...usageLabels.map(([label, value]) => {
+    const metric = document.createElement("div");
+    metric.className = "analytics-metric";
+    const strong = document.createElement("strong");
+    strong.textContent = String(value);
+    const caption = document.createElement("span");
+    caption.textContent = label;
+    metric.append(strong, caption);
+    return metric;
+  }));
+  setMessage(ui.analyticsMessage, `Datos reales registrados durante los últimos ${analytics.periodDays} días.`, true);
 }
 
 async function loadAnalytics() {
   setMessage(ui.analyticsMessage, "Consultando actividad...");
-  const query = new URLSearchParams({
-    periodDays: ui.analyticsPeriod.value,
-    processCode: ui.analyticsProcess.value,
-    role: ui.analyticsRole.value
-  });
+  const query = new URLSearchParams({ periodDays: ui.analyticsPeriod.value });
+  const endpoint = currentUserRole === "evaluador" ? "/api/evaluator/analytics" : "/api/admin/analytics";
+  if (currentUserRole === "administrador") {
+    query.set("processCode", ui.analyticsProcess.value);
+    query.set("role", ui.analyticsRole.value);
+  }
   try {
-    const { analytics } = await request(`/api/admin/analytics?${query}`);
+    const { analytics } = await request(`${endpoint}?${query}`);
     renderAnalytics(analytics);
   } catch (error) {
     handleRequestError(error, ui.analyticsMessage);
@@ -1613,7 +1642,13 @@ async function loadAnalytics() {
 }
 
 function showAnalytics() {
-  if (currentUserRole !== "administrador") return;
+  if (!["administrador", "evaluador"].includes(currentUserRole)) return;
+  const evaluatorView = currentUserRole === "evaluador";
+  ui.analyticsTitle.textContent = evaluatorView ? "D1 · Mi analítica" : "D1 · Analítica";
+  ui.analyticsScope.textContent = evaluatorView
+    ? "Autocontrol de actividad y uso, limitado estrictamente a tus procedimientos asignados."
+    : "Actividad institucional registrada por el backend. No incluye datos locales del prototipo ni actividad anterior a su captura.";
+  for (const field of [ui.analyticsProcessField, ui.analyticsRoleField, ui.analyticsByProcessSection]) field.hidden = evaluatorView;
   ui.notificationPopover.hidden = true;
   ui.notificationBell.setAttribute("aria-expanded", "false");
   ui.analyticsSection.hidden = false;
@@ -1788,7 +1823,7 @@ async function startSession(user) {
   ui.analyticsSection.hidden = true;
   ui.institutionalReportsSection.hidden = true;
   ui.pageHeading.hidden = false;
-  ui.analyticsButton.hidden = user.role !== "administrador";
+  ui.analyticsButton.hidden = !["administrador", "evaluador"].includes(user.role);
   ui.institutionalReportsButton.hidden = user.role !== "administrador";
   ui.notificationPopover.hidden = true;
   ui.notificationBell.setAttribute("aria-expanded", "false");

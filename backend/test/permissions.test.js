@@ -18,6 +18,12 @@ test("users with a temporary password cannot perform protected actions", () => {
   assert.equal(canPerform({ ...author, mustChangePassword: true }, ACTIONS.CREATE_PROCEDURE), false);
 });
 
+test("only evaluators can view their own analytics", () => {
+  assert.equal(canPerform(evaluator, ACTIONS.VIEW_OWN_ANALYTICS), true);
+  assert.equal(canPerform(author, ACTIONS.VIEW_OWN_ANALYTICS), false);
+  assert.equal(canPerform(admin, ACTIONS.VIEW_OWN_ANALYTICS), false);
+});
+
 test("administrator cannot deactivate the last active administrator", () => {
   assert.equal(
     canPerform(admin, ACTIONS.DEACTIVATE_USER, {
