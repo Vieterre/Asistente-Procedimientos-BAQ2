@@ -30,7 +30,7 @@ const completeDraftPayload = {
   fields: {
     objetivo: "Resolver solicitudes", alcance: "Desde la recepción hasta la respuesta",
     definiciones: "Solicitud: petición recibida", condiciones: "Aplicar la normativa vigente",
-    elaboro: "Profesional", reviso: "Jefe", aprobo: "Director"
+    elaboro: "Profesional", reviso: "Jefe", aprobo: "Director", aproboNombre: "Directora de despacho"
   },
   norms: [{ tipo: "Interna", norma: "Manual", anio: "2026", descripcion: "Regula el trámite", articulo: "1", entidad: "Entidad" }],
   activities: [

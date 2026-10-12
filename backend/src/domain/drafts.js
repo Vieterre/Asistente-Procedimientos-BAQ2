@@ -146,6 +146,9 @@ function submissionIssues(name, payload, code) {
   if (roles.some(role => typeof role !== "string" || !role.trim()) || new Set(roles.map(role => String(role).trim().toLocaleLowerCase("es-CO"))).size !== roles.length) {
     issues.push("Completa Elaboró, Revisó y Aprobó con cargos distintos.");
   }
+  if (typeof fields.aproboNombre !== "string" || !fields.aproboNombre.trim()) {
+    issues.push("Registra el nombre de quien aprueba el procedimiento.");
+  }
   issues.push(...procedureNameIssues(name));
   if (!PROCEDURE_CODE_PATTERN.test(String(code || ""))) issues.push("Genera el código del procedimiento antes de enviarlo.");
   return issues;

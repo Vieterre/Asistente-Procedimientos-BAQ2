@@ -193,7 +193,7 @@ const row = {
 
 const evaluator = { id: "44444444-4444-4444-8444-444444444444", role: "evaluador", mustChangePassword: false };
 const completePayload = {
-  fields: { objetivo: "Resolver solicitudes", alcance: "Desde recepción hasta respuesta", definiciones: "Solicitud: petición recibida", condiciones: "Aplicar la normativa vigente", elaboro: "Profesional", reviso: "Jefe", aprobo: "Director" },
+  fields: { objetivo: "Resolver solicitudes", alcance: "Desde recepción hasta respuesta", definiciones: "Solicitud: petición recibida", condiciones: "Aplicar la normativa vigente", elaboro: "Profesional", reviso: "Jefe", aprobo: "Director", aproboNombre: "Directora de despacho" },
   norms: [{ tipo: "Interna", norma: "Manual", anio: "2026", descripcion: "Regula el trámite", articulo: "1", entidad: "Entidad" }],
   activities: [
     { uid: "start", tipo: "Inicio", descripcion: "Solicitud recibida" },
@@ -564,6 +564,16 @@ test("submission rejects incomplete drafts, stale revisions, and evaluators outs
     return true;
   });
   assert.equal(procedureUpdates, 0, "a diagram without activities must never be submitted");
+  procedure.current_payload = {
+    ...completePayload,
+    fields: { ...completePayload.fields, aproboNombre: " " }
+  };
+  await assert.rejects(submitOwnDraft(pool, author, draftId, { evaluatorId: evaluator.id, revision: 4 }), error => {
+    assert.equal(error.code, "submission_incomplete");
+    assert.ok(error.details.includes("Registra el nombre de quien aprueba el procedimiento."));
+    return true;
+  });
+  assert.equal(procedureUpdates, 0, "a missing approver name must never be submitted");
   procedure.current_payload = completePayload;
   evaluatorAssigned = false;
   await assert.rejects(submitOwnDraft(pool, author, draftId, { evaluatorId: evaluator.id, revision: 4 }), { code: "evaluator_unavailable" });

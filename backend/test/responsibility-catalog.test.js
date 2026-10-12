@@ -48,5 +48,8 @@ test("activity, decision, and control responsibility groups match the original c
   for (const id of ["draftPreparedOther", "draftReviewedOther"]) {
     assert.match(draftsHtml, new RegExp(`<input id="${id}"`));
   }
+  assert.match(draftsHtml, /<label for="draftApprovedName">Nombre<\/label><input id="draftApprovedName" maxlength="500" required>/);
+  assert.match(draftsScript, /activityTextIsFilled\(ui\.draftApprovedName\.value\)/);
+  assert.match(draftsScript, /Nombre obligatorio de la persona que aprueba formalmente la versión\./);
   assert.doesNotMatch(draftsHtml, /<datalist id="roleOptions"/);
 });

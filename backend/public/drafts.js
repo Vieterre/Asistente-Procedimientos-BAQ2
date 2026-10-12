@@ -138,7 +138,7 @@ const helpById = {
   draftApprovedBy: "Cargo directivo que autoriza formalmente la versión.",
   draftPreparedName: "Nombre de la persona que elaboró, si ya se conoce.",
   draftReviewedName: "Nombre de la persona que revisó, si ya se conoce.",
-  draftApprovedName: "Nombre de la persona que aprobó, si ya se conoce."
+  draftApprovedName: "Nombre obligatorio de la persona que aprueba formalmente la versión."
 };
 const normHelp = {
   "Tipo": "Seleccione Interna cuando la norma o lineamiento sea expedido por la organización, y Externa cuando provenga de una autoridad u organismo externo.",
@@ -505,7 +505,8 @@ function documentSectionIsComplete() {
   const roles = [ui.draftPreparedBy, ui.draftReviewedBy, ui.draftApprovedBy]
     .map(approvalRoleValue)
     .map(value => value.toLocaleLowerCase("es-CO"));
-  return annexesComplete && changesComplete && roles.every(Boolean) && new Set(roles).size === roles.length;
+  return annexesComplete && changesComplete && roles.every(Boolean) &&
+    activityTextIsFilled(ui.draftApprovedName.value) && new Set(roles).size === roles.length;
 }
 
 function refreshProcedureProgress() {
