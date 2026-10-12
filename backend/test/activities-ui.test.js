@@ -357,6 +357,8 @@ test("evaluator can export the evaluation report with its findings and traceabil
   assert.match(script, /currentUserRole !== "evaluador"/);
   assert.match(script, /ui\.exportEvaluationReportButton\.addEventListener\("click", exportEvaluationReport\)/);
   assert.match(script, /@page\{size:A4 landscape/);
+  assert.match(script, /popup\.document\.write\(`<!doctype html/);
+  assert.match(script, /font-family:Aptos/);
 });
 
 test("preview report preserves the original nine-section order", async () => {

@@ -3010,14 +3010,14 @@ function exportEvaluationReport() {
     setMessage(ui.evaluationMessage, "El navegador bloqueó la ventana de exportación. Permite las ventanas emergentes e inténtalo de nuevo.");
     return;
   }
-  const style = popup.document.createElement("style");
-  style.textContent = `@page{size:A4 landscape;margin:10mm}*{box-sizing:border-box}body{margin:0;font-family:"Estrategia Sans",Aptos,"Segoe UI",Arial,sans-serif;color:#243746;font-size:9pt;line-height:1.4}h1,h2{color:#004488}h1{margin:0 0 14px;text-align:center;font-size:16pt}h2{margin:16px 0 7px;font-size:12pt}.evaluation-pdf-meta{display:grid;grid-template-columns:max-content 1fr;gap:5px 12px;margin:0;padding:10px;border:1px solid #b8c7cc;background:#f7f9fa}.evaluation-pdf-meta dt{font-weight:700;color:#004488}.evaluation-pdf-meta dd{margin:0}.evaluation-pdf-concept{margin:0;padding:10px;border-left:4px solid #1d9a7c;background:#f3faf7;white-space:pre-wrap}table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:7.5pt}th,td{border:1px solid #b8c7cc;padding:5px;vertical-align:top;text-align:left;white-space:pre-wrap;overflow-wrap:anywhere}th{background:#004488;color:#fff;font-weight:700}thead{display:table-header-group}tr,td,th{break-inside:avoid-page;page-break-inside:avoid}`;
+  const style = `@page{size:A4 landscape;margin:10mm}*{box-sizing:border-box}body{margin:0;font-family:Aptos,"Segoe UI",Arial,sans-serif;color:#243746;font-size:9pt;line-height:1.4}h1,h2{color:#004488}h1{margin:0 0 14px;text-align:center;font-size:16pt}h2{margin:16px 0 7px;font-size:12pt}.evaluation-pdf-meta{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:5px 12px;margin:0;padding:10px;border:1px solid #b8c7cc;background:#f7f9fa}.evaluation-pdf-meta dt{font-weight:700;color:#004488}.evaluation-pdf-meta dd{margin:0}.evaluation-pdf-concept{margin:0;padding:10px;border-left:4px solid #1d9a7c;background:#f3faf7;white-space:pre-wrap}table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:7.5pt}th,td{border:1px solid #b8c7cc;padding:5px;vertical-align:top;text-align:left;white-space:pre-wrap;overflow-wrap:anywhere}th{background:#004488;color:#fff;font-weight:700}thead{display:table-header-group}tr,td,th{break-inside:avoid-page;page-break-inside:avoid}`;
+  popup.document.open();
+  popup.document.write(`<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Informe de evaluación</title><style>${style}</style></head><body></body></html>`);
+  popup.document.close();
   popup.document.title = `Informe de evaluación - ${currentDraft.code || "procedimiento"}`;
-  popup.document.head.append(style);
   popup.document.body.append(report);
   popup.focus();
-  popup.addEventListener("load", () => popup.print(), { once: true });
-  window.setTimeout(() => popup.print(), 150);
+  window.setTimeout(() => popup.print(), 250);
 }
 
 ui.exportEvaluationReportButton.addEventListener("click", exportEvaluationReport);
