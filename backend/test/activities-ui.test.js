@@ -226,6 +226,19 @@ test("editor validates names and suggests alphabetical definitions without overw
   assert.equal(suggest("Alcance: límite del procedimiento\nZonal: criterio territorial"), null);
 });
 
+test("normativity includes the original hierarchy guide as non-blocking methodological help", async () => {
+  const [html, css] = await Promise.all([
+    readFile(join(root, "backend/public/drafts.html"), "utf8"),
+    readFile(join(root, "backend/public/drafts.css"), "utf8")
+  ]);
+  assert.match(html, /Orientación para entidades públicas según la jerarquía normativa/);
+  assert.match(html, /Normatividad externa, de mayor a menor jerarquía/);
+  assert.match(html, /Normatividad interna de la entidad/);
+  assert.match(html, /Criterio de aplicación:<\/strong> verifique jerarquía, competencia, especialidad y vigencia/);
+  assert.match(html, /<details class="method-rules norm-guide">/);
+  assert.match(css, /\.norm-hierarchy\{display:grid;grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
+});
+
 test("section checks require methodological rules and evaluator progress counts valid criteria", async () => {
   const [html, script, css] = await Promise.all([
     readFile(join(root, "backend/public/drafts.html"), "utf8"),
