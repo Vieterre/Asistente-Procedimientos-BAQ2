@@ -244,9 +244,12 @@ test("preview and printed reports preserve readable paragraphs and stable table 
   assert.match(script, /reportSection\("2", "Alcance", reportParagraphs\(ui\.draftScope\.value\)\)/);
   assert.match(css, /\.field textarea[^}]*text-align:justify/);
   assert.match(css, /\.preview-paragraph[^}]*text-align:justify/);
-  assert.match(css, /\.preview-report-table\{max-width:100%;table-layout:fixed\}/);
+  assert.match(css, /\.preview-report-table\{max-width:100%;table-layout:fixed;font-size:12px\}/);
   assert.match(script, /variant: "definitions",\s*columnWidths: \["32%", "68%"\]/);
   assert.match(css, /\.preview-report-table td\{text-align:justify/);
+  assert.match(css, /\.preview-report\{min-width:0;max-width:100%;font-size:12px/);
+  assert.match(css, /\.preview-condition-list\{box-sizing:border-box[^}]*list-style-type:lower-alpha/);
+  assert.match(css, /@media print\{\.preview-content\{overflow:visible\}\.preview-report\{font-size:8pt/);
   assert.match(css, /@media print\{\.preview-content\{overflow:visible\}/);
 });
 
