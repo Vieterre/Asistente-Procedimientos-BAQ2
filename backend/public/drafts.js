@@ -2983,6 +2983,8 @@ function showPreview({ branding = "standard" } = {}) {
   const state = !currentDraft ? "Vista de un borrador no guardado." : dirty ? "Vista con cambios sin guardar." : `Borrador guardado · revisión ${currentDraft.revision}.`;
   ui.previewState.textContent = institutional ? `Reporte institucional autorizado. ${state}` : state;
   ui.previewDialog.showModal();
+  ui.previewDialog.scrollTop = 0;
+  ui.previewContent.scrollTop = 0;
   requestAnimationFrame(fitPreviewDiagram);
 }
 
@@ -2992,7 +2994,7 @@ function printableReportTitle() {
   return [code || "Procedimiento", name].filter(Boolean).join(" - ");
 }
 
-function printPreviewReport() {
+async function printPreviewReport() {
   const previousTitle = document.title;
   let restoreTimer;
   const restoreTitle = () => {
@@ -3002,6 +3004,10 @@ function printPreviewReport() {
   document.title = printableReportTitle();
   window.addEventListener("afterprint", restoreTitle, { once: true });
   restoreTimer = window.setTimeout(restoreTitle, 60_000);
+  ui.previewDialog.scrollTop = 0;
+  ui.previewContent.scrollTop = 0;
+  window.scrollTo(0, 0);
+  await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
   window.print();
 }
 

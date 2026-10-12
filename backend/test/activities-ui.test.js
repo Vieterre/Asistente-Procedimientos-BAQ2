@@ -312,5 +312,7 @@ test("print reports preserve table headers, prevent row splits, and fit the flow
   assert.match(css, /\.preview-diagram svg\{display:block;width:auto!important;max-width:100%!important;height:auto!important;max-height:165mm/);
   assert.match(script, /function printableReportTitle\(\)/);
   assert.match(script, /document\.title = printableReportTitle\(\)/);
+  assert.match(script, /ui\.previewDialog\.scrollTop = 0;/);
+  assert.ok(script.includes("await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));"));
   assert.match(script, /window\.addEventListener\("afterprint", restoreTitle, \{ once: true \}\)/);
 });
