@@ -50,7 +50,7 @@ input,select{height:41px}textarea{resize:vertical;min-height:120px;line-height:1
 .control-details textarea{min-height:82px}.control-wide{grid-column:1/-1}
 .activity-summary{color:#5a6e75;margin:0;overflow-wrap:anywhere}
 .form-actions{display:flex;align-items:center;gap:14px;min-height:40px;flex-wrap:wrap}
-.form-message{color:#a63223;font-size:12px;line-height:1.45;margin:0}.form-message.success{color:#176d56}.login-panel .form-message{margin:0 0 14px}
+.form-message{color:#a63223;font-size:12px;line-height:1.45;margin:0}.form-message.success{color:#176d56}.form-message.is-warning{color:#8a5a00}.login-panel .form-message{margin:0 0 14px}
 .notice{margin:20px 0 0;padding:14px 16px;background:#fff8e9;border-left:4px solid #bf8a22;color:#35464a;line-height:1.5}.notice a{color:#176d56;font-weight:650}
 .draft-list{list-style:none;margin:0;padding:0}.draft-item{border-top:1px solid #d7e0e2}.draft-item:last-child{border-bottom:1px solid #d7e0e2}
 .draft-open{display:flex;width:100%;align-items:flex-start;justify-content:space-between;gap:14px;padding:13px 4px;border:0;background:transparent;text-align:left;color:#22313a}

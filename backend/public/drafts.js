@@ -12,7 +12,7 @@ const ids = [
   "draftList", "flowSection", "flowSummary", "showFlowEvidence", "refreshFlowButton", "flowCanvas", "flowSvg",
   "zoomOutButton", "zoomInButton", "fitFlowButton", "resetFlowZoomButton", "flowZoomValue",
   "documentsSection", "annexApplicability", "addAnnexButton", "annexNotApplicableMessage", "emptyAnnexes", "annexesList",
-  "addChangeButton", "emptyChanges", "changesList", "draftPreparedBy", "draftPreparedName", "draftReviewedBy", "draftReviewedName",
+  "addChangeButton", "emptyChanges", "changesMessage", "changesList", "draftPreparedBy", "draftPreparedOther", "draftPreparedName", "draftReviewedBy", "draftReviewedOther", "draftReviewedName",
   "draftApprovedBy", "draftApprovedName", "roleSeparationMessage", "saveDocumentsButton", "documentsMessage",
   "previewButton", "previewDialog", "previewTitle", "previewState", "previewContent", "printPreviewButton", "closePreviewButton", "methodTooltip"
 ];
@@ -239,13 +239,32 @@ function setupMethodTooltip() {
   window.addEventListener("scroll", close, true);
 }
 
+function approvalOtherInput(select) {
+  return ui[`${select.id}Other`];
+}
+
+function approvalRoleValue(select) {
+  const selected = String(select?.value || "").trim();
+  return selected === "__otro__" ? String(approvalOtherInput(select)?.value || "").trim() : selected;
+}
+
+function syncApprovalOther(select, selectedOther) {
+  const otherInput = approvalOtherInput(select);
+  if (!otherInput) return;
+  const isOther = select.value === "__otro__";
+  otherInput.hidden = !isOther;
+  otherInput.previousElementSibling.hidden = !isOther;
+  if (isOther && selectedOther !== undefined) otherInput.value = selectedOther;
+  if (!isOther) otherInput.value = "";
+}
+
 function showRoleSeparation() {
-  const roles = [ui.draftPreparedBy, ui.draftReviewedBy, ui.draftApprovedBy].map(input => input.value.trim().toLocaleLowerCase("es-CO")).filter(Boolean);
+  const roles = [ui.draftPreparedBy, ui.draftReviewedBy, ui.draftApprovedBy].map(approvalRoleValue).map(value => value.toLocaleLowerCase("es-CO")).filter(Boolean);
   const repeated = roles.length > new Set(roles).size;
   setMessage(ui.roleSeparationMessage, repeated ? "Elaboró, Revisó y Aprobó deben corresponder a cargos distintos." : "");
 }
 
-function populateApprovalRoleSelect(select, selected = "", allowedLevels = null) {
+function populateApprovalRoleSelect(select, selected = "", allowedLevels = null, allowOther = false) {
   const placeholder = document.createElement("option");
   placeholder.value = "";
   placeholder.textContent = "Seleccione un cargo";
@@ -258,7 +277,14 @@ function populateApprovalRoleSelect(select, selected = "", allowedLevels = null)
     for (const cargo of group.cargos) optgroup.append(new Option(cargo, cargo));
     options.push(optgroup);
   }
+  if (allowOther) options.push(new Option("Otro — ¿Cuál?", "__otro__"));
   if (selected && !allowedRoles.has(selected)) {
+    if (allowOther) {
+      select.replaceChildren(...options);
+      select.value = "__otro__";
+      syncApprovalOther(select, selected);
+      return;
+    }
     const savedGroup = document.createElement("optgroup");
     savedGroup.label = "Valor guardado anteriormente";
     savedGroup.append(new Option("Conservar: " + selected, selected));
@@ -266,6 +292,7 @@ function populateApprovalRoleSelect(select, selected = "", allowedLevels = null)
   }
   select.replaceChildren(...options);
   select.value = selected;
+  syncApprovalOther(select);
 }
 
 function suggestNextChangeVersion(changes, fallback = "1.0") {
@@ -283,6 +310,40 @@ function suggestNextChangeVersion(changes, fallback = "1.0") {
   const base = highest || (validVersion.test(fallbackVersion) ? fallbackVersion : "1.0");
   const [major, minor] = base.split(".").map(Number);
   return `${major}.${minor + 1}`;
+}
+
+function changeLogWarnings(changes) {
+  const warnings = [];
+  const versionPattern = /^(\d+)\.(\d+)$/;
+  const monthNames = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
+  const dateLabel = value => {
+    const [year, month, day] = String(value).split("-").map(Number);
+    return Number.isInteger(year) && Number.isInteger(month) && Number.isInteger(day) && monthNames[month - 1]
+      ? `${day} de ${monthNames[month - 1]} de ${year}`
+      : value;
+  };
+  let previousVersion = null;
+  let previousDate = "";
+  for (const [index, change] of (Array.isArray(changes) ? changes : []).entries()) {
+    const version = String(change?.version || "").trim();
+    const date = String(change?.fecha || "").trim();
+    const versionMatch = version.match(versionPattern);
+    if (version && !versionMatch) warnings.push(`Inconsistencia de versión en el cambio ${index + 1}: use el formato mayor.menor, por ejemplo 1.0.`);
+    if (versionMatch) {
+      const currentVersion = versionMatch.slice(1).map(Number);
+      if (previousVersion && (currentVersion[0] < previousVersion[0] || (currentVersion[0] === previousVersion[0] && currentVersion[1] <= previousVersion[1]))) {
+        warnings.push(`Inconsistencia de versión en el cambio ${index + 1}: ${version} no es posterior a ${previousVersion.join(".")}. Verifique el orden o confirme que corresponde a un historial excepcional.`);
+      }
+      previousVersion = currentVersion;
+    }
+    if (date && previousDate && date < previousDate) warnings.push(`Inconsistencia de fecha en el cambio ${index + 1}: ${dateLabel(date)} es anterior a ${dateLabel(previousDate)}. Revise la cronología.`);
+    if (date) previousDate = date;
+  }
+  return warnings;
+}
+
+function syncChangeLogWarnings() {
+  setMessage(ui.changesMessage, changeLogWarnings(changeRows).join(" "));
 }
 
 function procedureCode(processCode, consecutive) {
@@ -437,8 +498,9 @@ function documentSectionIsComplete() {
     annex && ["documento", "tipo", "codigo", "observacion"].every(key => activityTextIsFilled(annex[key]))));
   const changesComplete = changeRows.length > 0 && changeRows.every(change =>
     change && ["version", "fecha", "razon"].every(key => activityTextIsFilled(change[key])));
-  const roles = [ui.draftPreparedBy.value, ui.draftReviewedBy.value, ui.draftApprovedBy.value]
-    .map(value => String(value || "").trim().toLocaleLowerCase("es-CO"));
+  const roles = [ui.draftPreparedBy, ui.draftReviewedBy, ui.draftApprovedBy]
+    .map(approvalRoleValue)
+    .map(value => value.toLocaleLowerCase("es-CO"));
   return annexesComplete && changesComplete && roles.every(Boolean) && new Set(roles).size === roles.length;
 }
 
@@ -676,6 +738,7 @@ function recordField(record, index, section, key, labelText, kind = "input", opt
     }
     record[key] = input.value;
     markDirty();
+    if (section === "change") syncChangeLogWarnings();
   });
   field.append(label, input);
   return field;
@@ -747,6 +810,7 @@ function renderChanges() {
     return row;
   }));
   installMethodHelps(ui.changesList);
+  syncChangeLogWarnings();
 }
 
 function destinationField(activity, index, key, labelText) {
@@ -2230,7 +2294,7 @@ function populateDraft(procedure) {
   ui.draftName.value = procedure.name;
   for (const [inputId, fieldId] of textFields) {
     const value = typeof currentPayload.fields?.[fieldId] === "string" ? currentPayload.fields[fieldId] : "";
-    if (inputId === "draftPreparedBy" || inputId === "draftReviewedBy") populateApprovalRoleSelect(ui[inputId], value);
+    if (inputId === "draftPreparedBy" || inputId === "draftReviewedBy") populateApprovalRoleSelect(ui[inputId], value, null, true);
     else if (inputId === "draftApprovedBy") populateApprovalRoleSelect(ui[inputId], value, ["Directivo"]);
     else ui[inputId].value = value;
   }
@@ -2316,8 +2380,8 @@ function newDraft() {
   renderChanges();
   setMessage(ui.documentsMessage, "");
   ui.draftForm.reset();
-  populateApprovalRoleSelect(ui.draftPreparedBy);
-  populateApprovalRoleSelect(ui.draftReviewedBy);
+  populateApprovalRoleSelect(ui.draftPreparedBy, "", null, true);
+  populateApprovalRoleSelect(ui.draftReviewedBy, "", null, true);
   populateApprovalRoleSelect(ui.draftApprovedBy, "", ["Directivo"]);
   for (const [inputId] of textFields) ui[inputId].value = "";
   showRoleSeparation();
@@ -2383,7 +2447,17 @@ ui.draftConsecutive.addEventListener("input", () => {
   refreshProcedureProgress();
 });
 for (const inputId of ["draftPreparedBy", "draftReviewedBy", "draftApprovedBy"]) {
-  ui[inputId].addEventListener("change", showRoleSeparation);
+  ui[inputId].addEventListener("change", () => {
+    syncApprovalOther(ui[inputId]);
+    showRoleSeparation();
+    refreshProcedureProgress();
+  });
+}
+for (const inputId of ["draftPreparedOther", "draftReviewedOther"]) {
+  ui[inputId].addEventListener("input", () => {
+    showRoleSeparation();
+    refreshProcedureProgress();
+  });
 }
 ui.annexApplicability.addEventListener("change", () => {
   if (ui.annexApplicability.value === "no_aplica") {
@@ -2480,6 +2554,9 @@ ui.draftForm.addEventListener("submit", async event => {
     : {};
   const updatedFields = { ...fields, nombre: name };
   for (const [inputId, fieldId] of textFields) updatedFields[fieldId] = ui[inputId].value;
+  updatedFields.elaboro = approvalRoleValue(ui.draftPreparedBy);
+  updatedFields.reviso = approvalRoleValue(ui.draftReviewedBy);
+  updatedFields.aprobo = approvalRoleValue(ui.draftApprovedBy);
   const payload = {
     ...currentPayload,
     fields: updatedFields,
@@ -2940,9 +3017,9 @@ function showPreview({ branding = "standard" } = {}) {
     return row;
   }, { variant: "activities", columnWidths: activityColumnWidths });
   const approvals = reportTable(["Elaboró", "Revisó", "Aprobó"], [{}], () => [
-    [ui.draftPreparedBy.value, ui.draftPreparedName.value && `Nombre: ${ui.draftPreparedName.value}`].filter(Boolean).join("\n"),
-    [ui.draftReviewedBy.value, ui.draftReviewedName.value && `Nombre: ${ui.draftReviewedName.value}`].filter(Boolean).join("\n"),
-    [ui.draftApprovedBy.value, ui.draftApprovedName.value && `Nombre: ${ui.draftApprovedName.value}`].filter(Boolean).join("\n")
+    [approvalRoleValue(ui.draftPreparedBy), ui.draftPreparedName.value && `Nombre: ${ui.draftPreparedName.value}`].filter(Boolean).join("\n"),
+    [approvalRoleValue(ui.draftReviewedBy), ui.draftReviewedName.value && `Nombre: ${ui.draftReviewedName.value}`].filter(Boolean).join("\n"),
+    [approvalRoleValue(ui.draftApprovedBy), ui.draftApprovedName.value && `Nombre: ${ui.draftApprovedName.value}`].filter(Boolean).join("\n")
   ]);
   const report = document.createElement("article");
   report.className = "preview-report";
@@ -3082,8 +3159,8 @@ ui.logoutButton.addEventListener("click", async () => {
 });
 
 csrfToken = sessionStorage.getItem(csrfKey) || "";
-populateApprovalRoleSelect(ui.draftPreparedBy);
-populateApprovalRoleSelect(ui.draftReviewedBy);
+populateApprovalRoleSelect(ui.draftPreparedBy, "", null, true);
+populateApprovalRoleSelect(ui.draftReviewedBy, "", null, true);
 populateApprovalRoleSelect(ui.draftApprovedBy, "", ["Directivo"]);
 installMethodHelps(document);
 setupMethodTooltip();

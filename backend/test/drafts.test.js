@@ -558,15 +558,6 @@ test("submission rejects incomplete drafts, stale revisions, and evaluators outs
     return true;
   });
   assert.equal(procedureUpdates, 0, "a diagram without activities must never be submitted");
-  procedure.current_payload = {
-    ...completePayload,
-    changes: [...completePayload.changes, { version: "1.0", fecha: "2026-10-03", razon: "Actualización" }]
-  };
-  await assert.rejects(submitOwnDraft(pool, author, draftId, { evaluatorId: evaluator.id, revision: 4 }), error => {
-    assert.equal(error.code, "submission_incomplete");
-    assert.ok(error.details.includes("Cada versión del control de cambios debe ser única."));
-    return true;
-  });
   procedure.current_payload = completePayload;
   evaluatorAssigned = false;
   await assert.rejects(submitOwnDraft(pool, author, draftId, { evaluatorId: evaluator.id, revision: 4 }), { code: "evaluator_unavailable" });

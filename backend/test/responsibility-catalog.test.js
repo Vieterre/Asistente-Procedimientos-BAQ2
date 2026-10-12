@@ -35,10 +35,15 @@ test("activity, decision, and control responsibility groups match the original c
   assert.match(draftsScript, /createResponsibilityField\(activity, index, key, labelText, "controlResponsible"\)/);
   assert.match(draftsScript, /otherOption\.textContent = "Otro — ¿Cuál\?"/);
   assert.match(draftsScript, /value && !responsibilityRoleNames\.has\(value\)/);
+  assert.match(draftsScript, /inputId === "draftPreparedBy" \|\| inputId === "draftReviewedBy"\) populateApprovalRoleSelect\(ui\[inputId\], value, null, true\)/);
+  assert.match(draftsScript, /if \(allowOther\) options\.push\(new Option\("Otro — ¿Cuál\?", "__otro__"\)\)/);
   assert.match(draftsScript, /inputId === "draftApprovedBy"\) populateApprovalRoleSelect\(ui\[inputId\], value, \["Directivo"\]\)/);
   assert.match(draftsScript, /Valor guardado anteriormente/);
   for (const id of ["draftPreparedBy", "draftReviewedBy", "draftApprovedBy"]) {
     assert.match(draftsHtml, new RegExp(`<select id="${id}"><\\/select>`));
+  }
+  for (const id of ["draftPreparedOther", "draftReviewedOther"]) {
+    assert.match(draftsHtml, new RegExp(`<input id="${id}"`));
   }
   assert.doesNotMatch(draftsHtml, /<datalist id="roleOptions"/);
 });
