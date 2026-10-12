@@ -5,7 +5,7 @@ const ids = [
   "institutionalReportsButton", "institutionalReportsSection", "institutionalReportsCount", "institutionalReportsMessage", "emptyInstitutionalReports", "institutionalReportsList", "backFromInstitutionalReports", "refreshInstitutionalReports",
   "passwordRequired", "draftWorkspace", "draftForm", "editorTitle", "editorStatus", "submitReviewButton", "submitReviewDialog", "submitReviewForm", "reviewEvaluatorSelect", "submitReviewMessage", "cancelSubmitReview", "confirmSubmitReview",
   "evaluatorInbox", "evaluatorDraftCount", "evaluatorInboxMessage", "emptyEvaluatorInbox", "evaluatorDraftList", "refreshEvaluatorInbox", "evaluatorDetail", "evaluatorDetailTitle", "evaluatorDetailStatus", "backToEvaluatorInbox", "startEvaluationButton",
-  "evaluationWorkspace", "evaluationProgress", "evaluationScore", "evaluationLevel", "evaluationVariableResults", "evaluationCriteriaGroups", "evaluationAutoConcept", "evaluationConcept", "evaluationMessage", "exportEvaluationReportButton", "saveEvaluationButton", "returnEvaluationButton", "favorableEvaluationButton",
+  "evaluationWorkspace", "evaluationProgress", "evaluationScore", "evaluationLevel", "evaluationVariableResults", "evaluationCriteriaGroups", "evaluationAutoConcept", "evaluationConcept", "evaluationDecisionHint", "evaluationMessage", "exportEvaluationReportButton", "saveEvaluationButton", "returnEvaluationButton", "favorableEvaluationButton",
   "returnedEvaluation", "returnedEvaluationSummary", "returnedEvaluationConcept", "returnedFindings", "saveEvaluationResponses", "returnedEvaluationMessage",
   "draftName", "draftNameStatus", "processCode", "draftConsecutive", "draftCode", "draftCodeStatus", "draftObjective", "draftScope", "draftDefinitions", "draftDefinitionsStatus", "draftConditions", "saveDraftButton", "reloadDraftButton", "editorMessage",
   "procedureProgress", "newDraftButton", "addNormButton", "normsList", "emptyNorms", "normReview", "addBoundaryButton", "addActivityButton", "addDecisionButton", "addConnectorButton", "activitiesList", "emptyActivities", "reviewFlowButton", "flowReviewResult", "refreshDraftsButton", "draftCount", "listMessage", "emptyDrafts",
@@ -2032,6 +2032,17 @@ function refreshEvaluationSummary() {
   ui.returnEvaluationButton.disabled = !returnReady;
   ui.favorableEvaluationButton.classList.toggle("is-ready", favorableReady);
   ui.returnEvaluationButton.classList.toggle("is-ready", returnReady);
+  const missing = metrics.total - metrics.completed;
+  let decisionHint = "";
+  if (editable && missing > 0) {
+    decisionHint = `Faltan ${missing} criterio(s) por completar. Cada criterio debe tener resultado y observación; todo “No cumple” requiere además el ajuste solicitado.`;
+  } else if (returnReady) {
+    decisionHint = `La evaluación está completa y tiene ${metrics.failures} incumplimiento(s). Ya puedes emitir el concepto no favorable y devolver para ajustes.`;
+  } else if (favorableReady) {
+    decisionHint = "La evaluación está completa y todos los criterios cumplen. Ya puedes emitir el concepto favorable.";
+  }
+  ui.evaluationDecisionHint.textContent = decisionHint;
+  ui.evaluationDecisionHint.hidden = !decisionHint;
   const automaticConcept = automaticEvaluationConcept(metrics);
   ui.evaluationAutoConcept.hidden = !automaticConcept;
   ui.evaluationAutoConcept.textContent = automaticConcept;

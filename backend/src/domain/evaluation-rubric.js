@@ -109,6 +109,7 @@ export function sanitizeEvaluationCriteria(input, version) {
 
 export function evaluationMetrics(criteria, version) {
   let answered = 0;
+  let completed = 0;
   let failures = 0;
   let criticalFailures = 0;
   let openFindings = 0;
@@ -124,6 +125,7 @@ export function evaluationMetrics(criteria, version) {
         answered += 1;
         groupAnswered += 1;
       }
+      if (evaluationCriterionComplete(record, criterion, version)) completed += 1;
       if (!notApplicable) applicable += 1;
       if (record.result === "Cumple") passed += 1;
       if (record.result === "No cumple") {
@@ -137,10 +139,17 @@ export function evaluationMetrics(criteria, version) {
     return { id: group.id, name: group.name, weight: group.weight, answered: groupAnswered, total: group.criteria.length, score: Math.round(score * 10) / 10 };
   });
   const score = Math.round(weightedScore * 10) / 10;
-  const complete = answered === EVALUATION_CRITERIA.length;
+  const complete = completed === EVALUATION_CRITERIA.length;
   const level = !complete ? "Pendiente" : score <= 39 ? "Bajo" : score < 90 ? "Medio" : "Alto";
   const decision = !complete ? "Evaluación pendiente" : score < 40 ? "No cumple" : score < 90 || failures > 0 ? "Requiere ajustes" : "Cumple";
-  return { answered, total: EVALUATION_CRITERIA.length, failures, criticalFailures, openFindings, score, level, decision, complete, groups };
+  return { answered, completed, total: EVALUATION_CRITERIA.length, failures, criticalFailures, openFindings, score, level, decision, complete, groups };
+}
+
+function evaluationCriterionComplete(record, criterion, version) {
+  if (!record?.result) return false;
+  if (record.result === "No aplica") return allowsNotApplicable(criterion, version);
+  if (!String(record.observation || "").trim()) return false;
+  return record.result === "Cumple" || Boolean(String(record.adjustment || "").trim());
 }
 
 export function validateEvaluation(criteria, version) {

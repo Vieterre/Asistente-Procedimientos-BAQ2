@@ -211,6 +211,7 @@ test("completion requires each result, observation, and adjustment for failed cr
     "Falta la observación del criterio obj2.",
     "Falta el ajuste requerido para el criterio con1."
   ]);
+  assert.equal(evaluationMetrics(criteria, "1.0").complete, false);
   assert.deepEqual(missingCorrectionResponses(criteria), ["con1"]);
 });
 
