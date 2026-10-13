@@ -3359,10 +3359,10 @@ function showPreview({ branding = "standard" } = {}) {
   if (showEvidence) activityHeaders.push("Registro / evidencia");
   if (showSystem) activityHeaders.push("Sistema / herramienta");
   const activityColumnWidths = showEvidence && showSystem
-    ? ["4%", "8%", "14%", "24%", "15%", "18%", "9%", "8%"]
+    ? ["4%", "7%", "13%", "27%", "12%", "20%", "9%", "8%"]
     : showEvidence || showSystem
-      ? ["4%", "8%", "16%", "25%", "16%", "20%", "11%"]
-      : ["4%", "8%", "18%", "27%", "17%", "26%"];
+      ? ["4%", "7%", "15%", "30%", "13%", "20%", "11%"]
+      : ["4%", "7%", "16%", "31%", "15%", "27%"];
   const activityTable = reportTable(activityHeaders, activityRows, (activity, index) => {
     const description = [activity.descripcion || ""];
     if (activity.tipo === "Decisión") description.push(`Sí → ${destinations.get(activity.decisionSi) || "Sin destino"}`, `No → ${destinations.get(activity.decisionNo) || "Sin destino"}`);

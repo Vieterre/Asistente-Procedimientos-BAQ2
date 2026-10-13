@@ -466,7 +466,7 @@ test("print reports preserve table headers, prevent row splits, and fit the flow
   assert.match(script, /table\.dataset\.columns = String\(headers\.length\)/);
   assert.match(script, /table\.dataset\.variant = variant/);
   assert.match(script, /variant: "activities", columnWidths: activityColumnWidths/);
-  assert.match(script, /\["4%", "8%", "14%", "24%", "15%", "18%", "9%", "8%"\]/);
+  assert.match(script, /\["4%", "7%", "13%", "27%", "12%", "20%", "9%", "8%"\]/);
   assert.match(css, /@page\{size:A4 landscape;margin:12mm\}/);
   assert.match(css, /@page\{size:A4 portrait!important;margin:4mm!important\}/);
   assert.match(css, /\.preview-report-table\[data-variant="activities"\]\{table-layout:fixed\}/);
@@ -482,6 +482,7 @@ test("print reports preserve table headers, prevent row splits, and fit the flow
   assert.match(css, /\.preview-report-table thead\{display:table-header-group;break-inside:avoid-page;page-break-inside:avoid\}/);
   assert.match(css, /\.preview-report-flow \.preview-diagram svg\{display:block;width:auto!important;max-width:100%!important;height:auto!important;max-height:250mm/);
   assert.match(css, /@media print\{\.preview-report-flow \.preview-diagram svg\{width:auto!important;max-width:100%!important;height:auto!important;max-height:250mm!important\}\}/);
+  assert.match(css, /@media print\{\.preview-report-table\[data-variant="activities"\],\.preview-report-table\[data-variant="activities"\] th,\.preview-report-table\[data-variant="activities"\] td\{font-size:6\.8pt!important;line-height:1\.25!important\}/);
   assert.match(script, /function printableReportTitle\(\)/);
   assert.match(script, /document\.title = printableReportTitle\(\)/);
   assert.match(script, /const printRoot = document\.createElement\("div"\)/);
