@@ -2036,7 +2036,9 @@ function refreshEvaluationSummary() {
   ui.evaluationProgress.textContent = `${metrics.completed} de ${metrics.total} criterios validados · ${metrics.failures} incumplidos · ${metrics.criticalFailures} críticos`;
   ui.evaluationScore.textContent = `${metrics.score.toFixed(1)}%`;
   ui.evaluationLevel.textContent = metrics.level;
-  const editable = currentUserRole === "evaluador" && currentDraft?.status === "en_evaluacion";
+  // The decision buttons must follow the active evaluation form, which was already
+  // authorized when it was rendered. The server remains the final workflow guard.
+  const editable = currentUserRole === "evaluador" && !ui.evaluationWorkspace.hidden && !ui.evaluationConcept.disabled;
   const favorableReady = editable && metrics.complete && metrics.failures === 0;
   const returnReady = editable && metrics.complete && metrics.failures > 0;
   synchronizeEvaluationDecisionButtons(favorableReady, returnReady);
