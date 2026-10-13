@@ -483,6 +483,7 @@ test("print reports preserve table headers, prevent row splits, and fit the flow
   assert.match(css, /\.preview-report-flow \.preview-diagram svg\{display:block;width:auto!important;max-width:100%!important;height:auto!important;max-height:250mm/);
   assert.match(css, /@media print\{\.preview-report-flow \.preview-diagram svg\{width:auto!important;max-width:100%!important;height:auto!important;max-height:250mm!important\}\}/);
   assert.match(css, /@media print\{\.preview-report-table\[data-variant="activities"\],\.preview-report-table\[data-variant="activities"\] th,\.preview-report-table\[data-variant="activities"\] td\{font-size:6\.8pt!important;line-height:1\.25!important\}/);
+  assert.match(css, /\.preview-report-table\[data-variant="activities"\] td:nth-child\(n\+3\)\{text-align:justify!important;text-align-last:left!important;text-justify:inter-word!important;hyphens:auto!important\}/);
   assert.match(script, /function printableReportTitle\(\)/);
   assert.match(script, /document\.title = printableReportTitle\(\)/);
   assert.match(script, /const printRoot = document\.createElement\("div"\)/);
