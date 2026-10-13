@@ -101,6 +101,8 @@ test("private consoles serve only their own assets with a restrictive policy", a
     assert.match(accountsScript, /method: "PUT", csrf: true, body: \{ processCodes \}/);
     const draftHtml = await (await fetch(base + "/drafts")).text();
     assert.match(draftHtml, /<form id="loginForm" method="post"/);
+    assert.match(draftHtml, /href="\/drafts\.css\?v=20261012-2"/);
+    assert.match(draftHtml, /src="\/drafts\.js\?v=20261012-2"/);
     const draftScript = await (await fetch(base + "/drafts.js")).text();
     const draftIds = draftScript.match(/const ids = \[([\s\S]*?)\];/)?.[1];
     assert.ok(draftIds);
