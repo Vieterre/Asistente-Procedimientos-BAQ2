@@ -35,7 +35,9 @@ test("activity, decision, and control responsibility groups match the original c
   assert.match(draftsScript, /createResponsibilityField\(activity, index, key, labelText, "controlResponsible"\)/);
   assert.match(draftsScript, /otherOption\.textContent = "Otro — ¿Cuál\?"/);
   assert.match(draftsScript, /value && !responsibilityRoleNames\.has\(value\)/);
-  assert.match(draftsScript, /inputId === "draftPreparedBy" \|\| inputId === "draftReviewedBy"\) populateApprovalRoleSelect\(ui\[inputId\], value, null, true\)/);
+  assert.match(draftsScript, /const nonDirectiveRoleLevels = responsibilityRoleGroups\.filter\(group => group\.level !== "Directivo"\)\.map\(group => group\.level\)/);
+  assert.match(draftsScript, /inputId === "draftPreparedBy"\) populateApprovalRoleSelect\(ui\[inputId\], value, nonDirectiveRoleLevels, true\)/);
+  assert.match(draftsScript, /else if \(inputId === "draftReviewedBy"\) populateApprovalRoleSelect\(ui\[inputId\], value, null, true\)/);
   assert.match(draftsScript, /if \(allowOther\) options\.push\(new Option\("Otro — ¿Cuál\?", "__otro__"\)\)/);
   assert.match(draftsScript, /draftPreparedBy: "draftPreparedOther"/);
   assert.match(draftsScript, /draftReviewedBy: "draftReviewedOther"/);
@@ -53,5 +55,6 @@ test("activity, decision, and control responsibility groups match the original c
   assert.match(draftsScript, /Nombre obligatorio de la persona que aprueba formalmente la versión\./);
   assert.match(draftsScript, /Debe establecer el nombre del directivo responsable de la aprobación\./);
   assert.match(draftsScript, /ui\.draftApprovedName\.addEventListener\("input"/);
+  assert.match(draftsScript, /populateApprovalRoleSelect\(ui\.draftPreparedBy, "", nonDirectiveRoleLevels, true\)/);
   assert.doesNotMatch(draftsHtml, /<datalist id="roleOptions"/);
 });

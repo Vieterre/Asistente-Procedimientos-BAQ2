@@ -31,7 +31,9 @@ const errorMessages = {
   invalid_process: "Selecciona un proceso activo.",
   invalid_procedure_code: "Indica un consecutivo entre 1 y 999 para generar el código del procedimiento.",
   procedure_code_taken: "El código ya está asignado a otro procedimiento. Elige otro consecutivo.",
+  procedure_name_taken: "El nombre ya está registrado en otro procedimiento. Elige un nombre distinto.",
   procedure_code_locked: "El código queda fijo después de enviar el procedimiento a evaluación.",
+  invalid_preparer_role: "Los cargos directivos no pueden figurar en Elaboró. Selecciona un cargo no directivo.",
   draft_not_found: "El borrador ya no está disponible.",
   draft_locked: "Este procedimiento ya no se puede editar desde esta pantalla.",
   draft_conflict: "El borrador cambió en otra sesión. Vuelve a abrirlo antes de guardar.",
@@ -94,6 +96,7 @@ const responsibilityRoleGroups = [
   { level: "Asistencial", cargos: ["Auxiliar Administrativo", "Auxiliar de Servicios Generales", "Secretario", "Auxiliar área salud", "Bombero", "Sargento de Bomberos", "Cabo Bombero", "Teniente de Bombero", "Operario", "Secretaria Ejecutiva"] }
 ];
 const responsibilityRoleNames = new Set(responsibilityRoleGroups.flatMap(group => group.cargos));
+const nonDirectiveRoleLevels = responsibilityRoleGroups.filter(group => group.level !== "Directivo").map(group => group.level);
 const textFields = [
   ["draftObjective", "objetivo"],
   ["draftScope", "alcance"],
@@ -1458,6 +1461,12 @@ function setMessage(node, text, success = false) {
 }
 
 function errorText(error) {
+  if (["procedure_code_taken", "procedure_name_taken"].includes(error.code) && error.details && typeof error.details === "object" &&
+      typeof error.details.code === "string" && typeof error.details.name === "string") {
+    return error.code === "procedure_code_taken"
+      ? `El código ${error.details.code} ya está asignado al procedimiento “${error.details.name}”.`
+      : `El nombre “${error.details.name}” ya está registrado con el código ${error.details.code || "sin código"}.`;
+  }
   if (error.code === "submission_incomplete" && Array.isArray(error.details)) {
     return `${errorMessages.submission_incomplete}\n${error.details.map(issue => `• ${issue}`).join("\n")}`;
   }
@@ -2211,8 +2220,6 @@ function renderEvaluationWorkspace() {
         location.textContent = `Ubicación del ajuste: ${record.adjustmentLocation}`;
         grid.append(location);
       }
-      const trace = createFindingTrace(record);
-      if (trace) grid.append(trace);
       result.addEventListener("change", () => {
         const oldDefault = standardEvaluationObservation(criterion.question, record.result);
         record.result = result.value;
@@ -2250,47 +2257,6 @@ function standardEvaluationObservation(question, result) {
   return result === "Cumple" ? `Se verifica el cumplimiento del criterio: ${statement}.` : `No se evidencia el cumplimiento del criterio: ${statement}.`;
 }
 
-function findingTraceEntries(record) {
-  return Array.isArray(record?.trace)
-    ? record.trace.filter(entry => entry && typeof entry === "object" && entry.action).slice(-40)
-    : [];
-}
-
-function findingTraceDetail(entry) {
-  if (entry.action === "Ajuste solicitado") return entry.adjustment ? `Ajuste requerido: ${entry.adjustment}` : "Ajuste requerido registrado.";
-  if (entry.action === "Respuesta del Elaborador") {
-    const action = entry.response ? `Acción realizada: ${entry.response}` : "Acción realizada registrada.";
-    return entry.adjustmentLocation ? `${action}\nUbicación del ajuste: ${entry.adjustmentLocation}` : action;
-  }
-  if (entry.action === "Reenvío a evaluación") return "El procedimiento fue reenviado para verificar este ajuste.";
-  if (entry.action === "Respuesta retirada") return "La respuesta se retiró y el hallazgo volvió a estar pendiente.";
-  if (entry.action === "Hallazgo cerrado") return `Resultado: ${entry.result || "Cumple"} · Estado: ${entry.findingStatus || "Cerrado"}`;
-  return `Resultado: ${entry.result || "Sin cambio"} · Estado: ${entry.findingStatus || "En verificación"}`;
-}
-
-function createFindingTrace(record) {
-  const entries = findingTraceEntries(record);
-  if (!entries.length) return null;
-  const section = document.createElement("section");
-  section.className = "finding-trace";
-  const title = document.createElement("h5");
-  title.textContent = "Trazabilidad del hallazgo";
-  const list = document.createElement("ol");
-  for (const entry of entries) {
-    const item = document.createElement("li");
-    const heading = document.createElement("strong");
-    const date = new Date(entry.at);
-    const timestamp = Number.isNaN(date.valueOf()) ? "Sin fecha" : date.toLocaleString("es-CO");
-    heading.textContent = `${entry.action} · ${entry.actor || entry.role || "Usuario"} · revisión ${Number(entry.iteration || 1)} · ${timestamp}`;
-    const detail = document.createElement("p");
-    detail.textContent = findingTraceDetail(entry);
-    item.append(heading, detail);
-    list.append(item);
-  }
-  section.append(title, list);
-  return section;
-}
-
 function renderReturnedEvaluation() {
   ui.returnedEvaluation.hidden = !returnedEvaluation || !["devuelto_para_ajustes", "concepto_favorable", "concepto_no_favorable"].includes(currentDraft?.status);
   if (ui.returnedEvaluation.hidden) return;
@@ -2309,8 +2275,6 @@ function renderReturnedEvaluation() {
     const adjustment = document.createElement("p");
     adjustment.textContent = `Ajuste requerido: ${record.adjustment || "Sin detalle"}`;
     item.append(title, observation, adjustment);
-    const trace = createFindingTrace(record);
-    if (trace) item.append(trace);
     const grid = document.createElement("div");
     const response = document.createElement("textarea");
     response.id = `authorResponse-${id}`;
@@ -2466,7 +2430,8 @@ function populateDraft(procedure) {
   ui.draftName.value = procedure.name;
   for (const [inputId, fieldId] of textFields) {
     const value = typeof currentPayload.fields?.[fieldId] === "string" ? currentPayload.fields[fieldId] : "";
-    if (inputId === "draftPreparedBy" || inputId === "draftReviewedBy") populateApprovalRoleSelect(ui[inputId], value, null, true);
+    if (inputId === "draftPreparedBy") populateApprovalRoleSelect(ui[inputId], value, nonDirectiveRoleLevels, true);
+    else if (inputId === "draftReviewedBy") populateApprovalRoleSelect(ui[inputId], value, null, true);
     else if (inputId === "draftApprovedBy") populateApprovalRoleSelect(ui[inputId], value, ["Directivo"]);
     else ui[inputId].value = value;
   }
@@ -2552,7 +2517,7 @@ function newDraft() {
   renderChanges();
   setMessage(ui.documentsMessage, "");
   ui.draftForm.reset();
-  populateApprovalRoleSelect(ui.draftPreparedBy, "", null, true);
+  populateApprovalRoleSelect(ui.draftPreparedBy, "", nonDirectiveRoleLevels, true);
   populateApprovalRoleSelect(ui.draftReviewedBy, "", null, true);
   populateApprovalRoleSelect(ui.draftApprovedBy, "", ["Directivo"]);
   for (const [inputId] of textFields) ui[inputId].value = "";
@@ -3449,7 +3414,7 @@ ui.logoutButton.addEventListener("click", async () => {
 });
 
 csrfToken = sessionStorage.getItem(csrfKey) || "";
-populateApprovalRoleSelect(ui.draftPreparedBy, "", null, true);
+populateApprovalRoleSelect(ui.draftPreparedBy, "", nonDirectiveRoleLevels, true);
 populateApprovalRoleSelect(ui.draftReviewedBy, "", null, true);
 populateApprovalRoleSelect(ui.draftApprovedBy, "", ["Directivo"]);
 installMethodHelps(document);

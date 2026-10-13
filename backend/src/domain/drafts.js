@@ -19,6 +19,10 @@ const NORM_TYPES = ["Interna", "Externa"];
 const GENERIC_PROCEDURE_VERBS = new Set(["gestionar", "administrar", "realizar"]);
 const PROCEDURE_TYPE_WORDS = new Set(["procedimiento", "proceso", "tramite", "instructivo", "formato"]);
 const GENERIC_PROCEDURE_OBJECTS = new Set(["informe", "informes", "contrato", "contratos", "solicitud", "solicitudes", "documento", "documentos", "registro", "registros"]);
+const DIRECTIVE_RESPONSIBILITIES = new Set([
+  "Jefe de Oficina", "Director", "Tesorero Distrital", "Secretario de despacho",
+  "Gerente", "Secretario Local de Salud"
+].map(normalizedWord));
 
 function normalizedWord(value) {
   return String(value || "").normalize("NFD").replace(/\p{Diacritic}/gu, "").toLocaleLowerCase("es-CO");
@@ -26,6 +30,14 @@ function normalizedWord(value) {
 
 function procedureNameWords(value) {
   return String(value || "").trim().match(/[\p{L}\p{N}]+/gu) || [];
+}
+
+function normalizedProcedureName(value) {
+  return String(value || "").trim().replace(/\s+/g, " ").toLocaleLowerCase("es-CO");
+}
+
+function isDirectiveResponsibility(value) {
+  return DIRECTIVE_RESPONSIBILITIES.has(normalizedWord(value));
 }
 
 export function procedureNameIssues(value) {
@@ -167,7 +179,29 @@ function validateDraft({ name, payload }) {
   if (cleanName.length > 200) issues.push("El nombre supera la longitud permitida.");
   if (!validPayload(payload)) issues.push("El contenido del borrador no es válido.");
   if (issues.length) throw new DraftError("invalid_draft", 400, issues);
+  if (isDirectiveResponsibility(payload.fields?.elaboro)) {
+    throw new DraftError("invalid_preparer_role", 400);
+  }
   return cleanName;
+}
+
+async function duplicateProcedureError(client, { name, code, excludeId = null }) {
+  const result = await client.query(
+    `SELECT code, name
+       FROM procedures
+      WHERE (($1::text IS NOT NULL AND code = $1)
+          OR lower(regexp_replace(btrim(name), '\\s+', ' ', 'g')) = $2)
+        AND ($3::uuid IS NULL OR id <> $3)
+      ORDER BY CASE WHEN $1::text IS NOT NULL AND code = $1 THEN 0 ELSE 1 END, name
+      LIMIT 1`,
+    [code, normalizedProcedureName(name), excludeId]
+  );
+  const existing = result.rows[0];
+  if (!existing) return null;
+  return new DraftError(existing.code === code ? "procedure_code_taken" : "procedure_name_taken", 409, {
+    code: existing.code,
+    name: existing.name
+  });
 }
 
 function publicDraft(row, includePayload = false) {
@@ -295,8 +329,10 @@ export async function createDraft(pool, user, { name, processCode, consecutive, 
     return publicDraft(result.rows[0], true);
   } catch (error) {
     await client.query("ROLLBACK");
-    if (error?.code === "23505" && error?.constraint === "procedures_code_unique") {
-      throw new DraftError("procedure_code_taken", 409);
+    if (error?.code === "23505" && ["procedures_code_unique", "procedures_name_normalized_unique"].includes(error?.constraint)) {
+      const duplicate = await duplicateProcedureError(client, { name: cleanName, code });
+      if (duplicate) throw duplicate;
+      throw new DraftError(error.constraint === "procedures_code_unique" ? "procedure_code_taken" : "procedure_name_taken", 409);
     }
     throw error;
   } finally {
@@ -342,8 +378,10 @@ export async function updateOwnDraft(pool, user, id, { name, consecutive, payloa
     return publicDraft(result.rows[0], true);
   } catch (error) {
     await client.query("ROLLBACK");
-    if (error?.code === "23505" && error?.constraint === "procedures_code_unique") {
-      throw new DraftError("procedure_code_taken", 409);
+    if (error?.code === "23505" && ["procedures_code_unique", "procedures_name_normalized_unique"].includes(error?.constraint)) {
+      const duplicate = await duplicateProcedureError(client, { name: cleanName, code, excludeId: id });
+      if (duplicate) throw duplicate;
+      throw new DraftError(error.constraint === "procedures_code_unique" ? "procedure_code_taken" : "procedure_name_taken", 409);
     }
     throw error;
   } finally {

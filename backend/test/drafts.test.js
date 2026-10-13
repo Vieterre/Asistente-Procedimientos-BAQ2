@@ -266,6 +266,45 @@ test("draft creation accepts partial content and rejects malformed data or proce
   assert.equal((await createDraft(pool, author, { name: "Fomento al Desarrollo Económico y Competitividad", processCode: "DE", payload: {} })).status, "borrador");
 });
 
+test("draft identity conflicts identify the existing procedure and directivos cannot elaborate", async () => {
+  const conflict = constraint => Object.assign(new Error("duplicate"), { code: "23505", constraint });
+  let databaseError = conflict("procedures_code_unique");
+  let existing = { code: "DE-P-001", name: "Formular el plan anual" };
+  const pool = { connect: async () => ({
+    async query(sql) {
+      if (["BEGIN", "ROLLBACK"].includes(sql)) return { rows: [] };
+      if (sql.startsWith("SELECT 1 FROM processes")) return { rows: [{ "?column?": 1 }] };
+      if (sql.startsWith("INSERT INTO procedures")) throw databaseError;
+      if (sql.includes("SELECT code, name") && sql.includes("FROM procedures")) return { rows: [existing] };
+      throw new Error(`Unexpected SQL: ${sql}`);
+    },
+    release() {}
+  }) };
+
+  await assert.rejects(createDraft(pool, author, {
+    name: "Formular el plan anual", processCode: "DE", consecutive: "1", payload: { fields: {} }
+  }), error => {
+    assert.equal(error.code, "procedure_code_taken");
+    assert.deepEqual(error.details, existing);
+    return true;
+  });
+
+  databaseError = conflict("procedures_name_normalized_unique");
+  existing = { code: "DE-P-002", name: "Formular el plan anual" };
+  await assert.rejects(createDraft(pool, author, {
+    name: " Formular   el plan anual ", processCode: "DE", consecutive: "3", payload: { fields: {} }
+  }), error => {
+    assert.equal(error.code, "procedure_name_taken");
+    assert.deepEqual(error.details, existing);
+    return true;
+  });
+
+  const noConnect = { connect: async () => { throw new Error("should not connect"); } };
+  await assert.rejects(createDraft(noConnect, author, {
+    name: "Formular el plan anual", processCode: "DE", payload: { fields: { elaboro: "Director" } }
+  }), { code: "invalid_preparer_role", status: 400 });
+});
+
 test("procedure names follow the original structure rules", () => {
   assert.deepEqual(procedureNameIssues("Fomentar el desarrollo económico y la competitividad"), []);
   assert.ok(procedureNameIssues("Fomento al Desarrollo Económico y Competitividad").some(issue => issue.includes("infinitivo")));

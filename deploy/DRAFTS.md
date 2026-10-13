@@ -56,8 +56,10 @@ Cada procedimiento puede usar el código institucional derivado del formulario
 original: `CODIGO_PROCESO-P-CONSECUTIVO`, por ejemplo `PD-P-006`. El
 consecutivo acepta de 1 a 999 y se completa a tres dígitos. Puede quedar vacío
 en un borrador incompleto, pero es obligatorio para enviarlo a evaluación. La
-base evita códigos repetidos y el código queda fijo después del primer envío;
-un borrador histórico sin código puede recibirlo al guardarse de nuevo.
+base evita códigos y nombres repetidos, sin importar mayúsculas o espacios
+duplicados. Si hay conflicto, el formulario identifica el código y el nombre ya
+registrados. El código queda fijo después del primer envío; un borrador
+histórico sin código puede recibirlo al guardarse de nuevo.
 
 Antes de reiniciar el servicio actualizado, compruebe que la cuenta de prueba
 `planeacionprueba` tenga asignado el proceso del borrador de prueba y exista un
@@ -226,9 +228,10 @@ persistencia tras cerrar sesion. Esto no certifica equivalencia completa:
 ## Activacion
 
 1. Respalde la base activa y verifique el respaldo antes de la migracion.
-2. Antes de aplicar `008_procedure_codes`, compruebe que no existan codigos
-   repetidos ni codigos heredados fuera del patron; la migracion se detiene sin
-   cambios si encuentra un valor que no pueda validar.
+2. Antes de aplicar `008_procedure_codes` y `009_procedure_names`, compruebe
+   que no existan códigos o nombres repetidos ni códigos heredados fuera del
+   patrón; las migraciones se detienen sin cambios si encuentran un valor que
+   no pueda validar.
 3. Actualice el checkout del servicio y ejecute `npm test`. La actualización de
    reportes no añade una migración ni permisos SQL; si las migraciones ya están
    al día, continúe con el reinicio del servicio.
