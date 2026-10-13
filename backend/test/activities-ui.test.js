@@ -273,6 +273,7 @@ test("evaluation combines a non-favorable decision with return and records the l
   assert.match(script, /const editable = currentUserRole === "evaluador" && !ui\.evaluationWorkspace\.hidden && !ui\.evaluationConcept\.disabled;/);
   assert.match(script, /const favorableReady = editable && metrics\.complete && metrics\.failures === 0;/);
   assert.match(script, /const returnReady = editable && metrics\.complete && metrics\.failures > 0;/);
+  assert.match(script, /return \{ answered, completed, complete, total: evaluationCriteriaList\(\)\.length,/);
   assert.match(script, /function synchronizeEvaluationDecisionButtons\(favorableReady, returnReady\)/);
   assert.match(script, /requestAnimationFrame\(apply\)/);
   assert.match(script, /Ya puedes emitir el concepto no favorable y devolver para ajustes\./);

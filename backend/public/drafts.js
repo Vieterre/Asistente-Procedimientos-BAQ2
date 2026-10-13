@@ -2015,7 +2015,7 @@ function localEvaluationMetrics() {
   });
   const score = Math.round(weighted * 10) / 10;
   const complete = completed === evaluationCriteriaList().length;
-  return { answered, completed, total: evaluationCriteriaList().length, failures, criticalFailures, openFindings, score,
+  return { answered, completed, complete, total: evaluationCriteriaList().length, failures, criticalFailures, openFindings, score,
     level: !complete ? "Pendiente" : score <= 39 ? "Bajo" : score < 90 ? "Medio" : "Alto", groups };
 }
 
