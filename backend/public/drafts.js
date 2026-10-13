@@ -3323,7 +3323,7 @@ function showPreview({ branding = "standard" } = {}) {
     procedure.className = "preview-institutional-procedure";
     for (const [className, text] of [
       ["preview-institutional-label", "Procedimiento"],
-      ["preview-institutional-name", `(${name.textContent})`],
+      ["preview-institutional-name", name.textContent],
       ["preview-institutional-process", `Proceso: ${process}`]
     ]) {
       const row = document.createElement("div");
