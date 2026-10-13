@@ -137,6 +137,9 @@ function submissionIssues(name, payload, code) {
   const flowIssues = reviewFlow(activities).filter(issue => issue.severity !== "warning");
   const completeness = reviewFlowCompleteness(activities);
   if (flowIssues.length) issues.push("Corrige las observaciones del flujo antes de enviar.");
+  if (flowIssues.some(issue => issue.message === "El punto de control debe continuar con una decisión que defina las rutas Sí y No.")) {
+    issues.push("Asocia una decisión al punto de control antes de enviar.");
+  }
   if (completeness.length) issues.push("Completa los datos obligatorios de las actividades y decisiones.");
   if (completeness.some(issue => issue.message === "El procedimiento debe incluir al menos un punto de control.")) {
     issues.push("Incluye al menos un punto de control antes de enviar.");

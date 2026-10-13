@@ -92,6 +92,12 @@ export function reviewFlow(activities) {
       : item.tipo === "Fin" ? [] : [activities[index + 1]?.uid];
     edges.set(item.uid, targets.filter(target => byId.has(target) && target !== start.uid));
   }
+  for (const [index, item] of activities.entries()) {
+    if (item.tipo !== "Actividad" || item.tieneControl !== true) continue;
+    if (activities[index + 1]?.tipo !== "Decisión") {
+      issues.push({ index, message: "El punto de control debe continuar con una decisión que defina las rutas Sí y No." });
+    }
+  }
   const reachesControlWithoutCorrection = origin => {
     const seen = new Set();
     const pending = [{ id: origin, corrected: false }];

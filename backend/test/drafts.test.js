@@ -61,6 +61,7 @@ test("flow review checks the negative route and required control details", () =>
   assert.ok(issues.some(issue => issue.index === 2 && issue.message.includes("campos obligatorios")));
   activities.splice(2, 0, { uid: "correction", tipo: "Actividad", actividad: "Ajustar solicitud", descripcion: "Completa la información requerida" });
   activities[1].decisionNo = "correction";
+  activities.splice(4, 0, { uid: "control-choice", tipo: "Decisión", decisionSi: "end", decisionNo: "correction" });
   Object.assign(activities[3], {
     controlResponsable: "Profesional", controlPeriodicidad: "Cada trámite", controlAccion: "Verifica",
     controlEjecucion: "Compara", controlDesviacion: "Devuelve", controlEvidencia: "Registro"
@@ -68,6 +69,22 @@ test("flow review checks the negative route and required control details", () =>
   issues = reviewFlow(activities);
   assert.ok(issues.every(issue => issue.severity === "warning"));
   assert.ok(issues.some(issue => issue.message.includes("no reconvergen")));
+});
+
+test("flow review requires every point of control to lead to a decision", () => {
+  const control = {
+    uid: "control", tipo: "Actividad", tieneControl: true,
+    controlResponsable: "Profesional", controlPeriodicidad: "Cada trámite", controlAccion: "Verifica",
+    controlEjecucion: "Compara", controlDesviacion: "Devuelve", controlEvidencia: "Registro"
+  };
+  const activities = [
+    { uid: "start", tipo: "Inicio" }, control,
+    { uid: "choice", tipo: "Decisión", decisionSi: "end", decisionNo: "adjust" },
+    { uid: "adjust", tipo: "Actividad" }, { uid: "end", tipo: "Fin" }
+  ];
+  assert.ok(reviewFlow(activities).every(issue => issue.severity === "warning"));
+  activities[2] = { uid: "classify", tipo: "Actividad" };
+  assert.ok(reviewFlow(activities).some(issue => issue.index === 1 && issue.message === "El punto de control debe continuar con una decisión que defina las rutas Sí y No."));
 });
 
 test("flow review traces the negative route until a control and keeps controls on activities", () => {
@@ -204,6 +221,8 @@ const completePayload = {
     { uid: "start", tipo: "Inicio", descripcion: "Solicitud recibida" },
     { uid: "work", tipo: "Actividad", actividad: "Revisar solicitud", descripcion: "Verifica la información", responsable: "Profesional", tieneControl: true,
       controlResponsable: "Profesional", controlPeriodicidad: "Por cada solicitud", controlAccion: "Verifica", controlEjecucion: "Compara la información", controlDesviacion: "Solicita ajuste", controlEvidencia: "Lista de chequeo" },
+    { uid: "choice", tipo: "Decisión", actividad: "¿La solicitud cumple?", descripcion: "¿La solicitud cumple?", responsable: "Profesional", decisionSi: "end", decisionNo: "adjust" },
+    { uid: "adjust", tipo: "Actividad", actividad: "Ajustar solicitud", descripcion: "Completa la información requerida", responsable: "Profesional" },
     { uid: "end", tipo: "Fin", descripcion: "Solicitud revisada" }
   ],
   annexes: [], changes: [{ version: "1.0", fecha: "2026-10-03", razon: "Creación inicial" }],
@@ -646,6 +665,8 @@ test("submission allows methodological flow warnings while preserving blocking f
     { uid: "choice", tipo: "Decisión", actividad: "¿La solicitud cumple?", descripcion: "¿La solicitud cumple?", responsable: "Profesional", decisionSi: "end", decisionNo: "adjust" },
     { uid: "adjust", tipo: "Actividad", actividad: "Ajustar solicitud", descripcion: "Completa la información requerida", responsable: "Profesional", tieneControl: true,
       controlResponsable: "Profesional", controlPeriodicidad: "Por cada solicitud", controlAccion: "Verifica", controlEjecucion: "Compara los requisitos", controlDesviacion: "Solicita ajuste", controlEvidencia: "Lista de chequeo" },
+    { uid: "control-choice", tipo: "Decisión", actividad: "¿El ajuste cumple?", descripcion: "¿El ajuste cumple?", responsable: "Profesional", decisionSi: "end", decisionNo: "correct" },
+    { uid: "correct", tipo: "Actividad", actividad: "Corregir solicitud", descripcion: "Ajusta la información requerida", responsable: "Profesional" },
     { uid: "end", tipo: "Fin", actividad: "Fin", descripcion: "Solicitud tramitada" }
   ];
   const warnings = reviewFlow(activities);

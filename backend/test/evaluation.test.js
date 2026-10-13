@@ -38,6 +38,8 @@ const completeDraftPayload = {
     { uid: "start", tipo: "Inicio", descripcion: "Solicitud recibida" },
     { uid: "work", tipo: "Actividad", actividad: "Revisar solicitud", descripcion: "Verifica la información", responsable: "Profesional", tieneControl: true,
       controlResponsable: "Profesional", controlPeriodicidad: "Por cada solicitud", controlAccion: "Verifica", controlEjecucion: "Compara la información", controlDesviacion: "Solicita ajuste", controlEvidencia: "Lista de chequeo" },
+    { uid: "choice", tipo: "Decisión", actividad: "¿La solicitud cumple?", descripcion: "¿La solicitud cumple?", responsable: "Profesional", decisionSi: "end", decisionNo: "adjust" },
+    { uid: "adjust", tipo: "Actividad", actividad: "Ajustar solicitud", descripcion: "Completa la información requerida", responsable: "Profesional" },
     { uid: "end", tipo: "Fin", descripcion: "Solicitud revisada" }
   ],
   annexes: [], changes: [{ version: "1.0", fecha: "2026-10-10", razon: "Creación inicial" }],
