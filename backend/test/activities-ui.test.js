@@ -479,6 +479,8 @@ test("print reports preserve table headers, prevent row splits, and fit the flow
   assert.match(css, /@page evaluation-report\{size:letter portrait!important;margin:4mm!important\}/);
   assert.match(css, /@media print\{\.preview-report\{padding:8mm!important\}\.preview-report-flow\{padding:0!important\}\.preview-report-flow>h3\{margin:6mm 6mm 10px\}\.evaluation-pdf-report\{padding:8mm!important\}\.evaluation-pdf-report table\{font-size:6\.5pt\}\.evaluation-pdf-report th,\.evaluation-pdf-report td\{padding:3px\}\}/);
   assert.match(css, /\.preview-document-header\.institutional,\.preview-document-header\.institutional>div\{border-color:#111\}/);
+  assert.match(css, /\.preview-document-header\.institutional \.preview-institutional-procedure,\.preview-document-header\.institutional \.preview-institutional-meta\{display:contents\}/);
+  assert.match(css, /\.preview-document-header\.institutional \.preview-institutional-procedure>div:nth-child\(1\),\.preview-document-header\.institutional \.preview-institutional-meta>div:nth-child\(1\)\{grid-row:1\}/);
   assert.match(css, /@media print\{\.preview-document-header\.institutional\{grid-template-columns:32mm minmax\(0,1fr\) 48mm;grid-template-rows:repeat\(3,12mm\);margin-bottom:8mm\}/);
   assert.match(css, /\.preview-report-flow\{page:report-flowchart;break-before:page;page-break-before:always\}/);
   assert.match(css, /\.preview-report-table thead\{display:table-header-group;break-inside:avoid-page;page-break-inside:avoid\}/);
