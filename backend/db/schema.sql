@@ -36,9 +36,6 @@ CREATE TABLE procedures (
   current_payload JSONB NOT NULL DEFAULT '{}'::jsonb,
   approved_payload JSONB,
   approved_at TIMESTAMPTZ,
-  admin_approval_observation TEXT,
-  admin_approval_by_user_id UUID REFERENCES app_users(id),
-  admin_approval_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
