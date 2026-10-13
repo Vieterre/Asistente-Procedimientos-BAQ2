@@ -2019,6 +2019,17 @@ function localEvaluationMetrics() {
     level: !complete ? "Pendiente" : score <= 39 ? "Bajo" : score < 90 ? "Medio" : "Alto", groups };
 }
 
+function synchronizeEvaluationDecisionButtons(favorableReady, returnReady) {
+  const apply = () => {
+    ui.favorableEvaluationButton.disabled = !favorableReady;
+    ui.returnEvaluationButton.disabled = !returnReady;
+    ui.favorableEvaluationButton.classList.toggle("is-ready", favorableReady);
+    ui.returnEvaluationButton.classList.toggle("is-ready", returnReady);
+  };
+  apply();
+  requestAnimationFrame(apply);
+}
+
 function refreshEvaluationSummary() {
   const metrics = localEvaluationMetrics();
   if (!metrics) return;
@@ -2028,10 +2039,7 @@ function refreshEvaluationSummary() {
   const editable = currentUserRole === "evaluador" && currentDraft?.status === "en_evaluacion";
   const favorableReady = editable && metrics.complete && metrics.failures === 0;
   const returnReady = editable && metrics.complete && metrics.failures > 0;
-  ui.favorableEvaluationButton.disabled = !favorableReady;
-  ui.returnEvaluationButton.disabled = !returnReady;
-  ui.favorableEvaluationButton.classList.toggle("is-ready", favorableReady);
-  ui.returnEvaluationButton.classList.toggle("is-ready", returnReady);
+  synchronizeEvaluationDecisionButtons(favorableReady, returnReady);
   const missing = metrics.total - metrics.completed;
   let decisionHint = "";
   if (editable && missing > 0) {

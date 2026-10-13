@@ -272,6 +272,8 @@ test("evaluation combines a non-favorable decision with return and records the l
   assert.match(script, /function automaticEvaluationConcept\(metrics\)/);
   assert.match(script, /const favorableReady = editable && metrics\.complete && metrics\.failures === 0;/);
   assert.match(script, /const returnReady = editable && metrics\.complete && metrics\.failures > 0;/);
+  assert.match(script, /function synchronizeEvaluationDecisionButtons\(favorableReady, returnReady\)/);
+  assert.match(script, /requestAnimationFrame\(apply\)/);
   assert.match(script, /Ya puedes emitir el concepto no favorable y devolver para ajustes\./);
   assert.match(css, /#favorableEvaluationButton\.is-ready\{background:#1d9a7c/);
   assert.match(css, /#returnEvaluationButton\.is-ready\{background:#bd6c12/);
