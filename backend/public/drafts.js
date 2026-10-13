@@ -618,6 +618,23 @@ function showFlowReview(issues, completenessIssues = []) {
   refreshProcedureProgress();
 }
 
+async function restoreFlowReviewState() {
+  const version = flowReviewVersion;
+  try {
+    const { issues, completenessIssues } = await request("/api/procedures/flow-review", {
+      method: "POST", csrf: true,
+      body: { activities: activityRows.map(activity => ({ ...activity })) }
+    });
+    if (version !== flowReviewVersion) return;
+    lastFlowReviewPassed = issues.every(issue => issue.severity === "warning") && completenessIssues.length === 0;
+    refreshProcedureProgress();
+  } catch {
+    if (version !== flowReviewVersion) return;
+    lastFlowReviewPassed = false;
+    refreshProcedureProgress();
+  }
+}
+
 function focusFlowItem(index) {
   const activity = activityRows[index];
   if (!activity) return;
@@ -2165,7 +2182,7 @@ function renderEvaluationWorkspace() {
     details.append(heading, description);
     group.criteria.forEach(criterion => {
       const record = currentEvaluation.criteria[criterion.id] || (currentEvaluation.criteria[criterion.id] = {
-        result: "", evidence: "", observation: "", adjustment: "", findingStatus: "Pendiente", response: "", adjustmentLocation: ""
+        result: "", evidence: "", observation: "", adjustment: "", findingStatus: "Pendiente", response: ""
       });
       const card = document.createElement("div");
       card.className = `evaluation-criterion${record.result === "No cumple" ? " failed" : record.result === "Cumple" ? " passed" : record.result === "No aplica" ? " na" : ""}`;
@@ -2213,12 +2230,6 @@ function renderEvaluationWorkspace() {
         response.className = "field-hint";
         response.textContent = `Acción realizada por el Elaborador: ${record.response}`;
         grid.append(response);
-      }
-      if (record.adjustmentLocation) {
-        const location = document.createElement("p");
-        location.className = "field-hint";
-        location.textContent = `Ubicación del ajuste: ${record.adjustmentLocation}`;
-        grid.append(location);
       }
       result.addEventListener("change", () => {
         const oldDefault = standardEvaluationObservation(criterion.question, record.result);
@@ -2283,15 +2294,7 @@ function renderReturnedEvaluation() {
     response.disabled = !editable;
     response.placeholder = "Describe de manera concreta qué corregiste.";
     response.addEventListener("input", () => { record.response = response.value; returnedResponsesDirty = true; });
-    const location = document.createElement("input");
-    location.id = `authorLocation-${id}`;
-    location.maxLength = 5000;
-    location.value = record.adjustmentLocation || "";
-    location.disabled = !editable;
-    location.placeholder = "Ejemplo: Normatividad, norma externa 3";
-    location.addEventListener("input", () => { record.adjustmentLocation = location.value; returnedResponsesDirty = true; });
     evaluationField(grid, "Acción realizada", response);
-    evaluationField(grid, "Ubicación del ajuste", location);
     item.append(grid);
     return item;
   }));
@@ -2457,6 +2460,7 @@ function populateDraft(procedure) {
   renderReturnedEvaluation();
   applyDraftEditability();
   refreshProcedureProgress();
+  void restoreFlowReviewState();
 }
 
 function applyDraftEditability() {
@@ -2778,13 +2782,13 @@ async function saveReturnedResponses() {
   if (!currentDraft || !returnedEvaluation || currentDraft.status !== "devuelto_para_ajustes") return;
   const responses = Object.fromEntries(Object.entries(returnedEvaluation.criteria)
     .filter(([, record]) => record.result === "No cumple")
-    .map(([id, record]) => [id, { action: record.response || "", location: record.adjustmentLocation || "" }]));
+    .map(([id, record]) => [id, { action: record.response || "" }]));
   const result = await request(`/api/procedures/${encodeURIComponent(currentDraft.id)}/evaluation-responses`, {
     method: "PUT", csrf: true, body: { responses }
   });
   returnedResponsesDirty = false;
   setMessage(ui.returnedEvaluationMessage, result.missingResponses
-    ? `Respuestas guardadas. Faltan ${result.missingResponses} hallazgo(s) con acción o ubicación pendiente.`
+    ? `Respuestas guardadas. Faltan ${result.missingResponses} hallazgo(s) con acción pendiente.`
     : "Respuestas guardadas.", true);
   return result;
 }
@@ -2814,9 +2818,9 @@ ui.submitReviewButton.addEventListener("click", async () => {
   setMessage(ui.submitReviewMessage, "");
   try {
     if (currentDraft.status === "devuelto_para_ajustes" && returnedEvaluation) {
-      const missing = Object.values(returnedEvaluation.criteria).filter(record => record.result === "No cumple" && (!String(record.response || "").trim() || !String(record.adjustmentLocation || "").trim()));
+      const missing = Object.values(returnedEvaluation.criteria).filter(record => record.result === "No cumple" && !String(record.response || "").trim());
       if (missing.length) {
-        setMessage(ui.editorMessage, `Completa la acción realizada y la ubicación de ${missing.length} hallazgo(s) antes de reenviar.`);
+        setMessage(ui.editorMessage, `Completa la acción realizada de ${missing.length} hallazgo(s) antes de reenviar.`);
         ui.returnedEvaluation.scrollIntoView({ behavior: "smooth", block: "nearest" });
         return;
       }
@@ -2999,7 +3003,7 @@ function buildEvaluationReport() {
   const criteriaTitle = document.createElement("h2");
   criteriaTitle.textContent = "Detalle de criterios";
   const table = document.createElement("table");
-  const headers = ["N.º", "Variable", "Criterio", "Resultado", "Observación", "Ajuste requerido", "Respuesta y ubicación", "Estado"];
+  const headers = ["N.º", "Variable", "Criterio", "Resultado", "Observación", "Ajuste requerido", "Respuesta del elaborador", "Estado"];
   const head = document.createElement("thead");
   const headRow = document.createElement("tr");
   headers.forEach(header => {
@@ -3015,10 +3019,7 @@ function buildEvaluationReport() {
     for (const criterion of group.criteria) {
       number += 1;
       const record = currentEvaluation.criteria[criterion.id] || {};
-      const response = [
-        record.response && `Acción: ${record.response}`,
-        record.adjustmentLocation && `Ubicación: ${record.adjustmentLocation}`
-      ].filter(Boolean).join("\n");
+      const response = record.response ? `Acción: ${record.response}` : "";
       const row = document.createElement("tr");
       [number, group.name, criterion.question, record.result || "Pendiente", record.observation, record.adjustment, response, record.findingStatus || "Pendiente"]
         .forEach(value => row.append(evaluationReportCell(value)));

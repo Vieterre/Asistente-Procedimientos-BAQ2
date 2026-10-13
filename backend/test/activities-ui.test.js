@@ -107,6 +107,13 @@ test("flow review separates blocking errors from methodological notices and loca
   assert.match(css, /\.flow-review-summary\.flow-review-ok/);
 });
 
+test("opening a draft restores its saved flow review status in the progress indicator", async () => {
+  const script = await readFile(join(root, "backend/public/drafts.js"), "utf8");
+  assert.match(script, /async function restoreFlowReviewState\(\)/);
+  assert.match(script, /lastFlowReviewPassed = issues\.every\(issue => issue\.severity === "warning"\) && completenessIssues\.length === 0/);
+  assert.match(script, /void restoreFlowReviewState\(\);/);
+});
+
 test("preview flowchart fits the available width and keeps accessible zoom controls", async () => {
   const [script, css] = await Promise.all([
     readFile(join(root, "backend/public/drafts.js"), "utf8"),
@@ -258,7 +265,7 @@ test("section checks require methodological rules and evaluator progress counts 
   assert.match(css, /\.norm-review-warning/);
 });
 
-test("evaluation combines a non-favorable decision with return and records the location of each correction", async () => {
+test("evaluation combines a non-favorable decision with return and records the action for each correction", async () => {
   const [html, script, css] = await Promise.all([
     readFile(join(root, "backend/public/drafts.html"), "utf8"),
     readFile(join(root, "backend/public/drafts.js"), "utf8"),
@@ -281,7 +288,7 @@ test("evaluation combines a non-favorable decision with return and records the l
   assert.match(css, /#returnEvaluationButton\.is-ready\{background:#bd6c12/);
   assert.match(script, /Hallazgos que requieren ajuste:/);
   assert.match(script, /Acción realizada/);
-  assert.match(script, /Ubicación del ajuste/);
+  assert.doesNotMatch(script, /Ubicación del ajuste/);
   assert.match(script, /conceptComplement: evaluation\.conceptComplement/);
   assert.match(css, /\.evaluation-auto-concept\{/);
 });
@@ -359,7 +366,7 @@ test("reports keep institutional branding exclusive and standard reports unbrand
   assert.match(script, /"Imprimir o guardar PDF institucional"/);
 });
 
-test("evaluator can export the evaluation report with its findings and traceability", async () => {
+test("evaluator can export the evaluation report with its findings and responses", async () => {
   const [html, script, css] = await Promise.all([
     readFile(join(root, "backend/public/drafts.html"), "utf8"),
     readFile(join(root, "backend/public/drafts.js"), "utf8"),
@@ -368,7 +375,7 @@ test("evaluator can export the evaluation report with its findings and traceabil
   assert.match(html, /id="exportEvaluationReportButton"[^>]*>Exportar informe de evaluación en PDF/);
   assert.match(script, /function buildEvaluationReport\(\)/);
   assert.match(script, /"INFORME DE EVALUACIÓN DE ADECUACIÓN"/);
-  assert.match(script, /"Respuesta y ubicación"/);
+  assert.match(script, /"Respuesta del elaborador"/);
   assert.match(script, /currentUserRole !== "evaluador"/);
   assert.match(script, /ui\.exportEvaluationReportButton\.addEventListener\("click", exportEvaluationReport\)/);
   assert.match(script, /new URL\("\/drafts\.css", window\.location\.origin\)/);

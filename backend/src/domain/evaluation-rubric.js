@@ -68,7 +68,7 @@ export function allowsNotApplicable(criterion, version) {
 
 export function blankEvaluationCriteria() {
   return Object.fromEntries(EVALUATION_CRITERIA.map(({ id }) => [id, {
-    result: "", evidence: "", observation: "", adjustment: "", findingStatus: "Pendiente", response: "", adjustmentLocation: ""
+    result: "", evidence: "", observation: "", adjustment: "", findingStatus: "Pendiente", response: ""
   }]));
 }
 
@@ -91,7 +91,7 @@ export function sanitizeEvaluationCriteria(input, version) {
     }
     const record = criteria[criterion.id];
     record.result = result;
-    for (const key of ["evidence", "observation", "adjustment", "response", "adjustmentLocation"]) {
+    for (const key of ["evidence", "observation", "adjustment", "response"]) {
       if (value[key] === undefined) continue;
       if (typeof value[key] !== "string" || value[key].length > 5000) {
         issues.push(`El campo ${key} del criterio ${criterion.id} no es válido.`);
@@ -170,7 +170,7 @@ export function validateEvaluation(criteria, version) {
 export function missingCorrectionResponses(criteria) {
   return EVALUATION_CRITERIA.filter(criterion => {
     const record = criteria?.[criterion.id] || {};
-    return record.result === "No cumple" && (!String(record.response || "").trim() || !String(record.adjustmentLocation || "").trim());
+    return record.result === "No cumple" && !String(record.response || "").trim();
   }).map(criterion => criterion.id);
 }
 

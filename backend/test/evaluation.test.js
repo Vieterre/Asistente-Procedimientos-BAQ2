@@ -219,7 +219,7 @@ test("completion requires each result, observation, and adjustment for failed cr
 test("technical concept summarizes findings and provides a favorable conclusion only when all criteria pass", () => {
   const criteria = criteriaWith();
   assert.equal(automaticTechnicalConcept(criteria, "1.0"), "Con base en la verificación técnica y metodológica realizada, el procedimiento cumple los criterios aplicables para su aprobación.");
-  criteria.act1 = { result: "No cumple", observation: "La secuencia no es clara", adjustment: "Reordenar actividades", findingStatus: "Pendiente", response: "", adjustmentLocation: "" };
+  criteria.act1 = { result: "No cumple", observation: "La secuencia no es clara", adjustment: "Reordenar actividades", findingStatus: "Pendiente", response: "" };
   assert.match(automaticTechnicalConcept(criteria, "1.0"), /Hallazgos que requieren ajuste:/);
   assert.match(automaticTechnicalConcept(criteria, "1.0"), /Actividades: ¿Las actividades siguen una secuencia lógica/);
   assert.match(automaticTechnicalConcept(criteria, "1.0"), /Ajuste requerido: Reordenar actividades/);
@@ -279,13 +279,12 @@ test("returning findings lets the author answer before a new review", async () =
   const decision = await decideAssignedEvaluation(pool, evaluator, procedureId, { decision: "devolver" });
   assert.equal(decision.status, PROCEDURE_STATUS.RETURNED);
   assert.equal(pool.procedure.status, PROCEDURE_STATUS.RETURNED);
-  const answer = await saveAuthorEvaluationResponses(pool, author, procedureId, { act1: { action: "Reordené las actividades", location: "Actividades, pasos 2 y 3" } });
+  const answer = await saveAuthorEvaluationResponses(pool, author, procedureId, { act1: { action: "Reordené las actividades" } });
   assert.equal(answer.missingResponses, 0);
   assert.equal(pool.evaluation.criteria_payload.criteria.act1.response, "Reordené las actividades");
-  assert.equal(pool.evaluation.criteria_payload.criteria.act1.adjustmentLocation, "Actividades, pasos 2 y 3");
   assert.deepEqual(pool.evaluation.criteria_payload.criteria.act1.trace.map(entry => entry.action), ["Ajuste solicitado", "Respuesta del Elaborador"]);
   assert.equal(pool.evaluation.criteria_payload.criteria.act1.trace[0].iteration, 1);
-  await assert.rejects(saveAuthorEvaluationResponses(pool, evaluator, procedureId, { act1: { action: "Otro", location: "Actividad 1" } }), { code: "forbidden" });
+  await assert.rejects(saveAuthorEvaluationResponses(pool, evaluator, procedureId, { act1: { action: "Otro" } }), { code: "forbidden" });
 });
 
 test("a new requested adjustment clears the previous response and records its own trace", async () => {
@@ -297,7 +296,7 @@ test("a new requested adjustment clears the previous response and records its ow
   };
   await saveAssignedEvaluation(pool, evaluator, procedureId, { criteria: firstReview, concept: "Se requiere ajustar la secuencia." });
   await decideAssignedEvaluation(pool, evaluator, procedureId, { decision: "devolver" });
-  await saveAuthorEvaluationResponses(pool, author, procedureId, { act1: { action: "Se reordenaron las actividades.", location: "Actividades, pasos 2 y 3" } });
+  await saveAuthorEvaluationResponses(pool, author, procedureId, { act1: { action: "Se reordenaron las actividades." } });
   await saveAuthorEvaluationResponses(pool, author, procedureId, { act1: { action: "", location: "" } });
   assert.equal(pool.evaluation.criteria_payload.criteria.act1.findingStatus, "Pendiente");
 

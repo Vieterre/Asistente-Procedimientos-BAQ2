@@ -147,7 +147,6 @@ export async function saveAssignedEvaluation(pool, user, procedureId, { criteria
     for (const [id, record] of Object.entries(normalized.criteria)) {
       const previous = previousCriteria[id] || {};
       record.response = previous.response || "";
-      record.adjustmentLocation = previous.adjustmentLocation || "";
       record.trace = findingTrace(previous);
       const hasPreviousRequest = record.trace.some(entry => entry.action === "Ajuste solicitado");
       const adjustmentRequested = record.result === "No cumple" && (
@@ -158,7 +157,6 @@ export async function saveAssignedEvaluation(pool, user, procedureId, { criteria
       );
       if (adjustmentRequested) {
         record.response = "";
-        record.adjustmentLocation = "";
         record.findingStatus = "Pendiente";
         appendFindingTrace(record, "Ajuste solicitado", user, iteration, {
           observation: record.observation,
@@ -237,23 +235,19 @@ export async function saveAuthorEvaluationResponses(pool, user, procedureId, res
     if (Object.keys(responses).some(id => !allowedIds.has(id))) throw new DraftError("invalid_evaluation_response", 400);
     for (const [id, responseInput] of Object.entries(responses)) {
       const response = typeof responseInput === "string" ? responseInput : responseInput?.action;
-      const adjustmentLocation = typeof responseInput === "string" ? "" : responseInput?.location;
-      if (typeof response !== "string" || response.length > 5000 || typeof adjustmentLocation !== "string" || adjustmentLocation.length > 5000) {
+      if (typeof response !== "string" || response.length > 5000) {
         throw new DraftError("invalid_evaluation_response", 400);
       }
       if (criteria[id].result === "No cumple") {
         const normalizedResponse = response.trim();
-        const normalizedLocation = adjustmentLocation.trim();
-        const wasComplete = Boolean(String(criteria[id].response || "").trim() && String(criteria[id].adjustmentLocation || "").trim());
-        const isComplete = Boolean(normalizedResponse && normalizedLocation);
-        if (normalizedResponse !== String(criteria[id].response || "") || normalizedLocation !== String(criteria[id].adjustmentLocation || "")) {
+        const wasComplete = Boolean(String(criteria[id].response || "").trim());
+        const isComplete = Boolean(normalizedResponse);
+        if (normalizedResponse !== String(criteria[id].response || "")) {
           criteria[id].response = normalizedResponse;
-          criteria[id].adjustmentLocation = normalizedLocation;
           if (isComplete) {
             criteria[id].findingStatus = "Respondido";
             appendFindingTrace(criteria[id], "Respuesta del Elaborador", user, iteration, {
-              response: normalizedResponse,
-              adjustmentLocation: normalizedLocation
+              response: normalizedResponse
             });
           } else if (wasComplete) {
             criteria[id].findingStatus = "Pendiente";
