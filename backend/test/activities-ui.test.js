@@ -477,7 +477,7 @@ test("print reports preserve table headers, prevent row splits, and fit the flow
   assert.match(css, /@page report-flowchart\{size:A4 portrait;margin:12mm\}/);
   assert.match(css, /@page report-flowchart\{margin:4mm\}/);
   assert.match(css, /@page evaluation-report\{margin:4mm!important\}/);
-  assert.match(css, /@media print\{\.preview-report\{padding:12mm!important\}\.preview-report-flow\{padding:12mm!important\}\.evaluation-pdf-report\{padding:10mm!important\}\}/);
+  assert.match(css, /@media print\{\.preview-report\{padding:12mm!important\}\.preview-report-flow\{padding:0!important\}\.preview-report-flow>h3\{margin:8mm 8mm 10px\}\.evaluation-pdf-report\{padding:10mm!important\}\}/);
   assert.match(css, /\.preview-report-flow\{page:report-flowchart;break-before:page;page-break-before:always\}/);
   assert.match(css, /\.preview-report-table thead\{display:table-header-group;break-inside:avoid-page;page-break-inside:avoid\}/);
   assert.match(css, /\.preview-report-flow \.preview-diagram svg\{display:block;width:auto!important;max-width:100%!important;height:auto!important;max-height:250mm/);
