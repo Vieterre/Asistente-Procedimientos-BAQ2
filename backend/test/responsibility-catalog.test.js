@@ -54,7 +54,7 @@ test("activity, decision, and control responsibility groups match the original c
   assert.match(draftsScript, /activityTextIsFilled\(ui\.draftApprovedName\.value\)/);
   assert.match(draftsScript, /Nombre obligatorio de la persona que aprueba formalmente la versión\./);
   assert.match(draftsScript, /Debe establecer el nombre del directivo responsable de la aprobación\./);
-  assert.match(draftsScript, /ui\.draftApprovedName\.addEventListener\("input"/);
+  assert.match(draftsScript, /for \(const inputId of \["draftPreparedName", "draftReviewedName", "draftApprovedName"\]\)/);
   assert.match(draftsScript, /populateApprovalRoleSelect\(ui\.draftPreparedBy, "", nonDirectiveRoleLevels, true\)/);
   assert.doesNotMatch(draftsHtml, /<datalist id="roleOptions"/);
 });

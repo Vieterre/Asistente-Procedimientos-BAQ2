@@ -265,6 +265,16 @@ test("section checks require methodological rules and evaluator progress counts 
   assert.match(css, /\.norm-review-warning/);
 });
 
+test("repeated approval names warn and require confirmation without blocking the document section", async () => {
+  const script = await readFile(join(root, "backend/public/drafts.js"), "utf8");
+  assert.match(script, /function normalizedApprovalName\(value\)/);
+  assert.match(script, /function repeatedApprovalNames\(\)/);
+  assert.match(script, /El nombre “\$\{record\.name\}” se repite en \$\{record\.roles\.join\(" y "\)\}/);
+  assert.match(script, /function confirmRepeatedApprovalNames\(\)/);
+  assert.match(script, /if \(!confirmRepeatedApprovalNames\(\)\) return;/);
+  assert.match(script, /for \(const inputId of \["draftPreparedName", "draftReviewedName", "draftApprovedName"\]\)/);
+});
+
 test("evaluation combines a non-favorable decision with return and records the action for each correction", async () => {
   const [html, script, css] = await Promise.all([
     readFile(join(root, "backend/public/drafts.html"), "utf8"),

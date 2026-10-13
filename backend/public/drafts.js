@@ -255,6 +255,39 @@ function approvalRoleValue(select) {
   return selected === "__otro__" ? String(approvalOtherInput(select)?.value || "").trim() : selected;
 }
 
+function normalizedApprovalName(value) {
+  return String(value || "").trim().normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, " ").toLocaleLowerCase("es-CO");
+}
+
+function repeatedApprovalNames() {
+  const names = [
+    ["Elaboró", ui.draftPreparedName.value],
+    ["Revisó", ui.draftReviewedName.value],
+    ["Aprobó", ui.draftApprovedName.value]
+  ];
+  const grouped = new Map();
+  for (const [role, value] of names) {
+    const normalized = normalizedApprovalName(value);
+    if (!normalized) continue;
+    const record = grouped.get(normalized) || { name: String(value).trim(), roles: [] };
+    record.roles.push(role);
+    grouped.set(normalized, record);
+  }
+  return [...grouped.values()].filter(record => record.roles.length > 1);
+}
+
+function repeatedApprovalNamesMessage() {
+  return repeatedApprovalNames().map(record =>
+    `El nombre “${record.name}” se repite en ${record.roles.join(" y ")}. Confirma que corresponde a la misma persona.`
+  ).join(" ");
+}
+
+function confirmRepeatedApprovalNames() {
+  const message = repeatedApprovalNamesMessage();
+  return !message || window.confirm(`${message} ¿Deseas conservar los nombres repetidos?`);
+}
+
 function syncApprovalOther(select, selectedOther) {
   const otherInput = approvalOtherInput(select);
   if (!otherInput) return;
@@ -270,6 +303,8 @@ function showRoleSeparation() {
   const repeated = roles.length > new Set(roles).size;
   const messages = [];
   if (repeated) messages.push("Elaboró, Revisó y Aprobó deben corresponder a cargos distintos.");
+  const repeatedNames = repeatedApprovalNamesMessage();
+  if (repeatedNames) messages.push(repeatedNames);
   if (approvalRoleValue(ui.draftApprovedBy) && !activityTextIsFilled(ui.draftApprovedName.value)) {
     messages.push("Debe establecer el nombre del directivo responsable de la aprobación.");
   }
@@ -2600,10 +2635,12 @@ for (const inputId of ["draftPreparedOther", "draftReviewedOther"]) {
     refreshProcedureProgress();
   });
 }
-ui.draftApprovedName.addEventListener("input", () => {
-  showRoleSeparation();
-  refreshProcedureProgress();
-});
+for (const inputId of ["draftPreparedName", "draftReviewedName", "draftApprovedName"]) {
+  ui[inputId].addEventListener("input", () => {
+    showRoleSeparation();
+    refreshProcedureProgress();
+  });
+}
 ui.annexApplicability.addEventListener("change", () => {
   if (ui.annexApplicability.value === "no_aplica") {
     if (!window.confirm("Confirma que este procedimiento no contiene anexos? Los anexos registrados se eliminarán de esta sección.")) {
@@ -2689,6 +2726,7 @@ ui.reviewFlowButton.addEventListener("click", async () => {
 ui.draftForm.addEventListener("submit", async event => {
   event.preventDefault();
   setMessage(ui.editorMessage, "");
+  if (!confirmRepeatedApprovalNames()) return;
   const button = ui.saveDraftButton;
   button.disabled = true;
 
