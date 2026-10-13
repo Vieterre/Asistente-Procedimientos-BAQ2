@@ -105,6 +105,7 @@ test("private consoles serve only their own assets with a restrictive policy", a
     assert.match(draftHtml, /href="\/drafts\.css\?v=20261012-2"/);
     assert.match(draftHtml, /src="\/drafts-20261012\.js"/);
     const draftScript = await (await fetch(base + "/drafts.js")).text();
+    assert.match(draftScript, /function synchronizeEvaluationDecisionButtons\(favorableReady, returnReady\)/);
     const draftIds = draftScript.match(/const ids = \[([\s\S]*?)\];/)?.[1];
     assert.ok(draftIds);
     const declaredIds = [...draftIds.matchAll(/"([A-Za-z][A-Za-z0-9]*)"/g)].map(([, id]) => id);
