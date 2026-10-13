@@ -114,6 +114,16 @@ test("opening a draft restores its saved flow review status in the progress indi
   assert.match(script, /void restoreFlowReviewState\(\);/);
 });
 
+test("flow summary warns when all operational lanes have one responsible", async () => {
+  const [script, css] = await Promise.all([
+    readFile(join(root, "backend/public/drafts.js"), "utf8"),
+    readFile(join(root, "backend/public/drafts.css"), "utf8")
+  ]);
+  assert.match(script, /Aviso: revise la concentración de responsabilidades\./);
+  assert.match(script, /ui\.flowSummary\.classList\.toggle\("is-warning", singleOperationalResponsible\)/);
+  assert.match(css, /\.flow-summary\.is-warning/);
+});
+
 test("preview flowchart fits the available width and keeps accessible zoom controls", async () => {
   const [script, css] = await Promise.all([
     readFile(join(root, "backend/public/drafts.js"), "utf8"),

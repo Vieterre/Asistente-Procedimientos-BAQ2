@@ -87,6 +87,22 @@ test("flow review requires every point of control to lead to a decision", () => 
   assert.ok(reviewFlow(activities).some(issue => issue.index === 1 && issue.message === "El punto de control debe continuar con una decisión que defina las rutas Sí y No."));
 });
 
+test("flow review warns without blocking when a single responsible owns the entire flow", () => {
+  const activities = [
+    { uid: "start", tipo: "Inicio" },
+    { uid: "review", tipo: "Actividad", responsable: "Profesional universitario" },
+    { uid: "choice", tipo: "Decisión", responsable: " profesional universitario ", decisionSi: "end", decisionNo: "adjust" },
+    { uid: "adjust", tipo: "Actividad", responsable: "Profesional universitario" },
+    { uid: "end", tipo: "Fin" }
+  ];
+  const issues = reviewFlow(activities);
+  assert.ok(issues.some(issue => issue.severity === "warning" && issue.message.startsWith("El flujograma tiene un único responsable operativo.")));
+  assert.ok(issues.every(issue => issue.severity === "warning"));
+
+  activities[3].responsable = "Técnico administrativo";
+  assert.ok(!reviewFlow(activities).some(issue => issue.message.startsWith("El flujograma tiene un único responsable operativo.")));
+});
+
 test("flow review traces the negative route until a control and keeps controls on activities", () => {
   const control = {
     uid: "control", tipo: "Actividad", tieneControl: true,

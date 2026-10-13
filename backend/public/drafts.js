@@ -1397,6 +1397,7 @@ function renderFlow() {
       return names.length ? names : ["Sin responsable"];
     }))];
   if (!roles.length) roles.push("Sin responsable");
+  const singleOperationalResponsible = roles.length === 1 && roles[0] !== "Sin responsable";
   const laneWidth = showEvidence ? 360 : 260;
   const rowHeight = showEvidence ? 168 : 132;
   const width = Math.max(760, roles.length * laneWidth + 160);
@@ -1411,6 +1412,8 @@ function renderFlow() {
   svg.setAttribute("width", width);
   svg.setAttribute("height", height);
   ui.flowSummary.textContent = `${activityRows.length} elementos · ${roles.length} responsable${roles.length === 1 ? "" : "s"}`;
+  if (singleOperationalResponsible) ui.flowSummary.textContent += " · Aviso: revise la concentración de responsabilidades.";
+  ui.flowSummary.classList.toggle("is-warning", singleOperationalResponsible);
   const title = svgNode("title", {}, "Flujograma del borrador abierto");
   const defs = svgNode("defs");
   for (const [id, color] of [["flowArrow", "#607b84"], ["flowYes", "#168064"], ["flowNo", "#bd5140"]]) {

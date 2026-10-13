@@ -13,6 +13,15 @@ export function activityNameStartsWithInfinitive(value) {
   return /^[a-z]+(?:ar|er|ir)$/.test(normalized);
 }
 
+function normalizedResponsible(value) {
+  return String(value || "")
+    .trim()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, " ")
+    .toLocaleLowerCase("es-CO");
+}
+
 export function reviewFlow(activities) {
   if (!Array.isArray(activities) || activities.length > 500 || activities.some(item => item === null || typeof item !== "object" || Array.isArray(item))) {
     return [{ index: null, message: "El flujo no tiene un formato válido." }];
@@ -97,6 +106,25 @@ export function reviewFlow(activities) {
     if (activities[index + 1]?.tipo !== "Decisión") {
       issues.push({ index, message: "El punto de control debe continuar con una decisión que defina las rutas Sí y No." });
     }
+  }
+  const operationalNodes = activities.filter(item => ["Actividad", "Decisión"].includes(item.tipo));
+  const responsibilitiesByNode = operationalNodes.map(item =>
+    String(item.responsable || "")
+      .split(";")
+      .map(normalizedResponsible)
+      .filter(Boolean)
+  );
+  const operationalResponsibles = responsibilitiesByNode.flat();
+  if (
+    responsibilitiesByNode.length &&
+    responsibilitiesByNode.every(responsibles => responsibles.length === 1) &&
+    new Set(operationalResponsibles).size === 1
+  ) {
+    issues.push({
+      index: null,
+      message: "El flujograma tiene un único responsable operativo. Revise la concentración de responsabilidades y confirme que es adecuada para este procedimiento.",
+      severity: "warning"
+    });
   }
   const reachesControlWithoutCorrection = origin => {
     const seen = new Set();
