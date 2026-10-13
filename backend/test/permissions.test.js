@@ -79,7 +79,7 @@ test("elaborador cannot generate branded PDF", () => {
   );
 });
 
-test("administrator can generate branded PDF only for favorable procedures", () => {
+test("administrator can generate branded PDF only after formal approval", () => {
   assert.equal(
     canPerform(admin, ACTIONS.GENERATE_BRANDED_PDF, {
       procedure: { status: PROCEDURE_STATUS.DRAFT }
@@ -88,10 +88,24 @@ test("administrator can generate branded PDF only for favorable procedures", () 
   );
   assert.equal(
     canPerform(admin, ACTIONS.GENERATE_BRANDED_PDF, {
-      procedure: { status: PROCEDURE_STATUS.FAVORABLE }
+      procedure: { status: PROCEDURE_STATUS.PENDING_ADMIN_APPROVAL }
+    }),
+    false
+  );
+  assert.equal(
+    canPerform(admin, ACTIONS.GENERATE_BRANDED_PDF, {
+      procedure: { status: PROCEDURE_STATUS.APPROVED }
     }),
     true
   );
+});
+
+test("only an administrator can give the final approval or return it for adjustments", () => {
+  const pending = { status: PROCEDURE_STATUS.PENDING_ADMIN_APPROVAL };
+  assert.equal(canPerform(admin, ACTIONS.ISSUE_FINAL_APPROVAL, { procedure: pending }), true);
+  assert.equal(canPerform(admin, ACTIONS.RETURN_FROM_ADMIN_APPROVAL, { procedure: pending }), true);
+  assert.equal(canPerform(author, ACTIONS.ISSUE_FINAL_APPROVAL, { procedure: pending }), false);
+  assert.equal(canPerform(admin, ACTIONS.ISSUE_FINAL_APPROVAL, { procedure: { status: PROCEDURE_STATUS.FAVORABLE } }), false);
 });
 
 test("evaluator can generate a standard report only for an assigned procedure in its process", () => {

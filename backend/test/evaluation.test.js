@@ -10,7 +10,7 @@ import {
   sanitizeEvaluationCriteria,
   validateEvaluation
 } from "../src/domain/evaluation-rubric.js";
-import { decideAssignedEvaluation, saveAssignedEvaluation, saveAuthorEvaluationResponses } from "../src/domain/evaluations.js";
+import { decideAdministrativeApproval, decideAssignedEvaluation, saveAssignedEvaluation, saveAuthorEvaluationResponses } from "../src/domain/evaluations.js";
 import { startAssignedEvaluation, submitOwnDraft } from "../src/domain/drafts.js";
 import { PROCEDURE_STATUS } from "../src/domain/workflow.js";
 import { createAppServer } from "../src/server.js";
@@ -19,6 +19,7 @@ import { hashToken } from "../src/security/auth.js";
 const procedureId = "11111111-1111-4111-8111-111111111111";
 const evaluator = { id: "22222222-2222-4222-8222-222222222222", role: "evaluador", active: true };
 const author = { id: "33333333-3333-4333-8333-333333333333", role: "elaborador", active: true };
+const administrator = { id: "55555555-5555-4555-8555-555555555555", role: "administrador", active: true };
 
 function criteriaWith(result = "Cumple") {
   return Object.fromEntries(EVALUATION_CRITERIA.map(criterion => [criterion.id, {
@@ -176,6 +177,33 @@ function fullCyclePool() {
   return { calls, procedure, evaluations, connect: async () => client };
 }
 
+function administrativeApprovalPool() {
+  const calls = [];
+  const procedure = {
+    id: procedureId, name: "Formular la prueba metodológica", version: "1.0",
+    status: PROCEDURE_STATUS.PENDING_ADMIN_APPROVAL, created_by_user_id: author.id,
+    assigned_evaluator_id: evaluator.id, evaluation_id: "44444444-4444-4444-8444-444444444444",
+    evaluation_status: PROCEDURE_STATUS.FAVORABLE, criteria_payload: { criteria: criteriaWith() },
+    revision: 4, code: "PD-P-001", process_code: "PD", updated_at: new Date()
+  };
+  const client = {
+    async query(sql, params = []) {
+      calls.push({ sql, params });
+      if (["BEGIN", "COMMIT", "ROLLBACK"].includes(sql)) return { rows: [] };
+      if (sql.startsWith("SELECT p.id, p.name, p.version")) return { rows: [{ ...procedure }] };
+      if (sql.startsWith("UPDATE procedures\n          SET status")) {
+        procedure.status = params[1];
+        procedure.revision += 1;
+        return { rows: [{ ...procedure }] };
+      }
+      if (sql.startsWith("INSERT INTO audit_events") || sql.startsWith("INSERT INTO user_notifications")) return { rows: [] };
+      throw new Error(`Unexpected SQL: ${sql}`);
+    },
+    release() {}
+  };
+  return { calls, procedure, connect: async () => client };
+}
+
 test("original evaluation rubric has 31 criteria, nine variables, and 100 percent total weight", () => {
   assert.equal(EVALUATION_CRITERIA.length, 31);
   assert.equal(EVALUATION_GROUPS.length, 9);
@@ -246,8 +274,8 @@ test("favorable concept is atomic and rejects incomplete or any failing evaluati
   const pool = evaluationPool();
   await saveAssignedEvaluation(pool, evaluator, procedureId, { criteria: criteriaWith(), concept: "Concepto técnico" });
   const decision = await decideAssignedEvaluation(pool, evaluator, procedureId, { decision: "favorable" });
-  assert.equal(decision.status, PROCEDURE_STATUS.FAVORABLE);
-  assert.equal(pool.procedure.status, PROCEDURE_STATUS.FAVORABLE);
+  assert.equal(decision.status, PROCEDURE_STATUS.PENDING_ADMIN_APPROVAL);
+  assert.equal(pool.procedure.status, PROCEDURE_STATUS.PENDING_ADMIN_APPROVAL);
   assert.equal(pool.evaluation.status, PROCEDURE_STATUS.FAVORABLE);
   assert.ok(pool.calls.some(call => call.sql.startsWith("INSERT INTO user_notifications") && call.params[3] === "procedure_favorable_concept_issued"));
 
@@ -353,11 +381,31 @@ test("complete review cycle preserves responses and reaches a favorable concept 
   await saveAssignedEvaluation(pool, evaluator, procedureId, { criteria: criteriaWith(), concept: "Cumple los criterios metodológicos." });
   assert.deepEqual(pool.evaluations[1].criteria_payload.criteria.act1.trace.map(entry => entry.action), ["Ajuste solicitado", "Respuesta del Elaborador", "Reenvío a evaluación", "Hallazgo cerrado"]);
   const decision = await decideAssignedEvaluation(pool, evaluator, procedureId, { decision: "favorable" });
-  assert.equal(decision.status, PROCEDURE_STATUS.FAVORABLE);
-  assert.equal(pool.procedure.status, PROCEDURE_STATUS.FAVORABLE);
+  assert.equal(decision.status, PROCEDURE_STATUS.PENDING_ADMIN_APPROVAL);
+  assert.equal(pool.procedure.status, PROCEDURE_STATUS.PENDING_ADMIN_APPROVAL);
   assert.equal(pool.evaluations[1].status, PROCEDURE_STATUS.FAVORABLE);
   assert.ok(pool.calls.some(call => call.sql.startsWith("INSERT INTO user_notifications") && call.params[3] === "procedure_returned_for_corrections"));
   assert.ok(pool.calls.some(call => call.sql.startsWith("INSERT INTO user_notifications") && call.params[3] === "procedure_favorable_concept_issued"));
+});
+
+test("only an administrator can formally approve or return a favorable technical concept", async () => {
+  const approval = administrativeApprovalPool();
+  await assert.rejects(
+    decideAdministrativeApproval(approval, administrator, procedureId, { decision: "devolver", observation: "" }),
+    { code: "admin_return_observation_required" }
+  );
+  const approved = await decideAdministrativeApproval(approval, administrator, procedureId, { decision: "aprobar" });
+  assert.equal(approved.status, PROCEDURE_STATUS.APPROVED);
+  assert.equal(approval.procedure.status, PROCEDURE_STATUS.APPROVED);
+  assert.ok(approval.calls.some(call => call.sql.startsWith("INSERT INTO audit_events") && call.params[2] === "procedure_formally_approved"));
+
+  const returned = administrativeApprovalPool();
+  const decision = await decideAdministrativeApproval(returned, administrator, procedureId, {
+    decision: "devolver", observation: "Falta precisar el responsable de la aprobación final."
+  });
+  assert.equal(decision.status, PROCEDURE_STATUS.RETURNED);
+  assert.equal(returned.procedure.status, PROCEDURE_STATUS.RETURNED);
+  assert.ok(returned.calls.some(call => call.sql.startsWith("INSERT INTO user_notifications") && call.params[3] === "procedure_returned_by_administration"));
 });
 
 test("a non-favorable review always returns the procedure for adjustments", async () => {

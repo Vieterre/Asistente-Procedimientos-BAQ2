@@ -7,6 +7,7 @@ const ids = [
   "evaluatorInbox", "evaluatorDraftCount", "evaluatorInboxMessage", "emptyEvaluatorInbox", "evaluatorDraftList", "refreshEvaluatorInbox", "evaluatorDetail", "evaluatorDetailTitle", "evaluatorDetailStatus", "backToEvaluatorInbox", "startEvaluationButton",
   "evaluationWorkspace", "evaluationProgress", "evaluationScore", "evaluationLevel", "evaluationVariableResults", "evaluationCriteriaGroups", "evaluationAutoConcept", "evaluationConcept", "evaluationDecisionHint", "evaluationMessage", "exportEvaluationReportButton", "saveEvaluationButton", "returnEvaluationButton", "favorableEvaluationButton",
   "returnedEvaluation", "returnedEvaluationSummary", "returnedEvaluationConcept", "returnedFindings", "saveEvaluationResponses", "returnedEvaluationMessage",
+  "adminApprovalSection", "adminApprovalSummary", "adminApprovalObservation", "returnAdminApprovalButton", "approveAdminApprovalButton", "adminApprovalMessage", "adminApprovalQueue", "adminApprovalCount", "adminApprovalQueueMessage", "emptyAdminApprovalQueue", "adminApprovalQueueList", "refreshAdminApprovalQueue",
   "draftName", "draftNameStatus", "processCode", "draftConsecutive", "draftCode", "draftCodeStatus", "draftObjective", "draftScope", "draftDefinitions", "draftDefinitionsStatus", "draftConditions", "saveDraftButton", "reloadDraftButton", "editorMessage",
   "procedureProgress", "newDraftButton", "addNormButton", "normsList", "emptyNorms", "normReview", "addBoundaryButton", "addActivityButton", "addDecisionButton", "addConnectorButton", "activitiesList", "emptyActivities", "reviewFlowButton", "flowReviewResult", "refreshDraftsButton", "draftCount", "listMessage", "emptyDrafts",
   "draftList", "flowSection", "flowSummary", "showFlowEvidence", "refreshFlowButton", "flowCanvas", "flowSvg",
@@ -47,6 +48,9 @@ const errorMessages = {
   evaluation_incomplete: "Completa los criterios, las observaciones y los ajustes requeridos.",
   evaluation_concept_required: "Escribe el concepto técnico antes de decidir.",
   evaluation_favorable_conditions_unmet: "El concepto favorable exige que todos los criterios estén completos y cumplan, sin ningún resultado No cumple.",
+  invalid_admin_approval_decision: "La decisión administrativa no es válida.",
+  admin_return_observation_required: "Escribe la observación administrativa antes de devolver el procedimiento.",
+  administrative_approval_conditions_unmet: "El visto bueno solo está disponible para un concepto técnico favorable completo.",
   evaluation_no_findings: "No hay criterios incumplidos para devolver.",
   evaluation_meets_favorable_threshold: "La evaluación cumple las condiciones del concepto favorable.",
   invalid_evaluation_decision: "La decisión de evaluación no es válida.",
@@ -1601,7 +1605,7 @@ async function openNotification(notification) {
     if (notification.eventType === "procedure_submitted_for_review" && currentUserRole === "evaluador") {
       hideAnalytics();
       await openAssignedProcedure(notification.procedureId);
-    } else if (["procedure_evaluation_started", "procedure_returned_for_corrections", "procedure_favorable_concept_issued", "procedure_unfavorable_concept_issued"].includes(notification.eventType) && ["elaborador", "administrador"].includes(currentUserRole)) {
+    } else if (["procedure_evaluation_started", "procedure_returned_for_corrections", "procedure_favorable_concept_issued", "procedure_unfavorable_concept_issued", "procedure_formally_approved", "procedure_returned_by_administration"].includes(notification.eventType) && currentUserRole === "elaborador") {
       hideAnalytics();
       await openDraft(notification.procedureId);
     }
@@ -1763,11 +1767,11 @@ function renderInstitutionalReports(reports) {
 }
 
 async function loadInstitutionalReports() {
-  setMessage(ui.institutionalReportsMessage, "Consultando procedimientos favorables...");
+  setMessage(ui.institutionalReportsMessage, "Consultando procedimientos aprobados formalmente...");
   try {
     const { reports } = await request("/api/admin/institutional-reports");
     renderInstitutionalReports(reports);
-    setMessage(ui.institutionalReportsMessage, reports.length ? "Selecciona un procedimiento para generar su PDF institucional." : "", Boolean(reports.length));
+    setMessage(ui.institutionalReportsMessage, reports.length ? "Selecciona un procedimiento aprobado formalmente para generar su PDF institucional." : "", Boolean(reports.length));
   } catch (error) {
     handleRequestError(error, ui.institutionalReportsMessage);
   }
@@ -1996,6 +2000,7 @@ async function loadDrafts() {
   try {
     const { procedures } = await request("/api/procedures");
     renderDrafts(procedures);
+    if (currentUserRole === "administrador") await loadAdminApprovalQueue();
   } catch (error) {
     handleRequestError(error, ui.listMessage);
   }
@@ -2008,6 +2013,8 @@ const procedureStatusLabels = {
   devuelto_para_ajustes: "Devuelto para ajustes",
   subsanado: "Subsanado",
   concepto_favorable: "Concepto favorable",
+  pendiente_visto_bueno_administrativo: "Pendiente de visto bueno administrativo",
+  aprobado_formalmente: "Aprobado formalmente / vigente",
   concepto_no_favorable: "Concepto no favorable",
   reabierto_por_administrador: "Reabierto por administración"
 };
@@ -2307,11 +2314,15 @@ function standardEvaluationObservation(question, result) {
 }
 
 function renderReturnedEvaluation() {
-  ui.returnedEvaluation.hidden = !returnedEvaluation || !["devuelto_para_ajustes", "concepto_favorable", "concepto_no_favorable"].includes(currentDraft?.status);
+  ui.returnedEvaluation.hidden = !returnedEvaluation || !["devuelto_para_ajustes", "concepto_favorable", "concepto_no_favorable", "pendiente_visto_bueno_administrativo", "aprobado_formalmente"].includes(currentDraft?.status);
   if (ui.returnedEvaluation.hidden) return;
-  const editable = currentDraft.status === "devuelto_para_ajustes";
+  const editable = currentUserRole === "elaborador" && currentDraft.status === "devuelto_para_ajustes";
   ui.returnedEvaluationSummary.textContent = `${statusLabel(currentDraft.status)} · ${Number(returnedEvaluation.score || 0).toFixed(1)}%`;
-  ui.returnedEvaluationConcept.textContent = returnedEvaluation.concept ? `Concepto técnico: ${returnedEvaluation.concept}` : "";
+  const administrativeObservation = String(currentDraft?.adminApprovalObservation || "").trim();
+  ui.returnedEvaluationConcept.textContent = [
+    returnedEvaluation.concept ? `Concepto técnico: ${returnedEvaluation.concept}` : "",
+    administrativeObservation ? `Observación administrativa: ${administrativeObservation}` : ""
+  ].filter(Boolean).join("\n\n");
   const questions = new Map(evaluationCriteriaList().map(criterion => [criterion.id, criterion.question]));
   const failed = Object.entries(returnedEvaluation.criteria || {}).filter(([, record]) => record.result === "No cumple");
   ui.returnedFindings.replaceChildren(...failed.map(([id, record]) => {
@@ -2344,6 +2355,16 @@ function renderReturnedEvaluation() {
   }
   ui.saveEvaluationResponses.hidden = !editable;
   setMessage(ui.returnedEvaluationMessage, "");
+}
+
+function renderAdminApproval() {
+  const visible = currentUserRole === "administrador" && currentDraft?.status === "pendiente_visto_bueno_administrativo";
+  ui.adminApprovalSection.hidden = !visible;
+  if (!visible) return;
+  const score = Number(returnedEvaluation?.score || 0).toFixed(1);
+  ui.adminApprovalSummary.textContent = `Concepto técnico favorable del Evaluador · ${score}% · pendiente de decisión administrativa.`;
+  ui.adminApprovalObservation.value = "";
+  setMessage(ui.adminApprovalMessage, "");
 }
 
 async function loadEvaluatorInbox() {
@@ -2410,6 +2431,45 @@ function renderDrafts(drafts) {
   }));
 }
 
+function renderAdminApprovalQueue(procedures) {
+  ui.adminApprovalQueue.hidden = currentUserRole !== "administrador";
+  if (currentUserRole !== "administrador") return;
+  ui.adminApprovalCount.textContent = `${procedures.length} procedimiento${procedures.length === 1 ? "" : "s"}`;
+  ui.emptyAdminApprovalQueue.hidden = procedures.length > 0;
+  ui.adminApprovalQueueList.replaceChildren(...procedures.map(procedure => {
+    const item = document.createElement("li");
+    item.className = "draft-item";
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "draft-open";
+    const info = document.createElement("span");
+    info.className = "draft-info";
+    const name = document.createElement("strong");
+    name.textContent = procedure.name;
+    const details = document.createElement("small");
+    details.textContent = `${procedure.code || "Código pendiente"} · ${procedure.processCode} · concepto técnico favorable`;
+    const status = document.createElement("span");
+    status.className = "draft-status";
+    status.textContent = "Revisar visto bueno";
+    info.append(name, details);
+    button.append(info, status);
+    button.addEventListener("click", () => openAdministrativeApproval(procedure.id));
+    item.append(button);
+    return item;
+  }));
+}
+
+async function loadAdminApprovalQueue() {
+  if (currentUserRole !== "administrador") return;
+  try {
+    const { procedures } = await request("/api/admin/pending-approvals");
+    renderAdminApprovalQueue(procedures);
+    setMessage(ui.adminApprovalQueueMessage, "");
+  } catch (error) {
+    handleRequestError(error, ui.adminApprovalQueueMessage);
+  }
+}
+
 async function openDraft(id, discardChanges = false) {
   if (!discardChanges && dirty && !window.confirm("Hay cambios sin guardar. ¿Descartarlos y abrir este procedimiento?")) return false;
   setMessage(ui.listMessage, "");
@@ -2427,6 +2487,26 @@ async function openDraft(id, discardChanges = false) {
     return true;
   } catch (error) {
     handleRequestError(error, ui.listMessage);
+    return false;
+  }
+}
+
+async function openAdministrativeApproval(id, discardChanges = false) {
+  if (currentUserRole !== "administrador") return false;
+  if (!discardChanges && dirty && !window.confirm("Hay cambios sin guardar. ¿Descartarlos y abrir este procedimiento?")) return false;
+  setMessage(ui.adminApprovalQueueMessage, "");
+  try {
+    await loadEvaluationRubric();
+    const { procedure, evaluation } = await request(`/api/admin/procedures/${encodeURIComponent(id)}/final-approval`);
+    procedure.evaluation = evaluation;
+    populateDraft(procedure);
+    ui.evaluatorInbox.hidden = true;
+    ui.evaluatorDetail.hidden = true;
+    ui.draftWorkspace.hidden = false;
+    ui.adminApprovalSection.scrollIntoView({ behavior: "smooth", block: "start" });
+    return true;
+  } catch (error) {
+    handleRequestError(error, ui.adminApprovalQueueMessage);
     return false;
   }
 }
@@ -2496,13 +2576,16 @@ function populateDraft(procedure) {
   ui.flowReviewResult.hidden = true;
   ui.flowReviewResult.replaceChildren();
   renderReturnedEvaluation();
+  renderAdminApproval();
   applyDraftEditability();
   refreshProcedureProgress();
   void restoreFlowReviewState();
 }
 
 function applyDraftEditability() {
-  const editable = ["elaborador", "administrador"].includes(currentUserRole) && (!currentDraft || ["borrador", "devuelto_para_ajustes"].includes(currentDraft.status));
+  const administrativeDecision = currentUserRole === "administrador" && Boolean(currentDraft?.adminApprovalByUserId);
+  const editable = ["elaborador", "administrador"].includes(currentUserRole) &&
+    (!currentDraft || ["borrador", "devuelto_para_ajustes"].includes(currentDraft.status)) && !administrativeDecision;
   for (const control of ui.draftForm.querySelectorAll("input, select, textarea, button")) control.disabled = !editable;
   ui.draftCode.disabled = false;
   ui.draftConsecutive.disabled = !editable || Boolean(currentDraft?.code && currentDraft.status !== "borrador");
@@ -2994,6 +3077,41 @@ async function submitEvaluationDecision(decision) {
 
 ui.returnEvaluationButton.addEventListener("click", () => submitEvaluationDecision("devolver"));
 ui.favorableEvaluationButton.addEventListener("click", () => submitEvaluationDecision("favorable"));
+
+async function submitAdministrativeApproval(decision) {
+  if (!currentDraft || currentDraft.status !== "pendiente_visto_bueno_administrativo") return;
+  const observation = ui.adminApprovalObservation.value.trim();
+  if (decision === "devolver" && !observation) {
+    setMessage(ui.adminApprovalMessage, errorMessages.admin_return_observation_required);
+    ui.adminApprovalObservation.focus();
+    return;
+  }
+  const label = decision === "aprobar"
+    ? "dar el visto bueno y aprobar formalmente"
+    : "devolver el procedimiento para ajustes";
+  if (!window.confirm(`¿Confirmas ${label}?`)) return;
+  const buttons = [ui.returnAdminApprovalButton, ui.approveAdminApprovalButton];
+  buttons.forEach(button => { button.disabled = true; });
+  try {
+    const id = currentDraft.id;
+    await request(`/api/admin/procedures/${encodeURIComponent(id)}/final-approval`, {
+      method: "POST", csrf: true, body: { decision, observation }
+    });
+    await openAdministrativeApproval(id, true);
+    await loadAdminApprovalQueue();
+    await loadDrafts();
+    setMessage(ui.editorMessage, decision === "aprobar"
+      ? "Visto bueno registrado. El procedimiento quedó aprobado formalmente y vigente."
+      : "Devolución administrativa registrada y notificada.", true);
+  } catch (error) {
+    handleRequestError(error, ui.adminApprovalMessage);
+  } finally {
+    buttons.forEach(button => { button.disabled = false; });
+  }
+}
+
+ui.returnAdminApprovalButton.addEventListener("click", () => submitAdministrativeApproval("devolver"));
+ui.approveAdminApprovalButton.addEventListener("click", () => submitAdministrativeApproval("aprobar"));
 
 function evaluationReportConcept(metrics) {
   const automatic = automaticEvaluationConcept(metrics);
@@ -3495,6 +3613,7 @@ document.addEventListener("visibilitychange", () => {
 ui.closePreviewButton.addEventListener("click", () => ui.previewDialog.close());
 ui.printPreviewButton.addEventListener("click", printPreviewReport);
 ui.refreshDraftsButton.addEventListener("click", loadDrafts);
+ui.refreshAdminApprovalQueue.addEventListener("click", loadAdminApprovalQueue);
 ui.refreshFlowButton.addEventListener("click", renderFlow);
 ui.showFlowEvidence.addEventListener("change", renderFlow);
 ui.zoomOutButton.addEventListener("click", () => setFlowZoom(flowZoom - 10));

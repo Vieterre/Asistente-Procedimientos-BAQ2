@@ -8,7 +8,7 @@ import { ACTIONS, canPerform } from "./domain/permissions.js";
 import { UserManagementError, createAccount, getAccountProcessAssignments, listAccounts, resetAccountPassword, setAccountActive, setAccountProcessAssignments } from "./security/admin-users.js";
 import { clientIp } from "./security/client-ip.js";
 import { DraftError, createDraft, getAssignedProcedure, getOwnDraft, getProcedureReport, listAssignedProcedures, listInstitutionalReports, listOwnDrafts, listProcessEvaluators, startAssignedEvaluation, submitOwnDraft, updateOwnDraft } from "./domain/drafts.js";
-import { decideAssignedEvaluation, evaluationRubric, getAssignedEvaluation, getOwnEvaluationFeedback, saveAssignedEvaluation, saveAuthorEvaluationResponses } from "./domain/evaluations.js";
+import { decideAdministrativeApproval, decideAssignedEvaluation, evaluationRubric, getAdministrativeApprovalProcedure, getAssignedEvaluation, getOwnEvaluationFeedback, listPendingAdministrativeApprovals, saveAssignedEvaluation, saveAuthorEvaluationResponses } from "./domain/evaluations.js";
 import { reviewFlow, reviewFlowCompleteness } from "./domain/flow-review.js";
 import { AnalyticsError, getAdminAnalytics, getEvaluatorAnalytics } from "./domain/analytics.js";
 import { listOwnNotifications, markAllOwnNotificationsRead, markOwnNotificationRead, NotificationError } from "./domain/notifications.js";
@@ -352,6 +352,7 @@ export function createAppServer({ poolFactory = createPool, secureCookies, trust
       const reportDraftId = /^\/api\/reports\/procedures\/([0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12})$/.exec(url.pathname)?.[1];
       const submitDraftId = /^\/api\/procedures\/([0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12})\/submit$/.exec(url.pathname)?.[1];
       const responseDraftId = /^\/api\/procedures\/([0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12})\/evaluation-responses$/.exec(url.pathname)?.[1];
+      const adminApprovalMatch = /^\/api\/admin\/procedures\/([0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12})\/final-approval$/.exec(url.pathname);
       const assignedDraftMatch = /^\/api\/evaluator\/procedures\/([0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12})(?:\/(start|evaluation|decision))?$/.exec(url.pathname);
       if ((url.pathname === "/api/admin/institutional-reports" && req.method === "GET") ||
           (reportDraftId && req.method === "GET") ||
@@ -359,6 +360,8 @@ export function createAppServer({ poolFactory = createPool, secureCookies, trust
           (url.pathname === "/api/evaluators" && req.method === "GET") ||
           (url.pathname === "/api/evaluator/rubric" && req.method === "GET") ||
           (url.pathname === "/api/evaluator/inbox" && req.method === "GET") ||
+          (url.pathname === "/api/admin/pending-approvals" && req.method === "GET") ||
+          (adminApprovalMatch && ["GET", "POST"].includes(req.method)) ||
           (submitDraftId && req.method === "POST") ||
           (responseDraftId && req.method === "PUT") ||
           (assignedDraftMatch && (
@@ -403,6 +406,13 @@ export function createAppServer({ poolFactory = createPool, secureCookies, trust
             sendJson(res, 200, { ok: true, rubric: evaluationRubric() });
           } else if (url.pathname === "/api/evaluator/inbox") {
             sendJson(res, 200, { ok: true, procedures: await listAssignedProcedures(pool, session.user) });
+          } else if (url.pathname === "/api/admin/pending-approvals") {
+            sendJson(res, 200, { ok: true, procedures: await listPendingAdministrativeApprovals(pool, session.user) });
+          } else if (adminApprovalMatch && req.method === "GET") {
+            sendJson(res, 200, { ok: true, ...await getAdministrativeApprovalProcedure(pool, session.user, adminApprovalMatch[1]) });
+          } else if (adminApprovalMatch) {
+            const body = await readJson(req);
+            sendJson(res, 200, { ok: true, decision: await decideAdministrativeApproval(pool, session.user, adminApprovalMatch[1], body || {}) });
           } else if (assignedDraftMatch?.[2] === "start") {
             const procedure = await startAssignedEvaluation(pool, session.user, assignedDraftMatch[1]);
             sendJson(res, 200, { ok: true, procedure });
@@ -436,7 +446,7 @@ export function createAppServer({ poolFactory = createPool, secureCookies, trust
             sendJson(res, 201, { ok: true, procedure: await createDraft(pool, session.user, body || {}) });
           } else if (req.method === "GET") {
             const procedure = await getOwnDraft(pool, session.user, draftId);
-            if (session.user.role === "elaborador" && ["devuelto_para_ajustes", "concepto_favorable", "concepto_no_favorable"].includes(procedure.status)) {
+            if (session.user.role === "elaborador" && ["devuelto_para_ajustes", "pendiente_visto_bueno_administrativo", "aprobado_formalmente", "concepto_favorable", "concepto_no_favorable"].includes(procedure.status)) {
               procedure.evaluation = await getOwnEvaluationFeedback(pool, session.user, draftId);
             }
             sendJson(res, 200, { ok: true, procedure });

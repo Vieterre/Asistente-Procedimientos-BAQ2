@@ -217,6 +217,9 @@ function publicDraft(row, includePayload = false) {
     version: row.version,
     status: row.status,
     revision: row.revision,
+    adminApprovalObservation: row.admin_approval_observation || "",
+    adminApprovalByUserId: row.admin_approval_by_user_id || null,
+    adminApprovalAt: row.admin_approval_at || null,
     updatedAt: row.updated_at,
     ...(includePayload ? { payload: row.current_payload } : {})
   };
@@ -238,7 +241,8 @@ export async function listOwnDrafts(pool, user) {
 export async function getOwnDraft(pool, user, id) {
   if (!canPerform(user, ACTIONS.CREATE_PROCEDURE)) throw new DraftError("forbidden", 403);
   const result = await pool.query(
-    `SELECT id, code, name, process_code, version, status, revision, updated_at, current_payload
+    `SELECT id, code, name, process_code, version, status, revision, updated_at, current_payload,
+            admin_approval_observation, admin_approval_by_user_id, admin_approval_at
      FROM procedures p WHERE id = $1 AND created_by_user_id = $2
        AND ($3 OR EXISTS (SELECT 1 FROM user_processes up
                           WHERE up.user_id = $2 AND up.process_code = p.process_code))`,
@@ -250,7 +254,7 @@ export async function getOwnDraft(pool, user, id) {
 
 export async function listInstitutionalReports(pool, user) {
   if (user.role !== ROLES.ADMIN || !canPerform(user, ACTIONS.GENERATE_BRANDED_PDF, {
-    procedure: { status: PROCEDURE_STATUS.FAVORABLE }
+    procedure: { status: PROCEDURE_STATUS.APPROVED }
   })) {
     throw new DraftError("forbidden", 403);
   }
@@ -259,7 +263,7 @@ export async function listInstitutionalReports(pool, user) {
        FROM procedures
       WHERE status = $1
       ORDER BY updated_at DESC, name`,
-    [PROCEDURE_STATUS.FAVORABLE]
+    [PROCEDURE_STATUS.APPROVED]
   );
   return result.rows.map(row => publicDraft(row));
 }
@@ -441,8 +445,9 @@ export async function submitOwnDraft(pool, user, id, { evaluatorId, revision }) 
       const stored = previous.rows[0]?.criteria_payload;
       const criteria = stored?.criteria && typeof stored.criteria === "object" ? stored.criteria : stored;
       const missingResponses = missingCorrectionResponses(criteria);
-      if (previous.rows[0]?.status !== PROCEDURE_STATUS.RETURNED ||
-          !criteria || typeof criteria !== "object" || Array.isArray(criteria) || missingResponses.length) {
+      const returnedByEvaluator = previous.rows[0]?.status === PROCEDURE_STATUS.RETURNED;
+      if (!criteria || typeof criteria !== "object" || Array.isArray(criteria) ||
+          (returnedByEvaluator && missingResponses.length)) {
         throw new DraftError("correction_responses_required", 400, missingResponses);
       }
       const copiedCriteria = structuredClone(criteria);
@@ -481,6 +486,7 @@ export async function submitOwnDraft(pool, user, id, { evaluatorId, revision }) 
     }
     const updated = await client.query(
       `UPDATE procedures SET status = $2, assigned_evaluator_id = $3,
+              admin_approval_observation = NULL, admin_approval_by_user_id = NULL, admin_approval_at = NULL,
               revision = revision + 1, updated_at = now()
         WHERE id = $1
         RETURNING id, code, name, process_code, version, status, revision, updated_at,
@@ -522,7 +528,7 @@ export async function listAssignedProcedures(pool, user) {
       WHERE p.assigned_evaluator_id = $1 AND p.status IN ($2, $3, $4, $5, $6, $7)
       ORDER BY p.updated_at DESC`,
     [user.id, PROCEDURE_STATUS.SUBMITTED, PROCEDURE_STATUS.IN_REVIEW, PROCEDURE_STATUS.CORRECTED,
-      PROCEDURE_STATUS.RETURNED, PROCEDURE_STATUS.FAVORABLE, PROCEDURE_STATUS.UNFAVORABLE]
+      PROCEDURE_STATUS.RETURNED, PROCEDURE_STATUS.PENDING_ADMIN_APPROVAL, PROCEDURE_STATUS.APPROVED]
   );
   return result.rows.map(row => publicDraft(row));
 }
@@ -536,7 +542,7 @@ export async function getAssignedProcedure(pool, user, id) {
       WHERE p.id = $1 AND p.assigned_evaluator_id = $2
         AND p.status IN ($3, $4, $5, $6, $7, $8)`,
     [id, user.id, PROCEDURE_STATUS.SUBMITTED, PROCEDURE_STATUS.IN_REVIEW, PROCEDURE_STATUS.CORRECTED,
-      PROCEDURE_STATUS.RETURNED, PROCEDURE_STATUS.FAVORABLE, PROCEDURE_STATUS.UNFAVORABLE]
+      PROCEDURE_STATUS.RETURNED, PROCEDURE_STATUS.PENDING_ADMIN_APPROVAL, PROCEDURE_STATUS.APPROVED]
   );
   if (!result.rows[0]) throw new DraftError("draft_not_found", 404);
   return publicDraft(result.rows[0], true);

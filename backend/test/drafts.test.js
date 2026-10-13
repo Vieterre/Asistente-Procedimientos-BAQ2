@@ -398,7 +398,7 @@ test("list and detail are scoped to the owner", async () => {
 test("reports distinguish institutional administration from standard owner and evaluator access", async () => {
   const reportRow = {
     ...row,
-    status: "concepto_favorable",
+    status: "aprobado_formalmente",
     created_by_user_id: author.id,
     assigned_evaluator_id: evaluator.id,
     author_process_access: true,
@@ -1014,7 +1014,7 @@ test("report routes authorize institutional and standard formats by role", async
   ]);
   const reportRow = {
     ...row,
-    status: "concepto_favorable",
+    status: "aprobado_formalmente",
     created_by_user_id: author.id,
     assigned_evaluator_id: evaluator.id,
     author_process_access: true,

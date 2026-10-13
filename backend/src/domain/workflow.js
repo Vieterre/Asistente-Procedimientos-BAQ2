@@ -5,6 +5,8 @@ export const PROCEDURE_STATUS = Object.freeze({
   RETURNED: "devuelto_para_ajustes",
   CORRECTED: "subsanado",
   FAVORABLE: "concepto_favorable",
+  PENDING_ADMIN_APPROVAL: "pendiente_visto_bueno_administrativo",
+  APPROVED: "aprobado_formalmente",
   UNFAVORABLE: "concepto_no_favorable",
   REOPENED: "reabierto_por_administrador"
 });
@@ -19,12 +21,13 @@ export function isAssignedReviewStatus(status) {
     PROCEDURE_STATUS.IN_REVIEW,
     PROCEDURE_STATUS.CORRECTED,
     PROCEDURE_STATUS.RETURNED,
+    PROCEDURE_STATUS.PENDING_ADMIN_APPROVAL,
     PROCEDURE_STATUS.UNFAVORABLE
   ].includes(status);
 }
 
 export function isApproved(status) {
-  return status === PROCEDURE_STATUS.FAVORABLE;
+  return status === PROCEDURE_STATUS.APPROVED;
 }
 
 export function favorableEvaluationAllowed(evaluation) {

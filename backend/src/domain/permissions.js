@@ -24,6 +24,8 @@ export const ACTIONS = Object.freeze({
   RETURN_FOR_CORRECTIONS: "return_for_corrections",
   ISSUE_FAVORABLE_CONCEPT: "issue_favorable_concept",
   ISSUE_UNFAVORABLE_CONCEPT: "issue_unfavorable_concept",
+  ISSUE_FINAL_APPROVAL: "issue_final_approval",
+  RETURN_FROM_ADMIN_APPROVAL: "return_from_admin_approval",
   REOPEN_APPROVED_VERSION: "reopen_approved_version",
   GENERATE_UNBRANDED_PDF: "generate_unbranded_pdf",
   GENERATE_BRANDED_PDF: "generate_branded_pdf"
@@ -61,6 +63,9 @@ export function canPerform(user, action, context = {}) {
   if (user.role === ROLES.ADMIN) {
     if (action === ACTIONS.DEACTIVATE_USER) return canAdminDeactivate(targetUser, context);
     if (action === ACTIONS.GENERATE_BRANDED_PDF) return isApproved(procedure?.status);
+    if ([ACTIONS.ISSUE_FINAL_APPROVAL, ACTIONS.RETURN_FROM_ADMIN_APPROVAL].includes(action)) {
+      return procedure?.status === PROCEDURE_STATUS.PENDING_ADMIN_APPROVAL;
+    }
     return [
       ACTIONS.MANAGE_USERS,
       ACTIONS.REACTIVATE_USER,
@@ -68,6 +73,8 @@ export function canPerform(user, action, context = {}) {
       ACTIONS.VIEW_ADMIN_ANALYTICS,
       ACTIONS.CONFIGURE_SYSTEM,
       ACTIONS.REOPEN_APPROVED_VERSION,
+      ACTIONS.ISSUE_FINAL_APPROVAL,
+      ACTIONS.RETURN_FROM_ADMIN_APPROVAL,
       ACTIONS.GENERATE_UNBRANDED_PDF,
       ACTIONS.CREATE_PROCEDURE,
       ACTIONS.EDIT_PROCEDURE

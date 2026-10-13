@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { ACTIONS, canPerform } from "./permissions.js";
-import { PROCEDURE_STATUS } from "./workflow.js";
+import { PROCEDURE_STATUS, favorableEvaluationAllowed } from "./workflow.js";
 import { ROLES } from "./roles.js";
 import {
   EVALUATION_GROUPS,
@@ -114,8 +114,9 @@ export async function getOwnEvaluationFeedback(pool, user, procedureId) {
           ORDER BY created_at DESC, id DESC LIMIT 1
        ) e ON TRUE
       WHERE p.id = $1 AND p.created_by_user_id = $2
-        AND p.status IN ($3, $4, $5)`,
-    [procedureId, user.id, PROCEDURE_STATUS.RETURNED, PROCEDURE_STATUS.FAVORABLE, PROCEDURE_STATUS.UNFAVORABLE]
+        AND p.status IN ($3, $4, $5, $6)`,
+    [procedureId, user.id, PROCEDURE_STATUS.RETURNED, PROCEDURE_STATUS.PENDING_ADMIN_APPROVAL,
+      PROCEDURE_STATUS.APPROVED, PROCEDURE_STATUS.UNFAVORABLE]
   );
   return result.rows[0] ? publicEvaluation(result.rows[0], result.rows[0].version) : null;
 }
@@ -311,12 +312,13 @@ export async function decideAssignedEvaluation(pool, user, procedureId, { decisi
       throw new DraftError(decision === "favorable" ? "evaluation_favorable_conditions_unmet" : "draft_locked", decision === "favorable" ? 400 : 403);
     }
 
-    const nextStatus = decision === "devolver" ? PROCEDURE_STATUS.RETURNED : PROCEDURE_STATUS.FAVORABLE;
+    const evaluationStatus = decision === "devolver" ? PROCEDURE_STATUS.RETURNED : PROCEDURE_STATUS.FAVORABLE;
+    const nextStatus = decision === "devolver" ? PROCEDURE_STATUS.RETURNED : PROCEDURE_STATUS.PENDING_ADMIN_APPROVAL;
     await client.query(
       `UPDATE evaluations SET status = $2, score = $3, critical_failures = $4,
               open_findings = $5, updated_at = now()
         WHERE id = $1`,
-      [existing.id, nextStatus, metrics.score, metrics.criticalFailures, metrics.openFindings]
+      [existing.id, evaluationStatus, metrics.score, metrics.criticalFailures, metrics.openFindings]
     );
     await client.query(
       `UPDATE procedures SET status = $2, updated_at = now() WHERE id = $1`,
@@ -326,7 +328,7 @@ export async function decideAssignedEvaluation(pool, user, procedureId, { decisi
     const title = decision === "devolver" ? "Procedimiento devuelto para ajustes" : "Concepto favorable emitido";
     const message = decision === "devolver"
       ? `«${procedure.name}» fue devuelto con ${metrics.failures} criterio(s) por ajustar.`
-      : `La evaluación de «${procedure.name}» finalizó con ${metrics.score.toFixed(1)}%: ${title.toLocaleLowerCase("es-CO")}.`;
+      : `La evaluación de «${procedure.name}» finalizó con ${metrics.score.toFixed(1)}% y quedó pendiente del visto bueno administrativo.`;
     await client.query(
       `INSERT INTO audit_events (id, actor_user_id, event_type, entity_type, entity_id, metadata)
        VALUES ($1, $2, $3, 'procedure', $4, $5::jsonb)`,
@@ -339,6 +341,152 @@ export async function decideAssignedEvaluation(pool, user, procedureId, { decisi
     );
     await client.query("COMMIT");
     return { status: nextStatus, metrics, evaluationId: existing.id };
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+export async function listPendingAdministrativeApprovals(pool, user) {
+  if (user.role !== ROLES.ADMIN) throw new DraftError("forbidden", 403);
+  const result = await pool.query(
+    `SELECT id, code, name, process_code, version, status, revision, updated_at,
+            admin_approval_observation, admin_approval_by_user_id, admin_approval_at
+       FROM procedures
+      WHERE status = $1
+      ORDER BY updated_at ASC, name`,
+    [PROCEDURE_STATUS.PENDING_ADMIN_APPROVAL]
+  );
+  return result.rows.map(row => ({
+    id: row.id,
+    code: row.code,
+    name: row.name,
+    processCode: row.process_code,
+    version: row.version,
+    status: row.status,
+    revision: row.revision,
+    updatedAt: row.updated_at
+  }));
+}
+
+export async function getAdministrativeApprovalProcedure(pool, user, procedureId) {
+  if (user.role !== ROLES.ADMIN) throw new DraftError("forbidden", 403);
+  const result = await pool.query(
+    `SELECT p.id, p.code, p.name, p.process_code, p.version, p.status, p.revision, p.updated_at,
+            p.current_payload, p.assigned_evaluator_id, p.admin_approval_observation,
+            p.admin_approval_by_user_id, p.admin_approval_at,
+            e.id AS evaluation_id, e.status AS evaluation_status, e.score,
+            e.critical_failures, e.open_findings, e.concept, e.criteria_payload,
+            e.created_at AS evaluation_created_at, e.updated_at AS evaluation_updated_at
+       FROM procedures p
+       JOIN LATERAL (
+         SELECT id, status, score, critical_failures, open_findings, concept, criteria_payload, created_at, updated_at
+           FROM evaluations WHERE procedure_id = p.id
+          ORDER BY created_at DESC, id DESC LIMIT 1
+       ) e ON TRUE
+      WHERE p.id = $1`,
+    [procedureId]
+  );
+  const row = result.rows[0];
+  if (!row) throw new DraftError("draft_not_found", 404);
+  return {
+    procedure: {
+      id: row.id,
+      code: row.code,
+      name: row.name,
+      processCode: row.process_code,
+      assignedEvaluatorId: row.assigned_evaluator_id || null,
+      version: row.version,
+      status: row.status,
+      revision: row.revision,
+      updatedAt: row.updated_at,
+      adminApprovalObservation: row.admin_approval_observation || "",
+      adminApprovalByUserId: row.admin_approval_by_user_id || null,
+      adminApprovalAt: row.admin_approval_at || null,
+      payload: row.current_payload
+    },
+    evaluation: publicEvaluation({
+      id: row.evaluation_id,
+      status: row.evaluation_status,
+      score: row.score,
+      critical_failures: row.critical_failures,
+      open_findings: row.open_findings,
+      concept: row.concept,
+      criteria_payload: row.criteria_payload,
+      created_at: row.evaluation_created_at,
+      updated_at: row.evaluation_updated_at
+    }, row.version)
+  };
+}
+
+export async function decideAdministrativeApproval(pool, user, procedureId, { decision, observation } = {}) {
+  if (user.role !== ROLES.ADMIN) throw new DraftError("forbidden", 403);
+  if (!["aprobar", "devolver"].includes(decision)) throw new DraftError("invalid_admin_approval_decision", 400);
+  const cleanObservation = typeof observation === "string" ? observation.trim() : "";
+  if (cleanObservation.length > 5000) throw new DraftError("invalid_admin_approval_observation", 400);
+  if (decision === "devolver" && !cleanObservation) throw new DraftError("admin_return_observation_required", 400);
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    const found = await client.query(
+      `SELECT p.id, p.name, p.version, p.status, p.created_by_user_id, p.assigned_evaluator_id,
+              e.id AS evaluation_id, e.status AS evaluation_status, e.criteria_payload
+         FROM procedures p
+         JOIN LATERAL (
+           SELECT id, status, criteria_payload FROM evaluations WHERE procedure_id = p.id
+            ORDER BY created_at DESC, id DESC LIMIT 1
+         ) e ON TRUE
+        WHERE p.id = $1 FOR UPDATE OF p`,
+      [procedureId]
+    );
+    const procedure = found.rows[0];
+    if (!procedure) throw new DraftError("draft_not_found", 404);
+    if (!canPerform(user, decision === "aprobar" ? ACTIONS.ISSUE_FINAL_APPROVAL : ACTIONS.RETURN_FROM_ADMIN_APPROVAL, {
+      procedure: { status: procedure.status }
+    })) throw new DraftError("draft_locked", 403);
+    const metrics = evaluationMetrics(criteriaFromPayload(procedure.criteria_payload), procedure.version);
+    if (decision === "aprobar" && (procedure.evaluation_status !== PROCEDURE_STATUS.FAVORABLE || !favorableEvaluationAllowed({
+      complete: metrics.complete, score: metrics.score, failures: metrics.failures,
+      criticalFailures: metrics.criticalFailures, openFindings: metrics.openFindings
+    }))) throw new DraftError("administrative_approval_conditions_unmet", 400);
+
+    const nextStatus = decision === "aprobar" ? PROCEDURE_STATUS.APPROVED : PROCEDURE_STATUS.RETURNED;
+    const updated = await client.query(
+      `UPDATE procedures
+          SET status = $2,
+              approved_payload = CASE WHEN $2 = $3 THEN current_payload ELSE NULL END,
+              approved_at = CASE WHEN $2 = $3 THEN now() ELSE NULL END,
+              admin_approval_observation = $4,
+              admin_approval_by_user_id = $5,
+              admin_approval_at = now(),
+              revision = revision + 1,
+              updated_at = now()
+        WHERE id = $1
+        RETURNING id, code, name, process_code, version, status, revision, updated_at`,
+      [procedureId, nextStatus, PROCEDURE_STATUS.APPROVED, cleanObservation || null, user.id]
+    );
+    const eventType = decision === "aprobar" ? "procedure_formally_approved" : "procedure_returned_by_administration";
+    const title = decision === "aprobar" ? "Procedimiento aprobado formalmente" : "Procedimiento devuelto por Administración";
+    const message = decision === "aprobar"
+      ? `«${procedure.name}» recibió el visto bueno administrativo y quedó vigente.`
+      : `Administración devolvió «${procedure.name}» para ajustes: ${cleanObservation}`;
+    await client.query(
+      `INSERT INTO audit_events (id, actor_user_id, event_type, entity_type, entity_id, reason, metadata)
+       VALUES ($1, $2, $3, 'procedure', $4, $5, $6::jsonb)`,
+      [randomUUID(), user.id, eventType, procedureId, cleanObservation || null,
+        JSON.stringify({ evaluationId: procedure.evaluation_id, decision })]
+    );
+    for (const recipientId of new Set([procedure.created_by_user_id, procedure.assigned_evaluator_id].filter(Boolean))) {
+      await client.query(
+        `INSERT INTO user_notifications (id, recipient_user_id, procedure_id, event_type, title, message)
+         VALUES ($1, $2, $3, $4, $5, $6)`,
+        [randomUUID(), recipientId, procedureId, eventType, title, message]
+      );
+    }
+    await client.query("COMMIT");
+    return { status: nextStatus, procedure: updated.rows[0], observation: cleanObservation };
   } catch (error) {
     await client.query("ROLLBACK");
     throw error;
