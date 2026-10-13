@@ -3297,7 +3297,7 @@ function showPreview({ branding = "standard" } = {}) {
   const title = document.createElement("div");
   title.className = "preview-document-title";
   const titleLabel = document.createElement("strong");
-  titleLabel.textContent = institutional ? "PROCEDIMIENTO INSTITUCIONAL" : "PROCEDIMIENTO";
+  titleLabel.textContent = "PROCEDIMIENTO";
   const name = document.createElement("h2");
   name.textContent = ui.draftName.value.trim() || "Nombre del procedimiento";
   const processLabel = document.createElement("span");
@@ -3317,7 +3317,32 @@ function showPreview({ branding = "standard" } = {}) {
     cell.append(strong, text);
     meta.append(cell);
   }
-  header.append(...(institutional ? [agency, title, meta] : [title, meta]));
+  if (institutional) {
+    header.classList.add("institutional");
+    const procedure = document.createElement("div");
+    procedure.className = "preview-institutional-procedure";
+    for (const [className, text] of [
+      ["preview-institutional-label", "Procedimiento"],
+      ["preview-institutional-name", `(${name.textContent})`],
+      ["preview-institutional-process", `Proceso: ${process}`]
+    ]) {
+      const row = document.createElement("div");
+      row.className = className;
+      row.textContent = text;
+      procedure.append(row);
+    }
+    const institutionalMeta = document.createElement("div");
+    institutionalMeta.className = "preview-institutional-meta";
+    const reportDate = versioningDate(changeRows, reportVersion) || "Sin fecha registrada";
+    for (const value of [`Código: ${reportCode}`, `Versión: ${reportVersion}`, `Fecha: ${reportDate}`]) {
+      const row = document.createElement("div");
+      row.textContent = value;
+      institutionalMeta.append(row);
+    }
+    header.append(agency, procedure, institutionalMeta);
+  } else {
+    header.append(title, meta);
+  }
 
   const definitions = ui.draftDefinitions.value.split(/\r?\n/).map(line => line.trim()).filter(Boolean).map(line => {
     const split = line.indexOf(":");

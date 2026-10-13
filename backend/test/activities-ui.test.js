@@ -376,10 +376,17 @@ test("reports keep institutional branding exclusive and standard reports unbrand
   assert.match(script, /agencyLogo\.src = "\/institutional-logo\.png"/);
   assert.match(script, /currentDraft\?\.code \|\| ui\.draftCode\.value \|\| "Sin código asignado"/);
   assert.match(script, /statusLabel\(currentDraft\?\.status \|\| "borrador"\)/);
-  assert.match(script, /header\.append\(\.\.\.\(institutional \? \[agency, title, meta\] : \[title, meta\]\)\)/);
+  assert.match(script, /header\.classList\.add\("institutional"\)/);
+  assert.match(script, /\["preview-institutional-label", "Procedimiento"\]/);
+  assert.match(script, /`Código: \$\{reportCode\}`/);
+  assert.match(script, /`Fecha: \$\{reportDate\}`/);
+  assert.match(script, /header\.append\(agency, procedure, institutionalMeta\)/);
+  assert.match(script, /header\.append\(title, meta\)/);
   assert.match(script, /\/api\/admin\/institutional-reports/);
   assert.match(script, /\/api\/reports\/procedures\/\$\{encodeURIComponent\(id\)\}/);
   assert.match(css, /\.preview-document-header\.standard\{/);
+  assert.match(css, /\.preview-document-header\.institutional\{/);
+  assert.match(css, /\.preview-institutional-procedure\{/);
   assert.match(css, /\.preview-agency-mark img\{/);
   assert.match(html, />Imprimir o guardar como PDF</);
   assert.match(script, /"Imprimir o guardar como PDF"/);
