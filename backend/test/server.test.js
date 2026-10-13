@@ -79,6 +79,7 @@ test("private consoles serve only their own assets with a restrictive policy", a
       ["/drafts", "text/html"],
       ["/drafts.css", "text/css"],
       ["/drafts.js", "text/javascript"],
+      ["/drafts-20261012.js", "text/javascript"],
       ["/institutional-logo.png", "image/png"],
     ]) {
       const response = await fetch(base + path);
@@ -102,7 +103,7 @@ test("private consoles serve only their own assets with a restrictive policy", a
     const draftHtml = await (await fetch(base + "/drafts")).text();
     assert.match(draftHtml, /<form id="loginForm" method="post"/);
     assert.match(draftHtml, /href="\/drafts\.css\?v=20261012-2"/);
-    assert.match(draftHtml, /src="\/drafts\.js\?v=20261012-2"/);
+    assert.match(draftHtml, /src="\/drafts-20261012\.js"/);
     const draftScript = await (await fetch(base + "/drafts.js")).text();
     const draftIds = draftScript.match(/const ids = \[([\s\S]*?)\];/)?.[1];
     assert.ok(draftIds);

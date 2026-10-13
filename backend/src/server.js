@@ -23,6 +23,7 @@ const draftAssets = {
   "/drafts": ["drafts.html", "text/html; charset=utf-8"],
   "/drafts.css": ["drafts.css", "text/css; charset=utf-8"],
   "/drafts.js": ["drafts.js", "text/javascript; charset=utf-8"],
+  "/drafts-20261012.js": ["drafts.js", "text/javascript; charset=utf-8"],
   "/institutional-logo.png": ["institutional-logo.png", "image/png"]
 };
 const port = Number(process.env.PORT || 3000);
