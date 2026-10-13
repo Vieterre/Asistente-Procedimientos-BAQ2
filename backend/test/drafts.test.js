@@ -162,11 +162,16 @@ test("flow completeness is separate from graph coherence", () => {
   assert.deepEqual(reviewFlowCompleteness(activities), [
     { index: 1, message: "Describe la actividad." },
     { index: 2, message: "Indica un responsable." },
-    { index: 3, message: "Describe el resultado o condición de cierre." }
+    { index: 3, message: "Describe el resultado o condición de cierre." },
+    { index: null, message: "El procedimiento debe incluir al menos un punto de control." }
   ]);
   activities[1].descripcion = "Elabora el plan";
   activities[2].responsable = "Profesional";
   activities[3].descripcion = "Plan aprobado";
+  assert.deepEqual(reviewFlowCompleteness(activities), [
+    { index: null, message: "El procedimiento debe incluir al menos un punto de control." }
+  ]);
+  activities[1].tieneControl = true;
   assert.deepEqual(reviewFlowCompleteness(activities), []);
   activities[1].actividad = "Recepción y radicación";
   assert.deepEqual(reviewFlowCompleteness(activities), [
@@ -197,7 +202,8 @@ const completePayload = {
   norms: [{ tipo: "Interna", norma: "Manual", anio: "2026", descripcion: "Regula el trámite", articulo: "1", entidad: "Entidad" }],
   activities: [
     { uid: "start", tipo: "Inicio", descripcion: "Solicitud recibida" },
-    { uid: "work", tipo: "Actividad", actividad: "Revisar solicitud", descripcion: "Verifica la información", responsable: "Profesional" },
+    { uid: "work", tipo: "Actividad", actividad: "Revisar solicitud", descripcion: "Verifica la información", responsable: "Profesional", tieneControl: true,
+      controlResponsable: "Profesional", controlPeriodicidad: "Por cada solicitud", controlAccion: "Verifica", controlEjecucion: "Compara la información", controlDesviacion: "Solicita ajuste", controlEvidencia: "Lista de chequeo" },
     { uid: "end", tipo: "Fin", descripcion: "Solicitud revisada" }
   ],
   annexes: [], changes: [{ version: "1.0", fecha: "2026-10-03", razon: "Creación inicial" }],
@@ -568,6 +574,20 @@ test("submission rejects incomplete drafts, stale revisions, and evaluators outs
   assert.equal(procedureUpdates, 0, "a diagram without activities must never be submitted");
   procedure.current_payload = {
     ...completePayload,
+    activities: [
+      completePayload.activities[0],
+      { ...completePayload.activities[1], tieneControl: false },
+      completePayload.activities[2]
+    ]
+  };
+  await assert.rejects(submitOwnDraft(pool, author, draftId, { evaluatorId: evaluator.id, revision: 4 }), error => {
+    assert.equal(error.code, "submission_incomplete");
+    assert.ok(error.details.includes("Incluye al menos un punto de control antes de enviar."));
+    return true;
+  });
+  assert.equal(procedureUpdates, 0, "a procedure without a control must never be submitted");
+  procedure.current_payload = {
+    ...completePayload,
     fields: { ...completePayload.fields, aproboNombre: " " }
   };
   await assert.rejects(submitOwnDraft(pool, author, draftId, { evaluatorId: evaluator.id, revision: 4 }), error => {
@@ -587,7 +607,8 @@ test("submission allows methodological flow warnings while preserving blocking f
   const activities = [
     { uid: "start", tipo: "Inicio", actividad: "Inicio", descripcion: "Solicitud recibida" },
     { uid: "choice", tipo: "Decisión", actividad: "¿La solicitud cumple?", descripcion: "¿La solicitud cumple?", responsable: "Profesional", decisionSi: "end", decisionNo: "adjust" },
-    { uid: "adjust", tipo: "Actividad", actividad: "Ajustar solicitud", descripcion: "Completa la información requerida", responsable: "Profesional" },
+    { uid: "adjust", tipo: "Actividad", actividad: "Ajustar solicitud", descripcion: "Completa la información requerida", responsable: "Profesional", tieneControl: true,
+      controlResponsable: "Profesional", controlPeriodicidad: "Por cada solicitud", controlAccion: "Verifica", controlEjecucion: "Compara los requisitos", controlDesviacion: "Solicita ajuste", controlEvidencia: "Lista de chequeo" },
     { uid: "end", tipo: "Fin", actividad: "Fin", descripcion: "Solicitud tramitada" }
   ];
   const warnings = reviewFlow(activities);
@@ -696,7 +717,8 @@ test("draft HTTP routes require session, password change, and CSRF", async () =>
     ]);
     assert.deepEqual(reviewResult.completenessIssues, [
       { index: 0, message: "Describe el evento que inicia el procedimiento." },
-      { index: 1, message: "Describe el resultado o condición de cierre." }
+      { index: 1, message: "Describe el resultado o condición de cierre." },
+      { index: null, message: "El procedimiento debe incluir al menos un punto de control." }
     ]);
   } finally {
     await new Promise(resolve => server.close(resolve));

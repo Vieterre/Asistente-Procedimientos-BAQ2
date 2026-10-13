@@ -209,5 +209,8 @@ export function reviewFlowCompleteness(activities) {
       issues.push({ index, message: "Especifica el responsable del control." });
     }
   }
+  if (!activities.some(item => item?.tieneControl === true)) {
+    issues.push({ index: null, message: "El procedimiento debe incluir al menos un punto de control." });
+  }
   return issues;
 }

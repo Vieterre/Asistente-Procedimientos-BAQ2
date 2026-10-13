@@ -126,6 +126,9 @@ function submissionIssues(name, payload, code) {
   const completeness = reviewFlowCompleteness(activities);
   if (flowIssues.length) issues.push("Corrige las observaciones del flujo antes de enviar.");
   if (completeness.length) issues.push("Completa los datos obligatorios de las actividades y decisiones.");
+  if (completeness.some(issue => issue.message === "El procedimiento debe incluir al menos un punto de control.")) {
+    issues.push("Incluye al menos un punto de control antes de enviar.");
+  }
   if (!activities.length) issues.push("Registra las actividades del procedimiento.");
   const annexesNotApplicable = settings.annexesNotApplicable === true;
   const annexes = Array.isArray(payload.annexes) ? payload.annexes : [];

@@ -36,7 +36,8 @@ const completeDraftPayload = {
   norms: [{ tipo: "Interna", norma: "Manual", anio: "2026", descripcion: "Regula el trámite", articulo: "1", entidad: "Entidad" }],
   activities: [
     { uid: "start", tipo: "Inicio", descripcion: "Solicitud recibida" },
-    { uid: "work", tipo: "Actividad", actividad: "Revisar solicitud", descripcion: "Verifica la información", responsable: "Profesional" },
+    { uid: "work", tipo: "Actividad", actividad: "Revisar solicitud", descripcion: "Verifica la información", responsable: "Profesional", tieneControl: true,
+      controlResponsable: "Profesional", controlPeriodicidad: "Por cada solicitud", controlAccion: "Verifica", controlEjecucion: "Compara la información", controlDesviacion: "Solicita ajuste", controlEvidencia: "Lista de chequeo" },
     { uid: "end", tipo: "Fin", descripcion: "Solicitud revisada" }
   ],
   annexes: [], changes: [{ version: "1.0", fecha: "2026-10-10", razon: "Creación inicial" }],
