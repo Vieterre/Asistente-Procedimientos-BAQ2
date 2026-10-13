@@ -396,6 +396,7 @@ test("evaluator can export the evaluation report with its findings and responses
   assert.match(script, /function buildEvaluationReport\(\)/);
   assert.match(script, /"INFORME DE EVALUACIÓN DE ADECUACIÓN"/);
   assert.match(script, /"Respuesta del elaborador"/);
+  assert.match(script, /changeControlTitle\.textContent = "Control de cambios"/);
   assert.match(script, /currentUserRole !== "evaluador"/);
   assert.match(script, /ui\.exportEvaluationReportButton\.addEventListener\("click", exportEvaluationReport\)/);
   assert.match(script, /new URL\("\/drafts\.css", window\.location\.origin\)/);
@@ -404,6 +405,28 @@ test("evaluator can export the evaluation report with its findings and responses
   assert.match(css, /@page evaluation-report\{size:A4 landscape/);
   assert.match(css, /\.evaluation-pdf-report\{page:evaluation-report/);
   assert.match(css, /\.evaluation-pdf-report\{page:evaluation-report[^}]*font-family:Aptos/);
+});
+
+test("all reports share the change-control structure and its versioning date", async () => {
+  const [script, css] = await Promise.all([
+    readFile(join(root, "backend/public/drafts.js"), "utf8"),
+    readFile(join(root, "backend/public/drafts.css"), "utf8")
+  ]);
+  const helperSource = script.match(/function versioningDate\([\s\S]*?(?=\nfunction approvalReportCell)/)?.[0];
+  assert.ok(helperSource, "versioning date helper should be present");
+  const dateForVersion = runInNewContext(`${helperSource}\nversioningDate`);
+  const changes = [
+    { version: "1.0", fecha: "2026-10-01" },
+    { version: "1.1", fecha: "2026-10-12" }
+  ];
+  assert.equal(dateForVersion(changes, "1.1"), "2026-10-12");
+  assert.equal(dateForVersion(changes, "2.0"), "2026-10-12");
+  assert.match(script, /function changeControlReport\(\)/);
+  assert.match(script, /\["VERSIÓN", "FECHA", "RAZÓN DE LA ACTUALIZACIÓN"\]/);
+  assert.match(script, /\["ELABORÓ", "REVISÓ", "APROBÓ"\]/);
+  assert.match(script, /reportSection\("9", "Control de cambios", changeControlReport\(\)\)/);
+  assert.match(css, /\.preview-change-control\{/);
+  assert.match(css, /data-variant="approval-signatures"/);
 });
 
 test("preview report preserves the original nine-section order", async () => {

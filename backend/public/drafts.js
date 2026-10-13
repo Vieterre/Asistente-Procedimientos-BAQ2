@@ -3068,7 +3068,9 @@ function buildEvaluationReport() {
     }
   }
   table.append(head, body);
-  report.append(title, meta, conceptTitle, concept, criteriaTitle, table);
+  const changeControlTitle = document.createElement("h2");
+  changeControlTitle.textContent = "Control de cambios";
+  report.append(title, meta, conceptTitle, concept, criteriaTitle, table, changeControlTitle, changeControlReport());
   return report;
 }
 
@@ -3181,6 +3183,43 @@ function reportParagraphs(value) {
     block.append(item);
   }
   return block;
+}
+
+function versioningDate(changes, version) {
+  const datedChanges = (Array.isArray(changes) ? changes : []).filter(change =>
+    change && typeof change === "object" && String(change.fecha || "").trim()
+  );
+  const normalizedVersion = String(version || "").trim();
+  const matchingChanges = normalizedVersion
+    ? datedChanges.filter(change => String(change.version || "").trim() === normalizedVersion)
+    : [];
+  return (matchingChanges.at(-1) || datedChanges.at(-1))?.fecha || "";
+}
+
+function approvalReportCell(name, role, date) {
+  return [
+    `Nombre: ${String(name || "").trim() || "Sin información registrada."}`,
+    `Cargo: ${String(role || "").trim() || "Sin información registrada."}`,
+    `Fecha: ${String(date || "").trim() || "Sin información registrada."}`
+  ].join("\n");
+}
+
+function changeControlReport() {
+  const content = document.createElement("div");
+  content.className = "preview-change-control";
+  const reportVersion = currentDraft?.version || changeRows.at(-1)?.version || "";
+  const date = versioningDate(changeRows, reportVersion);
+  const updates = reportTable(["VERSIÓN", "FECHA", "RAZÓN DE LA ACTUALIZACIÓN"], changeRows, row => [row.version, row.fecha, row.razon], {
+    variant: "change-control",
+    columnWidths: ["33.33%", "33.33%", "33.34%"]
+  });
+  const approvals = reportTable(["ELABORÓ", "REVISÓ", "APROBÓ"], [{}], () => [
+    approvalReportCell(ui.draftPreparedName.value, approvalRoleValue(ui.draftPreparedBy), date),
+    approvalReportCell(ui.draftReviewedName.value, approvalRoleValue(ui.draftReviewedBy), date),
+    approvalReportCell(ui.draftApprovedName.value, approvalRoleValue(ui.draftApprovedBy), date)
+  ], { variant: "approval-signatures", columnWidths: ["33.33%", "33.33%", "33.34%"] });
+  content.append(updates, approvals);
+  return content;
 }
 
 function previewFitScale(viewportWidth, contentWidth) {
@@ -3313,11 +3352,6 @@ function showPreview({ branding = "standard" } = {}) {
     if (showSystem) row.push(activity.sistema || "");
     return row;
   }, { variant: "activities", columnWidths: activityColumnWidths });
-  const approvals = reportTable(["Elaboró", "Revisó", "Aprobó"], [{}], () => [
-    [approvalRoleValue(ui.draftPreparedBy), ui.draftPreparedName.value && `Nombre: ${ui.draftPreparedName.value}`].filter(Boolean).join("\n"),
-    [approvalRoleValue(ui.draftReviewedBy), ui.draftReviewedName.value && `Nombre: ${ui.draftReviewedName.value}`].filter(Boolean).join("\n"),
-    [approvalRoleValue(ui.draftApprovedBy), ui.draftApprovedName.value && `Nombre: ${ui.draftApprovedName.value}`].filter(Boolean).join("\n")
-  ]);
   const report = document.createElement("article");
   report.className = "preview-report";
   report.append(header,
@@ -3349,8 +3383,7 @@ function showPreview({ branding = "standard" } = {}) {
   flowSection.append(diagram);
   report.append(flowSection,
     reportSection("8", "Documentos anexos", reportTable(["Documento", "Tipo", "Código / referencia", "Observación"], annexesNotApplicable ? [] : annexRows, row => [row.documento, row.tipo, row.codigo, row.observacion])),
-    reportSection("9", "Control de cambios", reportTable(["Versión", "Fecha", "Razón de la actualización"], changeRows, row => [row.version, row.fecha, row.razon])),
-    approvals);
+    reportSection("9", "Control de cambios", changeControlReport()));
   content.replaceChildren(report);
   ui.previewTitle.textContent = institutional ? "Reporte institucional" : "Reporte del procedimiento";
   ui.printPreviewButton.textContent = institutional ? "Imprimir o guardar PDF institucional" : "Imprimir o guardar como PDF";
