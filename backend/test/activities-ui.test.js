@@ -159,6 +159,25 @@ test("decision nodes keep the complete question inside an expanded diamond", asy
   assert.match(script, /showEvidence && evidence \? 102 : 44/);
 });
 
+test("each external decision route receives its own visual corridor", async () => {
+  const script = await readFile(join(root, "backend/public/drafts.js"), "utf8");
+  const helpers = script.match(/function flowLinksFor\([\s\S]*?(?=\nfunction renderFlow\(\))/)?.[0];
+  assert.ok(helpers, "flow route helper should be present");
+  const linksFor = runInNewContext(`${helpers}\nflowLinksFor`);
+  const items = [
+    { uid: "first", tipo: "Decisión", decisionSi: "next", decisionNo: "notify" },
+    { uid: "next", tipo: "Decisión", decisionSi: "finish", decisionNo: "notify" },
+    { uid: "notify", tipo: "Actividad" },
+    { uid: "finish", tipo: "Fin" }
+  ];
+  const { links, outerRouteCount } = linksFor(items);
+  const noRoutes = links.filter(link => link.label === "No");
+  assert.deepEqual(Array.from(noRoutes, link => link.routeIndex), [0, 1]);
+  assert.equal(outerRouteCount.left, 2);
+  assert.match(script, /const rail = side < 0/);
+  assert.match(script, /link\.routeIndex \* routeGap/);
+});
+
 test("activity and control nodes keep the complete label inside expanded rectangles", async () => {
   const script = await readFile(join(root, "backend/public/drafts.js"), "utf8");
   const helpers = script.match(/function flowLines\([\s\S]*?(?=\nfunction renderFlow\(\))/)?.[0];
