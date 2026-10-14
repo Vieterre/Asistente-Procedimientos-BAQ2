@@ -10,7 +10,9 @@ GRANT SELECT, INSERT, UPDATE ON public.app_users TO asistente_app_test;
 
 GRANT SELECT (
   id, code, name, process_code, version, status, revision, updated_at,
-  current_payload, created_by_user_id, assigned_evaluator_id
+  current_payload, created_by_user_id, assigned_evaluator_id,
+  admin_approval_observation, admin_approval_by_user_id, admin_approval_at,
+  submitted_for_review_at, technical_reviewed_at, approved_at
 ) ON public.procedures TO asistente_app_test;
 
 GRANT INSERT (
@@ -18,7 +20,9 @@ GRANT INSERT (
 ) ON public.procedures TO asistente_app_test;
 
 GRANT UPDATE (
-  name, code, current_payload, revision, updated_at, status, assigned_evaluator_id
+  name, code, current_payload, approved_payload, revision, updated_at, status, assigned_evaluator_id,
+  admin_approval_observation, admin_approval_by_user_id, admin_approval_at,
+  submitted_for_review_at, technical_reviewed_at, approved_at
 ) ON public.procedures TO asistente_app_test;
 
 GRANT SELECT (id, procedure_id, evaluator_id, status, score, critical_failures,
@@ -27,9 +31,9 @@ GRANT SELECT (id, procedure_id, evaluator_id, status, score, critical_failures,
 GRANT INSERT (id, procedure_id, evaluator_id, status, criteria_payload) ON public.evaluations TO asistente_app_test;
 GRANT UPDATE (status, score, critical_failures, open_findings, concept,
   criteria_payload, updated_at) ON public.evaluations TO asistente_app_test;
-GRANT INSERT (id, actor_user_id, event_type, entity_type, entity_id, metadata)
+GRANT INSERT (id, actor_user_id, event_type, entity_type, entity_id, reason, metadata)
   ON public.audit_events TO asistente_app_test;
-GRANT SELECT (actor_user_id, event_type, entity_type, entity_id, created_at)
+GRANT SELECT (actor_user_id, event_type, entity_type, entity_id, reason, created_at)
   ON public.audit_events TO asistente_app_test;
 GRANT SELECT (id, recipient_user_id, procedure_id, event_type, title, message, created_at, read_at),
       INSERT (id, recipient_user_id, procedure_id, event_type, title, message),

@@ -105,6 +105,10 @@ test("application grant scripts include health, authentication, and session life
     assert.match(grants, new RegExp(`GRANT SELECT, INSERT, UPDATE ON public\\.app_users TO ${role};`));
     assert.match(grants, new RegExp(`GRANT INSERT \\([\\s\\S]*?id, name, code, process_code[\\s\\S]*?\\) ON public\\.procedures TO ${role};`));
     assert.match(grants, new RegExp(`GRANT UPDATE \\([\\s\\S]*?name, code, current_payload[\\s\\S]*?\\) ON public\\.procedures TO ${role};`));
+    assert.match(grants, /submitted_for_review_at, technical_reviewed_at, approved_at/);
+    assert.match(grants, /admin_approval_observation, admin_approval_by_user_id, admin_approval_at/);
+    assert.match(grants, /approved_payload/);
+    assert.match(grants, /entity_id, reason, metadata/);
   }
 });
 
