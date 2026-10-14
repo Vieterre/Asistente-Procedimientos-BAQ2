@@ -1401,8 +1401,14 @@ function flowLinksFor(items) {
       if (targetIndex === undefined) continue;
       const side = label === "No" || targetIndex <= index ? "left" : "right";
       const outer = Boolean(label) || item.tipo === "Conector" || targetIndex <= index || targetIndex > index + 1;
-      links.push({ item, index, targetId, targetIndex, label, side, outer, routeIndex: outer ? outerRouteCount[side]++ : null });
+      links.push({ item, index, targetId, targetIndex, label, side, outer, routeIndex: null });
     }
+  }
+  for (const side of ["left", "right"]) {
+    const outerLinks = links.filter(link => link.outer && link.side === side)
+      .sort((first, second) => first.targetIndex - second.targetIndex || second.index - first.index);
+    outerLinks.forEach((link, routeIndex) => { link.routeIndex = routeIndex; });
+    outerRouteCount[side] = outerLinks.length;
   }
   return { links, outerRouteCount };
 }

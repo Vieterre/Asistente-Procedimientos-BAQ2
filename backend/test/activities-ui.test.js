@@ -173,8 +173,9 @@ test("each external decision route receives its own visual corridor", async () =
   ];
   const { links, outerRouteCount } = linksFor(items);
   const noRoutes = links.filter(link => link.label === "No");
-  assert.deepEqual(Array.from(noRoutes, link => link.routeIndex), [0, 1]);
+  assert.deepEqual(Array.from(noRoutes, link => link.routeIndex), [1, 0]);
   assert.equal(outerRouteCount.left, 2);
+  assert.match(script, /first\.targetIndex - second\.targetIndex \|\| second\.index - first\.index/);
   assert.match(script, /const rail = side < 0/);
   assert.match(script, /link\.routeIndex \* routeGap/);
 });
