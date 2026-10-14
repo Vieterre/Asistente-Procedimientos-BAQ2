@@ -1394,7 +1394,7 @@ function flowEvidenceFor(item, showEvidence) {
 }
 
 function flowNodeExitY(item, y, showEvidence) {
-  return y + flowNodeHalfHeight(item) + (flowEvidenceFor(item, showEvidence) ? 82 : 0);
+  return y + flowNodeHalfHeight(item) + (flowEvidenceFor(item, showEvidence) ? 82 : 28);
 }
 
 function flowLinksFor(items) {

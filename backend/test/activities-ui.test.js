@@ -185,8 +185,11 @@ test("flowchart clears each evidence record before connecting the next step", as
   const helpers = script.match(/function flowLines\([\s\S]*?(?=\nfunction renderFlow\(\))/)?.[0];
   assert.ok(helpers, "flow layout helpers should be present");
   const exitYFor = runInNewContext(`${helpers}\nflowNodeExitY`);
+  const halfHeightFor = runInNewContext(`${helpers}\nflowNodeHalfHeight`);
   const activity = { tipo: "Actividad", actividad: "Registrar evidencia", evidencia: "Acta de reunión" };
   assert.ok(exitYFor(activity, 100, true) > exitYFor(activity, 100, false));
+  const start = { tipo: "Inicio" };
+  assert.equal(exitYFor(start, 100, true) - (100 + halfHeightFor(start)), 28, "a route leaves every node with a visible vertical clearance");
   assert.match(script, /flowEvidenceFor\(item, showEvidence\) \? 136 : 44/);
   assert.match(script, /const sourceExitY = flowNodeExitY\(link\.item, source\.y, showEvidence\)/);
 });
