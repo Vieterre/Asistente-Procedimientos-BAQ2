@@ -400,6 +400,7 @@ test("only an administrator can formally approve or return a favorable technical
   assert.equal(approved.status, PROCEDURE_STATUS.APPROVED);
   assert.equal(approval.procedure.status, PROCEDURE_STATUS.APPROVED);
   assert.ok(approval.calls.some(call => call.sql.startsWith("INSERT INTO audit_events") && call.params[2] === "procedure_formally_approved"));
+  assert.ok(approval.calls.some(call => call.sql.startsWith("INSERT INTO user_notifications") && call.params[3] === "procedure_formally_approved"));
 
   const returned = administrativeApprovalPool();
   const decision = await decideAdministrativeApproval(returned, administrator, procedureId, {

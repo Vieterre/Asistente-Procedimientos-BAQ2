@@ -42,6 +42,8 @@ test("initial migration is transactional and records its checksum", async () => 
   assert.ok(pool.calls.some(call => call.sql.startsWith("INSERT INTO schema_migrations") && call.params[0] === "010_administrative_final_approval"));
   assert.ok(pool.calls.some(call => call.sql.includes("submitted_for_review_at")));
   assert.ok(pool.calls.some(call => call.sql.startsWith("INSERT INTO schema_migrations") && call.params[0] === "011_workflow_milestone_dates"));
+  assert.ok(pool.calls.some(call => call.sql.includes("procedure_formally_approved")));
+  assert.ok(pool.calls.some(call => call.sql.startsWith("INSERT INTO schema_migrations") && call.params[0] === "012_administrative_approval_notifications"));
   assert.deepEqual(statements.slice(-2), ["COMMIT", "RELEASE"]);
 });
 

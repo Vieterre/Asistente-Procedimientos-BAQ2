@@ -85,6 +85,10 @@ export async function checkDatabase(pool) {
     "SELECT 1 FROM schema_migrations WHERE version = $1",
     ["011_workflow_milestone_dates"]
   );
-  return [migration, secondMigration, thirdMigration, fourthMigration, fifthMigration, sixthMigration, seventhMigration, eighthMigration, ninthMigration, tenthMigration, eleventhMigration]
+  const twelfthMigration = await pool.query(
+    "SELECT 1 FROM schema_migrations WHERE version = $1",
+    ["012_administrative_approval_notifications"]
+  );
+  return [migration, secondMigration, thirdMigration, fourthMigration, fifthMigration, sixthMigration, seventhMigration, eighthMigration, ninthMigration, tenthMigration, eleventhMigration, twelfthMigration]
     .every(result => result.rows.length === 1);
 }
