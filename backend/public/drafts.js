@@ -1388,6 +1388,15 @@ function flowNodeHalfWidth(item) {
   return item?.tipo === "Decisión" ? decisionLayout(item).halfWidth : item?.tipo === "Conector" ? 28 : rectangularNodeLayout(item).halfWidth;
 }
 
+function flowEvidenceFor(item, showEvidence) {
+  const evidence = String(item?.evidencia || item?.controlEvidencia || "").trim();
+  return showEvidence && evidence && !["Inicio", "Conector", "Fin"].includes(item?.tipo) ? evidence : "";
+}
+
+function flowNodeExitY(item, y, showEvidence) {
+  return y + flowNodeHalfHeight(item) + (flowEvidenceFor(item, showEvidence) ? 82 : 0);
+}
+
 function flowLinksFor(items) {
   const indexById = new Map(items.map((item, index) => [item.uid, index]));
   const outerRouteCount = { left: 0, right: 0 };
@@ -1435,8 +1444,7 @@ function renderFlow() {
   const rightMargin = Math.max(80, 60 + outerRouteCount.right * routeGap);
   const width = Math.max(760, leftMargin + roles.length * laneWidth + rightMargin);
   const itemHeights = activityRows.map(item => {
-    const evidence = String(item.evidencia || item.controlEvidencia || "").trim();
-    return Math.max(rowHeight, flowNodeHalfHeight(item) * 2 + (showEvidence && evidence ? 102 : 44));
+    return Math.max(rowHeight, flowNodeHalfHeight(item) * 2 + (flowEvidenceFor(item, showEvidence) ? 136 : 44));
   });
   const height = 118 + itemHeights.reduce((total, itemHeight) => total + itemHeight, 0) + 32;
   flowIntrinsicWidth = width;
@@ -1491,8 +1499,10 @@ function renderFlow() {
         : leftMargin + roles.length * laneWidth + 24 + link.routeIndex * routeGap;
       points = `${fromX},${source.y} ${rail},${source.y} ${rail},${target.y} ${toX},${target.y}`;
     } else {
-      const mid = (source.y + target.y) / 2;
-      points = `${source.x},${source.y + flowNodeHalfHeight(link.item)} ${source.x},${mid} ${target.x},${mid} ${target.x},${target.y - flowNodeHalfHeight(target.item) - 4}`;
+      const sourceBottomY = source.y + flowNodeHalfHeight(link.item);
+      const sourceExitY = flowNodeExitY(link.item, source.y, showEvidence);
+      const targetTopY = target.y - flowNodeHalfHeight(target.item) - 4;
+      points = `${source.x},${sourceBottomY} ${source.x},${sourceExitY} ${target.x},${sourceExitY} ${target.x},${targetTopY}`;
     }
     const edge = svgNode("polyline", { points, class: `flow-edge ${branch}`, "marker-end": `url(#${link.label === "Sí" ? "flowYes" : link.label === "No" ? "flowNo" : "flowArrow"})` });
     edge.append(svgNode("title", {}, `${link.item.actividad || link.item.tipo} → ${target.item.actividad || target.item.tipo}${link.label ? ` (${link.label})` : ""}`));
@@ -1521,8 +1531,8 @@ function renderFlow() {
     }
     if (item.tieneControl) group.append(svgNode("text", { x, y: y + flowNodeHalfHeight(item) - 11, class: "flow-note", "text-anchor": "middle" }, "CONTROL"));
     svg.append(group);
-    const evidence = String(item.evidencia || item.controlEvidencia || "").trim();
-    if (showEvidence && evidence && !["Inicio", "Conector", "Fin"].includes(item.tipo)) {
+    const evidence = flowEvidenceFor(item, showEvidence);
+    if (evidence) {
       const record = svgNode("g");
       record.append(svgNode("title", {}, `Registro / evidencia: ${evidence}`));
       const nodeBottom = flowNodeHalfHeight(item);

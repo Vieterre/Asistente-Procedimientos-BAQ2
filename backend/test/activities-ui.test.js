@@ -157,7 +157,7 @@ test("decision nodes keep the complete question inside an expanded diamond", asy
   assert.doesNotMatch(layout.lines.join(" "), /…/);
   assert.match(script, /const itemHeights = activityRows\.map\(item => \{/);
   assert.match(script, /const showEvidence = true/);
-  assert.match(script, /showEvidence && evidence \? 102 : 44/);
+  assert.match(script, /flowEvidenceFor\(item, showEvidence\) \? 136 : 44/);
 });
 
 test("each external decision route receives its own visual corridor", async () => {
@@ -178,6 +178,17 @@ test("each external decision route receives its own visual corridor", async () =
   assert.match(script, /first\.targetIndex - second\.targetIndex \|\| second\.index - first\.index/);
   assert.match(script, /const rail = side < 0/);
   assert.match(script, /link\.routeIndex \* routeGap/);
+});
+
+test("flowchart clears each evidence record before connecting the next step", async () => {
+  const script = await readFile(join(root, "backend/public/drafts.js"), "utf8");
+  const helpers = script.match(/function flowLines\([\s\S]*?(?=\nfunction renderFlow\(\))/)?.[0];
+  assert.ok(helpers, "flow layout helpers should be present");
+  const exitYFor = runInNewContext(`${helpers}\nflowNodeExitY`);
+  const activity = { tipo: "Actividad", actividad: "Registrar evidencia", evidencia: "Acta de reunión" };
+  assert.ok(exitYFor(activity, 100, true) > exitYFor(activity, 100, false));
+  assert.match(script, /flowEvidenceFor\(item, showEvidence\) \? 136 : 44/);
+  assert.match(script, /const sourceExitY = flowNodeExitY\(link\.item, source\.y, showEvidence\)/);
 });
 
 test("activity and control nodes keep the complete label inside expanded rectangles", async () => {

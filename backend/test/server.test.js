@@ -147,7 +147,7 @@ test("private consoles serve only their own assets with a restrictive policy", a
     assert.doesNotMatch(draftScript, /ui\.showFlowEvidence/);
     const draftCss = await (await fetch(base + "/drafts.css")).text();
     assert.match(draftCss, /\.site-header\{position:sticky;top:0/);
-    assert.match(draftScript, /item\.evidencia \|\| item\.controlEvidencia/);
+    assert.match(draftScript, /function flowEvidenceFor\(item, showEvidence\)/);
     assert.match(draftScript, /ui\.fitFlowButton\.addEventListener\("click", fitFlow\)/);
     assert.match(draftScript, /installMethodHelps\(document\)/);
     assert.match(draftScript, /\/api\/procedures\/\$\{encodeURIComponent\(currentDraft\.id\)\}\/submit/);
