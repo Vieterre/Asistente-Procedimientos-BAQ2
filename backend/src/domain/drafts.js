@@ -220,6 +220,9 @@ function publicDraft(row, includePayload = false) {
     adminApprovalObservation: row.admin_approval_observation || "",
     adminApprovalByUserId: row.admin_approval_by_user_id || null,
     adminApprovalAt: row.admin_approval_at || null,
+    submittedForReviewAt: row.submitted_for_review_at || null,
+    technicalReviewedAt: row.technical_reviewed_at || null,
+    approvedAt: row.approved_at || null,
     updatedAt: row.updated_at,
     ...(includePayload ? { payload: row.current_payload } : {})
   };
@@ -228,7 +231,8 @@ function publicDraft(row, includePayload = false) {
 export async function listOwnDrafts(pool, user) {
   if (!canPerform(user, ACTIONS.CREATE_PROCEDURE)) throw new DraftError("forbidden", 403);
   const result = await pool.query(
-    `SELECT id, code, name, process_code, version, status, revision, updated_at
+    `SELECT id, code, name, process_code, version, status, revision, updated_at,
+            submitted_for_review_at, technical_reviewed_at, approved_at
      FROM procedures p WHERE created_by_user_id = $1
        AND ($2 OR EXISTS (SELECT 1 FROM user_processes up
                           WHERE up.user_id = $1 AND up.process_code = p.process_code))
@@ -242,7 +246,8 @@ export async function getOwnDraft(pool, user, id) {
   if (!canPerform(user, ACTIONS.CREATE_PROCEDURE)) throw new DraftError("forbidden", 403);
   const result = await pool.query(
     `SELECT id, code, name, process_code, version, status, revision, updated_at, current_payload,
-            admin_approval_observation, admin_approval_by_user_id, admin_approval_at
+            admin_approval_observation, admin_approval_by_user_id, admin_approval_at,
+            submitted_for_review_at, technical_reviewed_at, approved_at
      FROM procedures p WHERE id = $1 AND created_by_user_id = $2
        AND ($3 OR EXISTS (SELECT 1 FROM user_processes up
                           WHERE up.user_id = $2 AND up.process_code = p.process_code))`,
@@ -259,7 +264,8 @@ export async function listInstitutionalReports(pool, user) {
     throw new DraftError("forbidden", 403);
   }
   const result = await pool.query(
-    `SELECT id, code, name, process_code, version, status, revision, updated_at
+    `SELECT id, code, name, process_code, version, status, revision, updated_at,
+            submitted_for_review_at, technical_reviewed_at, approved_at
        FROM procedures
       WHERE status = $1
       ORDER BY updated_at DESC, name`,
@@ -272,6 +278,7 @@ export async function getProcedureReport(pool, user, id) {
   const result = await pool.query(
     `SELECT p.id, p.code, p.name, p.process_code, p.version, p.status, p.revision,
             p.updated_at, p.current_payload, p.created_by_user_id, p.assigned_evaluator_id,
+            p.submitted_for_review_at, p.technical_reviewed_at, p.approved_at,
             EXISTS (SELECT 1 FROM user_processes up
                      WHERE up.user_id = p.created_by_user_id AND up.process_code = p.process_code) AS author_process_access,
             EXISTS (SELECT 1 FROM user_processes up
@@ -487,10 +494,12 @@ export async function submitOwnDraft(pool, user, id, { evaluatorId, revision }) 
     const updated = await client.query(
       `UPDATE procedures SET status = $2, assigned_evaluator_id = $3,
               admin_approval_observation = NULL, admin_approval_by_user_id = NULL, admin_approval_at = NULL,
+              submitted_for_review_at = now(), technical_reviewed_at = NULL, approved_at = NULL,
               revision = revision + 1, updated_at = now()
         WHERE id = $1
         RETURNING id, code, name, process_code, version, status, revision, updated_at,
-                  current_payload, assigned_evaluator_id`,
+                  current_payload, assigned_evaluator_id, submitted_for_review_at,
+                  technical_reviewed_at, approved_at`,
       [id, PROCEDURE_STATUS.SUBMITTED, evaluatorId]
     );
     await client.query(
@@ -523,7 +532,8 @@ export async function listAssignedProcedures(pool, user) {
   if (user.role !== ROLES.EVALUADOR) throw new DraftError("forbidden", 403);
   const result = await pool.query(
     `SELECT p.id, p.code, p.name, p.process_code, p.version, p.status, p.revision,
-            p.updated_at, p.current_payload, p.assigned_evaluator_id
+            p.updated_at, p.current_payload, p.assigned_evaluator_id,
+            p.submitted_for_review_at, p.technical_reviewed_at, p.approved_at
        FROM procedures p JOIN user_processes up ON up.process_code = p.process_code AND up.user_id = $1
       WHERE p.assigned_evaluator_id = $1 AND p.status IN ($2, $3, $4, $5, $6, $7)
       ORDER BY p.updated_at DESC`,
@@ -537,7 +547,8 @@ export async function getAssignedProcedure(pool, user, id) {
   if (user.role !== ROLES.EVALUADOR) throw new DraftError("forbidden", 403);
   const result = await pool.query(
     `SELECT p.id, p.code, p.name, p.process_code, p.version, p.status, p.revision,
-            p.updated_at, p.current_payload, p.assigned_evaluator_id
+            p.updated_at, p.current_payload, p.assigned_evaluator_id,
+            p.submitted_for_review_at, p.technical_reviewed_at, p.approved_at
        FROM procedures p JOIN user_processes up ON up.process_code = p.process_code AND up.user_id = $2
       WHERE p.id = $1 AND p.assigned_evaluator_id = $2
         AND p.status IN ($3, $4, $5, $6, $7, $8)`,

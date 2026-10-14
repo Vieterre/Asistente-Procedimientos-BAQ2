@@ -498,6 +498,9 @@ test("author can submit a complete draft to an evaluator assigned to its process
   const submitted = await submitOwnDraft(pool, author, draftId, { evaluatorId: evaluator.id, revision: 4 });
   assert.equal(submitted.status, "enviado_a_evaluacion");
   assert.equal(submitted.assignedEvaluatorId, evaluator.id);
+  const workflowUpdate = calls.find(call => call.sql.startsWith("UPDATE procedures"));
+  assert.match(workflowUpdate.sql, /submitted_for_review_at = now\(\)/);
+  assert.match(workflowUpdate.sql, /technical_reviewed_at = NULL/);
   assert.deepEqual(calls.slice(-5).map(({ sql }) => sql === "COMMIT" ? "COMMIT" : sql.startsWith("INSERT INTO evaluations") ? "EVALUATION" : sql.startsWith("INSERT INTO audit_events") ? "AUDIT" : sql.startsWith("INSERT INTO user_notifications") ? "NOTIFICATION" : "UPDATE"), ["UPDATE", "EVALUATION", "AUDIT", "NOTIFICATION", "COMMIT"]);
   const notification = calls.find(call => call.sql.startsWith("INSERT INTO user_notifications"));
   assert.equal(notification.params[1], evaluator.id);

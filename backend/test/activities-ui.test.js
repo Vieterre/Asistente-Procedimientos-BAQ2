@@ -446,12 +446,12 @@ test("evaluator can export the evaluation report with its findings and responses
   assert.match(css, /\.evaluation-pdf-report\{page:evaluation-report[^}]*font-family:Aptos/);
 });
 
-test("all reports share the change-control structure and its versioning date", async () => {
+test("all reports share the change-control structure and use the formal approval date for the current version", async () => {
   const [script, css] = await Promise.all([
     readFile(join(root, "backend/public/drafts.js"), "utf8"),
     readFile(join(root, "backend/public/drafts.css"), "utf8")
   ]);
-  const helperSource = script.match(/function versioningDate\([\s\S]*?(?=\nfunction approvalReportCell)/)?.[0];
+  const helperSource = script.match(/function dateOnly\([\s\S]*?(?=\nfunction approvalReportCell)/)?.[0];
   assert.ok(helperSource, "versioning date helper should be present");
   const dateForVersion = runInNewContext(`${helperSource}\nversioningDate`);
   const changes = [
@@ -460,7 +460,11 @@ test("all reports share the change-control structure and its versioning date", a
   ];
   assert.equal(dateForVersion(changes, "1.1"), "2026-10-12");
   assert.equal(dateForVersion(changes, "2.0"), "2026-10-12");
+  assert.equal(dateForVersion(changes, "1.1", "2026-10-14T16:00:00.000Z"), "2026-10-14");
   assert.match(script, /function changeControlReport\(\)/);
+  assert.match(script, /submittedForReviewAt/);
+  assert.match(script, /technicalReviewedAt/);
+  assert.match(script, /approvedAt/);
   assert.match(script, /\["VERSIÓN", "FECHA", "RAZÓN DE LA ACTUALIZACIÓN"\]/);
   assert.match(script, /\["ELABORÓ", "REVISÓ", "APROBÓ"\]/);
   assert.match(script, /reportSection\("9", "Control de cambios", changeControlReport\(\)\)/);

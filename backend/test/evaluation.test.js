@@ -137,7 +137,7 @@ function fullCyclePool() {
         procedure.revision += 1;
         return { rows: [{ ...procedure }] };
       }
-      if (sql.startsWith("UPDATE procedures SET status = $2, updated_at")) {
+      if (sql.startsWith("UPDATE procedures\n          SET status = $2,")) {
         procedure.status = params[1];
         return { rows: [] };
       }
@@ -384,6 +384,8 @@ test("complete review cycle preserves responses and reaches a favorable concept 
   assert.equal(decision.status, PROCEDURE_STATUS.PENDING_ADMIN_APPROVAL);
   assert.equal(pool.procedure.status, PROCEDURE_STATUS.PENDING_ADMIN_APPROVAL);
   assert.equal(pool.evaluations[1].status, PROCEDURE_STATUS.FAVORABLE);
+  const technicalReviewUpdate = pool.calls.find(call => call.sql.includes("technical_reviewed_at = now()"));
+  assert.ok(technicalReviewUpdate, "the technical concept must record its completion date");
   assert.ok(pool.calls.some(call => call.sql.startsWith("INSERT INTO user_notifications") && call.params[3] === "procedure_returned_for_corrections"));
   assert.ok(pool.calls.some(call => call.sql.startsWith("INSERT INTO user_notifications") && call.params[3] === "procedure_favorable_concept_issued"));
 });

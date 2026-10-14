@@ -321,7 +321,11 @@ export async function decideAssignedEvaluation(pool, user, procedureId, { decisi
       [existing.id, evaluationStatus, metrics.score, metrics.criticalFailures, metrics.openFindings]
     );
     await client.query(
-      `UPDATE procedures SET status = $2, updated_at = now() WHERE id = $1`,
+      `UPDATE procedures
+          SET status = $2,
+              technical_reviewed_at = now(),
+              updated_at = now()
+        WHERE id = $1`,
       [procedureId, nextStatus]
     );
     const eventType = decision === "devolver" ? "procedure_returned_for_corrections" : "procedure_favorable_concept_issued";
@@ -376,7 +380,8 @@ export async function getAdministrativeApprovalProcedure(pool, user, procedureId
   const result = await pool.query(
     `SELECT p.id, p.code, p.name, p.process_code, p.version, p.status, p.revision, p.updated_at,
             p.current_payload, p.assigned_evaluator_id, p.admin_approval_observation,
-            p.admin_approval_by_user_id, p.admin_approval_at,
+            p.admin_approval_by_user_id, p.admin_approval_at, p.submitted_for_review_at,
+            p.technical_reviewed_at, p.approved_at,
             e.id AS evaluation_id, e.status AS evaluation_status, e.score,
             e.critical_failures, e.open_findings, e.concept, e.criteria_payload,
             e.created_at AS evaluation_created_at, e.updated_at AS evaluation_updated_at
@@ -405,6 +410,9 @@ export async function getAdministrativeApprovalProcedure(pool, user, procedureId
       adminApprovalObservation: row.admin_approval_observation || "",
       adminApprovalByUserId: row.admin_approval_by_user_id || null,
       adminApprovalAt: row.admin_approval_at || null,
+      submittedForReviewAt: row.submitted_for_review_at || null,
+      technicalReviewedAt: row.technical_reviewed_at || null,
+      approvedAt: row.approved_at || null,
       payload: row.current_payload
     },
     evaluation: publicEvaluation({

@@ -3337,7 +3337,14 @@ function reportParagraphs(value) {
   return block;
 }
 
-function versioningDate(changes, version) {
+function dateOnly(value) {
+  const text = String(value || "").trim();
+  return /^\d{4}-\d{2}-\d{2}/.test(text) ? text.slice(0, 10) : "";
+}
+
+function versioningDate(changes, version, approvedAt = "") {
+  const formalApprovalDate = dateOnly(approvedAt);
+  if (formalApprovalDate) return formalApprovalDate;
   const datedChanges = (Array.isArray(changes) ? changes : []).filter(change =>
     change && typeof change === "object" && String(change.fecha || "").trim()
   );
@@ -3346,6 +3353,19 @@ function versioningDate(changes, version) {
     ? datedChanges.filter(change => String(change.version || "").trim() === normalizedVersion)
     : [];
   return (matchingChanges.at(-1) || datedChanges.at(-1))?.fecha || "";
+}
+
+function reportChangeRows(changes, version, approvedAt) {
+  const formalApprovalDate = dateOnly(approvedAt);
+  const normalizedVersion = String(version || "").trim();
+  return (Array.isArray(changes) ? changes : []).map(change => {
+    if (!change || typeof change !== "object" || String(change.version || "").trim() !== normalizedVersion) return change;
+    return { ...change, fecha: formalApprovalDate || "Pendiente de aprobación formal" };
+  });
+}
+
+function workflowDate(value, pendingLabel) {
+  return dateOnly(value) || pendingLabel;
 }
 
 function approvalReportCell(name, role, date) {
@@ -3360,15 +3380,14 @@ function changeControlReport() {
   const content = document.createElement("div");
   content.className = "preview-change-control";
   const reportVersion = currentDraft?.version || changeRows.at(-1)?.version || "";
-  const date = versioningDate(changeRows, reportVersion);
-  const updates = reportTable(["VERSIÓN", "FECHA", "RAZÓN DE LA ACTUALIZACIÓN"], changeRows, row => [row.version, row.fecha, row.razon], {
+  const updates = reportTable(["VERSIÓN", "FECHA", "RAZÓN DE LA ACTUALIZACIÓN"], reportChangeRows(changeRows, reportVersion, currentDraft?.approvedAt), row => [row.version, row.fecha, row.razon], {
     variant: "change-control",
     columnWidths: ["33.33%", "33.33%", "33.34%"]
   });
   const approvals = reportTable(["ELABORÓ", "REVISÓ", "APROBÓ"], [{}], () => [
-    approvalReportCell(ui.draftPreparedName.value, approvalRoleValue(ui.draftPreparedBy), date),
-    approvalReportCell(ui.draftReviewedName.value, approvalRoleValue(ui.draftReviewedBy), date),
-    approvalReportCell(ui.draftApprovedName.value, approvalRoleValue(ui.draftApprovedBy), date)
+    approvalReportCell(ui.draftPreparedName.value, approvalRoleValue(ui.draftPreparedBy), workflowDate(currentDraft?.submittedForReviewAt, "Pendiente de envío a revisión")),
+    approvalReportCell(ui.draftReviewedName.value, approvalRoleValue(ui.draftReviewedBy), workflowDate(currentDraft?.technicalReviewedAt, "Pendiente de concepto técnico")),
+    approvalReportCell(ui.draftApprovedName.value, approvalRoleValue(ui.draftApprovedBy), workflowDate(currentDraft?.approvedAt, "Pendiente de visto bueno administrativo"))
   ], { variant: "approval-signatures", columnWidths: ["33.33%", "33.33%", "33.34%"] });
   content.append(updates, approvals);
   return content;
@@ -3485,7 +3504,7 @@ function showPreview({ branding = "standard" } = {}) {
     }
     const institutionalMeta = document.createElement("div");
     institutionalMeta.className = "preview-institutional-meta";
-    const reportDate = versioningDate(changeRows, reportVersion) || "Sin fecha registrada";
+    const reportDate = versioningDate(changeRows, reportVersion, currentDraft?.approvedAt) || "Pendiente de aprobación formal";
     for (const value of [`Código: ${reportCode}`, `Versión: ${reportVersion}`, `Fecha: ${reportDate}`]) {
       const row = document.createElement("div");
       row.textContent = value;
