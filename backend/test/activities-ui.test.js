@@ -156,6 +156,7 @@ test("decision nodes keep the complete question inside an expanded diamond", asy
   assert.ok(layout.halfHeight > 44);
   assert.doesNotMatch(layout.lines.join(" "), /…/);
   assert.match(script, /const itemHeights = activityRows\.map\(item => \{/);
+  assert.match(script, /const showEvidence = true/);
   assert.match(script, /showEvidence && evidence \? 102 : 44/);
 });
 

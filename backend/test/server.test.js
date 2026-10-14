@@ -113,7 +113,7 @@ test("private consoles serve only their own assets with a restrictive policy", a
     assert.deepEqual(declaredIds.filter(id => !htmlIds.has(id)), []);
     assert.match(draftHtml, /id="flowSvg"/);
     assert.match(draftHtml, /id="refreshFlowButton"/);
-    assert.match(draftHtml, /id="showFlowEvidence"/);
+    assert.doesNotMatch(draftHtml, /id="showFlowEvidence"/);
     for (const id of ["draftConsecutive", "draftCode", "draftCodeStatus", "methodTooltip", "documentsSection", "annexApplicability", "addAnnexButton", "annexesList", "addChangeButton", "changesList", "saveDocumentsButton", "submitReviewButton", "submitReviewDialog", "reviewEvaluatorSelect", "evaluatorInbox", "evaluatorDraftList", "evaluatorDetail", "startEvaluationButton"]) {
       assert.match(draftHtml, new RegExp(`id="${id}"`));
     }
@@ -144,7 +144,7 @@ test("private consoles serve only their own assets with a restrictive policy", a
     assert.match(draftScript, /function procedureCode\(processCode, consecutive\)/);
     assert.match(draftScript, /-P-\$\{String\(number\)\.padStart\(3, "0"\)\}/);
     assert.match(draftScript, /function setupMethodTooltip\(\)/);
-    assert.match(draftScript, /ui\.showFlowEvidence\.addEventListener\("change", renderFlow\)/);
+    assert.doesNotMatch(draftScript, /ui\.showFlowEvidence/);
     const draftCss = await (await fetch(base + "/drafts.css")).text();
     assert.match(draftCss, /\.site-header\{position:sticky;top:0/);
     assert.match(draftScript, /item\.evidencia \|\| item\.controlEvidencia/);

@@ -10,7 +10,7 @@ const ids = [
   "adminApprovalSection", "adminApprovalSummary", "adminApprovalObservation", "returnAdminApprovalButton", "approveAdminApprovalButton", "adminApprovalMessage", "adminApprovalQueue", "adminApprovalCount", "adminApprovalQueueMessage", "emptyAdminApprovalQueue", "adminApprovalQueueList", "refreshAdminApprovalQueue",
   "draftName", "draftNameStatus", "processCode", "draftConsecutive", "draftCode", "draftCodeStatus", "draftObjective", "draftScope", "draftDefinitions", "draftDefinitionsStatus", "draftConditions", "saveDraftButton", "reloadDraftButton", "editorMessage",
   "procedureProgress", "newDraftButton", "addNormButton", "normsList", "emptyNorms", "normReview", "addBoundaryButton", "addActivityButton", "addDecisionButton", "addConnectorButton", "activitiesList", "emptyActivities", "reviewFlowButton", "flowReviewResult", "refreshDraftsButton", "draftCount", "listMessage", "emptyDrafts",
-  "draftList", "flowSection", "flowSummary", "showFlowEvidence", "refreshFlowButton", "flowCanvas", "flowSvg",
+  "draftList", "flowSection", "flowSummary", "refreshFlowButton", "flowCanvas", "flowSvg",
   "zoomOutButton", "zoomInButton", "fitFlowButton", "resetFlowZoomButton", "flowZoomValue",
   "documentsSection", "annexApplicability", "addAnnexButton", "annexNotApplicableMessage", "emptyAnnexes", "annexesList",
   "addChangeButton", "emptyChanges", "changesMessage", "changesList", "draftPreparedBy", "draftPreparedOther", "draftPreparedName", "draftReviewedBy", "draftReviewedOther", "draftReviewedName",
@@ -1412,7 +1412,7 @@ function renderFlow() {
   svg.replaceChildren();
   ui.flowSection.hidden = activityRows.length === 0;
   if (!activityRows.length) return;
-  const showEvidence = ui.showFlowEvidence.checked;
+  const showEvidence = true;
 
   const roles = [...new Set(activityRows.filter(item => !["Inicio", "Fin", "Conector"].includes(item.tipo))
     .flatMap(item => {
@@ -3633,7 +3633,6 @@ ui.printPreviewButton.addEventListener("click", printPreviewReport);
 ui.refreshDraftsButton.addEventListener("click", loadDrafts);
 ui.refreshAdminApprovalQueue.addEventListener("click", loadAdminApprovalQueue);
 ui.refreshFlowButton.addEventListener("click", renderFlow);
-ui.showFlowEvidence.addEventListener("change", renderFlow);
 ui.zoomOutButton.addEventListener("click", () => setFlowZoom(flowZoom - 10));
 ui.zoomInButton.addEventListener("click", () => setFlowZoom(flowZoom + 10));
 ui.fitFlowButton.addEventListener("click", fitFlow);
