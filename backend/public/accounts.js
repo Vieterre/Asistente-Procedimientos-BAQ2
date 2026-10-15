@@ -127,11 +127,11 @@ async function refreshUsers() {
   try {
     const { users } = await request("/api/admin/users");
     currentUsers = users;
-    ui.usersBody.replaceChildren(...currentUsers.map(userRow));
-    ui.usersCount.textContent = `${currentUsers.length} usuario${currentUsers.length === 1 ? "" : "s"}`;
     const administrators = currentUsers.filter(user => user.role === "administrador");
     const currentAdministrator = administrators.find(user => user.id === currentUser?.id);
     if (currentAdministrator) currentUser.administratorType = currentAdministrator.administratorType;
+    ui.usersBody.replaceChildren(...currentUsers.map(userRow));
+    ui.usersCount.textContent = `${currentUsers.length} usuario${currentUsers.length === 1 ? "" : "s"}`;
     ui.backupAdministratorSection.hidden = !(currentAdministrator?.administratorType === "titular" && administrators.length === 1);
   } catch (error) {
     sessionExpired(error, ui.usersMessage);

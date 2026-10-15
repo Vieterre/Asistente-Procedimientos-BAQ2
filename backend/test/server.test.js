@@ -108,6 +108,7 @@ test("private consoles serve only their own assets with a restrictive policy", a
     assert.match(accountsScript, /function recoverBackupAdministrator\(user\)/);
     assert.match(accountsScript, /\/api\/admin\/backup-administrator\/\$\{encodeURIComponent\(user\.id\)\}\/recover/);
     assert.match(accountsScript, /mfa_setup_required/);
+    assert.ok(accountsScript.indexOf("currentUser.administratorType = currentAdministrator.administratorType") < accountsScript.indexOf("ui.usersBody.replaceChildren(...currentUsers.map(userRow))"));
     assert.doesNotMatch(accountsScript, /Correo institucional/);
     const draftHtml = await (await fetch(base + "/drafts")).text();
     assert.match(draftHtml, /<form id="loginForm" method="post"/);
