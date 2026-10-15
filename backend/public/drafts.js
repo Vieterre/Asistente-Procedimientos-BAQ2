@@ -1989,17 +1989,23 @@ function analyticsLineChart(title, rows, emptyText) {
   polyline.setAttribute("points", rows.map((row, index) => `${xFor(index)},${yFor(Number(row.count || 0))}`).join(" "));
   svg.append(polyline);
   rows.forEach((row, index) => {
+    const count = Number(row.count || 0);
     const point = document.createElementNS("http://www.w3.org/2000/svg", "circle");
     point.setAttribute("class", "analytics-pdf-line-point");
     point.setAttribute("cx", String(xFor(index)));
-    point.setAttribute("cy", String(yFor(Number(row.count || 0))));
+    point.setAttribute("cy", String(yFor(count)));
     point.setAttribute("r", "3");
+    const value = document.createElementNS("http://www.w3.org/2000/svg", "text");
+    value.setAttribute("class", "analytics-pdf-line-value");
+    value.setAttribute("x", String(xFor(index)));
+    value.setAttribute("y", String(Math.max(11, yFor(count) - 8)));
+    value.textContent = String(count);
     const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
     label.setAttribute("class", "analytics-pdf-line-label");
     label.setAttribute("x", String(xFor(index)));
     label.setAttribute("y", String(height - 8));
     label.textContent = new Intl.DateTimeFormat("es-CO", { day: "2-digit", month: "short", timeZone: "UTC" }).format(new Date(`${row.day}T00:00:00Z`));
-    svg.append(point, label);
+    svg.append(point, value, label);
   });
   chart.append(svg);
   return chart;
@@ -2104,7 +2110,7 @@ function printAnalyticsReport() {
     return;
   }
   const report = analyticsPdfReport(currentAnalytics);
-  const stylesheetUrl = new URL("/analytics-report.css?v=20261015-3", window.location.origin).href;
+  const stylesheetUrl = new URL("/analytics-report.css?v=20261015-4", window.location.origin).href;
   popup.document.open();
   popup.document.write(`<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Reporte de Analítica</title><link rel="stylesheet" href="${stylesheetUrl}"></head><body>${report.outerHTML}</body></html>`);
   popup.document.close();

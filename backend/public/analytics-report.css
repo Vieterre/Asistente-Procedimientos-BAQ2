@@ -115,6 +115,7 @@ body {
 .analytics-pdf-line-grid { stroke: #d7e4e8; stroke-width: 1; stroke-dasharray: 3 3; }
 .analytics-pdf-line-path { fill: none; stroke: #159c7b; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
 .analytics-pdf-line-point { fill: #fff; stroke: #0c6293; stroke-width: 2; }
+.analytics-pdf-line-value { fill: #173b56; font-size: 9px; font-weight: 700; text-anchor: middle; }
 .analytics-pdf-line-label { fill: #45616c; font-size: 9px; text-anchor: middle; }
 .analytics-pdf-empty { margin: 0; color: #617780; font-size: 8pt; font-style: italic; }
 
