@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { createAppServer } from "../src/server.js";
 import { hashPassword } from "../src/security/passwords.js";
-import { beginAdministratorMfaEnrollment, confirmAdministratorMfaEnrollment, hashToken, loginUser } from "../src/security/auth.js";
+import { beginAdministratorMfaEnrollment, changePassword, confirmAdministratorMfaEnrollment, hashToken, loginUser } from "../src/security/auth.js";
 import { encryptSecret, generateTotpSecret, totpCode } from "../src/security/mfa.js";
 
 test("login, session lookup, and logout are protected", async () => {
@@ -160,6 +160,32 @@ test("a pending backup administrator enrolls a personal second factor before cha
   assert.notEqual(user.mfa_secret_ciphertext, null);
   await confirmAdministratorMfaEnrollment(pool, { userId: user.id, code: totpCode(enrollment.secret), mfaEncryptionKey: key });
   assert.equal(user.mfa_enabled, true);
+});
+
+test("an administrator cannot change a temporary password before confirming MFA", async () => {
+  const password = "clave-temporal-de-prueba";
+  let passwordChanged = false;
+  const client = {
+    async query(sql) {
+      if (sql === "BEGIN" || sql === "ROLLBACK") return { rows: [] };
+      if (sql.startsWith("SELECT password_hash, active, role")) {
+        return { rows: [{
+          password_hash: hashPassword(password), active: true, role: "administrador",
+          mfa_enabled: false, mfa_secret_ciphertext: null
+        }] };
+      }
+      if (sql.startsWith("UPDATE app_users SET password_hash")) passwordChanged = true;
+      throw new Error(`Unexpected SQL: ${sql}`);
+    },
+    release() {}
+  };
+
+  await assert.rejects(changePassword({ async connect() { return client; } }, {
+    userId: "99999999-9999-4999-8999-999999999999",
+    currentPassword: password,
+    newPassword: "una nueva clave temporal segura"
+  }), { code: "mfa_setup_required", status: 403 });
+  assert.equal(passwordChanged, false);
 });
 
 test("administrator HTTP login, session lookup, and logout require MFA", async () => {

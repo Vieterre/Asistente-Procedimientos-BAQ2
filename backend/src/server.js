@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 import { checkDatabase, createPool } from "./db/pool.js";
 import { AuthError, SESSION_COOKIE, beginAdministratorMfaEnrollment, changePassword, confirmAdministratorMfaEnrollment, cookieOptions, getSession, hashToken, loginUser, parseCookies, revokeSession } from "./security/auth.js";
 import { ACTIONS, canPerform } from "./domain/permissions.js";
-import { UserManagementError, createAccount, createBackupAdministrator, getAccountProcessAssignments, listAccounts, resetAccountPassword, setAccountActive, setAccountProcessAssignments } from "./security/admin-users.js";
+import { UserManagementError, createAccount, createBackupAdministrator, getAccountProcessAssignments, listAccounts, recoverBackupAdministrator, resetAccountPassword, setAccountActive, setAccountProcessAssignments } from "./security/admin-users.js";
 import { clientIp } from "./security/client-ip.js";
 import { DraftError, createDraft, getAssignedProcedure, getOwnDraft, getProcedureReport, listAssignedProcedures, listInstitutionalReports, listOwnDrafts, listProcessEvaluators, startAssignedEvaluation, submitOwnDraft, updateOwnDraft } from "./domain/drafts.js";
 import { decideAdministrativeApproval, decideAssignedEvaluation, evaluationRubric, getAdministrativeApprovalProcedure, getAssignedEvaluation, getOwnEvaluationFeedback, listPendingAdministrativeApprovals, saveAssignedEvaluation, saveAuthorEvaluationResponses } from "./domain/evaluations.js";
@@ -546,8 +546,9 @@ export function createAppServer({ poolFactory = createPool, secureCookies, trust
       const accountProcesses = /^\/api\/admin\/users\/([0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12})\/processes$/.exec(url.pathname);
       const accountCreation = url.pathname === "/api/admin/users" && req.method === "POST";
       const backupAdministratorCreation = url.pathname === "/api/admin/backup-administrator" && req.method === "POST";
+      const backupAdministratorRecovery = /^\/api\/admin\/backup-administrator\/([0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12})\/recover$/.exec(url.pathname);
       if ((url.pathname === "/api/admin/users" && req.method === "GET") ||
-          accountCreation || backupAdministratorCreation || (accountAction && req.method === "POST") ||
+          accountCreation || backupAdministratorCreation || (backupAdministratorRecovery && req.method === "POST") || (accountAction && req.method === "POST") ||
           (accountProcesses && ["GET", "PUT"].includes(req.method))) {
         let pool;
         try {
@@ -565,13 +566,18 @@ export function createAppServer({ poolFactory = createPool, secureCookies, trust
             sendJson(res, 403, { ok: false, error: "forbidden" });
             return;
           }
-          if (accountAction || accountCreation || backupAdministratorCreation || (accountProcesses && req.method === "PUT")) {
+          if (accountAction || accountCreation || backupAdministratorCreation || backupAdministratorRecovery || (accountProcesses && req.method === "PUT")) {
             const csrfToken = String(req.headers["x-csrf-token"] || "");
             if (!csrfToken || hashToken(csrfToken) !== session.csrfTokenHash) {
               sendJson(res, 403, { ok: false, error: "csrf_failed" });
               return;
             }
-            if (accountProcesses) {
+            if (backupAdministratorRecovery) {
+              sendJson(res, 200, { ok: true, ...await recoverBackupAdministrator(pool, {
+                actor: session.user,
+                targetId: backupAdministratorRecovery[1]
+              }) });
+            } else if (accountProcesses) {
               const body = await readJson(req);
               sendJson(res, 200, {
                 ok: true,

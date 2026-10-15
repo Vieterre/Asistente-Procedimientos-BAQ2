@@ -105,6 +105,9 @@ test("private consoles serve only their own assets with a restrictive policy", a
     assert.match(accountsScript, /function downloadAccountsWorkbook\(\)/);
     assert.match(accountsScript, /Reporte institucional de cuentas/);
     assert.match(accountsScript, /cuentas-institucionales-/);
+    assert.match(accountsScript, /function recoverBackupAdministrator\(user\)/);
+    assert.match(accountsScript, /\/api\/admin\/backup-administrator\/\$\{encodeURIComponent\(user\.id\)\}\/recover/);
+    assert.match(accountsScript, /mfa_setup_required/);
     assert.doesNotMatch(accountsScript, /Correo institucional/);
     const draftHtml = await (await fetch(base + "/drafts")).text();
     assert.match(draftHtml, /<form id="loginForm" method="post"/);

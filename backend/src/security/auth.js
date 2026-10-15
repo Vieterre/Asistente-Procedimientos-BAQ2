@@ -203,12 +203,15 @@ export async function changePassword(pool, { userId, currentPassword, newPasswor
   try {
     await client.query("BEGIN");
     const result = await client.query(
-      "SELECT password_hash, active FROM app_users WHERE id = $1 FOR UPDATE",
+      "SELECT password_hash, active, role, mfa_enabled, mfa_secret_ciphertext FROM app_users WHERE id = $1 FOR UPDATE",
       [userId]
     );
     const user = result.rows[0];
     if (!user?.active || !verifyPassword(currentPassword, user.password_hash)) {
       throw new AuthError();
+    }
+    if (user.role === "administrador" && (!user.mfa_enabled || !user.mfa_secret_ciphertext)) {
+      throw new AuthError("mfa_setup_required", 403);
     }
     await client.query(
       "UPDATE app_users SET password_hash = $2, must_change_password = FALSE, updated_at = now() WHERE id = $1",

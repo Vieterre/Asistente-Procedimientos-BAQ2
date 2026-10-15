@@ -25,6 +25,7 @@ const errors = {
   mfa_not_configured: "El autenticador no está disponible. Contacta al administrador.",
   mfa_setup_not_allowed: "El segundo factor ya está configurado o esta cuenta no puede configurarlo ahora.",
   mfa_enrollment_unavailable: "No fue posible configurar el segundo factor. Inténtalo de nuevo.",
+  mfa_setup_required: "Configura y confirma primero el segundo factor antes de cambiar la contraseña.",
   too_many_attempts: "Demasiados intentos. Espera 15 minutos.",
   unauthenticated: "La sesión terminó. Ingresa de nuevo.",
   csrf_failed: "La sesión cambió. Ingresa de nuevo.",
@@ -37,6 +38,7 @@ const errors = {
   last_admin: "No se puede desactivar al último administrador activo.",
   admin_reset_not_supported: "La contraseña del administrador se cambia desde su propia sesión.",
   backup_administrator_not_available: "Ya existe una cuenta suplente o esta cuenta no es la Administración titular.",
+  backup_administrator_recovery_not_available: "Solo la Administración titular puede recuperar la única cuenta suplente activa.",
   mfa_configuration_unavailable: "No fue posible preparar el segundo factor. Inténtalo de nuevo o contacta al responsable técnico.",
   invalid_process_assignment: "Selecciona procesos activos y vuelve a intentarlo.",
   invalid_process_assignment_target: "Solo se pueden asignar procesos a cuentas de Elaborador o Evaluador."
@@ -129,6 +131,7 @@ async function refreshUsers() {
     ui.usersCount.textContent = `${currentUsers.length} usuario${currentUsers.length === 1 ? "" : "s"}`;
     const administrators = currentUsers.filter(user => user.role === "administrador");
     const currentAdministrator = administrators.find(user => user.id === currentUser?.id);
+    if (currentAdministrator) currentUser.administratorType = currentAdministrator.administratorType;
     ui.backupAdministratorSection.hidden = !(currentAdministrator?.administratorType === "titular" && administrators.length === 1);
   } catch (error) {
     sessionExpired(error, ui.usersMessage);
@@ -335,6 +338,8 @@ function userRow(user) {
     actions.append(actionButton("Asignar procesos", () => editAccountProcesses(user)));
     if (user.active) actions.append(actionButton("Restablecer clave", () => resetPassword(user)));
     actions.append(actionButton(user.active ? "Desactivar" : "Activar", () => setActive(user), user.active));
+  } else if (currentUser?.administratorType === "titular" && user.administratorType === "suplente") {
+    actions.append(actionButton("Recuperar acceso", () => recoverBackupAdministrator(user), true));
   }
   cell(row, actions);
   return row;
@@ -356,6 +361,19 @@ async function resetPassword(user) {
   try {
     const result = await request(`/api/admin/users/${user.id}/reset-password`, { method: "POST", csrf: true });
     showCredential(user.username, result.initialPassword);
+    await refreshUsers();
+  } catch (error) {
+    sessionExpired(error, ui.usersMessage);
+  }
+}
+
+async function recoverBackupAdministrator(user) {
+  const confirmed = window.confirm(`La recuperación de ${user.username} cerrará sus sesiones, reemplazará su autenticador y generará una contraseña temporal. ¿Deseas continuar?`);
+  if (!confirmed) return;
+  try {
+    const result = await request(`/api/admin/backup-administrator/${encodeURIComponent(user.id)}/recover`, { method: "POST", csrf: true });
+    showCredential(result.username, result.initialPassword);
+    message(ui.usersMessage, "Recuperación iniciada. Entrega la contraseña temporal por un canal seguro.", true);
     await refreshUsers();
   } catch (error) {
     sessionExpired(error, ui.usersMessage);
@@ -470,6 +488,10 @@ ui.passwordForm.addEventListener("submit", async event => {
   message(ui.passwordMessage, "");
   if (ui.newPassword.value !== ui.confirmPassword.value) {
     message(ui.passwordMessage, "Las contraseñas nuevas no coinciden.");
+    return;
+  }
+  if (currentUser?.role === "administrador" && currentUser.mustChangePassword && !currentUser.mfaEnabled) {
+    message(ui.passwordMessage, "Configura y confirma primero el segundo factor antes de cambiar la contraseña.");
     return;
   }
   const button = ui.passwordForm.querySelector("button[type=submit]");

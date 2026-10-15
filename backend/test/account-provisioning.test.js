@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { createAppServer } from "../src/server.js";
-import { createAccount, createBackupAdministrator, resetAccountPassword } from "../src/security/admin-users.js";
+import { createAccount, createBackupAdministrator, recoverBackupAdministrator, resetAccountPassword } from "../src/security/admin-users.js";
 import { hashToken, loginUser } from "../src/security/auth.js";
 import { hashPassword, verifyPassword } from "../src/security/passwords.js";
 
@@ -109,6 +109,48 @@ test("a backup administrator cannot be created when a second administration acco
     actor: { id: adminId, role: "administrador" }, username: "AdminSuplente", displayName: "Administración Suplente",
     mfaEncryptionKey: "12345678901234567890123456789012"
   }), { code: "backup_administrator_not_available", status: 409 });
+});
+
+test("only the titular administrator can recover the active backup administrator", async () => {
+  let savedHash;
+  let sessionsRevoked = false;
+  let audited = false;
+  const client = {
+    async query(sql, params) {
+      if (sql === "BEGIN" || sql === "COMMIT" || sql === "ROLLBACK" || sql.startsWith("SELECT pg_advisory_xact_lock")) return { rows: [] };
+      if (sql.startsWith("SELECT role, active FROM app_users")) return { rows: [{ role: "administrador", active: true }] };
+      if (sql.startsWith("SELECT id, username, active FROM app_users WHERE role = 'administrador'")) {
+        return { rows: [
+          { id: adminId, username: "admin001", active: true },
+          { id: newUserId, username: "admin2", active: true }
+        ] };
+      }
+      if (sql.startsWith("UPDATE app_users")) {
+        savedHash = params[1];
+        return { rows: [] };
+      }
+      if (sql.startsWith("UPDATE app_sessions SET revoked_at")) {
+        sessionsRevoked = true;
+        return { rows: [] };
+      }
+      if (sql.startsWith("INSERT INTO audit_events")) {
+        audited = true;
+        return { rows: [] };
+      }
+      throw new Error(`Unexpected SQL: ${sql}`);
+    },
+    release() {}
+  };
+
+  const result = await recoverBackupAdministrator({ async connect() { return client; } }, {
+    actor: { id: adminId, role: "administrador" }, targetId: newUserId
+  });
+
+  assert.equal(result.username, "admin2");
+  assert.match(result.initialPassword, /^[A-Za-z0-9]{20}$/);
+  assert.equal(verifyPassword(result.initialPassword, savedHash), true);
+  assert.equal(sessionsRevoked, true);
+  assert.equal(audited, true);
 });
 
 test("duplicate usernames are rejected without returning a password", async () => {
@@ -395,7 +437,7 @@ test("users can change their password, which revokes the old session", async () 
   const client = {
     async query(sql, params) {
       if (sql === "BEGIN" || sql === "COMMIT" || sql === "ROLLBACK") return { rows: [] };
-      if (sql.startsWith("SELECT password_hash, active FROM app_users")) {
+      if (sql.startsWith("SELECT password_hash, active, role, mfa_enabled")) {
         return { rows: [{ password_hash: passwordHash, active: true }] };
       }
       if (sql.startsWith("UPDATE app_users SET password_hash")) {

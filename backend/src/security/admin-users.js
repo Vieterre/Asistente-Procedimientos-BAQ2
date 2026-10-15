@@ -246,6 +246,52 @@ export async function createBackupAdministrator(pool, { actor, username, display
   }
 }
 
+export async function recoverBackupAdministrator(pool, { actor, targetId }) {
+  const password = initialPassword();
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    await client.query("SELECT pg_advisory_xact_lock(5802001, 3)");
+    const actorResult = await client.query(
+      "SELECT role, active FROM app_users WHERE id = $1 FOR UPDATE",
+      [actor.id]
+    );
+    if (actorResult.rows[0]?.role !== ROLES.ADMIN || actorResult.rows[0]?.active !== true) {
+      throw new UserManagementError("forbidden", 403);
+    }
+    const administrators = await client.query(
+      "SELECT id, username, active FROM app_users WHERE role = 'administrador' ORDER BY created_at, id FOR UPDATE"
+    );
+    const [titular, suplente] = administrators.rows;
+    if (administrators.rows.length !== 2 || titular.id !== actor.id || suplente.id !== targetId || suplente.active !== true) {
+      throw new UserManagementError("backup_administrator_recovery_not_available", 409);
+    }
+    await client.query(
+      `UPDATE app_users
+       SET password_hash = $2, mfa_enabled = FALSE, mfa_secret_ciphertext = NULL,
+           must_change_password = TRUE, updated_at = now()
+       WHERE id = $1`,
+      [targetId, hashPassword(password)]
+    );
+    await client.query(
+      "UPDATE app_sessions SET revoked_at = now() WHERE user_id = $1 AND revoked_at IS NULL",
+      [targetId]
+    );
+    await client.query(
+      `INSERT INTO audit_events (id, actor_user_id, event_type, entity_type, entity_id)
+       VALUES ($1, $2, 'backup_administrator_recovery_started', 'app_user', $3)`,
+      [randomUUID(), actor.id, targetId]
+    );
+    await client.query("COMMIT");
+    return { username: suplente.username, initialPassword: password };
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
 export async function resetAccountPassword(pool, { actor, targetId }) {
   const password = initialPassword();
   const client = await pool.connect();
