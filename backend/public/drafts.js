@@ -1887,6 +1887,10 @@ function analyticsMetricCards(analytics) {
   return grid;
 }
 
+function analyticsEventTotal(row) {
+  return analyticsEventLabels.reduce((total, [key]) => total + Number(row[key] || 0), 0);
+}
+
 function analyticsStackedColumnChart(title, rows, emptyText) {
   const chart = document.createElement("section");
   chart.className = "analytics-pdf-chart";
@@ -1910,11 +1914,11 @@ function analyticsStackedColumnChart(title, rows, emptyText) {
     legend.append(item);
   });
 
-  const maximum = Math.max(...rows.map(row => analyticsEventLabels.reduce((total, [key]) => total + (row[key] || 0), 0)), 1);
+  const maximum = Math.max(...rows.map(analyticsEventTotal), 1);
   const plot = document.createElement("div");
   plot.className = "analytics-pdf-stacked-plot";
   rows.forEach(row => {
-    const total = analyticsEventLabels.reduce((sum, [key]) => sum + (row[key] || 0), 0);
+    const total = analyticsEventTotal(row);
     const column = document.createElement("div");
     column.className = "analytics-pdf-stacked-column";
     const value = document.createElement("strong");
@@ -1926,7 +1930,7 @@ function analyticsStackedColumnChart(title, rows, emptyText) {
     stack.className = "analytics-pdf-stacked-stack";
     stack.style.height = `${Math.max(total ? 8 : 0, Math.round((total / maximum) * 100))}%`;
     analyticsEventLabels.forEach(([key], index) => {
-      const count = row[key] || 0;
+      const count = Number(row[key] || 0);
       if (!count) return;
       const segment = document.createElement("span");
       segment.className = `analytics-pdf-stacked-segment series-${index + 1}`;
@@ -1957,7 +1961,7 @@ function analyticsLineChart(title, rows, emptyText) {
     chart.append(empty);
     return chart;
   }
-  const maximum = Math.max(...rows.map(row => row.count || 0), 1);
+  const maximum = Math.max(...rows.map(row => Number(row.count || 0)), 1);
   const width = 620;
   const height = 150;
   const padding = { top: 16, right: 12, bottom: 27, left: 25 };
@@ -1982,13 +1986,13 @@ function analyticsLineChart(title, rows, emptyText) {
   });
   const polyline = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
   polyline.setAttribute("class", "analytics-pdf-line-path");
-  polyline.setAttribute("points", rows.map((row, index) => `${xFor(index)},${yFor(row.count || 0)}`).join(" "));
+  polyline.setAttribute("points", rows.map((row, index) => `${xFor(index)},${yFor(Number(row.count || 0))}`).join(" "));
   svg.append(polyline);
   rows.forEach((row, index) => {
     const point = document.createElementNS("http://www.w3.org/2000/svg", "circle");
     point.setAttribute("class", "analytics-pdf-line-point");
     point.setAttribute("cx", String(xFor(index)));
-    point.setAttribute("cy", String(yFor(row.count || 0)));
+    point.setAttribute("cy", String(yFor(Number(row.count || 0))));
     point.setAttribute("r", "3");
     const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
     label.setAttribute("class", "analytics-pdf-line-label");
@@ -2031,7 +2035,7 @@ function analyticsPdfReport(analytics) {
     filtersGrid.append(item);
   });
 
-  const dailyRows = analytics.byDay.slice(0, 16).reverse();
+  const dailyRows = analytics.byDay.slice(0, 12).reverse();
   const charts = document.createElement("div");
   charts.className = "analytics-pdf-chart-grid single";
   charts.append(analyticsStackedColumnChart(
@@ -2100,7 +2104,7 @@ function printAnalyticsReport() {
     return;
   }
   const report = analyticsPdfReport(currentAnalytics);
-  const stylesheetUrl = new URL("/analytics-report.css?v=20261015-2", window.location.origin).href;
+  const stylesheetUrl = new URL("/analytics-report.css?v=20261015-3", window.location.origin).href;
   popup.document.open();
   popup.document.write(`<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Reporte de Analítica</title><link rel="stylesheet" href="${stylesheetUrl}"></head><body>${report.outerHTML}</body></html>`);
   popup.document.close();

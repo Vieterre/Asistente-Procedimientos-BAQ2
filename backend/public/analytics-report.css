@@ -104,13 +104,13 @@ body {
 .analytics-pdf-series.series-3, .analytics-pdf-stacked-segment.series-3 { background: #755da8; }
 .analytics-pdf-series.series-4, .analytics-pdf-stacked-segment.series-4 { background: #bb5a43; }
 .analytics-pdf-series.series-5, .analytics-pdf-stacked-segment.series-5 { background: #bb8a1d; }
-.analytics-pdf-stacked-plot { display: grid; grid-template-columns: repeat(auto-fit, minmax(25px, 1fr)); align-items: end; min-height: 148px; padding: 6px 4px 0; border-bottom: 1px solid #b7cbd4; background: repeating-linear-gradient(to top, transparent 0, transparent 34px, #e4eef1 35px); }
-.analytics-pdf-stacked-column { display: grid; grid-template-rows: 14px 102px 18px; justify-items: center; min-width: 0; }
+.analytics-pdf-stacked-plot { display: grid; grid-template-columns: repeat(auto-fit, minmax(36px, 1fr)); align-items: end; min-height: 200px; padding: 9px 12px 0; border-bottom: 1px solid #b7cbd4; background: repeating-linear-gradient(to top, transparent 0, transparent 42px, #e4eef1 43px); }
+.analytics-pdf-stacked-column { display: grid; grid-template-rows: 17px 148px 21px; justify-items: center; min-width: 0; }
 .analytics-pdf-stacked-value { color: #173b56; font-size: 7pt; line-height: 1; }
-.analytics-pdf-stacked-rail { display: flex; align-items: end; width: 66%; height: 102px; }
+.analytics-pdf-stacked-rail { display: flex; align-items: end; width: 58%; min-width: 16px; height: 148px; }
 .analytics-pdf-stacked-stack { display: flex; flex-direction: column-reverse; width: 100%; min-height: 2px; overflow: hidden; background: #e6eef1; }
 .analytics-pdf-stacked-segment { display: block; flex: 0 0 auto; min-height: 1px; background: #0c6293; }
-.analytics-pdf-stacked-label { overflow: hidden; max-width: 100%; color: #45616c; font-size: 6.5pt; line-height: 1.1; text-align: center; white-space: nowrap; }
+.analytics-pdf-stacked-label { overflow: hidden; max-width: 100%; color: #45616c; font-size: 7pt; line-height: 1.15; text-align: center; white-space: nowrap; }
 .analytics-pdf-line-chart { display: block; width: 100%; height: 142px; }
 .analytics-pdf-line-grid { stroke: #d7e4e8; stroke-width: 1; stroke-dasharray: 3 3; }
 .analytics-pdf-line-path { fill: none; stroke: #159c7b; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
