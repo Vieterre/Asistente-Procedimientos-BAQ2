@@ -1915,37 +1915,62 @@ function analyticsStackedColumnChart(title, rows, emptyText) {
   });
 
   const maximum = Math.max(...rows.map(analyticsEventTotal), 1);
-  const chartHeight = 148;
-  const plot = document.createElement("div");
-  plot.className = "analytics-pdf-stacked-plot";
-  rows.forEach(row => {
+  const width = 680;
+  const height = 190;
+  const padding = { top: 22, right: 15, bottom: 29, left: 18 };
+  const plotHeight = height - padding.top - padding.bottom;
+  const plotWidth = width - padding.left - padding.right;
+  const baseline = padding.top + plotHeight;
+  const colors = ["#0c6293", "#159c7b", "#755da8", "#bb5a43", "#bb8a1d"];
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  svg.classList.add("analytics-pdf-flow-chart");
+  svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+  svg.setAttribute("role", "img");
+  svg.setAttribute("aria-label", `${title}: actividad diaria por tipo de evento`);
+  [0, 0.5, 1].forEach(level => {
+    const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+    const y = baseline - (plotHeight * level);
+    line.setAttribute("x1", String(padding.left));
+    line.setAttribute("x2", String(width - padding.right));
+    line.setAttribute("y1", String(y));
+    line.setAttribute("y2", String(y));
+    line.setAttribute("stroke", "#d7e4e8");
+    line.setAttribute("stroke-width", "1");
+    svg.append(line);
+  });
+  const slotWidth = plotWidth / rows.length;
+  const barWidth = Math.min(32, Math.max(14, slotWidth * 0.48));
+  rows.forEach((row, rowIndex) => {
     const total = analyticsEventTotal(row);
-    const column = document.createElement("div");
-    column.className = "analytics-pdf-stacked-column";
-    const value = document.createElement("strong");
-    value.className = "analytics-pdf-stacked-value";
-    value.textContent = String(total);
-    const rail = document.createElement("div");
-    rail.className = "analytics-pdf-stacked-rail";
-    const stack = document.createElement("div");
-    stack.className = "analytics-pdf-stacked-stack";
-    stack.style.height = `${Math.max(total ? 12 : 0, Math.round((total / maximum) * chartHeight))}px`;
+    const x = padding.left + (slotWidth * rowIndex) + ((slotWidth - barWidth) / 2);
+    const barHeight = total ? Math.max(7, (total / maximum) * plotHeight) : 0;
+    let currentY = baseline;
     analyticsEventLabels.forEach(([key], index) => {
       const count = Number(row[key] || 0);
       if (!count) return;
-      const segment = document.createElement("span");
-      segment.className = `analytics-pdf-stacked-segment series-${index + 1}`;
-      segment.style.flex = `${count} 1 0px`;
-      stack.append(segment);
+      const segmentHeight = (count / total) * barHeight;
+      currentY -= segmentHeight;
+      const segment = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+      segment.setAttribute("x", String(x));
+      segment.setAttribute("y", String(currentY));
+      segment.setAttribute("width", String(barWidth));
+      segment.setAttribute("height", String(segmentHeight));
+      segment.setAttribute("fill", colors[index]);
+      svg.append(segment);
     });
-    rail.append(stack);
-    const label = document.createElement("span");
-    label.className = "analytics-pdf-stacked-label";
+    const value = document.createElementNS("http://www.w3.org/2000/svg", "text");
+    value.setAttribute("class", "analytics-pdf-flow-value");
+    value.setAttribute("x", String(x + (barWidth / 2)));
+    value.setAttribute("y", String(Math.max(13, baseline - barHeight - 7)));
+    value.textContent = String(total);
+    const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
+    label.setAttribute("class", "analytics-pdf-flow-label");
+    label.setAttribute("x", String(x + (barWidth / 2)));
+    label.setAttribute("y", String(height - 8));
     label.textContent = new Intl.DateTimeFormat("es-CO", { day: "2-digit", month: "short", timeZone: "UTC" }).format(new Date(`${row.day}T00:00:00Z`));
-    column.append(value, rail, label);
-    plot.append(column);
+    svg.append(value, label);
   });
-  chart.append(legend, plot);
+  chart.append(legend, svg);
   return chart;
 }
 
@@ -2111,7 +2136,7 @@ function printAnalyticsReport() {
     return;
   }
   const report = analyticsPdfReport(currentAnalytics);
-  const stylesheetUrl = new URL("/analytics-report.css?v=20261015-4", window.location.origin).href;
+  const stylesheetUrl = new URL("/analytics-report.css?v=20261015-5", window.location.origin).href;
   popup.document.open();
   popup.document.write(`<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Reporte de Analítica</title><link rel="stylesheet" href="${stylesheetUrl}"></head><body>${report.outerHTML}</body></html>`);
   popup.document.close();
