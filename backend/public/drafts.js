@@ -2031,38 +2031,6 @@ function analyticsPdfReport(analytics) {
   return report;
 }
 
-function analyticsPdfStyles() {
-  return `
-    @page { size: letter portrait; margin: 12mm 12mm 15mm; }
-    * { box-sizing: border-box; }
-    body { margin: 0; color: #203743; background: #fff; font-family: Arial, sans-serif; font-size: 9pt; line-height: 1.35; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-    .analytics-pdf-report { width: 100%; }
-    .analytics-pdf-header { position: relative; overflow: hidden; margin: 0 0 11px; padding: 15px 18px; border: 1px solid #0c4d76; border-left: 8px solid #159c7b; background: #f4f8fa; }
-    .analytics-pdf-header::after { content: ""; position: absolute; inset: 0 0 0 auto; width: 34%; background: #e0f1ec; clip-path: polygon(42% 0, 100% 0, 100% 100%, 0 100%); }
-    .analytics-pdf-header > * { position: relative; z-index: 1; }
-    .analytics-pdf-eyebrow { display: block; margin-bottom: 4px; color: #0b725e; font-size: 7.5pt; font-weight: 700; letter-spacing: .8px; text-transform: uppercase; }
-    .analytics-pdf-header h1 { margin: 0; color: #003f73; font-size: 21pt; line-height: 1.05; }
-    .analytics-pdf-header p { max-width: 70%; margin: 5px 0 0; color: #3f5d68; font-size: 9pt; }
-    .analytics-pdf-generated { display: block; margin-top: 10px; color: #45616c; font-size: 7.5pt; }
-    .analytics-pdf-filters { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; margin-bottom: 15px; }
-    .analytics-pdf-filters > div { min-width: 0; padding: 8px 10px; border: 1px solid #c6d8df; background: #fff; }
-    .analytics-pdf-filters span, .analytics-pdf-usage-summary span { display: block; margin-bottom: 3px; color: #5b727b; font-size: 7pt; font-weight: 700; letter-spacing: .45px; text-transform: uppercase; }
-    .analytics-pdf-filters strong { display: block; color: #173b56; font-size: 8.5pt; line-height: 1.25; overflow-wrap: anywhere; }
-    .preview-report-section { margin: 0 0 15px; break-inside: avoid-page; page-break-inside: avoid; }
-    .preview-report-section > h3 { margin: 0 0 8px; padding: 0 0 5px; border-bottom: 2px solid #159c7b; color: #003f73; font-size: 11pt; }
-    .analytics-pdf-metrics { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 7px; }
-    .analytics-pdf-metric { min-height: 76px; padding: 10px 9px; border: 1px solid #c6d8df; border-top: 4px solid #0c6293; background: #fff; }
-    .analytics-pdf-metric.metric-2 { border-top-color: #159c7b; }.analytics-pdf-metric.metric-3 { border-top-color: #755da8; }.analytics-pdf-metric.metric-4 { border-top-color: #bb5a43; }.analytics-pdf-metric.metric-5 { border-top-color: #bb8a1d; }
-    .analytics-pdf-metric strong { display: block; color: #003f73; font-size: 21pt; line-height: 1; }.analytics-pdf-metric span { display: block; margin-top: 7px; color: #4c6570; font-size: 7.5pt; line-height: 1.2; }
-    .analytics-pdf-chart-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }.analytics-pdf-chart-grid.single { grid-template-columns: 1fr; margin: 0 0 15px; }
-    .analytics-pdf-chart { min-width: 0; padding: 10px; border: 1px solid #c6d8df; background: #fff; break-inside: avoid-page; page-break-inside: avoid; }.analytics-pdf-chart h4 { margin: 0 0 9px; color: #003f73; font-size: 9pt; }
-    .analytics-pdf-bars { display: grid; gap: 6px; }.analytics-pdf-bar-row { display: grid; grid-template-columns: 92px minmax(0, 1fr) 24px; align-items: center; gap: 6px; }.analytics-pdf-bar-label { overflow: hidden; color: #45616c; font-size: 7.2pt; line-height: 1.1; text-overflow: ellipsis; white-space: nowrap; }.analytics-pdf-bar-track { height: 9px; overflow: hidden; background: #e6eef1; }.analytics-pdf-bar-fill { display: block; height: 100%; min-width: 2px; background: #0c6293; }.analytics-pdf-bar-value { color: #173b56; font-size: 7.2pt; text-align: right; }.analytics-pdf-empty { margin: 0; color: #617780; font-size: 8pt; font-style: italic; }
-    .analytics-pdf-table { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 7.2pt; }.analytics-pdf-table th, .analytics-pdf-table td { padding: 5px 4px; border: 1px solid #c6d8df; text-align: left; vertical-align: top; line-height: 1.25; overflow-wrap: anywhere; }.analytics-pdf-table th { background: #003f73; color: #fff; font-size: 7pt; font-weight: 700; }.analytics-pdf-table td:nth-child(n+3), .analytics-pdf-table th:nth-child(n+3) { text-align: center; }.analytics-pdf-table tr:nth-child(even) td { background: #f4f8fa; }.analytics-pdf-table thead { display: table-header-group; }.analytics-pdf-table tr { break-inside: avoid-page; page-break-inside: avoid; }
-    .analytics-pdf-usage-summary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; margin-bottom: 10px; }.analytics-pdf-usage-summary > div { min-width: 0; min-height: 61px; padding: 9px 10px; border: 1px solid #c6d8df; border-top: 3px solid #159c7b; background: #f7fbfa; }.analytics-pdf-usage-summary strong { color: #173b56; font-size: 11pt; line-height: 1.2; overflow-wrap: anywhere; }
-    @media print { .preview-report-section { break-inside: auto; page-break-inside: auto; }.analytics-pdf-table { break-inside: auto; page-break-inside: auto; }.analytics-pdf-table thead { display: table-header-group; }.analytics-pdf-table tr { break-inside: avoid-page; page-break-inside: avoid; } }
-  `;
-}
-
 function printAnalyticsReport() {
   if (!currentAnalytics || currentUserRole !== "administrador") return;
   const popup = window.open("", "_blank");
@@ -2071,8 +2039,9 @@ function printAnalyticsReport() {
     return;
   }
   const report = analyticsPdfReport(currentAnalytics);
+  const stylesheetUrl = new URL("/analytics-report.css?v=20261015-1", window.location.origin).href;
   popup.document.open();
-  popup.document.write(`<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Reporte de Analítica</title><style>${analyticsPdfStyles()}</style></head><body>${report.outerHTML}</body></html>`);
+  popup.document.write(`<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Reporte de Analítica</title><link rel="stylesheet" href="${stylesheetUrl}"></head><body>${report.outerHTML}</body></html>`);
   popup.document.close();
   popup.document.title = "Reporte de Analítica";
   popup.focus();

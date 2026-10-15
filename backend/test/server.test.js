@@ -78,6 +78,7 @@ test("private consoles serve only their own assets with a restrictive policy", a
       ["/accounts.js", "text/javascript"],
       ["/drafts", "text/html"],
       ["/drafts.css", "text/css"],
+      ["/analytics-report.css", "text/css"],
       ["/drafts.js", "text/javascript"],
       ["/drafts-20261012.js", "text/javascript"],
       ["/institutional-logo.png", "image/png"],
@@ -140,7 +141,10 @@ test("private consoles serve only their own assets with a restrictive policy", a
     assert.match(draftScript, /function downloadAnalyticsWorkbook\(\)/);
     assert.match(draftScript, /function printAnalyticsReport\(\)/);
     assert.match(draftScript, /Imprimir \/ guardar PDF/);
-    assert.match(draftScript, /size: letter portrait/);
+    const analyticsPrintCss = await (await fetch(base + "/analytics-report.css")).text();
+    assert.match(draftScript, /analytics-report\.css\?v=20261015-1/);
+    assert.match(analyticsPrintCss, /size: letter portrait/);
+    assert.match(analyticsPrintCss, /analytics-pdf-chart/);
     assert.match(draftScript, /function analyticsBarChart\(/);
     assert.match(draftScript, /Indicadores de productividad, trazabilidad y uso del sistema/);
     assert.match(draftScript, /Eventos registrados por día/);
