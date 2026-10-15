@@ -27,6 +27,8 @@ function publicAccount(row) {
     active: row.active,
     mfaEnabled: row.mfa_enabled,
     mustChangePassword: row.must_change_password,
+    createdAt: row.created_at,
+    lastAccess: row.last_access,
     processCodes: row.process_codes || []
   };
 }
@@ -34,7 +36,8 @@ function publicAccount(row) {
 export async function listAccounts(pool) {
   const result = await pool.query(
     `SELECT u.id, u.username, u.email, u.display_name, u.role, u.active, u.mfa_enabled,
-            u.must_change_password,
+            u.must_change_password, u.created_at,
+            (SELECT max(s.created_at) FROM app_sessions s WHERE s.user_id = u.id) AS last_access,
             COALESCE((SELECT array_agg(up.process_code ORDER BY up.process_code)
                       FROM user_processes up WHERE up.user_id = u.id), ARRAY[]::text[]) AS process_codes
        FROM app_users u ORDER BY u.created_at, u.id`

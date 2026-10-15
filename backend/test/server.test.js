@@ -99,8 +99,13 @@ test("private consoles serve only their own assets with a restrictive policy", a
       assert.match(accountsScript, new RegExp(`"${id}"`));
     }
     assert.match(accountsHtml, /Procesos asignados/);
+    assert.match(accountsHtml, /id="exportUsersButton"/);
     assert.match(accountsScript, /\/api\/admin\/users\/\$\{encodeURIComponent\(user\.id\)\}\/processes/);
     assert.match(accountsScript, /method: "PUT", csrf: true, body: \{ processCodes \}/);
+    assert.match(accountsScript, /function downloadAccountsWorkbook\(\)/);
+    assert.match(accountsScript, /Reporte institucional de cuentas/);
+    assert.match(accountsScript, /cuentas-institucionales-/);
+    assert.doesNotMatch(accountsScript, /Correo institucional/);
     const draftHtml = await (await fetch(base + "/drafts")).text();
     assert.match(draftHtml, /<form id="loginForm" method="post"/);
     assert.match(draftHtml, /href="\/drafts\.css\?v=20261012-2"/);

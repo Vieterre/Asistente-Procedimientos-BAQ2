@@ -38,6 +38,7 @@ input[type=password]{letter-spacing:0}
 .section{padding:23px 0 28px;border-bottom:1px solid #cbd8db}
 .section-heading{display:flex;align-items:center;justify-content:space-between;gap:15px;margin-bottom:19px}
 .section-heading h2{font-size:18px;margin:0 0 4px}
+.section-actions{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
 .form-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
 .field{min-width:0}
 .field small{display:block;margin-top:5px;color:#61747b;font-size:11px;line-height:1.4}

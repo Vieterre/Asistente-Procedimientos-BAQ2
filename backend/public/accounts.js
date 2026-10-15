@@ -5,7 +5,7 @@ const ui = Object.fromEntries([
   "confirmPassword", "passwordMessage", "adminWorkspace", "createForm", "newUsername",
   "displayName", "newRole", "createMessage", "usersCount", "usersMessage", "usersBody",
   "mfaEnrollmentSection", "beginMfaEnrollmentButton", "mfaEnrollmentMessage", "mfaEnrollmentDetails", "mfaEnrollmentSecret", "confirmMfaEnrollmentForm", "mfaEnrollmentCode",
-  "refreshUsersButton", "credentialDialog", "issuedUsername", "issuedPassword",
+  "refreshUsersButton", "exportUsersButton", "credentialDialog", "issuedUsername", "issuedPassword",
   "copyPasswordButton", "closeCredentialButton", "doneCredentialButton", "credentialMessage",
   "processDialog", "processTitle", "processOptions", "processMessage", "saveProcessButton",
   "closeProcessButton", "cancelProcessButton", "backupAdministratorSection", "createBackupAdministratorButton",
@@ -17,6 +17,7 @@ const ui = Object.fromEntries([
 let csrfToken = "";
 let currentUser = null;
 let processAccount = null;
+let currentUsers = [];
 
 const errors = {
   invalid_credentials: "Nombre de usuario o contraseña incorrectos.",
@@ -123,14 +124,175 @@ async function refreshUsers() {
   message(ui.usersMessage, "");
   try {
     const { users } = await request("/api/admin/users");
-    ui.usersBody.replaceChildren(...users.map(userRow));
-    ui.usersCount.textContent = `${users.length} usuario${users.length === 1 ? "" : "s"}`;
-    const administrators = users.filter(user => user.role === "administrador");
+    currentUsers = users;
+    ui.usersBody.replaceChildren(...currentUsers.map(userRow));
+    ui.usersCount.textContent = `${currentUsers.length} usuario${currentUsers.length === 1 ? "" : "s"}`;
+    const administrators = currentUsers.filter(user => user.role === "administrador");
     const currentAdministrator = administrators.find(user => user.id === currentUser?.id);
     ui.backupAdministratorSection.hidden = !(currentAdministrator?.administratorType === "titular" && administrators.length === 1);
   } catch (error) {
     sessionExpired(error, ui.usersMessage);
   }
+}
+
+function escapeXml(value) {
+  return String(value ?? "").replace(/[<>&'\"]/g, character => ({
+    "<": "&lt;", ">": "&gt;", "&": "&amp;", "'": "&apos;", "\"": "&quot;"
+  })[character]);
+}
+
+function accountColumnName(index) {
+  let name = "";
+  for (let value = index + 1; value > 0; value = Math.floor((value - 1) / 26)) {
+    name = String.fromCharCode(65 + ((value - 1) % 26)) + name;
+  }
+  return name;
+}
+
+function accountSpreadsheetCell(value, reference, heading = false) {
+  const style = heading ? ' s="1"' : "";
+  if (typeof value === "number") return `<c r="${reference}"${style}><v>${value}</v></c>`;
+  return `<c r="${reference}" t="inlineStr"${style}><is><t>${escapeXml(value)}</t></is></c>`;
+}
+
+function accountSpreadsheetSheet(rows, widths = []) {
+  const columns = widths.length
+    ? `<cols>${widths.map((width, index) => `<col min="${index + 1}" max="${index + 1}" width="${width}" customWidth="1"/>`).join("")}</cols>`
+    : "";
+  const body = rows.map((row, rowIndex) => {
+    const cells = row.values.map((value, columnIndex) => accountSpreadsheetCell(value, `${accountColumnName(columnIndex)}${rowIndex + 1}`, row.kind === "heading")).join("");
+    return `<row r="${rowIndex + 1}">${cells}</row>`;
+  }).join("");
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">${columns}<sheetData>${body}</sheetData></worksheet>`;
+}
+
+function accountCrc32(bytes) {
+  let value = 0xffffffff;
+  for (const byte of bytes) {
+    value ^= byte;
+    for (let bit = 0; bit < 8; bit += 1) value = (value >>> 1) ^ (0xedb88320 & -(value & 1));
+  }
+  return (value ^ 0xffffffff) >>> 0;
+}
+
+function writeAccountUint16(view, offset, value) {
+  view.setUint16(offset, value, true);
+}
+
+function writeAccountUint32(view, offset, value) {
+  view.setUint32(offset, value, true);
+}
+
+function accountWorkbookBlob(files) {
+  const encoder = new TextEncoder();
+  const localChunks = [];
+  const directoryChunks = [];
+  let offset = 0;
+  for (const [name, content] of Object.entries(files)) {
+    const filename = encoder.encode(name);
+    const data = encoder.encode(content);
+    const checksum = accountCrc32(data);
+    const local = new Uint8Array(30 + filename.length + data.length);
+    const localView = new DataView(local.buffer);
+    writeAccountUint32(localView, 0, 0x04034b50);
+    writeAccountUint16(localView, 4, 20);
+    writeAccountUint32(localView, 14, checksum);
+    writeAccountUint32(localView, 18, data.length);
+    writeAccountUint32(localView, 22, data.length);
+    writeAccountUint16(localView, 26, filename.length);
+    local.set(filename, 30);
+    local.set(data, 30 + filename.length);
+    localChunks.push(local);
+    const directory = new Uint8Array(46 + filename.length);
+    const directoryView = new DataView(directory.buffer);
+    writeAccountUint32(directoryView, 0, 0x02014b50);
+    writeAccountUint16(directoryView, 4, 20);
+    writeAccountUint16(directoryView, 6, 20);
+    writeAccountUint32(directoryView, 16, checksum);
+    writeAccountUint32(directoryView, 20, data.length);
+    writeAccountUint32(directoryView, 24, data.length);
+    writeAccountUint16(directoryView, 28, filename.length);
+    writeAccountUint32(directoryView, 42, offset);
+    directory.set(filename, 46);
+    directoryChunks.push(directory);
+    offset += local.length;
+  }
+  const directorySize = directoryChunks.reduce((total, chunk) => total + chunk.length, 0);
+  const end = new Uint8Array(22);
+  const endView = new DataView(end.buffer);
+  writeAccountUint32(endView, 0, 0x06054b50);
+  writeAccountUint16(endView, 8, directoryChunks.length);
+  writeAccountUint16(endView, 10, directoryChunks.length);
+  writeAccountUint32(endView, 12, directorySize);
+  writeAccountUint32(endView, 16, offset);
+  return new Blob([...localChunks, ...directoryChunks, end], {
+    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+  });
+}
+
+function accountRoleLabel(user) {
+  return user.role === "administrador" ? "Administración" : user.role === "evaluador" ? "Evaluador" : "Elaborador";
+}
+
+function accountDate(value) {
+  return value
+    ? new Intl.DateTimeFormat("es-CO", { dateStyle: "medium", timeStyle: "short", timeZone: "America/Bogota" }).format(new Date(value))
+    : "Sin registro";
+}
+
+function accountsWorkbook(users) {
+  const totalsByRole = ["elaborador", "evaluador", "administrador"].map(role => {
+    const roleUsers = users.filter(user => user.role === role);
+    return [accountRoleLabel({ role }), roleUsers.length, roleUsers.filter(user => user.active).length, roleUsers.filter(user => !user.active).length];
+  });
+  const detailRows = users.map(user => ({ values: [
+    user.username || "Sin asignar",
+    user.displayName,
+    accountRoleLabel(user),
+    user.role === "administrador" ? (user.administratorType === "titular" ? "Titular" : "Suplente") : "No aplica",
+    user.active ? "Activo" : "Inactivo",
+    user.role === "administrador" ? "No aplica" : (user.processCodes?.join(", ") || "Sin procesos"),
+    accountDate(user.createdAt),
+    accountDate(user.lastAccess),
+    user.mfaEnabled ? "Configurado" : "No configurado",
+    user.mustChangePassword ? "Cambio pendiente" : "Vigente"
+  ] }));
+  const summaryRows = [
+    { kind: "heading", values: ["Reporte institucional de cuentas", ""] },
+    { values: ["Generado", accountDate(new Date())] },
+    { values: ["Total de cuentas", users.length] },
+    { values: ["Cuentas activas", users.filter(user => user.active).length] },
+    { values: ["Cuentas inactivas", users.filter(user => !user.active).length] },
+    { values: [] },
+    { kind: "heading", values: ["Rol", "Total", "Activas", "Inactivas"] },
+    ...totalsByRole.map(values => ({ values }))
+  ];
+  const sheets = [
+    ["Resumen", summaryRows, [28, 24, 14, 14]],
+    ["Cuentas", [{ kind: "heading", values: ["Usuario", "Nombre completo", "Rol", "Administración", "Estado", "Procesos asignados", "Fecha de creación", "Último acceso", "Segundo factor", "Contraseña"] }, ...detailRows], [20, 32, 17, 18, 14, 30, 22, 22, 19, 19]]
+  ];
+  return accountWorkbookBlob({
+    "[Content_Types].xml": `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>${sheets.map((_, index) => `<Override PartName="/xl/worksheets/sheet${index + 1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`).join("")}</Types>`,
+    "_rels/.rels": `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>`,
+    "xl/workbook.xml": `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets>${sheets.map(([name], index) => `<sheet name="${escapeXml(name)}" sheetId="${index + 1}" r:id="rId${index + 1}"/>`).join("")}</sheets></workbook>`,
+    "xl/_rels/workbook.xml.rels": `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${sheets.map((_, index) => `<Relationship Id="rId${index + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet${index + 1}.xml"/>`).join("")}<Relationship Id="rId${sheets.length + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`,
+    "xl/styles.xml": `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><fonts count="2"><font><sz val="11"/><name val="Calibri"/></font><font><b/><color rgb="FFFFFFFF"/><sz val="11"/><name val="Calibri"/></font></fonts><fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FF173C42"/><bgColor indexed="64"/></patternFill></fill></fills><borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellStyleXfs count="1"><xf/></cellStyleXfs><cellXfs count="2"><xf xfId="0"/><xf fontId="1" fillId="1" xfId="0" applyFont="1" applyFill="1"/></cellXfs></styleSheet>`,
+    ...Object.fromEntries(sheets.map(([name, rows, widths], index) => [`xl/worksheets/sheet${index + 1}.xml`, accountSpreadsheetSheet(rows, widths)]))
+  });
+}
+
+function downloadAccountsWorkbook() {
+  if (currentUser?.role !== "administrador") return;
+  const link = document.createElement("a");
+  const url = URL.createObjectURL(accountsWorkbook(currentUsers));
+  const today = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Bogota" }).format(new Date());
+  link.href = url;
+  link.download = `cuentas-institucionales-${today}.xlsx`;
+  link.hidden = true;
+  document.body.append(link);
+  link.click();
+  link.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 function cell(row, content) {
@@ -422,6 +584,7 @@ ui.confirmMfaEnrollmentForm.addEventListener("submit", async event => {
 });
 
 ui.refreshUsersButton.addEventListener("click", refreshUsers);
+ui.exportUsersButton.addEventListener("click", downloadAccountsWorkbook);
 ui.closeCredentialButton.addEventListener("click", hideCredential);
 ui.doneCredentialButton.addEventListener("click", hideCredential);
 ui.credentialDialog.addEventListener("close", hideCredential);

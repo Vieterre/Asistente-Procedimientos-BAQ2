@@ -17,6 +17,8 @@ function account(overrides = {}) {
     active: true,
     mfa_enabled: false,
     must_change_password: false,
+    created_at: "2026-10-01T12:00:00.000Z",
+    last_access: "2026-10-02T12:00:00.000Z",
     mfa_secret_ciphertext: null,
     password_hash: "never-expose-this",
     ...overrides
@@ -73,6 +75,8 @@ test("account listing never returns password hashes or MFA secrets", async () =>
     active: true,
     mfaEnabled: false,
     mustChangePassword: false,
+    createdAt: "2026-10-01T12:00:00.000Z",
+    lastAccess: "2026-10-02T12:00:00.000Z",
     processCodes: []
   }]);
 });
@@ -205,7 +209,7 @@ test("admin user endpoints require a live administrator session and CSRF for cha
   let role = "administrador";
   const poolFactory = () => ({
     async query(sql, params) {
-      if (sql.includes("FROM app_sessions s")) {
+      if (sql.includes("FROM app_sessions s\n     JOIN app_users u")) {
         return { rows: params[0] === hashToken(token) ? [{
           session_id: "33333333-3333-4333-8333-333333333333",
           csrf_token_hash: hashToken(csrf),
