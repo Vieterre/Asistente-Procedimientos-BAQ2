@@ -338,7 +338,7 @@ function userRow(user) {
     actions.append(actionButton("Asignar procesos", () => editAccountProcesses(user)));
     if (user.active) actions.append(actionButton("Restablecer clave", () => resetPassword(user)));
     actions.append(actionButton(user.active ? "Desactivar" : "Activar", () => setActive(user), user.active));
-  } else if (currentUser?.administratorType === "titular" && user.administratorType === "suplente") {
+  } else if (currentUser?.role === "administrador" && user.administratorType === "suplente") {
     actions.append(actionButton("Recuperar acceso", () => recoverBackupAdministrator(user), true));
   }
   cell(row, actions);
