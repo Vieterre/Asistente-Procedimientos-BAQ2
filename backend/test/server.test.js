@@ -147,6 +147,7 @@ test("private consoles serve only their own assets with a restrictive policy", a
     assert.match(analyticsPrintCss, /analytics-pdf-chart/);
     assert.match(draftScript, /function analyticsStackedColumnChart\(/);
     assert.match(draftScript, /function analyticsEventTotal\(/);
+    assert.match(draftScript, /const chartHeight = 148/);
     assert.match(draftScript, /function analyticsLineChart\(/);
     assert.match(draftScript, /analytics-pdf-line-value/);
     assert.match(draftScript, /Indicadores de productividad, trazabilidad y uso del sistema/);

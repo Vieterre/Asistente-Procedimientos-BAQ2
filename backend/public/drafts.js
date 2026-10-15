@@ -1915,6 +1915,7 @@ function analyticsStackedColumnChart(title, rows, emptyText) {
   });
 
   const maximum = Math.max(...rows.map(analyticsEventTotal), 1);
+  const chartHeight = 148;
   const plot = document.createElement("div");
   plot.className = "analytics-pdf-stacked-plot";
   rows.forEach(row => {
@@ -1928,13 +1929,13 @@ function analyticsStackedColumnChart(title, rows, emptyText) {
     rail.className = "analytics-pdf-stacked-rail";
     const stack = document.createElement("div");
     stack.className = "analytics-pdf-stacked-stack";
-    stack.style.height = `${Math.max(total ? 8 : 0, Math.round((total / maximum) * 100))}%`;
+    stack.style.height = `${Math.max(total ? 12 : 0, Math.round((total / maximum) * chartHeight))}px`;
     analyticsEventLabels.forEach(([key], index) => {
       const count = Number(row[key] || 0);
       if (!count) return;
       const segment = document.createElement("span");
       segment.className = `analytics-pdf-stacked-segment series-${index + 1}`;
-      segment.style.height = `${(count / total) * 100}%`;
+      segment.style.flex = `${count} 1 0px`;
       stack.append(segment);
     });
     rail.append(stack);
