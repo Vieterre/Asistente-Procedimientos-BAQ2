@@ -138,6 +138,9 @@ test("private consoles serve only their own assets with a restrictive policy", a
     assert.match(draftHtml, /Últimos 60 días/);
     assert.doesNotMatch(draftHtml, /Últimos 12 meses/);
     assert.match(draftScript, /function downloadAnalyticsWorkbook\(\)/);
+    assert.match(draftScript, /function printAnalyticsReport\(\)/);
+    assert.match(draftScript, /Imprimir \/ guardar PDF/);
+    assert.match(draftScript, /size: letter portrait/);
     assert.match(draftScript, /Autocontrol de actividad y uso/);
     assert.match(draftScript, /\/api\/admin\/institutional-reports/);
     assert.match(draftScript, /\/api\/reports\/procedures/);

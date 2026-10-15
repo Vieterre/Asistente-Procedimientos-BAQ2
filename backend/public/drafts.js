@@ -1825,6 +1825,126 @@ function downloadAnalyticsWorkbook() {
   window.setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
+function analyticsFilterSummary(analytics) {
+  const period = `Últimos ${analytics.periodDays} día${analytics.periodDays === 1 ? "" : "s"}`;
+  return {
+    period,
+    process: ui.analyticsProcess.options[ui.analyticsProcess.selectedIndex]?.text || "Todos los procesos",
+    role: ui.analyticsRole.options[ui.analyticsRole.selectedIndex]?.text || "Todos los roles",
+    generated: new Intl.DateTimeFormat("es-CO", {
+      dateStyle: "medium", timeStyle: "short", timeZone: "America/Bogota"
+    }).format(new Date())
+  };
+}
+
+function analyticsPdfReport(analytics) {
+  const filters = analyticsFilterSummary(analytics);
+  const report = document.createElement("article");
+  report.className = "analytics-pdf-report";
+  const header = document.createElement("header");
+  header.className = "analytics-pdf-header";
+  const title = document.createElement("h1");
+  title.textContent = "REPORTE DE ANALÍTICA";
+  const subtitle = document.createElement("p");
+  subtitle.textContent = "Administración institucional";
+  header.append(title, subtitle);
+
+  const summary = document.createElement("div");
+  summary.className = "analytics-pdf-summary";
+  summary.append(
+    reportTable(["Filtro", "Valor"], [
+      ["Periodo", filters.period],
+      ["Proceso", filters.process],
+      ["Rol", filters.role],
+      ["Generado", filters.generated]
+    ], row => row),
+    reportTable(["Indicador", "Cantidad"], analyticsEventLabels, ([key, label]) => [label, String(analytics.totals[key] || 0)])
+  );
+
+  const activityByDay = reportTable(
+    ["Fecha", "Iniciados", "Envíos", "Evaluaciones", "Devoluciones", "Favorables"],
+    analytics.byDay,
+    row => [row.day, ...analyticsEventLabels.map(([key]) => String(row[key] || 0))]
+  );
+  const activityByProcedure = reportTable(
+    ["Proceso", "Procedimiento", "Iniciados", "Envíos", "Evaluaciones", "Devoluciones", "Favorables"],
+    analytics.byProcess,
+    row => [`${row.processName} (${row.processCode})`, row.procedureName, ...analyticsEventLabels.map(([key]) => String(row[key] || 0))],
+    { columnWidths: ["19%", "31%", "10%", "10%", "10%", "10%", "10%"] }
+  );
+  const usage = document.createElement("div");
+  usage.className = "analytics-pdf-summary";
+  usage.append(
+    reportTable(["Uso del sistema", "Valor"], [
+      ["Ingresos del periodo", String(analytics.usage.totalLogins || 0)],
+      ["Usuarios con ingreso", String(analytics.usage.activeUsers || 0)],
+      ["Último ingreso", analytics.usage.lastLogin
+        ? new Intl.DateTimeFormat("es-CO", { dateStyle: "medium", timeStyle: "short", timeZone: "America/Bogota" }).format(new Date(analytics.usage.lastLogin))
+        : "Sin registro"]
+    ], row => row),
+    reportTable(["Fecha", "Ingresos"], analytics.usage.byDay, row => [row.day, String(row.count || 0)])
+  );
+  report.append(
+    header,
+    reportSection("1", "Resumen", summary),
+    reportSection("2", "Actividad por día", activityByDay),
+    reportSection("3", "Actividad por procedimiento", activityByProcedure),
+    reportSection("4", "Usabilidad", usage)
+  );
+  return report;
+}
+
+function analyticsPdfStyles() {
+  return `
+    @page { size: letter portrait; margin: 16mm; }
+    * { box-sizing: border-box; }
+    body { margin: 0; color: #243746; font-family: Arial, sans-serif; font-size: 10pt; }
+    .analytics-pdf-report { width: 100%; }
+    .analytics-pdf-header { border: 1px solid #1b4e7a; border-left: 7px solid #159c7b; margin-bottom: 18px; padding: 12px 15px; }
+    .analytics-pdf-header h1 { margin: 0; color: #004488; font-size: 18pt; }
+    .analytics-pdf-header p { margin: 4px 0 0; color: #52666d; font-size: 10pt; }
+    .preview-report-section { margin: 0 0 18px; break-inside: avoid-page; page-break-inside: avoid; }
+    .preview-report-section > h3 { margin: 0 0 8px; padding-bottom: 5px; border-bottom: 2px solid #1d9a7c; color: #004488; font-size: 11pt; }
+    .analytics-pdf-summary { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+    .preview-report-table { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 8pt; }
+    .preview-report-table th, .preview-report-table td { border: 1px solid #b8c2c8; padding: 5px; text-align: left; vertical-align: top; overflow-wrap: anywhere; line-height: 1.32; }
+    .preview-report-table th { background: #004488; color: #fff; font-weight: 700; }
+    .preview-report-table thead { display: table-header-group; }
+    .preview-report-table tr { break-inside: avoid-page; page-break-inside: avoid; }
+    .preview-report-section:nth-of-type(4) .preview-report-table { font-size: 7pt; }
+    @media print { .preview-report-section { break-inside: auto; page-break-inside: auto; } }
+  `;
+}
+
+function printAnalyticsReport() {
+  if (!currentAnalytics || currentUserRole !== "administrador") return;
+  const popup = window.open("", "_blank");
+  if (!popup) {
+    setMessage(ui.analyticsMessage, "El navegador bloqueó la ventana de impresión. Permite las ventanas emergentes e inténtalo de nuevo.");
+    return;
+  }
+  const report = analyticsPdfReport(currentAnalytics);
+  popup.document.write(`<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Reporte de Analítica</title><style>${analyticsPdfStyles()}</style></head><body></body></html>`);
+  popup.document.close();
+  popup.document.body.append(popup.document.importNode(report, true));
+  popup.document.title = "Reporte de Analítica";
+  popup.focus();
+  window.setTimeout(() => popup.print(), 100);
+}
+
+function ensureAnalyticsPdfButton() {
+  let button = document.getElementById("exportAnalyticsPdfButton");
+  if (button) return button;
+  button = document.createElement("button");
+  button.id = "exportAnalyticsPdfButton";
+  button.type = "button";
+  button.className = "secondary-button analytics-admin-filter";
+  button.textContent = "Imprimir / guardar PDF";
+  button.addEventListener("click", printAnalyticsReport);
+  ui.exportAnalyticsButton.insertAdjacentElement("afterend", button);
+  return button;
+}
+
 function renderAnalytics(analytics) {
   currentAnalytics = analytics;
   ui.analyticsMetrics.replaceChildren(...analyticsEventLabels.map(([key, label]) => {
@@ -1951,6 +2071,7 @@ async function showAnalytics() {
     : "Actividad institucional registrada por el backend. No incluye datos locales del prototipo ni actividad anterior a su captura.";
   for (const field of [ui.analyticsProcessField, ui.analyticsRoleField, ui.analyticsByProcessSection]) field.hidden = evaluatorView;
   ui.exportAnalyticsButton.hidden = evaluatorView;
+  ensureAnalyticsPdfButton().hidden = evaluatorView;
   ui.notificationPopover.hidden = true;
   ui.notificationBell.setAttribute("aria-expanded", "false");
   ui.analyticsSection.hidden = false;
