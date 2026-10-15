@@ -142,13 +142,14 @@ test("private consoles serve only their own assets with a restrictive policy", a
     assert.match(draftScript, /function printAnalyticsReport\(\)/);
     assert.match(draftScript, /Imprimir \/ guardar PDF/);
     const analyticsPrintCss = await (await fetch(base + "/analytics-report.css")).text();
-    assert.match(draftScript, /analytics-report\.css\?v=20261015-1/);
+    assert.match(draftScript, /analytics-report\.css\?v=20261015-2/);
     assert.match(analyticsPrintCss, /size: letter portrait/);
     assert.match(analyticsPrintCss, /analytics-pdf-chart/);
-    assert.match(draftScript, /function analyticsBarChart\(/);
+    assert.match(draftScript, /function analyticsStackedColumnChart\(/);
+    assert.match(draftScript, /function analyticsLineChart\(/);
     assert.match(draftScript, /Indicadores de productividad, trazabilidad y uso del sistema/);
-    assert.match(draftScript, /Eventos registrados por día/);
-    assert.match(draftScript, /Tendencia de ingresos/);
+    assert.match(draftScript, /Evolución diaria del flujo/);
+    assert.match(draftScript, /Tendencia diaria de ingresos/);
     assert.match(draftScript, /popup\.document\.open\(\)/);
     assert.match(draftScript, /Autocontrol de actividad y uso/);
     assert.match(draftScript, /\/api\/admin\/institutional-reports/);

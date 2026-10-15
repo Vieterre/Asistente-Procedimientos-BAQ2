@@ -1887,7 +1887,7 @@ function analyticsMetricCards(analytics) {
   return grid;
 }
 
-function analyticsBarChart(title, rows, labelForRow, valueForRow, emptyText) {
+function analyticsStackedColumnChart(title, rows, emptyText) {
   const chart = document.createElement("section");
   chart.className = "analytics-pdf-chart";
   const heading = document.createElement("h4");
@@ -1900,29 +1900,104 @@ function analyticsBarChart(title, rows, labelForRow, valueForRow, emptyText) {
     chart.append(empty);
     return chart;
   }
-  const values = rows.map(valueForRow);
-  const maximum = Math.max(...values, 1);
-  const list = document.createElement("div");
-  list.className = "analytics-pdf-bars";
-  rows.forEach((row, index) => {
-    const item = document.createElement("div");
-    item.className = "analytics-pdf-bar-row";
-    const label = document.createElement("span");
-    label.className = "analytics-pdf-bar-label";
-    label.textContent = labelForRow(row);
-    const track = document.createElement("div");
-    track.className = "analytics-pdf-bar-track";
-    const fill = document.createElement("span");
-    fill.className = "analytics-pdf-bar-fill";
-    fill.style.width = `${Math.round((values[index] / maximum) * 100)}%`;
-    track.append(fill);
-    const value = document.createElement("strong");
-    value.className = "analytics-pdf-bar-value";
-    value.textContent = String(values[index]);
-    item.append(label, track, value);
-    list.append(item);
+  const legend = document.createElement("div");
+  legend.className = "analytics-pdf-chart-legend";
+  analyticsEventLabels.forEach(([, label], index) => {
+    const item = document.createElement("span");
+    const marker = document.createElement("i");
+    marker.className = `analytics-pdf-series series-${index + 1}`;
+    item.append(marker, document.createTextNode(label));
+    legend.append(item);
   });
-  chart.append(list);
+
+  const maximum = Math.max(...rows.map(row => analyticsEventLabels.reduce((total, [key]) => total + (row[key] || 0), 0)), 1);
+  const plot = document.createElement("div");
+  plot.className = "analytics-pdf-stacked-plot";
+  rows.forEach(row => {
+    const total = analyticsEventLabels.reduce((sum, [key]) => sum + (row[key] || 0), 0);
+    const column = document.createElement("div");
+    column.className = "analytics-pdf-stacked-column";
+    const value = document.createElement("strong");
+    value.className = "analytics-pdf-stacked-value";
+    value.textContent = String(total);
+    const rail = document.createElement("div");
+    rail.className = "analytics-pdf-stacked-rail";
+    const stack = document.createElement("div");
+    stack.className = "analytics-pdf-stacked-stack";
+    stack.style.height = `${Math.max(total ? 8 : 0, Math.round((total / maximum) * 100))}%`;
+    analyticsEventLabels.forEach(([key], index) => {
+      const count = row[key] || 0;
+      if (!count) return;
+      const segment = document.createElement("span");
+      segment.className = `analytics-pdf-stacked-segment series-${index + 1}`;
+      segment.style.height = `${(count / total) * 100}%`;
+      stack.append(segment);
+    });
+    rail.append(stack);
+    const label = document.createElement("span");
+    label.className = "analytics-pdf-stacked-label";
+    label.textContent = new Intl.DateTimeFormat("es-CO", { day: "2-digit", month: "short", timeZone: "UTC" }).format(new Date(`${row.day}T00:00:00Z`));
+    column.append(value, rail, label);
+    plot.append(column);
+  });
+  chart.append(legend, plot);
+  return chart;
+}
+
+function analyticsLineChart(title, rows, emptyText) {
+  const chart = document.createElement("section");
+  chart.className = "analytics-pdf-chart";
+  const heading = document.createElement("h4");
+  heading.textContent = title;
+  chart.append(heading);
+  if (rows.length < 2) {
+    const empty = document.createElement("p");
+    empty.className = "analytics-pdf-empty";
+    empty.textContent = emptyText;
+    chart.append(empty);
+    return chart;
+  }
+  const maximum = Math.max(...rows.map(row => row.count || 0), 1);
+  const width = 620;
+  const height = 150;
+  const padding = { top: 16, right: 12, bottom: 27, left: 25 };
+  const innerWidth = width - padding.left - padding.right;
+  const innerHeight = height - padding.top - padding.bottom;
+  const xFor = index => padding.left + ((innerWidth * index) / Math.max(rows.length - 1, 1));
+  const yFor = value => padding.top + innerHeight - ((value / maximum) * innerHeight);
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  svg.classList.add("analytics-pdf-line-chart");
+  svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+  svg.setAttribute("role", "img");
+  svg.setAttribute("aria-label", `${title}: ingresos diarios`);
+  [0, 0.5, 1].forEach(level => {
+    const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+    const y = padding.top + innerHeight - (innerHeight * level);
+    line.setAttribute("x1", String(padding.left));
+    line.setAttribute("x2", String(width - padding.right));
+    line.setAttribute("y1", String(y));
+    line.setAttribute("y2", String(y));
+    line.setAttribute("class", "analytics-pdf-line-grid");
+    svg.append(line);
+  });
+  const polyline = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
+  polyline.setAttribute("class", "analytics-pdf-line-path");
+  polyline.setAttribute("points", rows.map((row, index) => `${xFor(index)},${yFor(row.count || 0)}`).join(" "));
+  svg.append(polyline);
+  rows.forEach((row, index) => {
+    const point = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+    point.setAttribute("class", "analytics-pdf-line-point");
+    point.setAttribute("cx", String(xFor(index)));
+    point.setAttribute("cy", String(yFor(row.count || 0)));
+    point.setAttribute("r", "3");
+    const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
+    label.setAttribute("class", "analytics-pdf-line-label");
+    label.setAttribute("x", String(xFor(index)));
+    label.setAttribute("y", String(height - 8));
+    label.textContent = new Intl.DateTimeFormat("es-CO", { day: "2-digit", month: "short", timeZone: "UTC" }).format(new Date(`${row.day}T00:00:00Z`));
+    svg.append(point, label);
+  });
+  chart.append(svg);
   return chart;
 }
 
@@ -1956,24 +2031,14 @@ function analyticsPdfReport(analytics) {
     filtersGrid.append(item);
   });
 
-  const dailyRows = analytics.byDay.slice(0, 16);
-  const dailyActivity = analyticsBarChart(
-    "Eventos registrados por día",
-    dailyRows,
-    row => row.day,
-    row => analyticsEventLabels.reduce((total, [key]) => total + (row[key] || 0), 0),
-    "No hay actividad registrada para el período seleccionado."
-  );
-  const eventsByType = analyticsBarChart(
-    "Resultados por tipo de evento",
-    analyticsEventLabels,
-    ([, label]) => label,
-    ([key]) => analytics.totals[key] || 0,
-    "No hay eventos registrados para el período seleccionado."
-  );
+  const dailyRows = analytics.byDay.slice(0, 16).reverse();
   const charts = document.createElement("div");
-  charts.className = "analytics-pdf-chart-grid";
-  charts.append(dailyActivity, eventsByType);
+  charts.className = "analytics-pdf-chart-grid single";
+  charts.append(analyticsStackedColumnChart(
+    "Evolución diaria del flujo",
+    dailyRows,
+    "No hay eventos registrados para el período seleccionado."
+  ));
 
   const dailyDetail = analyticsPdfTable(
     ["Fecha", "Iniciados", "Envíos", "Evaluaciones", "Devoluciones", "Favorables"],
@@ -2007,15 +2072,11 @@ function analyticsPdfReport(analytics) {
   });
   const usageCharts = document.createElement("div");
   usageCharts.className = "analytics-pdf-chart-grid single";
-  usageCharts.append(
-    analyticsBarChart(
-      "Tendencia de ingresos",
-      analytics.usage.byDay.slice(0, 16),
-      row => row.day,
-      row => row.count || 0,
-      "No hay ingresos registrados para el período seleccionado."
-    )
-  );
+  usageCharts.append(analyticsLineChart(
+    "Tendencia diaria de ingresos",
+    analytics.usage.byDay.slice(0, 16).reverse(),
+    "No hay suficientes días registrados para mostrar una tendencia de ingresos."
+  ));
   const usage = document.createElement("div");
   usage.className = "analytics-pdf-usage";
   usage.append(usageSummary, usageCharts);
@@ -2039,7 +2100,7 @@ function printAnalyticsReport() {
     return;
   }
   const report = analyticsPdfReport(currentAnalytics);
-  const stylesheetUrl = new URL("/analytics-report.css?v=20261015-1", window.location.origin).href;
+  const stylesheetUrl = new URL("/analytics-report.css?v=20261015-2", window.location.origin).href;
   popup.document.open();
   popup.document.write(`<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Reporte de Analítica</title><link rel="stylesheet" href="${stylesheetUrl}"></head><body>${report.outerHTML}</body></html>`);
   popup.document.close();
