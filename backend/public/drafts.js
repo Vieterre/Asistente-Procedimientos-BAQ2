@@ -1818,7 +1818,10 @@ function downloadAnalyticsWorkbook() {
   const today = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Bogota" }).format(new Date());
   link.href = url;
   link.download = `analitica-institucional-${today}.xlsx`;
+  link.hidden = true;
+  document.body.append(link);
   link.click();
+  link.remove();
   window.setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
