@@ -104,6 +104,9 @@ test("only an administrator can give the final approval or return it for adjustm
   const pending = { status: PROCEDURE_STATUS.PENDING_ADMIN_APPROVAL };
   assert.equal(canPerform(admin, ACTIONS.ISSUE_FINAL_APPROVAL, { procedure: pending }), true);
   assert.equal(canPerform(admin, ACTIONS.RETURN_FROM_ADMIN_APPROVAL, { procedure: pending }), true);
+  assert.equal(canPerform(admin, ACTIONS.CREATE_PROCEDURE), false);
+  assert.equal(canPerform(admin, ACTIONS.EDIT_PROCEDURE, { procedure: { createdByUserId: admin.id, status: PROCEDURE_STATUS.DRAFT } }), false);
+  assert.equal(canPerform(admin, ACTIONS.SUBMIT_FOR_REVIEW, { procedure: pending }), false);
   assert.equal(canPerform(author, ACTIONS.ISSUE_FINAL_APPROVAL, { procedure: pending }), false);
   assert.equal(canPerform(admin, ACTIONS.ISSUE_FINAL_APPROVAL, { procedure: { status: PROCEDURE_STATUS.FAVORABLE } }), false);
 });

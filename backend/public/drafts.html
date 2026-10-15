@@ -32,8 +32,8 @@
 <p class="form-message" id="institutionalReportsMessage" role="status" hidden></p><p class="empty-state" id="emptyInstitutionalReports">No hay procedimientos con concepto favorable.</p><ol class="draft-list" id="institutionalReportsList"></ol>
 </section>
 <section class="work-layout" id="draftWorkspace" hidden>
-<section class="editor-section" aria-labelledby="editorTitle">
-<div class="section-heading"><div><h2 id="editorTitle">Nuevo borrador</h2><p id="editorStatus">Borrador no guardado</p></div><button class="secondary-button" id="newDraftButton" type="button">Nuevo</button></div>
+<section class="editor-section" id="editorSection" aria-labelledby="editorTitle">
+<div class="section-heading" id="editorHeading"><div><h2 id="editorTitle">Nuevo borrador</h2><p id="editorStatus">Borrador no guardado</p></div><button class="secondary-button" id="newDraftButton" type="button">Nuevo</button></div>
 <nav class="procedure-progress" id="procedureProgress" aria-label="Cumplimiento metodológico por sección"><ol>
 <li><button type="button" data-progress-target="identificationSection"><span class="procedure-progress-number">01</span><span class="procedure-progress-label">Identificación</span><span class="procedure-progress-check" data-progress-state="identification" aria-label="Pendiente"></span></button></li>
 <li><button type="button" data-progress-target="contextSection"><span class="procedure-progress-number">02</span><span class="procedure-progress-label">Marco contextual</span><span class="procedure-progress-check" data-progress-state="context" aria-label="Pendiente"></span></button></li>
@@ -85,8 +85,10 @@
 </section>
 </section>
 <section class="list-section" aria-labelledby="listTitle">
+<div id="ownedDraftsSection">
 <div class="section-heading"><div><h2 id="listTitle">Mis procedimientos</h2><p id="draftCount">0 procedimientos</p></div><button class="secondary-button" id="refreshDraftsButton" type="button" aria-label="Actualizar lista" title="Actualizar lista">Actualizar</button></div>
 <p class="form-message" id="listMessage" role="status" hidden></p><p class="empty-state" id="emptyDrafts">Todavía no hay procedimientos.</p><ol class="draft-list" id="draftList"></ol>
+</div>
 <section class="admin-approval-queue" id="adminApprovalQueue" aria-labelledby="adminApprovalQueueTitle" hidden><div class="section-heading"><div><h2 id="adminApprovalQueueTitle">Vistos buenos pendientes</h2><p id="adminApprovalCount">0 procedimientos</p></div><button class="secondary-button" id="refreshAdminApprovalQueue" type="button">Actualizar</button></div><p class="form-message" id="adminApprovalQueueMessage" role="status" hidden></p><p class="empty-state" id="emptyAdminApprovalQueue">No hay procedimientos pendientes de visto bueno.</p><ol class="draft-list" id="adminApprovalQueueList"></ol></section>
 </section></section>
 <section class="list-section evaluator-inbox" id="evaluatorInbox" aria-labelledby="evaluatorInboxTitle" hidden><div class="section-heading"><div><h2 id="evaluatorInboxTitle">Bandeja de revisión</h2><p id="evaluatorDraftCount">0 procedimientos</p></div><button class="secondary-button" id="refreshEvaluatorInbox" type="button">Actualizar bandeja</button></div><p class="form-message" id="evaluatorInboxMessage" role="status" hidden></p><p class="empty-state" id="emptyEvaluatorInbox">No hay procedimientos asignados.</p><ol class="draft-list" id="evaluatorDraftList"></ol></section>

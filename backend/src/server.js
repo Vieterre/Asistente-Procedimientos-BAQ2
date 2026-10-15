@@ -230,10 +230,10 @@ export function createAppServer({ poolFactory = createPool, secureCookies, trust
           }
           const result = await pool.query(
             `SELECT p.code, p.name FROM processes p WHERE p.active = TRUE
-             AND ($2 OR EXISTS (SELECT 1 FROM user_processes up
-                                WHERE up.user_id = $1 AND up.process_code = p.code))
+             AND EXISTS (SELECT 1 FROM user_processes up
+                         WHERE up.user_id = $1 AND up.process_code = p.code)
              ORDER BY p.name, p.code`,
-            [session.user.id, session.user.role === "administrador"]
+            [session.user.id]
           );
           sendJson(res, 200, { ok: true, processes: result.rows });
         } catch (error) {

@@ -234,10 +234,10 @@ export async function listOwnDrafts(pool, user) {
     `SELECT id, code, name, process_code, version, status, revision, updated_at,
             submitted_for_review_at, technical_reviewed_at, approved_at
      FROM procedures p WHERE created_by_user_id = $1
-       AND ($2 OR EXISTS (SELECT 1 FROM user_processes up
-                          WHERE up.user_id = $1 AND up.process_code = p.process_code))
+       AND EXISTS (SELECT 1 FROM user_processes up
+                   WHERE up.user_id = $1 AND up.process_code = p.process_code)
      ORDER BY updated_at DESC`,
-    [user.id, user.role === ROLES.ADMIN]
+    [user.id]
   );
   return result.rows.map(row => publicDraft(row));
 }
@@ -249,9 +249,9 @@ export async function getOwnDraft(pool, user, id) {
             admin_approval_observation, admin_approval_by_user_id, admin_approval_at,
             submitted_for_review_at, technical_reviewed_at, approved_at
      FROM procedures p WHERE id = $1 AND created_by_user_id = $2
-       AND ($3 OR EXISTS (SELECT 1 FROM user_processes up
-                          WHERE up.user_id = $2 AND up.process_code = p.process_code))`,
-    [id, user.id, user.role === ROLES.ADMIN]
+       AND EXISTS (SELECT 1 FROM user_processes up
+                   WHERE up.user_id = $2 AND up.process_code = p.process_code)`,
+    [id, user.id]
   );
   if (!result.rows[0]) throw new DraftError("draft_not_found", 404);
   return publicDraft(result.rows[0], true);
@@ -323,9 +323,9 @@ export async function createDraft(pool, user, { name, processCode, consecutive, 
     await client.query("BEGIN");
     const process = await client.query(
       `SELECT 1 FROM processes p WHERE p.code = $1 AND p.active = TRUE
-       AND ($3 OR EXISTS (SELECT 1 FROM user_processes up
-                          WHERE up.user_id = $2 AND up.process_code = p.code))`,
-      [processCode, user.id, user.role === ROLES.ADMIN]
+       AND EXISTS (SELECT 1 FROM user_processes up
+                   WHERE up.user_id = $2 AND up.process_code = p.code)`,
+      [processCode, user.id]
     );
     if (!process.rows.length) throw new DraftError("invalid_process", 400);
     const result = await client.query(
@@ -363,10 +363,10 @@ export async function updateOwnDraft(pool, user, id, { name, consecutive, payloa
     const found = await client.query(
       `SELECT id, status, code, process_code, created_by_user_id, revision
        FROM procedures p WHERE id = $1 AND created_by_user_id = $2
-         AND ($3 OR EXISTS (SELECT 1 FROM user_processes up
-                            WHERE up.user_id = $2 AND up.process_code = p.process_code))
+         AND EXISTS (SELECT 1 FROM user_processes up
+                     WHERE up.user_id = $2 AND up.process_code = p.process_code)
        FOR UPDATE`,
-      [id, user.id, user.role === ROLES.ADMIN]
+      [id, user.id]
     );
     const procedure = found.rows[0];
     if (!procedure) throw new DraftError("draft_not_found", 404);
@@ -404,13 +404,13 @@ export async function updateOwnDraft(pool, user, id, { name, consecutive, payloa
 }
 
 export async function listProcessEvaluators(pool, user, processCode) {
-  if (![ROLES.ELABORADOR, ROLES.ADMIN].includes(user.role) || !/^[A-Z]{2,3}$/.test(String(processCode || ""))) {
+  if (user.role !== ROLES.ELABORADOR || !/^[A-Z]{2,3}$/.test(String(processCode || ""))) {
     throw new DraftError("forbidden", 403);
   }
   const process = await pool.query(
     `SELECT 1 FROM processes p WHERE p.code = $1 AND p.active = TRUE
-       AND ($3 OR EXISTS (SELECT 1 FROM user_processes up WHERE up.user_id = $2 AND up.process_code = p.code))`,
-    [processCode, user.id, user.role === ROLES.ADMIN]
+       AND EXISTS (SELECT 1 FROM user_processes up WHERE up.user_id = $2 AND up.process_code = p.code)`,
+    [processCode, user.id]
   );
   if (!process.rows.length) throw new DraftError("invalid_process", 400);
   const result = await pool.query(

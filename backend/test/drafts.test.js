@@ -264,7 +264,7 @@ test("author creates an audited draft for an active process", async () => {
   assert.equal(result.name, "Formular el borrador de prueba");
   assert.equal(result.revision, 1);
   const processCheck = calls.find(call => call.sql.startsWith("SELECT 1 FROM processes"));
-  assert.deepEqual(processCheck.params, ["DE", author.id, false]);
+  assert.deepEqual(processCheck.params, ["DE", author.id]);
   assert.match(processCheck.sql, /user_processes/);
   assert.equal(calls.find(call => call.sql.startsWith("INSERT INTO procedures")).params[1], "Formular el borrador de prueba");
   assert.equal(calls.find(call => call.sql.startsWith("INSERT INTO procedures")).params[2], "DE-P-001");
@@ -284,7 +284,7 @@ test("draft creation accepts partial content and rejects malformed data or proce
       if (sql === "BEGIN") return { rows: [] };
       if (sql === "ROLLBACK") { rolledBack = true; return { rows: [] }; }
       if (sql.startsWith("SELECT 1 FROM processes")) {
-        assert.deepEqual(params, ["DE", author.id, false]);
+        assert.deepEqual(params, ["DE", author.id]);
         assert.match(sql, /user_processes/);
         return { rows: assigned ? [{ "?column?": 1 }] : [] };
       }
@@ -388,7 +388,7 @@ test("list and detail are scoped to the owner", async () => {
   assigned = false;
   assert.deepEqual(await listOwnDrafts(pool, author), []);
   await assert.rejects(getOwnDraft(pool, author, draftId), { code: "draft_not_found" });
-  assert.equal((await listOwnDrafts(pool, { ...author, role: "administrador" })).length, 1);
+  await assert.rejects(listOwnDrafts(pool, { ...author, role: "administrador" }), { code: "forbidden", status: 403 });
   await assert.rejects(getOwnDraft(pool, other, draftId), { code: "draft_not_found", status: 404 });
   assert.ok(queries.every(call => call.sql.includes("created_by_user_id") &&
     (call.params.includes(author.id) || call.params.includes(other.id))));
@@ -592,7 +592,7 @@ test("evaluator choices require process access and include only eligible assigne
     throw new Error(`Unexpected SQL: ${sql}`);
   } };
   assert.deepEqual(await listProcessEvaluators(pool, author, "DE"), [{ id: evaluator.id, displayName: "Evaluador de prueba" }]);
-  assert.deepEqual(calls[0].params, ["DE", author.id, false]);
+  assert.deepEqual(calls[0].params, ["DE", author.id]);
   assert.match(calls[1].sql, /u\.role = 'evaluador'/);
   assert.match(calls[1].sql, /u\.active = TRUE/);
   assert.match(calls[1].sql, /u\.must_change_password = FALSE/);
@@ -968,14 +968,8 @@ test("active process catalog requires an authenticated procedure author", async 
       if (sql.startsWith("UPDATE app_sessions SET last_seen_at")) return { rows: [] };
       if (sql.startsWith("SELECT p.code, p.name FROM processes")) {
         catalogReads += 1;
-        assert.deepEqual(params, [userId, role === "administrador"]);
+        assert.deepEqual(params, [userId]);
         assert.match(sql, /user_processes/);
-        if (role === "administrador") return { rows: [
-          ["PD", "Gestión del Desarrollo Económico"], ["GT", "Gestión del Turismo"], ["DE", "Direccionamiento Estratégico y Planeación"],
-          ["GC", "Gestión de la Comunicación"], ["TIC", "Gestión de las Tecnologías e Información"], ["GF", "Gestión de Recursos Financieros"],
-          ["GCT", "Gestión de la Contratación"], ["GI", "Gestión de la Infraestructura Física"], ["GD", "Gestión Documental"],
-          ["GH", "Gestión Humana y SST"], ["GJ", "Gestión Jurídica"], ["EI", "Evaluación Independiente"], ["GDI", "Gestión Disciplinaria"]
-        ].map(([code, name]) => ({ code, name })) };
         return { rows: assigned ? [{ code: "PD", name: "Gestión del Desarrollo Económico" }] : [] };
       }
       throw new Error("Unexpected SQL: " + sql);
@@ -998,11 +992,10 @@ test("active process catalog requires an authenticated procedure author", async 
     const unassigned = await fetch(url, { headers: { cookie } });
     assert.deepEqual((await unassigned.json()).processes, []);
     role = "administrador";
-    const adminCatalog = await fetch(url, { headers: { cookie } });
-    assert.equal((await adminCatalog.json()).processes.length, 13);
+    assert.equal((await fetch(url, { headers: { cookie } })).status, 403);
     role = "evaluador";
     assert.equal((await fetch(url, { headers: { cookie } })).status, 403);
-    assert.equal(catalogReads, 3);
+    assert.equal(catalogReads, 2);
   } finally {
     await new Promise(resolve => server.close(resolve));
   }

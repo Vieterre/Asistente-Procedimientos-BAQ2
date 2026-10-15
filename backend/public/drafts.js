@@ -3,14 +3,14 @@ const ids = [
   "workspace", "sessionControls", "sessionIdentity", "notificationCenter", "notificationBell", "notificationPopover", "notificationCount", "emptyNotifications", "notificationList", "markAllNotificationsRead", "logoutButton", "welcomeText",
   "pageHeading", "analyticsButton", "analyticsSection", "analyticsTitle", "analyticsScope", "backFromAnalytics", "refreshAnalytics", "analyticsFilters", "analyticsPeriod", "analyticsProcess", "analyticsRole", "analyticsProcessField", "analyticsRoleField", "analyticsByProcessSection", "analyticsMessage", "analyticsMetrics", "analyticsByDay", "analyticsByProcess", "emptyAnalyticsDays", "emptyAnalyticsProcesses", "analyticsLogins", "emptyAnalyticsLogins", "analyticsUsageMetrics",
   "institutionalReportsButton", "institutionalReportsSection", "institutionalReportsCount", "institutionalReportsMessage", "emptyInstitutionalReports", "institutionalReportsList", "backFromInstitutionalReports", "refreshInstitutionalReports",
-  "passwordRequired", "draftWorkspace", "draftForm", "editorTitle", "editorStatus", "submitReviewButton", "submitReviewDialog", "submitReviewForm", "reviewEvaluatorSelect", "submitReviewMessage", "cancelSubmitReview", "confirmSubmitReview",
+  "passwordRequired", "draftWorkspace", "editorSection", "editorHeading", "draftForm", "editorTitle", "editorStatus", "submitReviewButton", "submitReviewDialog", "submitReviewForm", "reviewEvaluatorSelect", "submitReviewMessage", "cancelSubmitReview", "confirmSubmitReview",
   "evaluatorInbox", "evaluatorDraftCount", "evaluatorInboxMessage", "emptyEvaluatorInbox", "evaluatorDraftList", "refreshEvaluatorInbox", "evaluatorDetail", "evaluatorDetailTitle", "evaluatorDetailStatus", "backToEvaluatorInbox", "startEvaluationButton",
   "evaluationWorkspace", "evaluationProgress", "evaluationScore", "evaluationLevel", "evaluationVariableResults", "evaluationCriteriaGroups", "evaluationAutoConcept", "evaluationConcept", "evaluationDecisionHint", "evaluationMessage", "exportEvaluationReportButton", "saveEvaluationButton", "returnEvaluationButton", "favorableEvaluationButton",
   "returnedEvaluation", "returnedEvaluationSummary", "returnedEvaluationConcept", "returnedFindings", "saveEvaluationResponses", "returnedEvaluationMessage",
   "adminApprovalSection", "adminApprovalSummary", "adminApprovalObservation", "returnAdminApprovalButton", "approveAdminApprovalButton", "adminApprovalMessage", "adminApprovalQueue", "adminApprovalCount", "adminApprovalQueueMessage", "emptyAdminApprovalQueue", "adminApprovalQueueList", "refreshAdminApprovalQueue",
   "draftName", "draftNameStatus", "processCode", "draftConsecutive", "draftCode", "draftCodeStatus", "draftObjective", "draftScope", "draftDefinitions", "draftDefinitionsStatus", "draftConditions", "saveDraftButton", "reloadDraftButton", "editorMessage",
   "procedureProgress", "newDraftButton", "addNormButton", "normsList", "emptyNorms", "normReview", "addBoundaryButton", "addActivityButton", "addDecisionButton", "addConnectorButton", "activitiesList", "emptyActivities", "reviewFlowButton", "flowReviewResult", "refreshDraftsButton", "draftCount", "listMessage", "emptyDrafts",
-  "draftList", "flowSection", "flowSummary", "refreshFlowButton", "flowCanvas", "flowSvg",
+  "draftList", "ownedDraftsSection", "flowSection", "flowSummary", "refreshFlowButton", "flowCanvas", "flowSvg",
   "zoomOutButton", "zoomInButton", "fitFlowButton", "resetFlowZoomButton", "flowZoomValue",
   "documentsSection", "annexApplicability", "addAnnexButton", "annexNotApplicableMessage", "emptyAnnexes", "annexesList",
   "addChangeButton", "emptyChanges", "changesMessage", "changesList", "draftPreparedBy", "draftPreparedOther", "draftPreparedName", "draftReviewedBy", "draftReviewedOther", "draftReviewedName",
@@ -1769,9 +1769,11 @@ function hideAnalytics() {
   ui.pageHeading.hidden = false;
   ui.evaluatorInbox.hidden = currentUserRole !== "evaluador";
   ui.draftWorkspace.hidden = currentUserRole === "evaluador";
-  ui.documentsSection.hidden = currentUserRole === "evaluador";
-  ui.flowSection.hidden = currentUserRole === "evaluador";
-  if (currentUserRole !== "evaluador") renderFlow();
+  ui.editorSection.hidden = currentUserRole !== "elaborador";
+  ui.ownedDraftsSection.hidden = currentUserRole !== "elaborador";
+  ui.documentsSection.hidden = currentUserRole !== "elaborador";
+  ui.flowSection.hidden = currentUserRole !== "elaborador";
+  if (currentUserRole === "elaborador") renderFlow();
 }
 
 function renderInstitutionalReports(reports) {
@@ -1830,9 +1832,11 @@ function hideInstitutionalReports() {
   ui.institutionalReportsSection.hidden = true;
   ui.pageHeading.hidden = false;
   ui.draftWorkspace.hidden = currentUserRole === "evaluador";
-  ui.documentsSection.hidden = currentUserRole === "evaluador";
-  ui.flowSection.hidden = currentUserRole === "evaluador";
-  if (currentUserRole !== "evaluador") renderFlow();
+  ui.editorSection.hidden = currentUserRole !== "elaborador";
+  ui.ownedDraftsSection.hidden = currentUserRole !== "elaborador";
+  ui.documentsSection.hidden = currentUserRole !== "elaborador";
+  ui.flowSection.hidden = currentUserRole !== "elaborador";
+  if (currentUserRole === "elaborador") renderFlow();
 }
 
 async function openInstitutionalReport(id) {
@@ -1843,8 +1847,9 @@ async function openInstitutionalReport(id) {
     ui.institutionalReportsSection.hidden = true;
     ui.pageHeading.hidden = false;
     ui.draftWorkspace.hidden = false;
-    ui.documentsSection.hidden = false;
-    ui.flowSection.hidden = false;
+    ui.editorSection.hidden = true;
+    ui.documentsSection.hidden = true;
+    ui.flowSection.hidden = true;
     showPreview({ branding });
   } catch (error) {
     handleRequestError(error, ui.institutionalReportsMessage);
@@ -1935,6 +1940,13 @@ async function startSession(user) {
   ui.previewButton.hidden = true;
   ui.submitReviewButton.hidden = user.role !== "elaborador";
   ui.submitReviewButton.disabled = true;
+  const authorWorkspace = user.role === "elaborador";
+  ui.editorSection.hidden = !authorWorkspace;
+  ui.editorHeading.hidden = !authorWorkspace;
+  ui.procedureProgress.hidden = !authorWorkspace;
+  ui.draftForm.hidden = !authorWorkspace;
+  ui.returnedEvaluation.hidden = true;
+  ui.ownedDraftsSection.hidden = !authorWorkspace;
 
   if (user.mustChangePassword) {
     ui.draftWorkspace.hidden = true;
@@ -1951,7 +1963,12 @@ async function startSession(user) {
     await loadEvaluatorInbox();
     return;
   }
-  if (!["elaborador", "administrador"].includes(user.role)) {
+  if (user.role === "administrador") {
+    ui.draftWorkspace.hidden = false;
+    await loadAdminApprovalQueue();
+    return;
+  }
+  if (user.role !== "elaborador") {
     ui.draftWorkspace.hidden = true;
     setMessage(ui.listMessage, errorMessages.forbidden);
     return;
@@ -2034,7 +2051,6 @@ async function loadDrafts() {
   try {
     const { procedures } = await request("/api/procedures");
     renderDrafts(procedures);
-    if (currentUserRole === "administrador") await loadAdminApprovalQueue();
   } catch (error) {
     handleRequestError(error, ui.listMessage);
   }
@@ -2536,6 +2552,7 @@ async function openAdministrativeApproval(id, discardChanges = false) {
     populateDraft(procedure);
     ui.evaluatorInbox.hidden = true;
     ui.evaluatorDetail.hidden = true;
+    ui.editorSection.hidden = false;
     ui.draftWorkspace.hidden = false;
     ui.adminApprovalSection.scrollIntoView({ behavior: "smooth", block: "start" });
     return true;
@@ -3131,10 +3148,12 @@ async function submitAdministrativeApproval(decision) {
     await request(`/api/admin/procedures/${encodeURIComponent(id)}/final-approval`, {
       method: "POST", csrf: true, body: { decision, observation }
     });
-    await openAdministrativeApproval(id, true);
+    currentDraft = null;
+    currentEvaluation = null;
+    ui.adminApprovalSection.hidden = true;
+    ui.editorSection.hidden = true;
     await loadAdminApprovalQueue();
-    await loadDrafts();
-    setMessage(ui.editorMessage, decision === "aprobar"
+    setMessage(ui.adminApprovalQueueMessage, decision === "aprobar"
       ? "Visto bueno registrado. El procedimiento quedó aprobado formalmente y vigente."
       : "Devolución administrativa registrada y notificada.", true);
   } catch (error) {
