@@ -1764,8 +1764,8 @@ function analyticsWorkbook(analytics) {
     { kind: "heading", values: ["Actividad por día", "Iniciados", "Envíos", "Evaluaciones", "Devoluciones", "Favorables"] },
     ...analytics.byDay.map(row => ({ values: [row.day, ...analyticsEventLabels.map(([key]) => Number(row[key] || 0))] })),
     { values: [] },
-    { kind: "heading", values: ["Actividad por proceso", "Iniciados", "Envíos", "Evaluaciones", "Devoluciones", "Favorables"] },
-    ...analytics.byProcess.map(row => ({ values: [`${row.processName} (${row.processCode})`, ...analyticsEventLabels.map(([key]) => Number(row[key] || 0))] }))
+    { kind: "heading", values: ["Proceso", "Procedimiento", "Iniciados", "Envíos", "Evaluaciones", "Devoluciones", "Favorables"] },
+    ...analytics.byProcess.map(row => ({ values: [`${row.processName} (${row.processCode})`, row.procedureName, ...analyticsEventLabels.map(([key]) => Number(row[key] || 0))] }))
   ];
   const usageRows = [
     { kind: "heading", values: ["Uso del sistema", "Valor"] },
@@ -1859,6 +1859,9 @@ function renderAnalytics(analytics) {
     process.scope = "row";
     process.textContent = `${row.processName} (${row.processCode})`;
     tr.append(process);
+    const procedure = document.createElement("td");
+    procedure.textContent = row.procedureName;
+    tr.append(procedure);
     for (const [key] of analyticsEventLabels) {
       const cell = document.createElement("td");
       cell.textContent = String(row[key] || 0);
@@ -1913,7 +1916,33 @@ async function loadAnalytics() {
   }
 }
 
-function showAnalytics() {
+async function loadAnalyticsProcesses() {
+  try {
+    const { processes } = await request("/api/admin/analytics/processes");
+    const selected = ui.analyticsProcess.value;
+    const allProcesses = document.createElement("option");
+    allProcesses.value = "";
+    allProcesses.textContent = "Todos los procesos";
+    ui.analyticsProcess.replaceChildren(allProcesses, ...buildProcessOptionGroups(processes));
+    ui.analyticsProcess.value = processes.some(process => process.code === selected) ? selected : "";
+  } catch (error) {
+    handleRequestError(error, ui.analyticsMessage);
+  }
+}
+
+function describeAnalyticsProcedureTable() {
+  const section = ui.analyticsByProcess.closest("section");
+  section.querySelector("h3").textContent = "Actividad por procedimiento";
+  const labels = ["Proceso", "Procedimiento", "Iniciados", "Envíos", "Evaluaciones", "Devoluciones", "Favorables"];
+  const headerRow = section.querySelector("thead tr");
+  while (headerRow.children.length < labels.length) headerRow.append(document.createElement("th"));
+  [...headerRow.children].forEach((header, index) => {
+    header.textContent = labels[index];
+  });
+  ui.emptyAnalyticsProcesses.textContent = "No hay eventos por procedimiento para estos filtros.";
+}
+
+async function showAnalytics() {
   if (!["administrador", "evaluador"].includes(currentUserRole)) return;
   const evaluatorView = currentUserRole === "evaluador";
   ui.analyticsTitle.textContent = evaluatorView ? "D1 · Mi analítica" : "D1 · Analítica";
@@ -1932,7 +1961,11 @@ function showAnalytics() {
   ui.evaluatorDetail.hidden = true;
   ui.flowSection.hidden = true;
   ui.documentsSection.hidden = true;
-  loadAnalytics();
+  if (!evaluatorView) {
+    describeAnalyticsProcedureTable();
+    await loadAnalyticsProcesses();
+  }
+  await loadAnalytics();
 }
 
 function hideAnalytics() {
@@ -2171,12 +2204,6 @@ async function loadProcesses() {
     placeholder.textContent = "Selecciona un proceso";
     const groups = buildProcessOptionGroups(processes);
     ui.processCode.replaceChildren(placeholder, ...groups);
-    if (currentUserRole === "administrador") {
-      const allProcesses = document.createElement("option");
-      allProcesses.value = "";
-      allProcesses.textContent = "Todos los procesos";
-      ui.analyticsProcess.replaceChildren(allProcesses, ...groups.map(group => group.cloneNode(true)));
-    }
     ui.processCode.disabled = Boolean(currentDraft);
     syncProcedureCode();
   } catch (error) {

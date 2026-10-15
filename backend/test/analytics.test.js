@@ -16,7 +16,7 @@ function analyticsPool(calls) {
     if (sql.includes("FROM app_sessions") && sql.includes("GROUP BY day")) return { rows: [{ day: "2026-10-03", count: 3 }] };
     if (sql.includes("FROM app_sessions")) return { rows: [{ totalLogins: 3, activeUsers: 2, lastLogin: "2026-10-03T12:00:00.000Z" }] };
     if (sql.includes("GROUP BY day")) return { rows: [{ day: "2026-10-03", eventType: "procedure_draft_created", count: 2 }] };
-    if (sql.includes("GROUP BY p.process_code")) return { rows: [{ processCode: "PD", processName: "Gestión del Desarrollo Económico", eventType: "procedure_draft_created", count: 2 }] };
+    if (sql.includes("GROUP BY p.process_code")) return { rows: [{ processCode: "PD", processName: "Gestión del Desarrollo Económico", procedureName: "Impulsar el desarrollo económico", eventType: "procedure_draft_created", count: 2 }] };
     return { rows: [{ eventType: "procedure_draft_created", count: 2 }] };
   } };
 }
@@ -31,6 +31,7 @@ test("admin analytics returns the complete productivity flow and real session us
   assert.equal(result.totals.procedure_favorable_concept_issued, 0);
   assert.equal(result.byDay[0].procedure_draft_created, 2);
   assert.equal(result.byProcess[0].processName, "Gestión del Desarrollo Económico");
+  assert.equal(result.byProcess[0].procedureName, "Impulsar el desarrollo económico");
   assert.deepEqual(result.usage, {
     totalLogins: 3, activeUsers: 2, lastLogin: "2026-10-03T12:00:00.000Z", byDay: [{ day: "2026-10-03", count: 3 }]
   });

@@ -132,6 +132,7 @@ test("private consoles serve only their own assets with a restrictive policy", a
     assert.match(draftScript, /ui\.submitReviewButton\.disabled = !canSubmit/);
     assert.match(draftScript, /\/api\/notifications\/read-all/);
     assert.match(draftScript, /"\/api\/admin\/analytics"/);
+    assert.match(draftScript, /"\/api\/admin\/analytics\/processes"/);
     assert.match(draftScript, /"\/api\/evaluator\/analytics"/);
     assert.match(draftHtml, /Últimos 15 días/);
     assert.match(draftHtml, /Últimos 60 días/);
@@ -202,6 +203,7 @@ test("notifications use session and analytics is scoped by role", async () => {
       if (sql.startsWith("UPDATE user_notifications SET read_at = COALESCE")) return { rows: [{ id: notificationId }] };
       if (sql.startsWith("UPDATE user_notifications SET read_at = now()")) return { rowCount: 1, rows: [] };
       if (sql.includes("FROM audit_events ae")) return { rows: [] };
+      if (sql.includes("FROM processes p WHERE p.active = TRUE")) return { rows: [{ code: "GD", name: "Gestión Documental" }] };
       throw new Error("Unexpected SQL: " + sql);
     },
     async end() {}
@@ -235,6 +237,9 @@ test("notifications use session and analytics is scoped by role", async () => {
     const analytics = await fetch(`${base}/api/admin/analytics?periodDays=7`, { headers });
     assert.equal(analytics.status, 200);
     assert.equal((await analytics.json()).analytics.periodDays, 7);
+    const processes = await fetch(`${base}/api/admin/analytics/processes`, { headers });
+    assert.equal(processes.status, 200);
+    assert.deepEqual((await processes.json()).processes, [{ code: "GD", name: "Gestión Documental" }]);
     assert.equal(calls.filter(call => call.sql.includes("FROM audit_events ae")).length, 6);
   } finally {
     await new Promise(resolve => server.close(resolve));

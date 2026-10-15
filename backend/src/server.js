@@ -355,6 +355,35 @@ export function createAppServer({ poolFactory = createPool, secureCookies, trust
         return;
       }
 
+      if (url.pathname === "/api/admin/analytics/processes" && req.method === "GET") {
+        let pool;
+        try {
+          pool = poolFactory();
+          const session = await getSession(pool, parseCookies(req.headers.cookie)[SESSION_COOKIE]);
+          if (!session) {
+            sendJson(res, 401, { ok: false, error: "unauthenticated" });
+            return;
+          }
+          if (session.user.mustChangePassword) {
+            sendJson(res, 403, { ok: false, error: "password_change_required" });
+            return;
+          }
+          if (!canPerform(session.user, ACTIONS.VIEW_ADMIN_ANALYTICS)) {
+            sendJson(res, 403, { ok: false, error: "forbidden" });
+            return;
+          }
+          const result = await pool.query(
+            "SELECT p.code, p.name FROM processes p WHERE p.active = TRUE ORDER BY p.name, p.code"
+          );
+          sendJson(res, 200, { ok: true, processes: result.rows });
+        } catch {
+          sendJson(res, 503, { ok: false, error: "analytics_processes_unavailable" });
+        } finally {
+          await pool?.end();
+        }
+        return;
+      }
+
       if (url.pathname === "/api/evaluator/analytics" && req.method === "GET") {
         let pool;
         try {

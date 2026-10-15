@@ -72,6 +72,7 @@ async function queryAnalytics(pool, { periodDays, processCode, role, evaluatorId
        AND ($4::text IS NULL OR u.role = $4)`;
   const productivityJoins = `FROM audit_events ae
        JOIN procedures p ON ae.entity_type = 'procedure' AND p.id = ae.entity_id
+       JOIN processes pr ON pr.code = p.process_code
        LEFT JOIN app_users u ON u.id = ae.actor_user_id`;
   const usageParams = evaluatorId ? [periodDays, evaluatorId] : [periodDays, role];
   const usageWhere = evaluatorId
@@ -81,14 +82,14 @@ async function queryAnalytics(pool, { periodDays, processCode, role, evaluatorId
   const [totalsResult, dailyResult, processResult, usageTotalsResult, usageDailyResult] = await Promise.all([
     pool.query(`SELECT ae.event_type AS "eventType", count(*)::int AS count ${productivityJoins} WHERE ${productivityWhere} GROUP BY ae.event_type`, productivityParams),
     pool.query(`SELECT to_char(ae.created_at AT TIME ZONE 'America/Bogota', 'YYYY-MM-DD') AS day, ae.event_type AS "eventType", count(*)::int AS count ${productivityJoins} WHERE ${productivityWhere} GROUP BY day, ae.event_type ORDER BY day DESC`, productivityParams),
-    pool.query(`SELECT p.process_code AS "processCode", p.name AS "processName", ae.event_type AS "eventType", count(*)::int AS count ${productivityJoins} WHERE ${productivityWhere} GROUP BY p.process_code, p.name, ae.event_type ORDER BY p.name, ae.event_type`, productivityParams),
+    pool.query(`SELECT p.process_code AS "processCode", pr.name AS "processName", p.name AS "procedureName", ae.event_type AS "eventType", count(*)::int AS count ${productivityJoins} WHERE ${productivityWhere} GROUP BY p.process_code, pr.name, p.name, ae.event_type ORDER BY pr.name, p.name, ae.event_type`, productivityParams),
     pool.query(`SELECT count(*)::int AS "totalLogins", count(DISTINCT s.user_id)::int AS "activeUsers", max(s.created_at) AS "lastLogin" ${usageJoins} WHERE ${usageWhere}`, usageParams),
     pool.query(`SELECT to_char(s.created_at AT TIME ZONE 'America/Bogota', 'YYYY-MM-DD') AS day, count(*)::int AS count ${usageJoins} WHERE ${usageWhere} GROUP BY day ORDER BY day DESC`, usageParams)
   ]);
   const totals = emptyCounts();
   for (const row of totalsResult.rows) totals[row.eventType] = Number(row.count);
   const byDay = buildProductivity(dailyResult.rows, row => row.day, row => ({ day: row.day }));
-  const byProcess = buildProductivity(processResult.rows, row => row.processCode, row => ({ processCode: row.processCode, processName: row.processName }));
+  const byProcess = buildProductivity(processResult.rows, row => `${row.processCode}:${row.procedureName}`, row => ({ processCode: row.processCode, processName: row.processName, procedureName: row.procedureName }));
   const usage = usageFromRows([...usageTotalsResult.rows, ...usageDailyResult.rows]);
   return { totals, byDay, byProcess, usage };
 }
