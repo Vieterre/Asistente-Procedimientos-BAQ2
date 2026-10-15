@@ -53,6 +53,12 @@
         </form>
       </section>
 
+      <section class="section password-section" id="mfaEnrollmentSection" aria-labelledby="mfaEnrollmentTitle" hidden>
+        <div class="section-heading"><div><h2 id="mfaEnrollmentTitle">Configurar segundo factor</h2><p>Antes de cambiar la contraseña temporal, configura tu aplicación de autenticación y confirma el código de seis dígitos.</p></div></div>
+        <div class="form-actions"><button class="secondary-button" id="beginMfaEnrollmentButton" type="button">Mostrar clave del autenticador</button><span class="form-message" id="mfaEnrollmentMessage" role="status" hidden></span></div>
+        <div id="mfaEnrollmentDetails" hidden><p>En la aplicación de autenticación, agrega una cuenta manualmente con esta clave:</p><p class="secret" id="mfaEnrollmentSecret"></p><form id="confirmMfaEnrollmentForm" class="form-grid"><div class="field"><label for="mfaEnrollmentCode">Código de confirmación</label><input id="mfaEnrollmentCode" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" required></div><div class="form-actions"><button class="primary-button" type="submit">Confirmar segundo factor</button></div></form></div>
+      </section>
+
       <div id="adminWorkspace" hidden>
         <section class="section" aria-labelledby="createTitle">
           <div class="section-heading"><div><h2 id="createTitle">Crear usuario</h2><p>El usuario recibirá una contraseña temporal y deberá cambiarla al ingresar.</p></div></div>
@@ -62,6 +68,11 @@
             <div class="field"><label for="newRole">Rol</label><select id="newRole" required><option value="elaborador">Elaborador</option><option value="evaluador">Evaluador</option></select></div>
             <div class="form-actions"><button class="primary-button" type="submit">Crear usuario</button><span class="form-message" id="createMessage" role="status" hidden></span></div>
           </form>
+        </section>
+
+        <section class="section" id="backupAdministratorSection" aria-labelledby="backupAdministratorTitle" hidden>
+          <div class="section-heading"><div><h2 id="backupAdministratorTitle">Administrador suplente</h2><p>Solo el Administrador titular puede crear una única cuenta suplente. Tendrá sus propias credenciales y segundo factor.</p></div></div>
+          <div class="form-actions"><button class="secondary-button" id="createBackupAdministratorButton" type="button">Crear administrador suplente</button><span class="form-message" id="backupAdministratorMessage" role="status" hidden></span></div>
         </section>
 
         <section class="section" aria-labelledby="usersTitle">
@@ -87,6 +98,18 @@
     <div class="process-options" id="processOptions" role="group" aria-label="Procesos disponibles"></div>
     <p class="form-message" id="processMessage" role="status" hidden></p>
     <div class="dialog-actions"><button class="secondary-button" id="cancelProcessButton" type="button">Cancelar</button><button class="primary-button" id="saveProcessButton" type="button">Guardar asignación</button></div>
+  </dialog>
+
+  <dialog id="backupAdministratorDialog" aria-labelledby="backupAdministratorDialogTitle">
+    <div class="dialog-heading"><h2 id="backupAdministratorDialogTitle">Crear administrador suplente</h2><button class="icon-close" type="button" id="closeBackupAdministratorButton" aria-label="Cerrar" title="Cerrar">&times;</button></div>
+    <p>Esta es la única cuenta suplente permitida. La persona configurará su propio autenticador al ingresar por primera vez.</p>
+    <form id="backupAdministratorForm" class="form-grid">
+      <div class="field"><label for="backupAdministratorUsername">Nombre de usuario</label><input id="backupAdministratorUsername" autocomplete="off" pattern="[A-Za-z][A-Za-z0-9]{3,31}" maxlength="32" required spellcheck="false"><small>Entre 4 y 32 letras o números. Debe empezar por una letra.</small></div>
+      <div class="field"><label for="backupAdministratorName">Nombre completo</label><input id="backupAdministratorName" autocomplete="off" maxlength="120" required></div>
+      <label class="process-option"><input id="backupAdministratorAcknowledgement" type="checkbox" required><span>Confirmo que esta cuenta será asignada a una persona suplente autorizada.</span></label>
+      <div class="dialog-actions"><button class="secondary-button" id="cancelBackupAdministratorButton" type="button">Cancelar</button><button class="primary-button" type="submit">Crear cuenta suplente</button></div>
+      <p class="form-message" id="backupAdministratorDialogMessage" role="status" hidden></p>
+    </form>
   </dialog>
 </body>
 </html>

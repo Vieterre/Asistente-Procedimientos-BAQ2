@@ -5,7 +5,7 @@ const PRODUCTIVITY_EVENT_TYPES = Object.freeze([
   "procedure_returned_for_corrections",
   "procedure_favorable_concept_issued"
 ]);
-const ALLOWED_PERIODS = new Set([7, 30, 90, 365]);
+const ALLOWED_PERIODS = new Set([1, 7, 15, 30, 60, 90]);
 const ALLOWED_ROLES = new Set(["elaborador", "evaluador", "administrador"]);
 
 export class AnalyticsError extends Error {

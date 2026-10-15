@@ -39,7 +39,24 @@ export async function listAccounts(pool) {
                       FROM user_processes up WHERE up.user_id = u.id), ARRAY[]::text[]) AS process_codes
        FROM app_users u ORDER BY u.created_at, u.id`
   );
-  return result.rows.map(publicAccount);
+  let administratorPosition = 0;
+  return result.rows.map(row => {
+    const account = publicAccount(row);
+    if (account.role === ROLES.ADMIN) {
+      administratorPosition += 1;
+      account.administratorType = administratorPosition === 1 ? "titular" : "suplente";
+    }
+    return account;
+  });
+}
+
+function validateAccountDetails({ username, displayName }) {
+  const normalizedUsername = String(username || "").trim().toLowerCase();
+  const normalizedName = String(displayName || "").trim();
+  if (!/^[a-z][a-z0-9]{3,31}$/.test(normalizedUsername) || !normalizedName || normalizedName.length > 120) {
+    throw new UserManagementError("invalid_user_details", 400);
+  }
+  return { normalizedUsername, normalizedName };
 }
 
 function validateProcessCodes(processCodes) {
@@ -145,10 +162,8 @@ export async function setAccountProcessAssignments(pool, { actor, targetId, proc
 }
 
 export async function createAccount(pool, { actor, username, displayName, role }) {
-  const normalizedUsername = String(username || "").trim().toLowerCase();
-  const normalizedName = String(displayName || "").trim();
-  if (!/^[a-z][a-z0-9]{3,31}$/.test(normalizedUsername) || !normalizedName || normalizedName.length > 120 ||
-      ![ROLES.ELABORADOR, ROLES.EVALUADOR].includes(role)) {
+  const { normalizedUsername, normalizedName } = validateAccountDetails({ username, displayName });
+  if (![ROLES.ELABORADOR, ROLES.EVALUADOR].includes(role)) {
     throw new UserManagementError("invalid_user_details", 400);
   }
 
@@ -176,6 +191,49 @@ export async function createAccount(pool, { actor, username, displayName, role }
     );
     await client.query("COMMIT");
     return { user: publicAccount(result.rows[0]), initialPassword: password };
+  } catch (error) {
+    await client.query("ROLLBACK");
+    if (error.code === "23505") throw new UserManagementError("username_taken", 409);
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+export async function createBackupAdministrator(pool, { actor, username, displayName }) {
+  const { normalizedUsername, normalizedName } = validateAccountDetails({ username, displayName });
+  const password = initialPassword();
+
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    await client.query("SELECT pg_advisory_xact_lock(5802001, 2)");
+    const actorResult = await client.query(
+      "SELECT role, active FROM app_users WHERE id = $1 FOR UPDATE",
+      [actor.id]
+    );
+    if (actorResult.rows[0]?.role !== ROLES.ADMIN || actorResult.rows[0]?.active !== true) {
+      throw new UserManagementError("forbidden", 403);
+    }
+    const administrators = await client.query(
+      "SELECT id FROM app_users WHERE role = 'administrador' ORDER BY created_at, id FOR UPDATE"
+    );
+    if (administrators.rows.length !== 1 || administrators.rows[0].id !== actor.id) {
+      throw new UserManagementError("backup_administrator_not_available", 409);
+    }
+    const result = await client.query(
+      `INSERT INTO app_users (id, username, email, display_name, role, password_hash, active, mfa_enabled, mfa_secret_ciphertext, must_change_password)
+       VALUES ($1, $2, NULL, $3, 'administrador', $4, TRUE, FALSE, NULL, TRUE)
+       RETURNING id, username, email, display_name, role, active, mfa_enabled, must_change_password`,
+      [randomUUID(), normalizedUsername, normalizedName, hashPassword(password)]
+    );
+    await client.query(
+      `INSERT INTO audit_events (id, actor_user_id, event_type, entity_type, entity_id)
+       VALUES ($1, $2, 'backup_administrator_created', 'app_user', $3)`,
+      [randomUUID(), actor.id, result.rows[0].id]
+    );
+    await client.query("COMMIT");
+    return { user: { ...publicAccount(result.rows[0]), administratorType: "suplente" }, initialPassword: password };
   } catch (error) {
     await client.query("ROLLBACK");
     if (error.code === "23505") throw new UserManagementError("username_taken", 409);

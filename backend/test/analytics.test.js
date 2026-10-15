@@ -63,9 +63,17 @@ test("analytics rejects unsupported filters before querying data", async () => {
   let queried = false;
   const pool = { async query() { queried = true; return { rows: [] }; } };
   await assert.rejects(getAdminAnalytics(pool, { periodDays: "10" }), { code: "invalid_analytics_period" });
+  await assert.rejects(getAdminAnalytics(pool, { periodDays: "365" }), { code: "invalid_analytics_period" });
   await assert.rejects(getAdminAnalytics(pool, { processCode: "PD; DROP TABLE" }), { code: "invalid_analytics_process" });
   await assert.rejects(getAdminAnalytics(pool, { role: "root" }), { code: "invalid_analytics_role" });
   await assert.rejects(getEvaluatorAnalytics(pool, { id: "a" }, { processCode: "PD" }), { code: "invalid_analytics_filter" });
   assert.equal(queried, false);
   assert.ok(new AnalyticsError("invalid_filter") instanceof Error);
+});
+
+test("analytics accepts the operational periods in days", async () => {
+  for (const periodDays of [1, 7, 15, 30, 60, 90]) {
+    const result = await getAdminAnalytics(analyticsPool([]), { periodDays: String(periodDays) });
+    assert.equal(result.periodDays, periodDays);
+  }
 });

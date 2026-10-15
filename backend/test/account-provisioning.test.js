@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { createAppServer } from "../src/server.js";
-import { createAccount, resetAccountPassword } from "../src/security/admin-users.js";
+import { createAccount, createBackupAdministrator, resetAccountPassword } from "../src/security/admin-users.js";
 import { hashToken, loginUser } from "../src/security/auth.js";
 import { hashPassword, verifyPassword } from "../src/security/passwords.js";
 
@@ -64,6 +64,51 @@ test("account creation rejects administrator roles and malformed usernames", asy
       status: 400
     });
   }
+});
+
+test("only the sole titular administrator can create the one backup administrator pending personal MFA enrollment", async () => {
+  const calls = [];
+  const client = {
+    async query(sql, params) {
+      calls.push({ sql, params });
+      if (sql === "BEGIN" || sql === "COMMIT" || sql === "ROLLBACK" || sql.startsWith("SELECT pg_advisory_xact_lock")) return { rows: [] };
+      if (sql.startsWith("SELECT role, active FROM app_users")) return { rows: [{ role: "administrador", active: true }] };
+      if (sql.startsWith("SELECT id FROM app_users WHERE role = 'administrador'")) return { rows: [{ id: adminId }] };
+      if (sql.startsWith("INSERT INTO app_users")) return { rows: [{
+        id: newUserId, username: params[1], email: null, display_name: params[2], role: "administrador",
+        active: true, mfa_enabled: false, must_change_password: true
+      }] };
+      if (sql.startsWith("INSERT INTO audit_events")) return { rows: [] };
+      throw new Error(`Unexpected SQL: ${sql}`);
+    },
+    release() {}
+  };
+  const result = await createBackupAdministrator({ async connect() { return client; } }, {
+    actor: { id: adminId, role: "administrador" },
+    username: "AdminSuplente", displayName: "Administración Suplente",
+    mfaEncryptionKey: "12345678901234567890123456789012"
+  });
+  assert.equal(result.user.administratorType, "suplente");
+  assert.equal(result.user.mfaEnabled, false);
+  assert.match(result.initialPassword, /^[A-Za-z0-9]{20}$/);
+  assert.equal(calls.some(call => call.sql.includes("backup_administrator_created")), true);
+  assert.equal(calls.at(-1).sql, "COMMIT");
+});
+
+test("a backup administrator cannot be created when a second administration account already exists", async () => {
+  const client = {
+    async query(sql) {
+      if (sql === "BEGIN" || sql === "ROLLBACK" || sql.startsWith("SELECT pg_advisory_xact_lock")) return { rows: [] };
+      if (sql.startsWith("SELECT role, active FROM app_users")) return { rows: [{ role: "administrador", active: true }] };
+      if (sql.startsWith("SELECT id FROM app_users WHERE role = 'administrador'")) return { rows: [{ id: adminId }, { id: newUserId }] };
+      throw new Error(`Unexpected SQL: ${sql}`);
+    },
+    release() {}
+  };
+  await assert.rejects(createBackupAdministrator({ async connect() { return client; } }, {
+    actor: { id: adminId, role: "administrador" }, username: "AdminSuplente", displayName: "Administración Suplente",
+    mfaEncryptionKey: "12345678901234567890123456789012"
+  }), { code: "backup_administrator_not_available", status: 409 });
 });
 
 test("duplicate usernames are rejected without returning a password", async () => {

@@ -120,7 +120,7 @@ test("private consoles serve only their own assets with a restrictive policy", a
     for (const id of ["flowCanvas", "zoomOutButton", "zoomInButton", "fitFlowButton", "resetFlowZoomButton", "flowZoomValue", "previewButton", "previewDialog", "previewContent", "printPreviewButton"]) {
       assert.match(draftHtml, new RegExp(`id="${id}"`));
     }
-    for (const id of ["notificationBell", "notificationPopover", "notificationCount", "markAllNotificationsRead", "analyticsButton", "analyticsSection", "analyticsPeriod", "analyticsProcess", "analyticsRole", "analyticsByDay", "analyticsByProcess", "institutionalReportsButton", "institutionalReportsSection", "institutionalReportsList"]) {
+    for (const id of ["notificationBell", "notificationPopover", "notificationCount", "markAllNotificationsRead", "analyticsButton", "analyticsSection", "analyticsPeriod", "analyticsProcess", "analyticsRole", "analyticsByDay", "analyticsByProcess", "exportAnalyticsButton", "institutionalReportsButton", "institutionalReportsSection", "institutionalReportsList"]) {
       assert.match(draftHtml, new RegExp(`id="${id}"`));
     }
     assert.match(draftHtml, /Reglas metodológicas del modelado/);
@@ -133,6 +133,10 @@ test("private consoles serve only their own assets with a restrictive policy", a
     assert.match(draftScript, /\/api\/notifications\/read-all/);
     assert.match(draftScript, /"\/api\/admin\/analytics"/);
     assert.match(draftScript, /"\/api\/evaluator\/analytics"/);
+    assert.match(draftHtml, /Últimos 15 días/);
+    assert.match(draftHtml, /Últimos 60 días/);
+    assert.doesNotMatch(draftHtml, /Últimos 12 meses/);
+    assert.match(draftScript, /function downloadAnalyticsWorkbook\(\)/);
     assert.match(draftScript, /Autocontrol de actividad y uso/);
     assert.match(draftScript, /\/api\/admin\/institutional-reports/);
     assert.match(draftScript, /\/api\/reports\/procedures/);

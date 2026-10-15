@@ -4,10 +4,14 @@ const ui = Object.fromEntries([
   "passwordSection", "passwordIntro", "passwordForm", "currentPassword", "newPassword",
   "confirmPassword", "passwordMessage", "adminWorkspace", "createForm", "newUsername",
   "displayName", "newRole", "createMessage", "usersCount", "usersMessage", "usersBody",
+  "mfaEnrollmentSection", "beginMfaEnrollmentButton", "mfaEnrollmentMessage", "mfaEnrollmentDetails", "mfaEnrollmentSecret", "confirmMfaEnrollmentForm", "mfaEnrollmentCode",
   "refreshUsersButton", "credentialDialog", "issuedUsername", "issuedPassword",
   "copyPasswordButton", "closeCredentialButton", "doneCredentialButton", "credentialMessage",
   "processDialog", "processTitle", "processOptions", "processMessage", "saveProcessButton",
-  "closeProcessButton", "cancelProcessButton"
+  "closeProcessButton", "cancelProcessButton", "backupAdministratorSection", "createBackupAdministratorButton",
+  "backupAdministratorMessage", "backupAdministratorDialog", "backupAdministratorForm", "backupAdministratorUsername",
+  "backupAdministratorName", "backupAdministratorAcknowledgement", "backupAdministratorDialogMessage",
+  "closeBackupAdministratorButton", "cancelBackupAdministratorButton"
 ].map(id => [id, document.getElementById(id)]));
 
 let csrfToken = "";
@@ -18,6 +22,8 @@ const errors = {
   invalid_credentials: "Nombre de usuario o contraseña incorrectos.",
   mfa_required: "El código del autenticador no coincide o ya venció.",
   mfa_not_configured: "El autenticador no está disponible. Contacta al administrador.",
+  mfa_setup_not_allowed: "El segundo factor ya está configurado o esta cuenta no puede configurarlo ahora.",
+  mfa_enrollment_unavailable: "No fue posible configurar el segundo factor. Inténtalo de nuevo.",
   too_many_attempts: "Demasiados intentos. Espera 15 minutos.",
   unauthenticated: "La sesión terminó. Ingresa de nuevo.",
   csrf_failed: "La sesión cambió. Ingresa de nuevo.",
@@ -29,6 +35,8 @@ const errors = {
   inactive_user: "Activa el usuario antes de restablecer su contraseña.",
   last_admin: "No se puede desactivar al último administrador activo.",
   admin_reset_not_supported: "La contraseña del administrador se cambia desde su propia sesión.",
+  backup_administrator_not_available: "Ya existe una cuenta suplente o esta cuenta no es la Administración titular.",
+  mfa_configuration_unavailable: "No fue posible preparar el segundo factor. Inténtalo de nuevo o contacta al responsable técnico.",
   invalid_process_assignment: "Selecciona procesos activos y vuelve a intentarlo.",
   invalid_process_assignment_target: "Solo se pueden asignar procesos a cuentas de Elaborador o Evaluador."
 };
@@ -78,6 +86,7 @@ function clearSession() {
   ui.passwordForm.reset();
   hideCredential();
   hideProcessDialog();
+  hideBackupAdministratorDialog();
 }
 
 function showSession(user) {
@@ -88,6 +97,9 @@ function showSession(user) {
   ui.sessionIdentity.textContent = user.username || user.displayName;
   ui.welcomeText.textContent = `${user.displayName} · ${user.role}`;
   ui.passwordSection.classList.toggle("required", Boolean(user.mustChangePassword));
+  ui.mfaEnrollmentSection.hidden = !(user.role === "administrador" && user.mustChangePassword && !user.mfaEnabled);
+  ui.mfaEnrollmentDetails.hidden = true;
+  ui.mfaEnrollmentSecret.textContent = "";
   ui.passwordIntro.textContent = user.mustChangePassword
     ? "Debes cambiar la contraseña temporal para continuar. Usa al menos 15 caracteres."
     : "Usa al menos 15 caracteres. Al cambiarla, se cerrarán tus sesiones.";
@@ -113,6 +125,9 @@ async function refreshUsers() {
     const { users } = await request("/api/admin/users");
     ui.usersBody.replaceChildren(...users.map(userRow));
     ui.usersCount.textContent = `${users.length} usuario${users.length === 1 ? "" : "s"}`;
+    const administrators = users.filter(user => user.role === "administrador");
+    const currentAdministrator = administrators.find(user => user.id === currentUser?.id);
+    ui.backupAdministratorSection.hidden = !(currentAdministrator?.administratorType === "titular" && administrators.length === 1);
   } catch (error) {
     sessionExpired(error, ui.usersMessage);
   }
@@ -141,7 +156,7 @@ function userRow(user) {
   username.textContent = user.username || "Sin asignar";
   cell(row, username);
   cell(row, user.displayName);
-  cell(row, user.role);
+  cell(row, user.administratorType ? `Administración ${user.administratorType}` : user.role);
   const processCodes = Array.isArray(user.processCodes) ? user.processCodes : [];
   cell(row, processCodes.length ? processCodes.join(", ") : "Sin procesos");
   const status = document.createElement("span");
@@ -188,6 +203,7 @@ async function resetPassword(user) {
 function showCredential(username, password) {
   ui.issuedUsername.textContent = username;
   ui.issuedPassword.textContent = password;
+  ui.copyPasswordButton.textContent = "Copiar contraseña";
   message(ui.credentialMessage, "");
   ui.credentialDialog.showModal();
 }
@@ -204,6 +220,12 @@ function hideProcessDialog() {
   processAccount = null;
   ui.processOptions.replaceChildren();
   message(ui.processMessage, "");
+}
+
+function hideBackupAdministratorDialog() {
+  if (ui.backupAdministratorDialog.open) ui.backupAdministratorDialog.close();
+  ui.backupAdministratorForm.reset();
+  message(ui.backupAdministratorDialogMessage, "");
 }
 
 function processOption(process, assignedCodes) {
@@ -325,6 +347,33 @@ ui.createForm.addEventListener("submit", async event => {
   }
 });
 
+ui.createBackupAdministratorButton.addEventListener("click", () => {
+  message(ui.backupAdministratorMessage, "");
+  message(ui.backupAdministratorDialogMessage, "");
+  ui.backupAdministratorDialog.showModal();
+});
+
+ui.backupAdministratorForm.addEventListener("submit", async event => {
+  event.preventDefault();
+  const button = ui.backupAdministratorForm.querySelector("button[type=submit]");
+  button.disabled = true;
+  message(ui.backupAdministratorDialogMessage, "");
+  try {
+    const result = await request("/api/admin/backup-administrator", {
+      method: "POST", csrf: true,
+      body: { username: ui.backupAdministratorUsername.value.trim(), displayName: ui.backupAdministratorName.value.trim() }
+    });
+    hideBackupAdministratorDialog();
+    showCredential(result.user.username, result.initialPassword);
+    message(ui.backupAdministratorMessage, "Administrador suplente creado. Entrega las credenciales por un canal seguro.", true);
+    await refreshUsers();
+  } catch (error) {
+    sessionExpired(error, ui.backupAdministratorDialogMessage);
+  } finally {
+    button.disabled = false;
+  }
+});
+
 ui.logoutButton.addEventListener("click", async () => {
   ui.logoutButton.disabled = true;
   try {
@@ -337,14 +386,53 @@ ui.logoutButton.addEventListener("click", async () => {
   }
 });
 
+ui.beginMfaEnrollmentButton.addEventListener("click", async () => {
+  ui.beginMfaEnrollmentButton.disabled = true;
+  message(ui.mfaEnrollmentMessage, "");
+  try {
+    const result = await request("/api/auth/mfa/enrollment", { method: "POST", csrf: true });
+    ui.mfaEnrollmentSecret.textContent = result.enrollment.secret;
+    ui.mfaEnrollmentDetails.hidden = false;
+    message(ui.mfaEnrollmentMessage, "Configura la clave en tu aplicación de autenticación y confirma el código.", true);
+  } catch (error) {
+    sessionExpired(error, ui.mfaEnrollmentMessage);
+  } finally {
+    ui.beginMfaEnrollmentButton.disabled = false;
+  }
+});
+
+ui.confirmMfaEnrollmentForm.addEventListener("submit", async event => {
+  event.preventDefault();
+  const button = ui.confirmMfaEnrollmentForm.querySelector("button[type=submit]");
+  button.disabled = true;
+  message(ui.mfaEnrollmentMessage, "");
+  try {
+    await request("/api/auth/mfa/enrollment/confirm", {
+      method: "POST", csrf: true, body: { code: ui.mfaEnrollmentCode.value.trim() }
+    });
+    currentUser.mfaEnabled = true;
+    ui.mfaEnrollmentSection.hidden = true;
+    ui.passwordIntro.textContent = "Segundo factor confirmado. Ahora cambia la contraseña temporal para continuar.";
+    message(ui.passwordMessage, "Segundo factor confirmado. Cambia ahora la contraseña temporal.", true);
+  } catch (error) {
+    sessionExpired(error, ui.mfaEnrollmentMessage);
+  } finally {
+    button.disabled = false;
+  }
+});
+
 ui.refreshUsersButton.addEventListener("click", refreshUsers);
 ui.closeCredentialButton.addEventListener("click", hideCredential);
 ui.doneCredentialButton.addEventListener("click", hideCredential);
 ui.credentialDialog.addEventListener("close", hideCredential);
 ui.copyPasswordButton.addEventListener("click", async () => {
   try {
-    await navigator.clipboard.writeText(ui.issuedPassword.textContent);
-    message(ui.credentialMessage, "Contraseña copiada.", true);
+    const credentials = [
+      `Usuario: ${ui.issuedUsername.textContent}`,
+      `Contraseña: ${ui.issuedPassword.textContent}`
+    ].join("\n");
+    await navigator.clipboard.writeText(credentials);
+    message(ui.credentialMessage, "Credenciales copiadas.", true);
   } catch {
     message(ui.credentialMessage, "No se pudo copiar. Selecciona la contraseña manualmente.");
   }
@@ -357,6 +445,9 @@ ui.processDialog.addEventListener("close", () => {
   ui.processOptions.replaceChildren();
   message(ui.processMessage, "");
 });
+ui.closeBackupAdministratorButton.addEventListener("click", hideBackupAdministratorDialog);
+ui.cancelBackupAdministratorButton.addEventListener("click", hideBackupAdministratorDialog);
+ui.backupAdministratorDialog.addEventListener("close", hideBackupAdministratorDialog);
 
 csrfToken = sessionStorage.getItem("account_csrf") || "";
 if (csrfToken) {

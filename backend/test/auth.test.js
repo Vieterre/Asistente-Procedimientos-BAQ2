@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { createAppServer } from "../src/server.js";
 import { hashPassword } from "../src/security/passwords.js";
-import { hashToken, loginUser } from "../src/security/auth.js";
+import { beginAdministratorMfaEnrollment, confirmAdministratorMfaEnrollment, hashToken, loginUser } from "../src/security/auth.js";
 import { encryptSecret, generateTotpSecret, totpCode } from "../src/security/mfa.js";
 
 test("login, session lookup, and logout are protected", async () => {
@@ -128,6 +128,38 @@ test("administrator login requires the matching MFA code before creating a sessi
   const result = await loginUser(pool, { ...details, otp: totpCode(secret) });
   assert.equal(result.user.role, "administrador");
   assert.equal(calls.filter(sql => sql.startsWith("INSERT INTO app_sessions")).length, 1);
+});
+
+test("a pending backup administrator enrolls a personal second factor before changing the temporary password", async () => {
+  const key = "test-only-mfa-encryption-key-with-enough-length";
+  const user = {
+    id: "99999999-9999-4999-8999-999999999999", username: "adminsuplente", role: "administrador",
+    active: true, must_change_password: true, mfa_enabled: false, mfa_secret_ciphertext: null
+  };
+  const client = {
+    async query(sql, params) {
+      if (sql === "BEGIN" || sql === "COMMIT" || sql === "ROLLBACK" || sql.startsWith("INSERT INTO audit_events")) return { rows: [] };
+      if (sql.includes("SELECT username, role, active")) return { rows: [user] };
+      if (sql.includes("SELECT role, active")) return { rows: [user] };
+      if (sql.startsWith("UPDATE app_users SET mfa_secret_ciphertext")) {
+        user.mfa_secret_ciphertext = params[1];
+        return { rows: [] };
+      }
+      if (sql.startsWith("UPDATE app_users SET mfa_enabled")) {
+        user.mfa_enabled = true;
+        return { rows: [] };
+      }
+      throw new Error(`Unexpected SQL: ${sql}`);
+    },
+    release() {}
+  };
+  const pool = { async connect() { return client; } };
+  const enrollment = await beginAdministratorMfaEnrollment(pool, { userId: user.id, mfaEncryptionKey: key });
+  assert.match(enrollment.secret, /^[A-Z2-7]+$/);
+  assert.match(enrollment.uri, /^otpauth:/);
+  assert.notEqual(user.mfa_secret_ciphertext, null);
+  await confirmAdministratorMfaEnrollment(pool, { userId: user.id, code: totpCode(enrollment.secret), mfaEncryptionKey: key });
+  assert.equal(user.mfa_enabled, true);
 });
 
 test("administrator HTTP login, session lookup, and logout require MFA", async () => {

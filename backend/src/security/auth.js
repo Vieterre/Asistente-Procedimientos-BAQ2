@@ -1,6 +1,6 @@
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { hashPassword, verifyPassword } from "./passwords.js";
-import { decryptSecret, verifyTotp } from "./mfa.js";
+import { decryptSecret, encryptSecret, generateTotpSecret, makeOtpAuthUri, verifyTotp } from "./mfa.js";
 import { readServiceCredential } from "./service-credentials.js";
 
 export const SESSION_COOKIE = "__Host-asistente_session";
@@ -35,6 +35,7 @@ function publicUser(row) {
     email: row.email,
     displayName: row.display_name,
     role: row.role,
+    mfaEnabled: row.mfa_enabled,
     mustChangePassword: row.must_change_password
   };
 }
@@ -72,14 +73,17 @@ export async function loginUser(pool, { username, email, password, otp, request,
     throw new AuthError();
   }
   if (row.role === "administrador") {
-    if (!row.mfa_enabled || !row.mfa_secret_ciphertext) throw new AuthError("mfa_not_configured", 503);
-    let secret;
-    try {
-      secret = decryptSecret(row.mfa_secret_ciphertext, mfaEncryptionKey);
-    } catch {
-      throw new AuthError("mfa_not_configured", 503);
+    if (!row.mfa_enabled || !row.mfa_secret_ciphertext) {
+      if (!row.must_change_password) throw new AuthError("mfa_not_configured", 503);
+    } else {
+      let secret;
+      try {
+        secret = decryptSecret(row.mfa_secret_ciphertext, mfaEncryptionKey);
+      } catch {
+        throw new AuthError("mfa_not_configured", 503);
+      }
+      if (!verifyTotp(secret, otp)) throw new AuthError("mfa_required", 401);
     }
-    if (!verifyTotp(secret, otp)) throw new AuthError("mfa_required", 401);
   }
   const session = await createSession(pool, row, request, clientAddress);
   return { user: publicUser(row), ...session };
@@ -89,7 +93,7 @@ export async function getSession(pool, token) {
   if (!token) return null;
   const result = await pool.query(
     `SELECT s.id AS session_id, s.csrf_token_hash, u.id, u.username, u.email,
-            u.display_name, u.role, u.must_change_password
+            u.display_name, u.role, u.mfa_enabled, u.must_change_password
      FROM app_sessions s
      JOIN app_users u ON u.id = s.user_id
      WHERE s.token_hash = $1
@@ -107,6 +111,78 @@ export async function getSession(pool, token) {
     csrfTokenHash: row.csrf_token_hash,
     user: publicUser(row)
   };
+}
+
+export async function beginAdministratorMfaEnrollment(pool, { userId, mfaEncryptionKey = process.env.MFA_ENCRYPTION_KEY || readServiceCredential("mfa_key") }) {
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    const result = await client.query(
+      `SELECT username, role, active, must_change_password, mfa_enabled, mfa_secret_ciphertext
+         FROM app_users WHERE id = $1 FOR UPDATE`,
+      [userId]
+    );
+    const user = result.rows[0];
+    if (user?.role !== "administrador" || user.active !== true || user.must_change_password !== true || user.mfa_enabled === true) {
+      throw new AuthError("mfa_setup_not_allowed", 403);
+    }
+    let secret;
+    try {
+      secret = user.mfa_secret_ciphertext
+        ? decryptSecret(user.mfa_secret_ciphertext, mfaEncryptionKey)
+        : generateTotpSecret();
+      if (!user.mfa_secret_ciphertext) {
+        await client.query(
+          "UPDATE app_users SET mfa_secret_ciphertext = $2, updated_at = now() WHERE id = $1",
+          [userId, encryptSecret(secret, mfaEncryptionKey)]
+        );
+      }
+    } catch {
+      throw new AuthError("mfa_not_configured", 503);
+    }
+    await client.query("COMMIT");
+    return { secret, uri: makeOtpAuthUri({ secret, email: user.username, issuer: "Asistente de Procedimientos" }) };
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+export async function confirmAdministratorMfaEnrollment(pool, { userId, code, mfaEncryptionKey = process.env.MFA_ENCRYPTION_KEY || readServiceCredential("mfa_key") }) {
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    const result = await client.query(
+      `SELECT role, active, must_change_password, mfa_enabled, mfa_secret_ciphertext
+         FROM app_users WHERE id = $1 FOR UPDATE`,
+      [userId]
+    );
+    const user = result.rows[0];
+    if (user?.role !== "administrador" || user.active !== true || user.must_change_password !== true || user.mfa_enabled === true || !user.mfa_secret_ciphertext) {
+      throw new AuthError("mfa_setup_not_allowed", 403);
+    }
+    let secret;
+    try {
+      secret = decryptSecret(user.mfa_secret_ciphertext, mfaEncryptionKey);
+    } catch {
+      throw new AuthError("mfa_not_configured", 503);
+    }
+    if (!verifyTotp(secret, code)) throw new AuthError("mfa_required", 401);
+    await client.query("UPDATE app_users SET mfa_enabled = TRUE, updated_at = now() WHERE id = $1", [userId]);
+    await client.query(
+      `INSERT INTO audit_events (id, actor_user_id, event_type, entity_type, entity_id)
+       VALUES ($1, $2, 'administrator_mfa_enrolled', 'app_user', $2)`,
+      [randomUUID(), userId]
+    );
+    await client.query("COMMIT");
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
 }
 
 export async function revokeSession(pool, token) {

@@ -3,9 +3,9 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { checkDatabase, createPool } from "./db/pool.js";
-import { AuthError, SESSION_COOKIE, changePassword, cookieOptions, getSession, hashToken, loginUser, parseCookies, revokeSession } from "./security/auth.js";
+import { AuthError, SESSION_COOKIE, beginAdministratorMfaEnrollment, changePassword, confirmAdministratorMfaEnrollment, cookieOptions, getSession, hashToken, loginUser, parseCookies, revokeSession } from "./security/auth.js";
 import { ACTIONS, canPerform } from "./domain/permissions.js";
-import { UserManagementError, createAccount, getAccountProcessAssignments, listAccounts, resetAccountPassword, setAccountActive, setAccountProcessAssignments } from "./security/admin-users.js";
+import { UserManagementError, createAccount, createBackupAdministrator, getAccountProcessAssignments, listAccounts, resetAccountPassword, setAccountActive, setAccountProcessAssignments } from "./security/admin-users.js";
 import { clientIp } from "./security/client-ip.js";
 import { DraftError, createDraft, getAssignedProcedure, getOwnDraft, getProcedureReport, listAssignedProcedures, listInstitutionalReports, listOwnDrafts, listProcessEvaluators, startAssignedEvaluation, submitOwnDraft, updateOwnDraft } from "./domain/drafts.js";
 import { decideAdministrativeApproval, decideAssignedEvaluation, evaluationRubric, getAdministrativeApprovalProcedure, getAssignedEvaluation, getOwnEvaluationFeedback, listPendingAdministrativeApprovals, saveAssignedEvaluation, saveAuthorEvaluationResponses } from "./domain/evaluations.js";
@@ -204,6 +204,43 @@ export function createAppServer({ poolFactory = createPool, secureCookies, trust
             sendJson(res, error.status, { ok: false, error: error.code });
           } else {
             sendJson(res, 503, { ok: false, error: "password_change_unavailable" });
+          }
+        } finally {
+          await pool?.end();
+        }
+        return;
+      }
+
+      const mfaEnrollmentConfirmation = url.pathname === "/api/auth/mfa/enrollment/confirm" && req.method === "POST";
+      if ((url.pathname === "/api/auth/mfa/enrollment" && req.method === "POST") || mfaEnrollmentConfirmation) {
+        let pool;
+        try {
+          pool = poolFactory();
+          const session = await getSession(pool, parseCookies(req.headers.cookie)[SESSION_COOKIE]);
+          const csrfToken = String(req.headers["x-csrf-token"] || "");
+          if (!session) {
+            sendJson(res, 401, { ok: false, error: "unauthenticated" });
+            return;
+          }
+          if (!csrfToken || hashToken(csrfToken) !== session.csrfTokenHash) {
+            sendJson(res, 403, { ok: false, error: "csrf_failed" });
+            return;
+          }
+          if (mfaEnrollmentConfirmation) {
+            const body = await readJson(req);
+            await confirmAdministratorMfaEnrollment(pool, { userId: session.user.id, code: body.code });
+            sendJson(res, 200, { ok: true });
+          } else {
+            const enrollment = await beginAdministratorMfaEnrollment(pool, { userId: session.user.id });
+            sendJson(res, 200, { ok: true, enrollment });
+          }
+        } catch (error) {
+          if (error.message === "request_too_large" || error.message === "invalid_json") {
+            sendJson(res, 400, { ok: false, error: error.message });
+          } else if (error instanceof AuthError) {
+            sendJson(res, error.status, { ok: false, error: error.code });
+          } else {
+            sendJson(res, 503, { ok: false, error: "mfa_enrollment_unavailable" });
           }
         } finally {
           await pool?.end();
@@ -478,8 +515,9 @@ export function createAppServer({ poolFactory = createPool, secureCookies, trust
       const accountAction = /^\/api\/admin\/users\/([0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12})\/(deactivate|reactivate|reset-password)$/.exec(url.pathname);
       const accountProcesses = /^\/api\/admin\/users\/([0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12})\/processes$/.exec(url.pathname);
       const accountCreation = url.pathname === "/api/admin/users" && req.method === "POST";
+      const backupAdministratorCreation = url.pathname === "/api/admin/backup-administrator" && req.method === "POST";
       if ((url.pathname === "/api/admin/users" && req.method === "GET") ||
-          accountCreation || (accountAction && req.method === "POST") ||
+          accountCreation || backupAdministratorCreation || (accountAction && req.method === "POST") ||
           (accountProcesses && ["GET", "PUT"].includes(req.method))) {
         let pool;
         try {
@@ -497,7 +535,7 @@ export function createAppServer({ poolFactory = createPool, secureCookies, trust
             sendJson(res, 403, { ok: false, error: "forbidden" });
             return;
           }
-          if (accountAction || accountCreation || (accountProcesses && req.method === "PUT")) {
+          if (accountAction || accountCreation || backupAdministratorCreation || (accountProcesses && req.method === "PUT")) {
             const csrfToken = String(req.headers["x-csrf-token"] || "");
             if (!csrfToken || hashToken(csrfToken) !== session.csrfTokenHash) {
               sendJson(res, 403, { ok: false, error: "csrf_failed" });
@@ -513,6 +551,13 @@ export function createAppServer({ poolFactory = createPool, secureCookies, trust
                   processCodes: body.processCodes
                 })
               });
+            } else if (backupAdministratorCreation) {
+              const body = await readJson(req);
+              sendJson(res, 201, { ok: true, ...await createBackupAdministrator(pool, {
+                actor: session.user,
+                username: body.username,
+                displayName: body.displayName
+              }) });
             } else if (accountCreation) {
               const body = await readJson(req);
               sendJson(res, 201, { ok: true, ...await createAccount(pool, {
