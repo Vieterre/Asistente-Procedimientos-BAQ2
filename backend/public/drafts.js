@@ -1837,82 +1837,229 @@ function analyticsFilterSummary(analytics) {
   };
 }
 
+function analyticsPdfTable(headers, records, valuesForRecord, columnWidths = []) {
+  const table = document.createElement("table");
+  table.className = "analytics-pdf-table";
+  if (columnWidths.length === headers.length) {
+    const colgroup = document.createElement("colgroup");
+    columnWidths.forEach(width => {
+      const col = document.createElement("col");
+      col.style.width = width;
+      colgroup.append(col);
+    });
+    table.append(colgroup);
+  }
+  const thead = document.createElement("thead");
+  const headerRow = document.createElement("tr");
+  headers.forEach(header => {
+    const cell = document.createElement("th");
+    cell.textContent = header;
+    headerRow.append(cell);
+  });
+  thead.append(headerRow);
+  const tbody = document.createElement("tbody");
+  records.forEach(record => {
+    const row = document.createElement("tr");
+    valuesForRecord(record).forEach(value => {
+      const cell = document.createElement("td");
+      cell.textContent = value;
+      row.append(cell);
+    });
+    tbody.append(row);
+  });
+  table.append(thead, tbody);
+  return table;
+}
+
+function analyticsMetricCards(analytics) {
+  const grid = document.createElement("div");
+  grid.className = "analytics-pdf-metrics";
+  analyticsEventLabels.forEach(([key, label], index) => {
+    const card = document.createElement("div");
+    card.className = `analytics-pdf-metric metric-${index + 1}`;
+    const value = document.createElement("strong");
+    value.textContent = String(analytics.totals[key] || 0);
+    const caption = document.createElement("span");
+    caption.textContent = label;
+    card.append(value, caption);
+    grid.append(card);
+  });
+  return grid;
+}
+
+function analyticsBarChart(title, rows, labelForRow, valueForRow, emptyText) {
+  const chart = document.createElement("section");
+  chart.className = "analytics-pdf-chart";
+  const heading = document.createElement("h4");
+  heading.textContent = title;
+  chart.append(heading);
+  if (!rows.length) {
+    const empty = document.createElement("p");
+    empty.className = "analytics-pdf-empty";
+    empty.textContent = emptyText;
+    chart.append(empty);
+    return chart;
+  }
+  const values = rows.map(valueForRow);
+  const maximum = Math.max(...values, 1);
+  const list = document.createElement("div");
+  list.className = "analytics-pdf-bars";
+  rows.forEach((row, index) => {
+    const item = document.createElement("div");
+    item.className = "analytics-pdf-bar-row";
+    const label = document.createElement("span");
+    label.className = "analytics-pdf-bar-label";
+    label.textContent = labelForRow(row);
+    const track = document.createElement("div");
+    track.className = "analytics-pdf-bar-track";
+    const fill = document.createElement("span");
+    fill.className = "analytics-pdf-bar-fill";
+    fill.style.width = `${Math.round((values[index] / maximum) * 100)}%`;
+    track.append(fill);
+    const value = document.createElement("strong");
+    value.className = "analytics-pdf-bar-value";
+    value.textContent = String(values[index]);
+    item.append(label, track, value);
+    list.append(item);
+  });
+  chart.append(list);
+  return chart;
+}
+
 function analyticsPdfReport(analytics) {
   const filters = analyticsFilterSummary(analytics);
   const report = document.createElement("article");
   report.className = "analytics-pdf-report";
   const header = document.createElement("header");
   header.className = "analytics-pdf-header";
+  const eyebrow = document.createElement("span");
+  eyebrow.className = "analytics-pdf-eyebrow";
+  eyebrow.textContent = "Administración institucional";
   const title = document.createElement("h1");
-  title.textContent = "REPORTE DE ANALÍTICA";
+  title.textContent = "Reporte de analítica";
   const subtitle = document.createElement("p");
-  subtitle.textContent = "Administración institucional";
-  header.append(title, subtitle);
+  subtitle.textContent = "Indicadores de productividad, trazabilidad y uso del sistema";
+  const generated = document.createElement("span");
+  generated.className = "analytics-pdf-generated";
+  generated.textContent = `Generado: ${filters.generated}`;
+  header.append(eyebrow, title, subtitle, generated);
 
-  const summary = document.createElement("div");
-  summary.className = "analytics-pdf-summary";
-  summary.append(
-    reportTable(["Filtro", "Valor"], [
-      ["Periodo", filters.period],
-      ["Proceso", filters.process],
-      ["Rol", filters.role],
-      ["Generado", filters.generated]
-    ], row => row),
-    reportTable(["Indicador", "Cantidad"], analyticsEventLabels, ([key, label]) => [label, String(analytics.totals[key] || 0)])
+  const filtersGrid = document.createElement("div");
+  filtersGrid.className = "analytics-pdf-filters";
+  [["Periodo", filters.period], ["Proceso", filters.process], ["Rol", filters.role]].forEach(([label, value]) => {
+    const item = document.createElement("div");
+    const itemLabel = document.createElement("span");
+    itemLabel.textContent = label;
+    const itemValue = document.createElement("strong");
+    itemValue.textContent = value;
+    item.append(itemLabel, itemValue);
+    filtersGrid.append(item);
+  });
+
+  const dailyRows = analytics.byDay.slice(0, 16);
+  const dailyActivity = analyticsBarChart(
+    "Eventos registrados por día",
+    dailyRows,
+    row => row.day,
+    row => analyticsEventLabels.reduce((total, [key]) => total + (row[key] || 0), 0),
+    "No hay actividad registrada para el período seleccionado."
   );
+  const eventsByType = analyticsBarChart(
+    "Resultados por tipo de evento",
+    analyticsEventLabels,
+    ([, label]) => label,
+    ([key]) => analytics.totals[key] || 0,
+    "No hay eventos registrados para el período seleccionado."
+  );
+  const charts = document.createElement("div");
+  charts.className = "analytics-pdf-chart-grid";
+  charts.append(dailyActivity, eventsByType);
 
-  const activityByDay = reportTable(
+  const dailyDetail = analyticsPdfTable(
     ["Fecha", "Iniciados", "Envíos", "Evaluaciones", "Devoluciones", "Favorables"],
     analytics.byDay,
-    row => [row.day, ...analyticsEventLabels.map(([key]) => String(row[key] || 0))]
+    row => [row.day, ...analyticsEventLabels.map(([key]) => String(row[key] || 0))],
+    ["24%", "15%", "15%", "16%", "15%", "15%"]
   );
-  const activityByProcedure = reportTable(
+
+  const activityByProcedure = analyticsPdfTable(
     ["Proceso", "Procedimiento", "Iniciados", "Envíos", "Evaluaciones", "Devoluciones", "Favorables"],
     analytics.byProcess,
     row => [`${row.processName} (${row.processCode})`, row.procedureName, ...analyticsEventLabels.map(([key]) => String(row[key] || 0))],
-    { columnWidths: ["19%", "31%", "10%", "10%", "10%", "10%", "10%"] }
+    ["16%", "35%", "9.8%", "9.8%", "10.2%", "9.8%", "9.8%"]
+  );
+  const usageSummary = document.createElement("div");
+  usageSummary.className = "analytics-pdf-usage-summary";
+  [
+    ["Ingresos del período", String(analytics.usage.totalLogins || 0)],
+    ["Usuarios con ingreso", String(analytics.usage.activeUsers || 0)],
+    ["Último ingreso", analytics.usage.lastLogin
+      ? new Intl.DateTimeFormat("es-CO", { dateStyle: "medium", timeStyle: "short", timeZone: "America/Bogota" }).format(new Date(analytics.usage.lastLogin))
+      : "Sin registro"]
+  ].forEach(([label, value]) => {
+    const item = document.createElement("div");
+    const itemLabel = document.createElement("span");
+    itemLabel.textContent = label;
+    const itemValue = document.createElement("strong");
+    itemValue.textContent = value;
+    item.append(itemLabel, itemValue);
+    usageSummary.append(item);
+  });
+  const usageCharts = document.createElement("div");
+  usageCharts.className = "analytics-pdf-chart-grid single";
+  usageCharts.append(
+    analyticsBarChart(
+      "Tendencia de ingresos",
+      analytics.usage.byDay.slice(0, 16),
+      row => row.day,
+      row => row.count || 0,
+      "No hay ingresos registrados para el período seleccionado."
+    )
   );
   const usage = document.createElement("div");
-  usage.className = "analytics-pdf-summary";
-  usage.append(
-    reportTable(["Uso del sistema", "Valor"], [
-      ["Ingresos del periodo", String(analytics.usage.totalLogins || 0)],
-      ["Usuarios con ingreso", String(analytics.usage.activeUsers || 0)],
-      ["Último ingreso", analytics.usage.lastLogin
-        ? new Intl.DateTimeFormat("es-CO", { dateStyle: "medium", timeStyle: "short", timeZone: "America/Bogota" }).format(new Date(analytics.usage.lastLogin))
-        : "Sin registro"]
-    ], row => row),
-    reportTable(["Fecha", "Ingresos"], analytics.usage.byDay, row => [row.day, String(row.count || 0)])
-  );
+  usage.className = "analytics-pdf-usage";
+  usage.append(usageSummary, usageCharts);
   report.append(
     header,
-    reportSection("1", "Resumen", summary),
-    reportSection("2", "Actividad por día", activityByDay),
-    reportSection("3", "Actividad por procedimiento", activityByProcedure),
-    reportSection("4", "Usabilidad", usage)
+    filtersGrid,
+    reportSection("1", "Resumen ejecutivo", analyticsMetricCards(analytics)),
+    reportSection("2", "Actividad del período", charts),
+    reportSection("3", "Detalle de actividad por día", dailyDetail),
+    reportSection("4", "Actividad por procedimiento", activityByProcedure),
+    reportSection("5", "Usabilidad", usage)
   );
   return report;
 }
 
 function analyticsPdfStyles() {
   return `
-    @page { size: letter portrait; margin: 16mm; }
+    @page { size: letter portrait; margin: 12mm 12mm 15mm; }
     * { box-sizing: border-box; }
-    body { margin: 0; color: #243746; font-family: Arial, sans-serif; font-size: 10pt; }
+    body { margin: 0; color: #203743; background: #fff; font-family: Arial, sans-serif; font-size: 9pt; line-height: 1.35; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     .analytics-pdf-report { width: 100%; }
-    .analytics-pdf-header { border: 1px solid #1b4e7a; border-left: 7px solid #159c7b; margin-bottom: 18px; padding: 12px 15px; }
-    .analytics-pdf-header h1 { margin: 0; color: #004488; font-size: 18pt; }
-    .analytics-pdf-header p { margin: 4px 0 0; color: #52666d; font-size: 10pt; }
-    .preview-report-section { margin: 0 0 18px; break-inside: avoid-page; page-break-inside: avoid; }
-    .preview-report-section > h3 { margin: 0 0 8px; padding-bottom: 5px; border-bottom: 2px solid #1d9a7c; color: #004488; font-size: 11pt; }
-    .analytics-pdf-summary { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
-    .preview-report-table { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 8pt; }
-    .preview-report-table th, .preview-report-table td { border: 1px solid #b8c2c8; padding: 5px; text-align: left; vertical-align: top; overflow-wrap: anywhere; line-height: 1.32; }
-    .preview-report-table th { background: #004488; color: #fff; font-weight: 700; }
-    .preview-report-table thead { display: table-header-group; }
-    .preview-report-table tr { break-inside: avoid-page; page-break-inside: avoid; }
-    .preview-report-section:nth-of-type(4) .preview-report-table { font-size: 7pt; }
-    @media print { .preview-report-section { break-inside: auto; page-break-inside: auto; } }
+    .analytics-pdf-header { position: relative; overflow: hidden; margin: 0 0 11px; padding: 15px 18px; border: 1px solid #0c4d76; border-left: 8px solid #159c7b; background: #f4f8fa; }
+    .analytics-pdf-header::after { content: ""; position: absolute; inset: 0 0 0 auto; width: 34%; background: #e0f1ec; clip-path: polygon(42% 0, 100% 0, 100% 100%, 0 100%); }
+    .analytics-pdf-header > * { position: relative; z-index: 1; }
+    .analytics-pdf-eyebrow { display: block; margin-bottom: 4px; color: #0b725e; font-size: 7.5pt; font-weight: 700; letter-spacing: .8px; text-transform: uppercase; }
+    .analytics-pdf-header h1 { margin: 0; color: #003f73; font-size: 21pt; line-height: 1.05; }
+    .analytics-pdf-header p { max-width: 70%; margin: 5px 0 0; color: #3f5d68; font-size: 9pt; }
+    .analytics-pdf-generated { display: block; margin-top: 10px; color: #45616c; font-size: 7.5pt; }
+    .analytics-pdf-filters { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; margin-bottom: 15px; }
+    .analytics-pdf-filters > div { min-width: 0; padding: 8px 10px; border: 1px solid #c6d8df; background: #fff; }
+    .analytics-pdf-filters span, .analytics-pdf-usage-summary span { display: block; margin-bottom: 3px; color: #5b727b; font-size: 7pt; font-weight: 700; letter-spacing: .45px; text-transform: uppercase; }
+    .analytics-pdf-filters strong { display: block; color: #173b56; font-size: 8.5pt; line-height: 1.25; overflow-wrap: anywhere; }
+    .preview-report-section { margin: 0 0 15px; break-inside: avoid-page; page-break-inside: avoid; }
+    .preview-report-section > h3 { margin: 0 0 8px; padding: 0 0 5px; border-bottom: 2px solid #159c7b; color: #003f73; font-size: 11pt; }
+    .analytics-pdf-metrics { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 7px; }
+    .analytics-pdf-metric { min-height: 76px; padding: 10px 9px; border: 1px solid #c6d8df; border-top: 4px solid #0c6293; background: #fff; }
+    .analytics-pdf-metric.metric-2 { border-top-color: #159c7b; }.analytics-pdf-metric.metric-3 { border-top-color: #755da8; }.analytics-pdf-metric.metric-4 { border-top-color: #bb5a43; }.analytics-pdf-metric.metric-5 { border-top-color: #bb8a1d; }
+    .analytics-pdf-metric strong { display: block; color: #003f73; font-size: 21pt; line-height: 1; }.analytics-pdf-metric span { display: block; margin-top: 7px; color: #4c6570; font-size: 7.5pt; line-height: 1.2; }
+    .analytics-pdf-chart-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }.analytics-pdf-chart-grid.single { grid-template-columns: 1fr; margin: 0 0 15px; }
+    .analytics-pdf-chart { min-width: 0; padding: 10px; border: 1px solid #c6d8df; background: #fff; break-inside: avoid-page; page-break-inside: avoid; }.analytics-pdf-chart h4 { margin: 0 0 9px; color: #003f73; font-size: 9pt; }
+    .analytics-pdf-bars { display: grid; gap: 6px; }.analytics-pdf-bar-row { display: grid; grid-template-columns: 92px minmax(0, 1fr) 24px; align-items: center; gap: 6px; }.analytics-pdf-bar-label { overflow: hidden; color: #45616c; font-size: 7.2pt; line-height: 1.1; text-overflow: ellipsis; white-space: nowrap; }.analytics-pdf-bar-track { height: 9px; overflow: hidden; background: #e6eef1; }.analytics-pdf-bar-fill { display: block; height: 100%; min-width: 2px; background: #0c6293; }.analytics-pdf-bar-value { color: #173b56; font-size: 7.2pt; text-align: right; }.analytics-pdf-empty { margin: 0; color: #617780; font-size: 8pt; font-style: italic; }
+    .analytics-pdf-table { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 7.2pt; }.analytics-pdf-table th, .analytics-pdf-table td { padding: 5px 4px; border: 1px solid #c6d8df; text-align: left; vertical-align: top; line-height: 1.25; overflow-wrap: anywhere; }.analytics-pdf-table th { background: #003f73; color: #fff; font-size: 7pt; font-weight: 700; }.analytics-pdf-table td:nth-child(n+3), .analytics-pdf-table th:nth-child(n+3) { text-align: center; }.analytics-pdf-table tr:nth-child(even) td { background: #f4f8fa; }.analytics-pdf-table thead { display: table-header-group; }.analytics-pdf-table tr { break-inside: avoid-page; page-break-inside: avoid; }
+    .analytics-pdf-usage-summary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; margin-bottom: 10px; }.analytics-pdf-usage-summary > div { min-width: 0; min-height: 61px; padding: 9px 10px; border: 1px solid #c6d8df; border-top: 3px solid #159c7b; background: #f7fbfa; }.analytics-pdf-usage-summary strong { color: #173b56; font-size: 11pt; line-height: 1.2; overflow-wrap: anywhere; }
+    @media print { .preview-report-section { break-inside: auto; page-break-inside: auto; }.analytics-pdf-table { break-inside: auto; page-break-inside: auto; }.analytics-pdf-table thead { display: table-header-group; }.analytics-pdf-table tr { break-inside: avoid-page; page-break-inside: avoid; } }
   `;
 }
 
@@ -1924,9 +2071,9 @@ function printAnalyticsReport() {
     return;
   }
   const report = analyticsPdfReport(currentAnalytics);
-  popup.document.write(`<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Reporte de Analítica</title><style>${analyticsPdfStyles()}</style></head><body></body></html>`);
+  popup.document.open();
+  popup.document.write(`<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Reporte de Analítica</title><style>${analyticsPdfStyles()}</style></head><body>${report.outerHTML}</body></html>`);
   popup.document.close();
-  popup.document.body.append(popup.document.importNode(report, true));
   popup.document.title = "Reporte de Analítica";
   popup.focus();
   window.setTimeout(() => popup.print(), 100);
