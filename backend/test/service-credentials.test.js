@@ -124,7 +124,7 @@ test("test-domain Nginx configuration keeps ACME staging separate from HTTPS pro
   assert.match(https, /proxy_set_header X-Forwarded-For \$remote_addr;/);
   assert.match(https, /return 302 \/accounts;/);
   assert.match(https, /proxy_pass http:\/\/127\.0\.0\.1:3000;/);
-  for (const path of ["/drafts", "/drafts.css", "/drafts.js", "/institutional-logo.png"]) {
+  for (const path of ["/drafts", "/drafts.css", "/analytics-report.css", "/drafts.js", "/institutional-logo.png"]) {
     assert.ok(https.includes(`location = ${path} {`));
   }
 });
@@ -141,7 +141,7 @@ test("production-domain Nginx configuration exposes only the application routes"
   assert.match(https, /proxy_set_header X-Forwarded-For \$remote_addr;/);
   assert.match(https, /return 302 \/accounts;/);
   assert.match(https, /proxy_pass http:\/\/127\.0\.0\.1:3001;/);
-  for (const path of ["/accounts", "/accounts.css", "/accounts.js", "/drafts", "/drafts.css", "/drafts.js", "/institutional-logo.png"]) {
+  for (const path of ["/accounts", "/accounts.css", "/accounts.js", "/drafts", "/drafts.css", "/analytics-report.css", "/drafts.js", "/institutional-logo.png"]) {
     assert.ok(https.includes(`location = ${path} {`));
   }
   assert.match(https, /location \^~ \/api\//);
