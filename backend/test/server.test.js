@@ -121,6 +121,8 @@ test("private consoles serve only their own assets with a restrictive policy", a
     assert.match(draftHtml, /href="\/drafts\.css\?v=20261012-2"/);
     assert.match(draftHtml, /href="\/brand-theme\.css"/);
     assert.match(draftHtml, /Validador y estructurador metodológico de procedimientos/);
+    assert.match(draftHtml, /id="roleWorkspaceBanner"/);
+    assert.match(draftHtml, /id="roleBannerDescription"/);
     assert.match(draftHtml, /src="\/drafts-20261012\.js"/);
     assert.match(draftHtml, /href="\/annexes">Anexos de consulta/);
     const annexHtml = await (await fetch(base + "/annexes")).text();
@@ -135,6 +137,8 @@ test("private consoles serve only their own assets with a restrictive policy", a
     assert.equal(rubric.groups.length, 9);
     assert.equal(rubric.groups.find(group => group.id === "controles").criteria.length, 3);
     const draftScript = await (await fetch(base + "/drafts.js")).text();
+    assert.match(draftScript, /const roleBannerCopy =/);
+    assert.match(draftScript, /Consulta y realiza la evaluación metodológica/);
     assert.match(draftScript, /function synchronizeEvaluationDecisionButtons\(favorableReady, returnReady\)/);
     const draftIds = draftScript.match(/const ids = \[([\s\S]*?)\];/)?.[1];
     assert.ok(draftIds);

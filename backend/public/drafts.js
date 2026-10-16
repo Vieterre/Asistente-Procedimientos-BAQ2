@@ -1,6 +1,6 @@
 const ids = [
   "loginView", "loginForm", "loginUsername", "loginPassword", "loginOtp", "loginMessage",
-  "workspace", "sessionControls", "sessionIdentity", "notificationCenter", "notificationBell", "notificationPopover", "notificationCount", "emptyNotifications", "notificationList", "markAllNotificationsRead", "logoutButton", "welcomeText",
+  "workspace", "sessionControls", "sessionIdentity", "notificationCenter", "notificationBell", "notificationPopover", "notificationCount", "emptyNotifications", "notificationList", "markAllNotificationsRead", "logoutButton", "welcomeText", "roleWorkspaceBanner", "roleBannerEyebrow", "roleBannerTitle", "roleBannerDescription",
   "pageHeading", "analyticsButton", "analyticsSection", "analyticsTitle", "analyticsScope", "backFromAnalytics", "refreshAnalytics", "analyticsFilters", "analyticsPeriod", "analyticsProcess", "analyticsRole", "analyticsProcessField", "analyticsRoleField", "analyticsByProcessSection", "exportAnalyticsButton", "analyticsMessage", "analyticsMetrics", "analyticsByDay", "analyticsByProcess", "emptyAnalyticsDays", "emptyAnalyticsProcesses", "analyticsLogins", "emptyAnalyticsLogins", "analyticsUsageMetrics",
   "institutionalReportsButton", "institutionalReportsSection", "institutionalReportsCount", "institutionalReportsMessage", "emptyInstitutionalReports", "institutionalReportsList", "backFromInstitutionalReports", "refreshInstitutionalReports",
   "passwordRequired", "draftWorkspace", "editorSection", "editorHeading", "draftForm", "editorTitle", "editorStatus", "submitReviewButton", "submitReviewDialog", "submitReviewForm", "reviewEvaluatorSelect", "submitReviewMessage", "cancelSubmitReview", "confirmSubmitReview",
@@ -60,6 +60,24 @@ const errorMessages = {
   invalid_analytics_period: "Selecciona un periodo válido.",
   invalid_analytics_process: "Selecciona un proceso válido.",
   invalid_analytics_role: "Selecciona un rol válido."
+};
+
+const roleBannerCopy = {
+  elaborador: {
+    eyebrow: "Ambiente de trabajo activo",
+    title: "Elaborador",
+    description: "Elabora, ajusta y envía procedimientos a evaluación metodológica."
+  },
+  evaluador: {
+    eyebrow: "Ambiente de trabajo activo",
+    title: "Evaluador",
+    description: "Consulta y realiza la evaluación metodológica de los procedimientos asignados."
+  },
+  administrador: {
+    eyebrow: "Administración institucional",
+    title: "Administrador",
+    description: "Gestiona cuentas, consulta el seguimiento y formaliza decisiones institucionales."
+  }
 };
 
 let csrfToken = "";
@@ -2446,6 +2464,8 @@ function clearSession() {
   if (ui.previewDialog.open) ui.previewDialog.close();
   ui.documentsSection.hidden = true;
   ui.sessionControls.hidden = true;
+  ui.roleWorkspaceBanner.hidden = true;
+  delete ui.roleWorkspaceBanner.dataset.role;
   ui.loginView.hidden = false;
   ui.loginPassword.value = "";
   ui.loginOtp.value = "";
@@ -2461,6 +2481,14 @@ async function startSession(user) {
   ui.loginView.hidden = true;
   ui.workspace.hidden = false;
   ui.sessionControls.hidden = false;
+  const roleBanner = roleBannerCopy[user.role];
+  ui.roleWorkspaceBanner.hidden = !roleBanner;
+  if (roleBanner) {
+    ui.roleWorkspaceBanner.dataset.role = user.role;
+    ui.roleBannerEyebrow.textContent = roleBanner.eyebrow;
+    ui.roleBannerTitle.textContent = roleBanner.title;
+    ui.roleBannerDescription.textContent = roleBanner.description;
+  }
   ui.sessionIdentity.textContent = user.username || user.displayName;
   ui.welcomeText.textContent = user.displayName + " · " + user.role;
   ui.passwordRequired.hidden = !user.mustChangePassword;

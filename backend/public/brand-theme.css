@@ -13,6 +13,11 @@ body{background:#f5f7fa;color:var(--brand-ink)}
 .notification-bell:hover,.move-button:hover,.flow-zoom-button:hover{border-color:rgba(31,111,208,.62);background:var(--brand-soft);color:var(--brand-blue)}
 .icon-close{border-radius:8px;color:var(--brand-navy)}.icon-close:hover{background:var(--brand-soft);color:var(--brand-blue)}
 .page-heading{padding-top:30px;border-bottom-color:var(--brand-line)}
+.role-workspace-banner{display:grid;grid-template-columns:68px minmax(0,1fr);gap:16px;align-items:center;margin-top:24px;padding:15px 18px;border:1px solid #c7d7e7;border-left:5px solid var(--brand-blue);border-radius:8px;background:#f4f8fc;box-shadow:0 3px 10px rgba(18,58,96,.06)}
+.role-workspace-banner[data-role="evaluador"]{border-color:#b9dfd5;border-left-color:var(--brand-green);background:#f2fbf8}.role-workspace-banner[data-role="administrador"]{border-color:#c9d8e7;border-left-color:var(--brand-navy);background:#f4f7fb}
+.role-workspace-mark{display:grid;place-items:center;width:58px;height:58px;border-radius:18px;background:var(--brand-blue);color:#fff}.role-workspace-banner[data-role="evaluador"] .role-workspace-mark{background:var(--brand-green)}.role-workspace-banner[data-role="administrador"] .role-workspace-mark{background:var(--brand-navy)}
+.role-workspace-mark svg{width:31px;height:31px;fill:none;stroke:currentColor;stroke-linecap:round;stroke-linejoin:round;stroke-width:1.5}.role-workspace-mark .role-workspace-check{stroke-width:2}
+.role-workspace-eyebrow{margin:0 0 2px;color:#64829d;font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}.role-workspace-banner[data-role="evaluador"] .role-workspace-eyebrow{color:#50877a}.role-workspace-banner h2{margin:0;color:var(--brand-navy);font-size:23px;line-height:1.15}.role-workspace-banner[data-role="evaluador"] h2{color:#08785d}.role-workspace-description{margin:4px 0 0;color:var(--brand-muted);font-size:13px;line-height:1.4}
 .page-heading p,.section-heading p{color:var(--brand-muted)}
 .section-heading{margin-bottom:18px}.section-heading h2{font-size:19px}
 .section,.annex-section{border-bottom-color:var(--brand-line)}
@@ -53,4 +58,4 @@ tbody tr:hover td{background:#f7faff}.row-actions button{border-color:var(--bran
 .symbol-card,.precheck-grid article,.rubric-group{border-radius:8px;border-color:var(--brand-line);box-shadow:0 2px 7px rgba(18,58,96,.04)}
 .symbol-card{border-top-color:var(--brand-green)}
 .guide-rules,.rubric-summary{border-color:var(--brand-line)}.guide-rules>div,.rubric-summary>p{background:#fff}.guide-rules strong,.rubric-group summary strong{color:var(--brand-navy)}.rubric-group{border-left-color:var(--brand-green)}.rubric-group>summary{background:#f4f8fb}.group-toggle::before{color:var(--brand-green)}.summary-metric{background:#edf8f4}.summary-metric strong{color:var(--brand-navy)}
-@media(max-width:720px){.page-heading{padding-top:24px}.analytics-filters{padding:14px;border-left-width:3px}.section-heading h2{font-size:18px}}
+@media(max-width:720px){.page-heading{padding-top:24px}.role-workspace-banner{grid-template-columns:50px minmax(0,1fr);gap:12px;margin-top:18px;padding:13px}.role-workspace-mark{width:46px;height:46px;border-radius:14px}.role-workspace-mark svg{width:26px;height:26px}.role-workspace-banner h2{font-size:20px}.analytics-filters{padding:14px;border-left-width:3px}.section-heading h2{font-size:18px}}
