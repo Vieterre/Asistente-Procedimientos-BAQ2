@@ -1,4 +1,4 @@
-function isCorrectionActivity(item) {
+function isExplicitCorrectionActivity(item) {
   if (item?.tipo !== "Actividad") return false;
   const text = `${item.actividad || ""} ${item.descripcion || ""}`
     .normalize("NFD")
@@ -126,25 +126,37 @@ export function reviewFlow(activities) {
       severity: "warning"
     });
   }
-  const reachesControlWithoutCorrection = origin => {
+  const negativeRouteTreatmentStatus = origin => {
     const seen = new Set();
-    const pending = [{ id: origin, corrected: false }];
+    const pending = [{ id: origin, hasActivity: false, explicitCorrection: false }];
+    const status = { reachesControlDirectly: false, needsCorrectionConfirmation: false };
     while (pending.length) {
-      const { id, corrected } = pending.pop();
+      const { id, hasActivity, explicitCorrection } = pending.pop();
       const node = byId.get(id);
       if (!node) continue;
-      const correctedHere = corrected || isCorrectionActivity(node);
-      const state = `${id}:${correctedHere}`;
+      const state = `${id}:${hasActivity}:${explicitCorrection}`;
       if (seen.has(state)) continue;
       seen.add(state);
-      if (node.tieneControl === true && !correctedHere) return true;
-      for (const target of edges.get(id) || []) pending.push({ id: target, corrected: correctedHere });
+      const hasActivityHere = hasActivity || node.tipo === "Actividad";
+      const explicitCorrectionHere = explicitCorrection || isExplicitCorrectionActivity(node);
+      if (node.tieneControl === true) {
+        if (!hasActivityHere) status.reachesControlDirectly = true;
+        else if (!explicitCorrectionHere) status.needsCorrectionConfirmation = true;
+        continue;
+      }
+      for (const target of edges.get(id) || []) {
+        pending.push({ id: target, hasActivity: hasActivityHere, explicitCorrection: explicitCorrectionHere });
+      }
     }
-    return false;
+    return status;
   };
   for (const [index, item] of activities.entries()) {
-    if (item.tipo === "Decisión" && byId.has(item.decisionNo) && reachesControlWithoutCorrection(item.decisionNo)) {
-      issues.push({ index, message: "La ruta No debe pasar primero por una actividad que corrija, modifique o complemente la información antes de repetir un punto de control." });
+    if (item.tipo !== "Decisión" || !byId.has(item.decisionNo)) continue;
+    const status = negativeRouteTreatmentStatus(item.decisionNo);
+    if (status.reachesControlDirectly) {
+      issues.push({ index, message: "La ruta No debe pasar por una actividad antes de repetir un punto de control." });
+    } else if (status.needsCorrectionConfirmation) {
+      issues.push({ index, message: "Revise que la actividad de la ruta No corrija, ajuste o complemente la información antes de repetir el punto de control.", severity: "warning" });
     }
   }
   const walk = (origin, graph) => {

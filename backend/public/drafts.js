@@ -185,7 +185,7 @@ const activityHelp = {
   "Pregunta de decisión": "La decisión es un elemento de bifurcación del flujo que evalúa una condición y determina la ruta que debe seguir el procedimiento de acuerdo con el resultado obtenido.",
   "Punto de control": "Marque Sí solo cuando la actividad o decisión incorpore una verificación crítica asociada a un riesgo o requisito. Una decisión puede tener o no punto de control.",
   "Ruta Sí": "Seleccione la actividad o destino que sigue cuando la condición se cumple.",
-  "Ruta No": "La ruta No debe conducir primero a una actividad que modifique, corrija o complemente la información. Solo después de ese ajuste puede repetirse el punto de control.",
+  "Ruta No": "Antes de repetir un punto de control, la ruta No debe pasar por una actividad. Revise que esa actividad corrija, ajuste o complemente la información.",
   "Identificador": "El Conector permite continuar el flujo en otro punto o evitar cruces de líneas.",
   "Continuar el flujo en": "El Conector permite continuar el flujo en otro punto o evitar cruces de líneas.",
   "Propósito del control": "Seleccione la acción que mejor representa el propósito del control. El verbo orienta su identificación, pero no determina por sí solo que la actividad constituya un punto de control.",

@@ -57,9 +57,9 @@ test("flow review checks the negative route and required control details", () =>
     { uid: "end", tipo: "Fin" }
   ];
   let issues = reviewFlow(activities);
-  assert.ok(issues.some(issue => issue.index === 1 && issue.message.includes("ruta No")));
+  assert.ok(issues.some(issue => issue.index === 1 && issue.severity === "warning" && issue.message.startsWith("Revise que la actividad de la ruta No")));
   assert.ok(issues.some(issue => issue.index === 2 && issue.message.includes("campos obligatorios")));
-  activities.splice(2, 0, { uid: "correction", tipo: "Actividad", actividad: "Ajustar solicitud", descripcion: "Completa la información requerida" });
+  activities.splice(2, 0, { uid: "correction", tipo: "Actividad", actividad: "Preparar respuesta", descripcion: "Completa la información requerida" });
   activities[1].decisionNo = "correction";
   activities.splice(4, 0, { uid: "control-choice", tipo: "Decisión", decisionSi: "end", decisionNo: "correction" });
   Object.assign(activities[3], {
@@ -67,6 +67,11 @@ test("flow review checks the negative route and required control details", () =>
     controlEjecucion: "Compara", controlDesviacion: "Devuelve", controlEvidencia: "Registro"
   });
   issues = reviewFlow(activities);
+  assert.ok(!issues.some(issue => issue.message.includes("ruta No debe pasar por una actividad")));
+  assert.ok(issues.some(issue => issue.severity === "warning" && issue.message.startsWith("Revise que la actividad de la ruta No")));
+  activities[2].actividad = "Ajustar solicitud";
+  issues = reviewFlow(activities);
+  assert.ok(!issues.some(issue => issue.message.startsWith("Revise que la actividad de la ruta No")));
   assert.ok(issues.every(issue => issue.severity === "warning"));
   assert.ok(issues.some(issue => issue.message.includes("no reconvergen")));
 });
@@ -117,12 +122,12 @@ test("flow review traces the negative route until a control and keeps controls o
     { uid: "end", tipo: "Fin" }
   ];
   let issues = reviewFlow(activities);
-  assert.ok(issues.some(issue => issue.index === 1 && issue.message.includes("ruta No debe pasar primero")));
+  assert.ok(issues.some(issue => issue.index === 1 && issue.severity === "warning" && issue.message.startsWith("Revise que la actividad de la ruta No")));
 
   activities.splice(3, 0, { uid: "correction", tipo: "Actividad", actividad: "Ajustar información", descripcion: "Completa los datos requeridos" });
   activities[2].connectorDestino = "correction";
   issues = reviewFlow(activities);
-  assert.ok(!issues.some(issue => issue.message.includes("ruta No debe pasar primero")));
+  assert.ok(!issues.some(issue => issue.message.startsWith("Revise que la actividad de la ruta No")));
 
   activities[1].tieneControl = true;
   issues = reviewFlow(activities);
