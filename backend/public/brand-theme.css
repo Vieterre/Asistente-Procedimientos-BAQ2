@@ -23,7 +23,10 @@ body{background:#f5f7fa;color:var(--brand-ink)}
 .section,.annex-section{border-bottom-color:var(--brand-line)}
 .section-heading h2::after,.analytics-block-heading h3::after{display:block;width:42px;height:3px;margin-top:8px;background:var(--brand-green);content:""}
 .annex-section .section-heading h2::after{display:none}
-.name-guide,.version-guide,.method-rules{border-color:var(--brand-line);border-radius:8px;background:var(--brand-soft)}
+.name-guide,.version-guide{border-color:var(--brand-line);border-radius:8px;background:var(--brand-soft)}
+.method-rules{border:1px solid #efbd96;border-left:4px solid var(--brand-orange);border-radius:8px;background:#fffaf6;box-shadow:0 2px 7px rgba(198,83,19,.08)}
+.method-rules summary{padding:12px 13px;color:#8d4c13;background:#fff3e7;font-weight:750}.method-rules summary::marker{color:var(--brand-orange)}.method-rules[open] summary{border-bottom:1px solid #f1c7a7}
+.method-rules ol{background:#fffdfb}.norm-guide-body{color:#634c3b}.norm-hierarchy section{border-color:#f1c7a7;background:#fff}.norm-hierarchy h4{color:#9b5314}.norm-guide-criterion{border-left-color:var(--brand-orange);background:#fff1e5;color:#70461f}
 .name-guide summary::before,.version-guide summary::before{background:var(--brand-orange);box-shadow:0 3px 8px rgba(198,83,19,.24)}
 .page-heading h1,.section-heading h2,.section-heading h3{color:var(--brand-navy)}
 .method-help summary{border-color:#e2ad88;color:var(--brand-orange)}.method-help p{border-left-color:var(--brand-orange);background:#fff7f2;color:#604532}
