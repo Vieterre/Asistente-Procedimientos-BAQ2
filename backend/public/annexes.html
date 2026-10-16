@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Anexos de consulta | Asistente de Procedimientos</title>
+  <link rel="stylesheet" href="/annexes.css">
+  <script src="/annexes.js" defer></script>
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="/drafts" aria-label="Volver a Borradores"><span class="brand-mark">AP</span><span><strong>Asistente de Procedimientos</strong><small>Anexos de consulta</small></span></a>
+    <a class="header-link" href="/drafts">Volver a Borradores</a>
+  </header>
+  <main class="annexes-main">
+    <div class="page-heading">
+      <div><h1>Anexos de consulta</h1><p>Referencia metodológica para elaborar, revisar y aprobar procedimientos.</p></div>
+      <nav class="annex-nav" aria-label="Anexos disponibles"><a href="#guia">A1 · Guía del flujograma</a><a href="#criterios">A2 · Criterios de evaluación</a></nav>
+    </div>
+
+    <section class="annex-section" id="guia" aria-labelledby="guia-title">
+      <div class="section-heading"><span class="annex-code">A1</span><div><h2 id="guia-title">Guía del flujograma</h2><p>Use la simbología para representar la secuencia, decisiones y verificaciones del procedimiento.</p></div></div>
+      <div class="symbol-grid">
+        <article class="symbol-card"><div class="symbol-stage"><span class="symbol symbol-start">Inicio / Fin</span></div><h3>Inicio y fin</h3><p>Marcan el primer evento identificable y el resultado verificable con el que concluye el procedimiento.</p></article>
+        <article class="symbol-card"><div class="symbol-stage"><span class="symbol symbol-activity">Actividad</span></div><h3>Actividad</h3><p>Describe una acción. Debe iniciar con un verbo en infinitivo y tener un responsable definido.</p></article>
+        <article class="symbol-card"><div class="symbol-stage"><span class="symbol symbol-decision">Decisión</span></div><h3>Decisión</h3><p>Formula una pregunta verificable y define rutas claramente rotuladas como Sí y No.</p></article>
+        <article class="symbol-card"><div class="symbol-stage"><span class="symbol symbol-connector">A</span><span class="symbol-arrow">→</span><span class="symbol symbol-connector">A</span></div><h3>Conector</h3><p>Permite continuar una ruta sin cruzar líneas ni perder la lectura del diagrama.</p></article>
+        <article class="symbol-card"><div class="symbol-stage"><span class="symbol-flow"></span></div><h3>Línea de flujo</h3><p>Indica el orden de ejecución entre los elementos y debe tener una única dirección de lectura.</p></article>
+        <article class="symbol-card"><div class="symbol-stage"><span class="symbol symbol-control">Control</span></div><h3>Punto de control</h3><p>Complementa una actividad para validar, autorizar, comparar o verificar una condición crítica.</p></article>
+        <article class="symbol-card"><div class="symbol-stage"><span class="symbol symbol-record">Registro</span></div><h3>Registro o evidencia</h3><p>Identifica el formato, documento o soporte que deja constancia de la actividad o control.</p></article>
+      </div>
+      <div class="guide-rules" aria-label="Reglas principales del flujograma">
+        <div><strong>Secuencia completa</strong><span>Todo procedimiento debe tener un inicio y un fin identificables.</span></div>
+        <div><strong>Decisiones verificables</strong><span>La pregunta de cada decisión se responde únicamente con Sí o No.</span></div>
+        <div><strong>Ruta No</strong><span>Cuando una verificación no se cumple, debe indicar el ajuste requerido antes de repetir el control o finalizar por la ruta que aplique.</span></div>
+        <div><strong>Control y evidencia</strong><span>Son elementos complementarios: respaldan una actividad, pero no sustituyen el flujo principal.</span></div>
+      </div>
+    </section>
+
+    <section class="annex-section" id="criterios" aria-labelledby="criterios-title">
+      <div class="section-heading"><span class="annex-code">A2</span><div><h2 id="criterios-title">Criterios de evaluación</h2><p>Rúbrica técnica vigente que utiliza el módulo de evaluación. Es de consulta: no modifica ninguna evaluación.</p></div></div>
+      <div class="precheck-grid">
+        <article><h3>Verificaciones previas</h3><ul><li>Nombre: verbo en infinitivo, objeto y complemento cuando aplique.</li><li>Inicio: evento único, identificable; no una frase genérica.</li><li>Fin: resultado identificable y verificable.</li></ul></article>
+        <article><h3>Escala de resultado</h3><dl><dt>0 a 39%</dt><dd>Bajo</dd><dt>40 a 89%</dt><dd>Medio</dd><dt>90 a 100%</dt><dd>Alto</dd></dl></article>
+      </div>
+      <div class="rubric-summary" id="rubricSummary" aria-live="polite"><p>Cargando criterios vigentes...</p></div>
+      <div class="rubric-groups" id="rubricGroups"></div>
+    </section>
+  </main>
+</body>
+</html>

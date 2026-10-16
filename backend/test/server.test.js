@@ -82,6 +82,9 @@ test("private consoles serve only their own assets with a restrictive policy", a
       ["/drafts.js", "text/javascript"],
       ["/drafts-20261012.js", "text/javascript"],
       ["/institutional-logo.png", "image/png"],
+      ["/annexes", "text/html"],
+      ["/annexes.css", "text/css"],
+      ["/annexes.js", "text/javascript"],
     ]) {
       const response = await fetch(base + path);
       assert.equal(response.status, 200);
@@ -115,6 +118,16 @@ test("private consoles serve only their own assets with a restrictive policy", a
     assert.match(draftHtml, /<form id="loginForm" method="post"/);
     assert.match(draftHtml, /href="\/drafts\.css\?v=20261012-2"/);
     assert.match(draftHtml, /src="\/drafts-20261012\.js"/);
+    assert.match(draftHtml, /href="\/annexes">Anexos de consulta/);
+    const annexHtml = await (await fetch(base + "/annexes")).text();
+    assert.match(annexHtml, /A1 · Guía del flujograma/);
+    assert.match(annexHtml, /A2 · Criterios de evaluación/);
+    const rubricResponse = await fetch(base + "/api/reference/evaluation-rubric");
+    const rubric = await rubricResponse.json();
+    assert.equal(rubricResponse.status, 200);
+    assert.equal(rubric.totalCriteria, 31);
+    assert.equal(rubric.groups.length, 9);
+    assert.equal(rubric.groups.find(group => group.id === "controles").criteria.length, 3);
     const draftScript = await (await fetch(base + "/drafts.js")).text();
     assert.match(draftScript, /function synchronizeEvaluationDecisionButtons\(favorableReady, returnReady\)/);
     const draftIds = draftScript.match(/const ids = \[([\s\S]*?)\];/)?.[1];

@@ -12,6 +12,7 @@ import { decideAdministrativeApproval, decideAssignedEvaluation, evaluationRubri
 import { reviewFlow, reviewFlowCompleteness } from "./domain/flow-review.js";
 import { AnalyticsError, getAdminAnalytics, getEvaluatorAnalytics } from "./domain/analytics.js";
 import { listOwnNotifications, markAllOwnNotificationsRead, markOwnNotificationRead, NotificationError } from "./domain/notifications.js";
+import { EVALUATION_CRITERIA, EVALUATION_GROUPS, EVALUATION_RUBRIC_VERSION } from "./domain/evaluation-rubric.js";
 
 const rootDir = join(fileURLToPath(new URL("../..", import.meta.url)));
 const accountAssets = {
@@ -26,6 +27,11 @@ const draftAssets = {
   "/drafts.js": ["drafts.js", "text/javascript; charset=utf-8"],
   "/drafts-20261012.js": ["drafts.js", "text/javascript; charset=utf-8"],
   "/institutional-logo.png": ["institutional-logo.png", "image/png"]
+};
+const annexAssets = {
+  "/annexes": ["annexes.html", "text/html; charset=utf-8"],
+  "/annexes.css": ["annexes.css", "text/css; charset=utf-8"],
+  "/annexes.js": ["annexes.js", "text/javascript; charset=utf-8"]
 };
 const port = Number(process.env.PORT || 3000);
 const host = process.env.HOST || "127.0.0.1";
@@ -92,6 +98,16 @@ export function createAppServer({ poolFactory = createPool, secureCookies, trust
         } finally {
           await pool?.end();
         }
+        return;
+      }
+
+      if (url.pathname === "/api/reference/evaluation-rubric" && req.method === "GET") {
+        sendJson(res, 200, {
+          ok: true,
+          version: EVALUATION_RUBRIC_VERSION,
+          totalCriteria: EVALUATION_CRITERIA.length,
+          groups: EVALUATION_GROUPS
+        });
         return;
       }
 
@@ -644,7 +660,7 @@ export function createAppServer({ poolFactory = createPool, secureCookies, trust
         return;
       }
 
-      const privateAssets = { ...accountAssets, ...draftAssets };
+      const privateAssets = { ...accountAssets, ...draftAssets, ...annexAssets };
       if (req.method === "GET" && Object.hasOwn(privateAssets, url.pathname)) {
         const [filename, contentType] = privateAssets[url.pathname];
         const body = await readFile(join(rootDir, "backend/public", filename));
