@@ -1,0 +1,19 @@
+/* Identidad recuperada del prototipo: azul institucional, verde operativo y naranja metodológico. */
+:root{--brand-navy:#123a60;--brand-blue:#1f6fd0;--brand-green:#0e9e78;--brand-orange:#c65313;--brand-line:#dce4ed;--brand-soft:#f7f9fc}
+.site-header{background:var(--brand-navy);border-bottom-color:var(--brand-green)}
+.brand-mark{border-color:#8cb8db}.brand small{color:#d8e9f2}
+.primary-button{border-color:var(--brand-green);border-radius:8px;background:var(--brand-green);box-shadow:0 2px 5px rgba(16,30,46,.12)}
+.primary-button:hover{border-color:#08785d;background:#08785d;box-shadow:0 5px 12px rgba(14,158,120,.25)}
+.secondary-button{border-color:var(--brand-line);border-radius:8px;background:#fff;color:var(--brand-navy);box-shadow:0 1px 2px rgba(16,30,46,.06)}
+.secondary-button:hover{border-color:rgba(14,158,120,.65);background:#fff;color:var(--brand-navy);box-shadow:0 5px 14px rgba(16,30,46,.1)}
+.quiet-button{border-color:rgba(255,255,255,.42);border-radius:8px}.quiet-button:hover{background:rgba(255,255,255,.12)}
+.notification-bell,.move-button,.flow-zoom-button{border-color:var(--brand-line);border-radius:8px;background:#fff;color:var(--brand-navy);box-shadow:0 1px 2px rgba(16,30,46,.06)}
+.notification-bell:hover,.move-button:hover,.flow-zoom-button:hover{border-color:rgba(31,111,208,.62);background:var(--brand-soft);color:var(--brand-blue)}
+.name-guide,.version-guide,.method-rules{border-color:var(--brand-line);border-radius:8px;background:var(--brand-soft)}
+.name-guide summary::before,.version-guide summary::before{background:var(--brand-orange);box-shadow:0 3px 8px rgba(198,83,19,.24)}
+.page-heading h1,.section-heading h2,.section-heading h3{color:var(--brand-navy)}
+.annex-nav a{border-color:var(--brand-line);border-radius:8px;color:var(--brand-navy);box-shadow:0 1px 2px rgba(16,30,46,.06)}
+.annex-nav a:hover,.annex-nav a:focus-visible{border-color:rgba(14,158,120,.65);background:#fff;color:var(--brand-navy);box-shadow:0 5px 14px rgba(16,30,46,.1)}
+.annex-code{background:var(--brand-green)}
+.symbol-card,.precheck-grid article,.rubric-group{border-radius:8px;border-color:var(--brand-line)}
+.symbol-card{border-top-color:var(--brand-green)}

@@ -78,6 +78,7 @@ test("private consoles serve only their own assets with a restrictive policy", a
       ["/accounts.js", "text/javascript"],
       ["/drafts", "text/html"],
       ["/drafts.css", "text/css"],
+      ["/brand-theme.css", "text/css"],
       ["/analytics-report.css", "text/css"],
       ["/drafts.js", "text/javascript"],
       ["/drafts-20261012.js", "text/javascript"],
@@ -117,9 +118,11 @@ test("private consoles serve only their own assets with a restrictive policy", a
     const draftHtml = await (await fetch(base + "/drafts")).text();
     assert.match(draftHtml, /<form id="loginForm" method="post"/);
     assert.match(draftHtml, /href="\/drafts\.css\?v=20261012-2"/);
+    assert.match(draftHtml, /href="\/brand-theme\.css"/);
     assert.match(draftHtml, /src="\/drafts-20261012\.js"/);
     assert.match(draftHtml, /href="\/annexes">Anexos de consulta/);
     const annexHtml = await (await fetch(base + "/annexes")).text();
+    assert.match(annexHtml, /href="\/brand-theme\.css"/);
     assert.match(annexHtml, /A1 · Guía del flujograma/);
     assert.match(annexHtml, /A2 · Criterios de evaluación/);
     const rubricResponse = await fetch(base + "/api/reference/evaluation-rubric");
