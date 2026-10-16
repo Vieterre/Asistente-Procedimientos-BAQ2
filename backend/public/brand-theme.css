@@ -1,7 +1,9 @@
 /* Identidad recuperada del prototipo: azul institucional, verde operativo y naranja metodológico. */
-:root{--brand-navy:#123a60;--brand-blue:#1f6fd0;--brand-green:#0e9e78;--brand-orange:#c65313;--brand-line:#dce4ed;--brand-soft:#f7f9fc}
-.site-header{background:var(--brand-navy);border-bottom-color:var(--brand-green)}
+:root{--brand-navy:#123a60;--brand-blue:#1f6fd0;--brand-green:#0e9e78;--brand-orange:#c65313;--brand-line:#dce4ed;--brand-soft:#f7f9fc;--brand-ink:#19324a;--brand-muted:#5c6f82}
+body{background:#f5f7fa;color:var(--brand-ink)}
+.site-header{background:var(--brand-navy);border-bottom-color:var(--brand-green);box-shadow:0 2px 10px rgba(18,58,96,.16)}
 .brand-mark{border-color:#8cb8db}.brand small{color:#d8e9f2}
+.header-link{border-color:#8cb8db;border-radius:8px}.header-link:hover,.header-link:focus-visible{background:#fff;color:var(--brand-navy)}
 .primary-button{border-color:var(--brand-green);border-radius:8px;background:var(--brand-green);box-shadow:0 2px 5px rgba(16,30,46,.12)}
 .primary-button:hover{border-color:#08785d;background:#08785d;box-shadow:0 5px 12px rgba(14,158,120,.25)}
 .secondary-button{border-color:var(--brand-line);border-radius:8px;background:#fff;color:var(--brand-navy);box-shadow:0 1px 2px rgba(16,30,46,.06)}
@@ -9,11 +11,46 @@
 .quiet-button{border-color:rgba(255,255,255,.42);border-radius:8px}.quiet-button:hover{background:rgba(255,255,255,.12)}
 .notification-bell,.move-button,.flow-zoom-button{border-color:var(--brand-line);border-radius:8px;background:#fff;color:var(--brand-navy);box-shadow:0 1px 2px rgba(16,30,46,.06)}
 .notification-bell:hover,.move-button:hover,.flow-zoom-button:hover{border-color:rgba(31,111,208,.62);background:var(--brand-soft);color:var(--brand-blue)}
+.icon-close{border-radius:8px;color:var(--brand-navy)}.icon-close:hover{background:var(--brand-soft);color:var(--brand-blue)}
+.page-heading{padding-top:30px;border-bottom-color:var(--brand-line)}
+.page-heading p,.section-heading p{color:var(--brand-muted)}
+.section-heading{margin-bottom:18px}.section-heading h2{font-size:19px}
+.section,.annex-section{border-bottom-color:var(--brand-line)}
+.section-heading h2::after,.analytics-block-heading h3::after{display:block;width:42px;height:3px;margin-top:8px;background:var(--brand-green);content:""}
+.annex-section .section-heading h2::after{display:none}
 .name-guide,.version-guide,.method-rules{border-color:var(--brand-line);border-radius:8px;background:var(--brand-soft)}
 .name-guide summary::before,.version-guide summary::before{background:var(--brand-orange);box-shadow:0 3px 8px rgba(198,83,19,.24)}
 .page-heading h1,.section-heading h2,.section-heading h3{color:var(--brand-navy)}
+.method-help summary{border-color:#e2ad88;color:var(--brand-orange)}.method-help p{border-left-color:var(--brand-orange);background:#fff7f2;color:#604532}
+.notice{border-left-color:var(--brand-orange);background:#fff8f1;color:#604532}.notice a{color:var(--brand-navy)}
+.flow-review-summary,.password-section.required{border-left-color:var(--brand-orange)}
+.flow-review-summary.flow-review-ok{border-left-color:var(--brand-green);background:#f0faf7;color:#096950}
+.flow-review-summary.flow-review-warnings{border-left-color:var(--brand-orange);background:#fff8f1;color:#744b23}
+.flow-review-summary.flow-review-errors{border-left-color:#bd5140;background:#fff5f3}
+.login-panel,dialog{border-color:var(--brand-line);box-shadow:0 14px 34px rgba(18,58,96,.12)}
+input,select,textarea{border-color:#b9c9d8;color:var(--brand-ink)}
+input:hover,select:hover,textarea:hover{border-color:#91acc4}
+input:focus,select:focus,textarea:focus{border-color:var(--brand-blue);outline:3px solid rgba(31,111,208,.16);outline-offset:0}
+.editor-section,.list-section,.flow-section,.documents-section{border-color:var(--brand-line);border-top-color:var(--brand-green);border-radius:8px;box-shadow:0 5px 16px rgba(18,58,96,.07)}
+.norm-row,.activity-row,.record-row,.evaluation-criterion{border-color:var(--brand-line);border-radius:8px;box-shadow:0 1px 2px rgba(18,58,96,.03)}
+.activity-row{border-left-color:#9db2c4}.activity-row.decision-row{border-left-color:var(--brand-orange)}.activity-row.connector-row{border-left-color:var(--brand-blue)}.activity-row.control-row{border-left-color:var(--brand-green)}
+.draft-open{border-radius:6px}.draft-open:hover{background:#edf4fa}.draft-status,.state{color:#08765b}
+.table-scroll{border-color:var(--brand-line);border-radius:8px;box-shadow:0 1px 2px rgba(18,58,96,.04)}
+th,.version-guide th,.analytics-tables thead th,.analytics-table-section thead th{background:var(--brand-navy);color:#fff;border-color:#28557d}
+td,.version-guide td,.analytics-tables td,.analytics-table-section td{border-color:#e2e9f0}
+tbody tr:hover td{background:#f7faff}.row-actions button{border-color:var(--brand-line);border-radius:7px;color:var(--brand-navy)}.row-actions button:hover{border-color:#94b4ca;background:#f2f7fb}.row-actions button.danger{border-color:#dfa6a0;color:#a63223}
+.analytics-filters{margin-top:4px;padding:16px;border:1px solid var(--brand-line);border-left:4px solid var(--brand-green);border-radius:8px;background:#fff}
+.analytics-metric{border-color:var(--brand-line);border-top-color:var(--brand-green);border-radius:8px;box-shadow:0 3px 10px rgba(18,58,96,.05)}
+.analytics-metric strong{color:var(--brand-navy)}.analytics-tables h3,.analytics-block-heading h3,.analytics-table-section h3,.analytics-use-summary h3{color:var(--brand-navy)}
+.analytics-block-number{background:var(--brand-navy)}
+.analytics-section .secondary-button{border-color:#a9bfd0}.analytics-section .secondary-button:hover{border-color:var(--brand-green)}
+.notification-popover{border-color:var(--brand-line);border-radius:8px;box-shadow:0 16px 38px rgba(18,58,96,.2)}.notification-heading h2{color:var(--brand-navy)}.notification-item.unread .notification-open{border-left-color:var(--brand-green)}.notification-open:hover{background:#f2f8f6}
+.evaluation-variable-result,.evaluation-group,.evaluation-criterion{border-color:var(--brand-line);border-radius:8px}.evaluation-group>summary{background:#f4f8fb;color:var(--brand-navy)}.evaluation-group-toggle{color:var(--brand-green)}.evaluation-group-weight{background:#eaf2f8;color:var(--brand-navy)}
+.evaluation-criterion.passed{border-left-color:var(--brand-green)}.evaluation-criterion.failed{border-left-color:#bd5140}.evaluation-criterion.na{border-left-color:var(--brand-blue)}.evaluation-auto-concept{border-color:#b8dece;border-left-color:var(--brand-green);background:#f0faf7}.evaluation-decision-hint{border-left-color:var(--brand-blue);background:#f1f6fb}
 .annex-nav a{border-color:var(--brand-line);border-radius:8px;color:var(--brand-navy);box-shadow:0 1px 2px rgba(16,30,46,.06)}
 .annex-nav a:hover,.annex-nav a:focus-visible{border-color:rgba(14,158,120,.65);background:#fff;color:var(--brand-navy);box-shadow:0 5px 14px rgba(16,30,46,.1)}
 .annex-code{background:var(--brand-green)}
-.symbol-card,.precheck-grid article,.rubric-group{border-radius:8px;border-color:var(--brand-line)}
+.symbol-card,.precheck-grid article,.rubric-group{border-radius:8px;border-color:var(--brand-line);box-shadow:0 2px 7px rgba(18,58,96,.04)}
 .symbol-card{border-top-color:var(--brand-green)}
+.guide-rules,.rubric-summary{border-color:var(--brand-line)}.guide-rules>div,.rubric-summary>p{background:#fff}.guide-rules strong,.rubric-group summary strong{color:var(--brand-navy)}.rubric-group{border-left-color:var(--brand-green)}.rubric-group>summary{background:#f4f8fb}.group-toggle::before{color:var(--brand-green)}.summary-metric{background:#edf8f4}.summary-metric strong{color:var(--brand-navy)}
+@media(max-width:720px){.page-heading{padding-top:24px}.analytics-filters{padding:14px;border-left-width:3px}.section-heading h2{font-size:18px}}
