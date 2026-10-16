@@ -97,6 +97,7 @@ test("private consoles serve only their own assets with a restrictive policy", a
     }
     const accountsHtml = await (await fetch(base + "/accounts")).text();
     assert.match(accountsHtml, /<form id="loginForm" method="post"/);
+    assert.match(accountsHtml, /Validador y estructurador metodológico de procedimientos/);
     const accountsScript = await (await fetch(base + "/accounts.js")).text();
     for (const id of ["processDialog", "processTitle", "processOptions", "processMessage", "saveProcessButton", "closeProcessButton", "cancelProcessButton"]) {
       assert.match(accountsHtml, new RegExp(`id="${id}"`));
@@ -119,10 +120,12 @@ test("private consoles serve only their own assets with a restrictive policy", a
     assert.match(draftHtml, /<form id="loginForm" method="post"/);
     assert.match(draftHtml, /href="\/drafts\.css\?v=20261012-2"/);
     assert.match(draftHtml, /href="\/brand-theme\.css"/);
+    assert.match(draftHtml, /Validador y estructurador metodológico de procedimientos/);
     assert.match(draftHtml, /src="\/drafts-20261012\.js"/);
     assert.match(draftHtml, /href="\/annexes">Anexos de consulta/);
     const annexHtml = await (await fetch(base + "/annexes")).text();
     assert.match(annexHtml, /href="\/brand-theme\.css"/);
+    assert.match(annexHtml, /Validador y estructurador metodológico de procedimientos/);
     assert.match(annexHtml, /A1 · Guía del flujograma/);
     assert.match(annexHtml, /A2 · Criterios de evaluación/);
     const rubricResponse = await fetch(base + "/api/reference/evaluation-rubric");
