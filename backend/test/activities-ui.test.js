@@ -428,6 +428,17 @@ test("reports keep institutional branding exclusive and standard reports unbrand
   assert.match(script, /"Imprimir o guardar PDF institucional"/);
 });
 
+test("only the institutional print copy uses grayscale and a distinct No route", async () => {
+  const [script, css] = await Promise.all([
+    readFile(join(root, "backend/public/drafts.js"), "utf8"),
+    readFile(join(root, "backend/public/drafts.css"), "utf8")
+  ]);
+  assert.match(script, /if \(previewBranding === "institutional"\) printRoot\.classList\.add\("institutional-print"\)/);
+  assert.match(css, /@media print\{\.print-report-root\.institutional-print/);
+  assert.match(css, /\.print-report-root\.institutional-print \.preview-agency-mark img,\.print-report-root\.institutional-print \.preview-diagram svg\{filter:grayscale\(1\)\}/);
+  assert.match(css, /\.print-report-root\.institutional-print \.flow-edge\.no\{stroke-dasharray:8 4\}/);
+});
+
 test("evaluator can export the evaluation report with its findings and responses", async () => {
   const [html, script, css] = await Promise.all([
     readFile(join(root, "backend/public/drafts.html"), "utf8"),

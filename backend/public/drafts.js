@@ -4183,6 +4183,7 @@ async function printPreviewReport() {
   let restoreTimer;
   const printRoot = document.createElement("div");
   printRoot.className = "print-report-root";
+  if (previewBranding === "institutional") printRoot.classList.add("institutional-print");
   printRoot.append(report.cloneNode(true));
   const cleanup = () => {
     document.documentElement.classList.remove("printing-report");
