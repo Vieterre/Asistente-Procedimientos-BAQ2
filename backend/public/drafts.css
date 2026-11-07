@@ -175,8 +175,10 @@ body:has(#workspace:not([hidden]) #roleWorkspaceBanner[data-role="administrador"
 body:has(#workspace:not([hidden]) #roleWorkspaceBanner[data-role="administrador"]:not([hidden])) :is(#backFromAnalytics,#backFromConsultation,#backFromInstitutionalReports):focus-visible{outline:3px solid #123a60;outline-offset:3px}
 body:has(#workspace:not([hidden]) #roleWorkspaceBanner[data-role="administrador"]:not([hidden])) :is(#backFromAnalytics,#backFromConsultation,#backFromInstitutionalReports):disabled{background:#e8a855;border-color:#e8a855;color:#283d50;opacity:1;cursor:wait}
 
-/* Highlight the existing editor flow review without changing its behavior. */
-#reviewFlowButton{background:#ffad42;border-color:#ffad42;color:#172f45;box-shadow:none}
-#reviewFlowButton:hover:not(:disabled){background:#ffbf6b;border-color:#ffbf6b}
+
+/* White labels on a stronger orange for the two editor actions only. */
+#reviewFlowButton,.site-header .header-save-button:not(.is-saved){background:var(--brand-orange,#c65313);border-color:var(--brand-orange,#c65313);color:#fff;box-shadow:none}
+#reviewFlowButton:hover:not(:disabled),.site-header .header-save-button:not(.is-saved):hover:not(:disabled){background:#a9440d;border-color:#a9440d;color:#fff}
 #reviewFlowButton:focus-visible{outline:3px solid #123a60;outline-offset:3px}
-#reviewFlowButton:disabled{background:#e8a855;border-color:#e8a855;color:#283d50;opacity:1;cursor:wait}
+.site-header .header-save-button:focus-visible{outline:3px solid #fff;outline-offset:3px}
+#reviewFlowButton:disabled,.site-header .header-save-button:not(.is-saved):disabled{background:#a44d20;border-color:#a44d20;color:#fff;opacity:1;cursor:wait}
