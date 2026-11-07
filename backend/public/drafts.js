@@ -8,7 +8,7 @@ const ids = [
   "evaluationWorkspace", "evaluationProgress", "evaluationScore", "evaluationLevel", "evaluationVariableResults", "evaluationCriteriaGroups", "evaluationAutoConcept", "evaluationConcept", "evaluationDecisionHint", "evaluationMessage", "exportEvaluationReportButton", "saveEvaluationButton", "returnEvaluationButton", "favorableEvaluationButton",
   "returnedEvaluation", "returnedEvaluationSummary", "returnedEvaluationConcept", "returnedFindings", "saveEvaluationResponses", "returnedEvaluationMessage",
   "adminApprovalSection", "adminApprovalSummary", "adminApprovalObservation", "returnAdminApprovalButton", "approveAdminApprovalButton", "adminApprovalMessage", "adminApprovalQueue", "adminApprovalCount", "adminApprovalQueueMessage", "emptyAdminApprovalQueue", "adminApprovalQueueList", "refreshAdminApprovalQueue",
-  "draftName", "draftNameStatus", "processCode", "draftConsecutive", "draftCode", "draftCodeStatus", "draftObjective", "draftScope", "draftDefinitions", "draftDefinitionsStatus", "draftConditions", "saveDraftButton", "reloadDraftButton", "editorMessage", "headerSaveMessage",
+  "draftName", "draftNameStatus", "processCode", "draftConsecutive", "draftCode", "draftCodeStatus", "draftObjective", "draftScope", "draftDefinitions", "draftDefinitionsStatus", "draftConditions", "saveDraftButton", "reloadDraftButton", "editorMessage", "headerSaveMessage", "headerSaveLabel",
   "procedureProgress", "newDraftButton", "addNormButton", "normsList", "emptyNorms", "normReview", "addBoundaryButton", "addActivityButton", "addDecisionButton", "addConnectorButton", "activitiesList", "emptyActivities", "reviewFlowButton", "flowReviewResult", "refreshDraftsButton", "draftCount", "listMessage", "emptyDrafts",
   "draftList", "ownedDraftsSection", "flowSection", "flowSummary", "refreshFlowButton", "flowCanvas", "flowSvg",
   "zoomOutButton", "zoomInButton", "fitFlowButton", "resetFlowZoomButton", "flowZoomValue",
@@ -1578,11 +1578,13 @@ function setMessage(node, text, success = false) {
     ? [ui.editorMessage, ui.documentsMessage, ui.headerSaveMessage]
     : [node];
   for (const target of targets) {
-    const visibleText = target === ui.headerSaveMessage && text === "Guardado. Flujograma actualizado."
-      ? "Flujograma actualizado" : text;
+    const visibleText = target !== ui.headerSaveMessage ? text
+      : text === "Guardado. Flujograma actualizado." ? "Flujograma actualizado"
+      : text === "Guardando…" ? ""
+      : text.startsWith("Guardando… ") ? text.slice("Guardando… ".length) : text;
     if (target.textContent !== visibleText) target.textContent = visibleText;
     target.classList.toggle("success", success);
-    target.hidden = !text;
+    target.hidden = !visibleText;
   }
 }
 
@@ -3199,7 +3201,7 @@ function populateDraft(procedure) {
   syncProcedureCode();
   ui.editorTitle.textContent = "Editar borrador";
   ui.editorStatus.textContent = `${statusLabel(procedure.status)} · revisión ${procedure.revision}`;
-  ui.saveDraftButton.textContent = "Guardar cambios";
+  ui.headerSaveLabel.textContent = "Guardar cambios";
   ui.saveDocumentsButton.textContent = "Guardar cambios";
   ui.reloadDraftButton.hidden = true;
   dirty = false;
@@ -3217,7 +3219,7 @@ function syncSaveControls() {
   const label = saveInFlight ? "Guardando…" : currentDraft ? "Guardar cambios" : "Guardar borrador";
   const saved = !saveInFlight && !dirty && confirmedSave?.generation === draftEditorGeneration &&
     confirmedSave?.editVersion === flowReviewVersion;
-  ui.saveDraftButton.textContent = saved ? "✓ Guardado" : label;
+  ui.headerSaveLabel.textContent = saved ? "✓ Guardado" : label;
   ui.saveDraftButton.classList.toggle("is-saved", saved);
   ui.saveDocumentsButton.textContent = label;
   if (saveInFlight) {
@@ -3307,7 +3309,7 @@ function newDraft() {
   ui.processCode.disabled = false;
   ui.editorTitle.textContent = "Nuevo borrador";
   ui.editorStatus.textContent = "Borrador no guardado";
-  ui.saveDraftButton.textContent = "Guardar borrador";
+  ui.headerSaveLabel.textContent = "Guardar borrador";
   ui.saveDocumentsButton.textContent = "Guardar borrador";
   ui.reloadDraftButton.hidden = true;
   dirty = false;
@@ -3525,7 +3527,7 @@ ui.draftForm.addEventListener("submit", async event => {
     syncProcedureCode();
     ui.editorTitle.textContent = "Editar borrador";
     ui.editorStatus.textContent = currentDraft.status + " · revisión " + currentDraft.revision;
-    ui.saveDraftButton.textContent = "Guardar cambios";
+    ui.headerSaveLabel.textContent = "Guardar cambios";
     ui.saveDocumentsButton.textContent = "Guardar cambios";
     ui.reloadDraftButton.hidden = true;
     dirty = hasNewerEdits;
