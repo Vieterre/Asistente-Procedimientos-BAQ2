@@ -16,7 +16,7 @@ function harness() {
   const ui = new Proxy({}, { get(_, key) { if (!elements.has(key)) elements.set(key, new Element()); return elements.get(key); } });
   let submit;
   ui.draftForm.addEventListener = (_, handler) => { submit = handler; };
-  ui.draftForm.querySelectorAll = () => [ui.saveDraftButton, ui.processCode, ui.draftConsecutive, ui.draftObjective];
+  ui.draftForm.querySelectorAll = () => [ui.processCode, ui.draftConsecutive, ui.draftObjective];
   ui.documentsSection.querySelectorAll = () => [ui.saveDocumentsButton];
   ui.draftName.value = 'Procedimiento de prueba';
   ui.processCode.value = 'DE'; ui.draftConsecutive.value = '1';
