@@ -3224,6 +3224,7 @@ function applyDraftEditability() {
   ui.draftConsecutive.disabled = !editable || Boolean(currentDraft?.code && currentDraft.status !== "borrador");
   for (const control of ui.documentsSection.querySelectorAll("input, select, textarea, button")) control.disabled = !editable;
   ui.saveDraftButton.hidden = !editable;
+  ui.saveDraftButton.disabled = !editable;
   ui.saveDocumentsButton.hidden = !editable;
   ui.newDraftButton.disabled = !editable;
   const canSubmit = currentDraft && ["borrador", "devuelto_para_ajustes"].includes(currentDraft.status);
