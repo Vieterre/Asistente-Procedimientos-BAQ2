@@ -90,6 +90,8 @@ let returnedEvaluation = null;
 let returnedResponsesDirty = false;
 let previewBranding = "standard";
 let dirty = false;
+let saveInFlight = false;
+let draftEditorGeneration = 0;
 let flowReviewVersion = 0;
 let flowZoom = 100;
 let notificationTimer = null;
@@ -612,7 +614,9 @@ function markDirty() {
   dirty = true;
   flowReviewVersion += 1;
   lastFlowReviewPassed = false;
-  setMessage(ui.editorMessage, "");
+  const message = saveInFlight ? "Guardando… Hay cambios pendientes de otro guardado." : "Hay cambios pendientes.";
+  setMessage(ui.editorMessage, message);
+  setMessage(ui.documentsMessage, message);
   ui.flowReviewResult.replaceChildren();
   ui.flowReviewResult.hidden = true;
   refreshProcedureProgress();
@@ -2413,6 +2417,7 @@ async function openInstitutionalReport(id) {
 }
 
 function clearSession() {
+  draftEditorGeneration += 1;
   flowReviewVersion += 1;
   lastFlowReviewPassed = false;
   clearInterval(notificationTimer);
@@ -3081,6 +3086,7 @@ async function loadAdminApprovalQueue() {
 }
 
 async function openDraft(id, discardChanges = false) {
+  if (saveInFlight) return false;
   if (!discardChanges && dirty && !window.confirm("Hay cambios sin guardar. ¿Descartarlos y abrir este procedimiento?")) return false;
   setMessage(ui.listMessage, "");
 
@@ -3139,6 +3145,7 @@ async function reloadCurrentDraft() {
 }
 
 function populateDraft(procedure) {
+  draftEditorGeneration += 1;
   flowReviewVersion += 1;
   lastFlowReviewPassed = false;
   currentDraft = procedure;
@@ -3193,6 +3200,21 @@ function populateDraft(procedure) {
   void restoreFlowReviewState();
 }
 
+function syncSaveControls() {
+  const label = saveInFlight ? "Guardando…" : currentDraft ? "Guardar cambios" : "Guardar borrador";
+  for (const button of [ui.saveDraftButton, ui.saveDocumentsButton]) {
+    button.textContent = label;
+    if (saveInFlight) button.disabled = true;
+  }
+  ui.draftForm.setAttribute("aria-busy", String(saveInFlight));
+  if (saveInFlight) {
+    ui.newDraftButton.disabled = true;
+    ui.submitReviewButton.disabled = true;
+    // A newly created procedure locks its process once the server assigns its code.
+    if (!currentDraft) ui.processCode.disabled = true;
+  }
+}
+
 function applyDraftEditability() {
   const administrativeDecision = currentUserRole === "administrador" && Boolean(currentDraft?.adminApprovalByUserId);
   const editable = ["elaborador", "administrador"].includes(currentUserRole) &&
@@ -3209,6 +3231,7 @@ function applyDraftEditability() {
   ui.submitReviewButton.disabled = !canSubmit;
   ui.submitReviewButton.title = canSubmit ? "Enviar este borrador guardado para revisión" : "Abre un borrador guardado para habilitar el envío";
   ui.previewButton.hidden = currentUserRole !== "elaborador" && currentUserRole !== "administrador" && currentUserRole !== "evaluador";
+  syncSaveControls();
 }
 
 async function openAssignedProcedure(id) {
@@ -3232,7 +3255,9 @@ async function openAssignedProcedure(id) {
 }
 
 function newDraft() {
+  if (saveInFlight) return;
   if (dirty && !window.confirm("Hay cambios sin guardar. ¿Descartarlos?")) return;
+  draftEditorGeneration += 1;
   flowReviewVersion += 1;
   lastFlowReviewPassed = false;
   currentDraft = null;
@@ -3422,10 +3447,15 @@ ui.reviewFlowButton.addEventListener("click", async () => {
 
 ui.draftForm.addEventListener("submit", async event => {
   event.preventDefault();
+  if (saveInFlight) return;
   setMessage(ui.editorMessage, "");
   if (!confirmRepeatedApprovalNames()) return;
-  const button = ui.saveDraftButton;
-  button.disabled = true;
+  const savedEditVersion = flowReviewVersion;
+  const savedEditorGeneration = draftEditorGeneration;
+  saveInFlight = true;
+  syncSaveControls();
+  setMessage(ui.editorMessage, "Guardando…");
+  setMessage(ui.documentsMessage, "Guardando…");
 
   const name = ui.draftName.value.trim();
   syncProcedureNameValidity();
@@ -3461,36 +3491,33 @@ ui.draftForm.addEventListener("submit", async event => {
         })
       : await request("/api/procedures", { method: "POST", body, csrf: true });
 
+    // Keep the live row objects: existing controls close over these references.
+    // The response describes the submitted snapshot, not edits made while awaiting it.
+    if (savedEditorGeneration !== draftEditorGeneration) return;
+    const hasNewerEdits = savedEditVersion !== flowReviewVersion;
     currentDraft = result.procedure;
     currentPayload = result.procedure.payload;
-    normativityConfirmedMissingTypes = Array.isArray(currentPayload.settings?.normativityConfirmedMissingTypes)
-      ? currentPayload.settings.normativityConfirmedMissingTypes.filter(type => normTypes.includes(type))
-      : [];
-    normRows = Array.isArray(currentPayload.norms) ? currentPayload.norms.map(norm => ({ ...norm })) : [];
-    activityRows = Array.isArray(currentPayload.activities) ? currentPayload.activities.map(activity => ({ ...activity })) : [];
     renderFlow();
-    annexRows = Array.isArray(currentPayload.annexes) ? currentPayload.annexes.map(annex => ({ ...annex })) : [];
-    changeRows = Array.isArray(currentPayload.changes) ? currentPayload.changes.map(change => ({ ...change })) : [];
-    annexesNotApplicable = currentPayload.settings?.annexesNotApplicable === true;
-    renderNormativityReview();
-    renderAnnexes();
-    renderChanges();
     ui.processCode.value = currentDraft.processCode;
     ui.processCode.disabled = true;
-    ui.draftConsecutive.value = procedureConsecutive(currentDraft.code, currentDraft.processCode);
+    if (!hasNewerEdits) ui.draftConsecutive.value = procedureConsecutive(currentDraft.code, currentDraft.processCode);
     syncProcedureCode();
     ui.editorTitle.textContent = "Editar borrador";
     ui.editorStatus.textContent = currentDraft.status + " · revisión " + currentDraft.revision;
     ui.saveDraftButton.textContent = "Guardar cambios";
     ui.saveDocumentsButton.textContent = "Guardar cambios";
     ui.reloadDraftButton.hidden = true;
-    dirty = false;
+    dirty = hasNewerEdits;
     applyDraftEditability();
     refreshProcedureProgress();
-    setMessage(ui.editorMessage, "Borrador guardado.", true);
-    setMessage(ui.documentsMessage, "Borrador guardado.", true);
+    const message = hasNewerEdits
+      ? "Guardado lo enviado. Hay cambios pendientes; el flujograma muestra lo que está en pantalla."
+      : "Guardado. Flujograma actualizado.";
+    setMessage(ui.editorMessage, message, true);
+    setMessage(ui.documentsMessage, message, true);
     await loadDrafts();
   } catch (error) {
+    if (savedEditorGeneration !== draftEditorGeneration) return;
     if (error.code === "draft_conflict" && currentDraft) {
       ui.reloadDraftButton.hidden = false;
       const message = "El borrador cambió en otra sesión. Tus cambios siguen en pantalla; recarga la última versión para compararlos antes de continuar.";
@@ -3503,7 +3530,9 @@ ui.draftForm.addEventListener("submit", async event => {
       }
     }
   } finally {
-    button.disabled = false;
+    saveInFlight = false;
+    applyDraftEditability();
+    ui.processCode.disabled = Boolean(currentDraft) || ui.processCode.disabled;
   }
 });
 
