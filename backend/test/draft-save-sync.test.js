@@ -63,12 +63,12 @@ test('successive saves retain the control object and render the last saved edit'
   assert.equal(h.context.dirty, false);
   assert.equal(h.ui.documentsMessage.textContent, 'Guardado. Flujograma actualizado.');
   assert.equal(h.ui.headerSaveMessage.textContent, 'Flujograma actualizado');
-  assert.equal(h.ui.saveDraftButton.textContent, '✓ Guardado');
+  assert.equal(h.ui.headerSaveLabel.textContent, '✓ Guardado');
   assert.equal(h.ui.saveDraftButton.classList.contains('is-saved'), true);
   h.context.syncSaveControls();
-  assert.equal(h.ui.saveDraftButton.textContent, '✓ Guardado');
+  assert.equal(h.ui.headerSaveLabel.textContent, '✓ Guardado');
   h.edit('Nueva edición pendiente');
-  assert.equal(h.ui.saveDraftButton.textContent, 'Guardar cambios');
+  assert.equal(h.ui.headerSaveLabel.textContent, 'Guardar cambios');
   assert.equal(h.ui.saveDraftButton.classList.contains('is-saved'), false);
 });
 
@@ -78,8 +78,8 @@ test('edits during a pending save survive in every row collection and remain dir
   assert.equal(h.ui.saveDraftButton.disabled, true);
   assert.equal(h.ui.saveDocumentsButton.disabled, true);
   assert.equal(h.ui.saveDocumentsButton.textContent, 'Guardando…');
-  assert.equal(h.ui.headerSaveMessage.textContent, 'Guardando…');
-  assert.equal(h.ui.headerSaveMessage.hidden, false);
+  assert.equal(h.ui.headerSaveLabel.textContent, 'Guardando…');
+  assert.equal(h.ui.headerSaveMessage.hidden, true);
   assert.equal(h.ui.draftForm.attributes['aria-busy'], 'true');
   h.edit('Revisar pendiente'); objective.value = 'Objetivo posterior';
   h.context.normRows[0].norma = 'Nueva'; h.context.annexRows[0].documento = 'Nuevo'; h.context.changeRows[0].fecha = '2016-01-01';
@@ -96,7 +96,7 @@ test('edits during a pending save survive in every row collection and remain dir
   assert.match(h.svgText(), /Revisar pendiente/);
   assert.match(h.ui.documentsMessage.textContent, /Hay cambios pendientes/);
   assert.equal(h.ui.saveDraftButton.classList.contains('is-saved'), false);
-  assert.equal(h.ui.saveDraftButton.textContent, 'Guardar cambios');
+  assert.equal(h.ui.headerSaveLabel.textContent, 'Guardar cambios');
   assert.equal(h.ui.headerSaveMessage.textContent, h.ui.documentsMessage.textContent);
   const second = h.save(); h.succeed(); await second;
   assert.equal(h.sent[1].body.payload.fields.objetivo, 'Objetivo posterior');
