@@ -82,8 +82,8 @@ test("sending for evaluation reviews flow errors before opening the evaluator se
   const script = await readFile(join(root, "backend/public/drafts.js"), "utf8");
   const handler = script.match(/ui\.submitReviewButton\.addEventListener\("click", async \(\) => \{[\s\S]*?(?=\nui\.cancelSubmitReview)/)?.[0];
   assert.ok(handler, "submit action handler should be present");
-  assert.match(handler, /request\("\/api\/procedures\/flow-review"/);
-  assert.match(handler, /showFlowReview\(issues, completenessIssues\)/);
+  assert.match(handler, /await runFlowReview\(\)/);
+  assert.match(script, /showFlowReview\(issues, completenessIssues\)/);
   assert.match(handler, /issue\.severity !== "warning"/);
   assert.match(handler, /blockingIssues\.length \|\| completenessIssues\.length/);
   assert.match(handler, /Corrige las fallas del flujo y los campos obligatorios antes de enviar a evaluación/);

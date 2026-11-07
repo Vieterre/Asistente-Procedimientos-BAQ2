@@ -176,9 +176,13 @@ body:has(#workspace:not([hidden]) #roleWorkspaceBanner[data-role="administrador"
 body:has(#workspace:not([hidden]) #roleWorkspaceBanner[data-role="administrador"]:not([hidden])) :is(#backFromAnalytics,#backFromConsultation,#backFromInstitutionalReports):disabled{background:#e8a855;border-color:#e8a855;color:#283d50;opacity:1;cursor:wait}
 
 
-/* White labels on a stronger orange for the two editor actions only. */
-#reviewFlowButton,.site-header .header-save-button:not(.is-saved){background:var(--brand-orange,#c65313);border-color:var(--brand-orange,#c65313);color:#fff;box-shadow:none}
-#reviewFlowButton:hover:not(:disabled),.site-header .header-save-button:not(.is-saved):hover:not(:disabled){background:#a9440d;border-color:#a9440d;color:#fff}
+
+/* Preserve the user-selected light orange and white labels for the two editor actions. */
+#reviewFlowButton:not(.is-reviewed),.site-header .header-save-button:not(.is-saved){background:#ffad42;border-color:#ffad42;color:#fff;box-shadow:none}
+#reviewFlowButton:not(.is-reviewed):hover:not(:disabled),.site-header .header-save-button:not(.is-saved):hover:not(:disabled){background:#ffbf6b;border-color:#ffbf6b;color:#fff}
 #reviewFlowButton:focus-visible{outline:3px solid #123a60;outline-offset:3px}
 .site-header .header-save-button:focus-visible{outline:3px solid #fff;outline-offset:3px}
-#reviewFlowButton:disabled,.site-header .header-save-button:not(.is-saved):disabled{background:#a44d20;border-color:#a44d20;color:#fff;opacity:1;cursor:wait}
+#reviewFlowButton:disabled,.site-header .header-save-button:not(.is-saved):disabled{background:#ffad42;border-color:#ffad42;color:#fff;opacity:1;cursor:wait}
+#reviewFlowButton.is-reviewed{background:var(--brand-green);border-color:var(--brand-green);color:#fff}
+#reviewFlowButton.is-reviewed:hover:not(:disabled){background:#08785d;border-color:#08785d}
+.save-status-announcement{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;border:0}
