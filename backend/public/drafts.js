@@ -1,4 +1,5 @@
 const ids = [
+  "consultationButton", "consultationSection", "backFromConsultation", "consultationMessage", "consultationListing", "consultationFilters", "consultationProcess", "consultationStatus", "refreshConsultation", "consultationCount", "consultationEmpty", "consultationList", "consultationDetail", "consultationDetailTitle", "backToConsultationList", "consultationContent",
   "loginView", "loginForm", "loginUsername", "loginPassword", "loginOtp", "loginMessage",
   "workspace", "sessionControls", "sessionIdentity", "notificationCenter", "notificationBell", "notificationPopover", "notificationCount", "emptyNotifications", "notificationList", "markAllNotificationsRead", "logoutButton", "welcomeText", "roleWorkspaceBanner", "roleBannerEyebrow", "roleBannerTitle", "roleBannerDescription",
   "pageHeading", "analyticsButton", "analyticsSection", "analyticsTitle", "analyticsScope", "backFromAnalytics", "refreshAnalytics", "analyticsFilters", "analyticsPeriod", "analyticsProcess", "analyticsRole", "analyticsProcessField", "analyticsRoleField", "analyticsByProcessSection", "exportAnalyticsButton", "analyticsMessage", "analyticsMetrics", "analyticsByDay", "analyticsByProcess", "emptyAnalyticsDays", "emptyAnalyticsProcesses", "analyticsLogins", "emptyAnalyticsLogins", "analyticsUsageMetrics",
@@ -57,6 +58,7 @@ const errorMessages = {
   invalid_evaluation_response: "Revisa las respuestas a los hallazgos.",
   correction_responses_required: "Responde los hallazgos pendientes antes de reenviar.",
   notification_not_found: "La notificación ya no está disponible. Actualiza la lista.",
+  invalid_consultation_filter: "Selecciona un proceso y estado válidos.",
   invalid_analytics_period: "Selecciona un periodo válido.",
   invalid_analytics_process: "Selecciona un proceso válido.",
   invalid_analytics_role: "Selecciona un rol válido."
@@ -1448,13 +1450,22 @@ function flowLinksFor(items) {
 }
 
 function renderFlow() {
-  const svg = ui.flowSvg;
-  svg.replaceChildren();
+  const layout = drawProcedureFlow(ui.flowSvg, activityRows);
   ui.flowSection.hidden = activityRows.length === 0;
   if (!activityRows.length) return;
+  flowIntrinsicWidth = layout.width;
+  flowIntrinsicHeight = layout.height;
+  ui.flowSummary.textContent = layout.summary;
+  ui.flowSummary.classList.toggle("is-warning", layout.warning);
+  setFlowZoom(flowZoom);
+}
+
+function drawProcedureFlow(svg, items, markerPrefix = "flow") {
+  svg.replaceChildren();
+  if (!items.length) return { width: 760, height: 0, summary: "Sin actividades registradas.", warning: false };
   const showEvidence = true;
 
-  const roles = [...new Set(activityRows.filter(item => !["Inicio", "Fin", "Conector"].includes(item.tipo))
+  const roles = [...new Set(items.filter(item => !["Inicio", "Fin", "Conector"].includes(item.tipo))
     .flatMap(item => {
       const names = String(item.responsable || "").split(";").map(role => role.trim()).filter(Boolean);
       return names.length ? names : ["Sin responsable"];
@@ -1463,27 +1474,25 @@ function renderFlow() {
   const singleOperationalResponsible = roles.length === 1 && roles[0] !== "Sin responsable";
   const laneWidth = showEvidence ? 360 : 260;
   const rowHeight = showEvidence ? 168 : 132;
-  const { links: flowLinks, outerRouteCount } = flowLinksFor(activityRows);
+  const { links: flowLinks, outerRouteCount } = flowLinksFor(items);
   const routeGap = 30;
   const leftMargin = Math.max(80, 60 + outerRouteCount.left * routeGap);
   const rightMargin = Math.max(80, 60 + outerRouteCount.right * routeGap);
   const width = Math.max(760, leftMargin + roles.length * laneWidth + rightMargin);
-  const itemHeights = activityRows.map(item => {
+  const itemHeights = items.map(item => {
     return Math.max(rowHeight, flowNodeHalfHeight(item) * 2 + (flowEvidenceFor(item, showEvidence) ? 136 : 44));
   });
   const height = 118 + itemHeights.reduce((total, itemHeight) => total + itemHeight, 0) + 32;
-  flowIntrinsicWidth = width;
-  flowIntrinsicHeight = height;
+
   svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
   svg.setAttribute("width", width);
   svg.setAttribute("height", height);
-  ui.flowSummary.textContent = `${activityRows.length} elementos · ${roles.length} responsable${roles.length === 1 ? "" : "s"}`;
-  if (singleOperationalResponsible) ui.flowSummary.textContent += " · Aviso: revise la concentración de responsabilidades.";
-  ui.flowSummary.classList.toggle("is-warning", singleOperationalResponsible);
+  let summary = `${items.length} elementos · ${roles.length} responsable${roles.length === 1 ? "" : "s"}`;
+  if (singleOperationalResponsible) summary += " · Aviso: revise la concentración de responsabilidades.";
   const title = svgNode("title", {}, "Flujograma del borrador abierto");
   const defs = svgNode("defs");
-  for (const [id, color] of [["flowArrow", "#607b84"], ["flowYes", "#168064"], ["flowNo", "#bd5140"]]) {
-    const marker = svgNode("marker", { id, viewBox: "0 0 10 10", refX: 9, refY: 5, markerWidth: 8, markerHeight: 8, orient: "auto-start-reverse" });
+  for (const [id, color] of [["Arrow", "#607b84"], ["Yes", "#168064"], ["No", "#bd5140"]]) {
+    const marker = svgNode("marker", { id: markerPrefix + id, viewBox: "0 0 10 10", refX: 9, refY: 5, markerWidth: 8, markerHeight: 8, orient: "auto-start-reverse" });
     marker.append(svgNode("path", { d: "M 0 0 L 10 5 L 0 10 z", fill: color }));
     defs.append(marker);
   }
@@ -1498,7 +1507,7 @@ function renderFlow() {
   }
 
   let nextY = 118;
-  const positions = new Map(activityRows.map((item, index) => {
+  const positions = new Map(items.map((item, index) => {
     const itemRoles = String(item.responsable || "").split(";").map(role => role.trim()).filter(Boolean);
     if (!itemRoles.length) itemRoles.push("Sin responsable");
     const lanes = itemRoles.map(role => roles.indexOf(role)).filter(lane => lane >= 0);
@@ -1529,13 +1538,13 @@ function renderFlow() {
       const targetTopY = target.y - flowNodeHalfHeight(target.item) - 4;
       points = `${source.x},${sourceBottomY} ${source.x},${sourceExitY} ${target.x},${sourceExitY} ${target.x},${targetTopY}`;
     }
-    const edge = svgNode("polyline", { points, class: `flow-edge ${branch}`, "marker-end": `url(#${link.label === "Sí" ? "flowYes" : link.label === "No" ? "flowNo" : "flowArrow"})` });
+    const edge = svgNode("polyline", { points, class: `flow-edge ${branch}`, "marker-end": `url(#${markerPrefix}${link.label === "Sí" ? "Yes" : link.label === "No" ? "No" : "Arrow"})` });
     edge.append(svgNode("title", {}, `${link.item.actividad || link.item.tipo} → ${target.item.actividad || target.item.tipo}${link.label ? ` (${link.label})` : ""}`));
     svg.append(edge);
     if (link.label) svg.append(svgNode("text", { x: source.x + side * (flowNodeHalfWidth(link.item) + 20), y: source.y - 9, class: `flow-route-label ${branch}`, "text-anchor": "middle" }, link.label));
   }
 
-  for (const [index, item] of activityRows.entries()) {
+  for (const [index, item] of items.entries()) {
     const position = positions.get(item.uid);
     if (!position) continue;
     const { x, y } = position;
@@ -1549,7 +1558,7 @@ function renderFlow() {
     const lines = layout ? layout.lines : flowLines(textValue, 24);
     const textOffset = layout?.textOffset || 0;
     lines.forEach((line, lineIndex) => group.append(svgNode("text", { x, y: y + textOffset + (lineIndex - (lines.length - 1) / 2) * 17 + 5, class: "flow-text", "text-anchor": "middle" }, line)));
-    const activityNumber = displayActivityNumber(item, index);
+    const activityNumber = item.tipo === "Actividad" ? String(items.slice(0, index + 1).filter(entry => entry.tipo === "Actividad").length) : "";
     if (activityNumber) {
       group.append(svgNode("circle", { cx: x - 90, cy: y - 30, r: 13, class: "flow-activity-number" }));
       group.append(svgNode("text", { x: x - 90, y: y - 26, class: "flow-activity-number-text", "text-anchor": "middle" }, activityNumber));
@@ -1569,7 +1578,7 @@ function renderFlow() {
       svg.append(record);
     }
   }
-  setFlowZoom(flowZoom);
+  return { width, height, summary, warning: singleOperationalResponsible };
 }
 
 function setMessage(node, text, success = false) {
@@ -2310,6 +2319,8 @@ function describeAnalyticsProcedureTable() {
 }
 
 async function showAnalytics() {
+  consultationRequestVersion++;
+  ui.consultationSection.hidden = true;
   if (!["administrador", "evaluador"].includes(currentUserRole)) return;
   const evaluatorView = currentUserRole === "evaluador";
   ui.analyticsTitle.textContent = evaluatorView ? "D1 · Mi analítica" : "D1 · Analítica";
@@ -2386,6 +2397,8 @@ async function loadInstitutionalReports() {
 }
 
 function showInstitutionalReports() {
+  consultationRequestVersion++;
+  ui.consultationSection.hidden = true;
   if (currentUserRole !== "administrador") return;
   ui.notificationPopover.hidden = true;
   ui.notificationBell.setAttribute("aria-expanded", "false");
@@ -2429,6 +2442,11 @@ async function openInstitutionalReport(id) {
 }
 
 function clearSession() {
+  consultationRequestVersion++;
+  ui.consultationSection.hidden = true;
+  ui.consultationButton.hidden = true;
+  ui.consultationContent.replaceChildren();
+  ui.consultationList.replaceChildren();
   confirmedSave = null;
   draftEditorGeneration += 1;
   flowReviewVersion += 1;
@@ -2494,6 +2512,8 @@ function clearSession() {
 }
 
 async function startSession(user) {
+  ui.consultationSection.hidden = true;
+  ui.consultationButton.hidden = user.role !== "administrador" || user.mustChangePassword;
   clearInterval(notificationTimer);
   notificationTimer = null;
   ui.loginView.hidden = true;
@@ -4257,6 +4277,165 @@ async function printPreviewReport() {
   await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
   window.print();
 }
+
+let consultationRequestVersion = 0;
+
+function consultationDate(value) {
+  const date = new Date(value);
+  return value && !Number.isNaN(date.valueOf())
+    ? new Intl.DateTimeFormat('es-CO', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'America/Bogota' }).format(date)
+    : 'Sin fecha registrada';
+}
+
+function renderConsultationList(procedures) {
+  ui.consultationCount.textContent = `${procedures.length} procedimiento${procedures.length === 1 ? '' : 's'}`;
+  ui.consultationEmpty.hidden = procedures.length > 0;
+  ui.consultationList.replaceChildren(...procedures.map(procedure => {
+    const item = document.createElement('li');
+    item.className = 'consultation-card';
+    const info = document.createElement('div');
+    const name = document.createElement('h3');
+    name.textContent = procedure.name;
+    const code = document.createElement('p');
+    code.textContent = `${procedure.code || 'Código pendiente'} · ${procedure.processName || procedure.processCode} (${procedure.processCode})`;
+    const status = document.createElement('p');
+    status.textContent = `Estado: ${statusLabel(procedure.status)}`;
+    const people = document.createElement('p');
+    people.textContent = `Elaborador: ${procedure.authorName || 'Sin información'} · Evaluador: ${procedure.evaluatorName || 'Sin asignar'}`;
+    const date = document.createElement('p');
+    date.textContent = `Última actualización: ${consultationDate(procedure.updatedAt)}`;
+    info.append(name, code, status, people, date);
+    const button = document.createElement('button');
+    button.type = 'button'; button.className = 'secondary-button'; button.textContent = 'Ver';
+    button.setAttribute('aria-label', `Ver ${procedure.name}`);
+    button.addEventListener('click', () => openConsultationProcedure(procedure.id));
+    item.append(info, button);
+    return item;
+  }));
+}
+
+async function loadConsultationList() {
+  if (currentUserRole !== 'administrador') return;
+  const version = ++consultationRequestVersion;
+  setMessage(ui.consultationMessage, 'Consultando procedimientos…');
+  const params = new URLSearchParams({ processCode: ui.consultationProcess.value, status: ui.consultationStatus.value });
+  try {
+    const { procedures, processes } = await request('/api/admin/consultation/procedures?' + params);
+    if (version !== consultationRequestVersion || ui.consultationSection.hidden) return;
+    const selected = ui.consultationProcess.value;
+    const all = document.createElement('option'); all.value = ''; all.textContent = 'Todos los procesos';
+    ui.consultationProcess.replaceChildren(all, ...processes.map(process => {
+      const option = document.createElement('option'); option.value = process.code;
+      option.textContent = `${process.name} (${process.code})`; return option;
+    }));
+    ui.consultationProcess.value = selected;
+    renderConsultationList(procedures);
+    setMessage(ui.consultationMessage, '');
+  } catch (error) {
+    if (version === consultationRequestVersion) handleRequestError(error, ui.consultationMessage);
+  }
+}
+
+function showConsultation() {
+  if (currentUserRole !== 'administrador') return;
+  ui.analyticsSection.hidden = true; ui.institutionalReportsSection.hidden = true;
+  ui.pageHeading.hidden = true; ui.draftWorkspace.hidden = true;
+  ui.documentsSection.hidden = true; ui.flowSection.hidden = true;
+  ui.previewButton.hidden = true; ui.submitReviewButton.hidden = true;
+  ui.saveDraftButton.hidden = true;
+  ui.consultationSection.hidden = false;
+  ui.consultationDetail.hidden = true; ui.consultationListing.hidden = false;
+  if (!ui.consultationStatus.options.length) {
+    const all = document.createElement('option'); all.value = ''; all.textContent = 'Todos los estados';
+    ui.consultationStatus.append(all, ...Object.entries(procedureStatusLabels).map(([value, label]) => {
+      const option = document.createElement('option'); option.value = value; option.textContent = label; return option;
+    }));
+  }
+  void loadConsultationList();
+}
+
+function leaveConsultation() {
+  consultationRequestVersion++;
+  ui.consultationSection.hidden = true;
+  ui.consultationContent.replaceChildren();
+  ui.pageHeading.hidden = false; ui.draftWorkspace.hidden = false;
+  ui.consultationButton.focus();
+}
+
+function renderConsultationProcedure(procedure) {
+  const payload = procedure.payload && typeof procedure.payload === 'object' ? procedure.payload : {};
+  const fields = payload.fields || {};
+  const activities = Array.isArray(payload.activities) ? payload.activities : [];
+  const norms = Array.isArray(payload.norms) ? payload.norms : [];
+  const annexes = Array.isArray(payload.annexes) ? payload.annexes : [];
+  const changes = Array.isArray(payload.changes) ? payload.changes : [];
+  const report = document.createElement('article'); report.className = 'preview-report consultation-report';
+  const title = document.createElement('h3'); title.textContent = procedure.name;
+  const description = document.createElement('p');
+  description.textContent = `${procedure.code || 'Código pendiente'} · ${procedure.processName || procedure.processCode} · ${statusLabel(procedure.status)} · revisión ${procedure.revision} · versión ${procedure.version}`;
+  const people = document.createElement('p');
+  people.textContent = `Elaborador: ${procedure.authorName || 'Sin información'} · Evaluador: ${procedure.evaluatorName || 'Sin asignar'} · Actualizado: ${consultationDate(procedure.updatedAt)}`;
+  report.append(title, description, people);
+  report.append(reportSection('1', 'Identificación', reportTable(['Campo', 'Valor'], [
+    ['Nombre', procedure.name], ['Código', procedure.code || 'Código pendiente'], ['Proceso', `${procedure.processName || ''} (${procedure.processCode})`]
+  ], row => row)));
+  const context = document.createElement('div');
+  for (const [key, label] of [['objetivo','Objetivo'],['alcance','Alcance'],['definiciones','Definiciones'],['condiciones','Condiciones generales']]) {
+    const heading = document.createElement('h4'); heading.textContent = label;
+    context.append(heading, reportParagraphs(fields[key]));
+  }
+  report.append(reportSection('2', 'Marco contextual', context));
+  report.append(reportSection('3', 'Normatividad', reportTable(['Tipo','Norma','Año','Descripción','Artículo / sección','Entidad emisora'], norms,
+    row => [row.tipo,row.norma,row.anio,row.descripcion,row.articulo,row.entidad])));
+  const destinations = new Map(activities.map(row => [row.uid, row.actividad || row.descripcion || row.tipo]));
+  report.append(reportSection('4', 'Actividades', reportTable(['Tipo','Actividad','Descripción y rutas','Responsable','Registro / evidencia','Sistema / herramienta','Punto de control'], activities, row => {
+    const routes = row.tipo === 'Decisión' ? `\nSí → ${destinations.get(row.decisionSi) || 'Sin destino'}\nNo → ${destinations.get(row.decisionNo) || 'Sin destino'}`
+      : row.tipo === 'Conector' ? `\nConector ${row.connectorId || ''} → ${destinations.get(row.connectorDestino) || 'Sin destino'}` : '';
+    const control = row.tieneControl ? [['Propósito',row.controlAccion],['Responsable',row.controlResponsable],['Periodicidad',row.controlPeriodicidad],['Ejecución',row.controlEjecucion],['Desviación',row.controlDesviacion],['Evidencia',row.controlEvidencia]].map(([label,value]) => `${label}: ${value || 'Sin información'}`).join('\n') : 'No aplica';
+    return [row.tipo,row.actividad || row.connectorId,`${row.descripcion || ''}${routes}`,row.responsable,row.evidencia || row.controlEvidencia,row.sistema,control];
+  })));
+  const diagram = document.createElement('div'); diagram.className = 'consultation-diagram';
+  const svg = svgNode('svg', { role: 'img', 'aria-label': 'Flujograma de la última versión guardada' });
+  if (activities.length) { drawProcedureFlow(svg, activities, "consultationFlow"); diagram.append(svg); }
+  else diagram.textContent = 'Sin actividades registradas.';
+  report.append(reportSection('5', 'Flujograma', diagram));
+  const annexSection = payload.settings?.annexesNotApplicable ? reportParagraphs('No aplica. Este procedimiento no contiene documentos anexos.')
+    : reportTable(['Documento','Tipo','Código / referencia','Observación'], annexes, row => [row.documento,row.tipo,row.codigo,row.observacion]);
+  report.append(reportSection('6', 'Documentos anexos', annexSection));
+  report.append(reportSection('7', 'Control de cambios', reportTable(['Versión','Fecha registrada','Razón de la actualización'], changes, row => [row.version,row.fecha,row.razon])));
+  report.append(reportSection('8', 'Responsables registrados', reportTable(['Elaboró','Revisó','Aprobó'], [fields], row => [
+    [row.elaboro,row.elaboroNombre].filter(Boolean).join(' · '), [row.reviso,row.revisoNombre].filter(Boolean).join(' · '), [row.aprobo,row.aproboNombre].filter(Boolean).join(' · ')
+  ])));
+  // Only text, tables and SVG: no editor, approval, evaluation, print or export controls.
+  ui.consultationContent.replaceChildren(report);
+}
+
+async function openConsultationProcedure(id) {
+  if (currentUserRole !== 'administrador') return;
+  const version = ++consultationRequestVersion;
+  ui.consultationListing.hidden = true; ui.consultationDetail.hidden = false;
+  ui.consultationContent.replaceChildren();
+  setMessage(ui.consultationMessage, 'Consultando última versión guardada…');
+  try {
+    const { procedure } = await request('/api/admin/consultation/procedures/' + encodeURIComponent(id));
+    if (version !== consultationRequestVersion || ui.consultationSection.hidden) return;
+    renderConsultationProcedure(procedure);
+    setMessage(ui.consultationMessage, '');
+    ui.consultationDetailTitle.focus();
+  } catch (error) {
+    if (version === consultationRequestVersion) handleRequestError(error, ui.consultationMessage);
+  }
+}
+
+ui.consultationButton.addEventListener('click', showConsultation);
+ui.backFromConsultation.addEventListener('click', leaveConsultation);
+ui.consultationFilters.addEventListener('submit', event => { event.preventDefault(); void loadConsultationList(); });
+ui.refreshConsultation.addEventListener('click', loadConsultationList);
+ui.backToConsultationList.addEventListener('click', () => {
+  consultationRequestVersion++; ui.consultationDetail.hidden = true; ui.consultationListing.hidden = false;
+  ui.consultationContent.replaceChildren(); setMessage(ui.consultationMessage, '');
+  ui.consultationProcess.focus();
+});
 
 ui.previewButton.addEventListener("click", showPreview);
 ui.analyticsButton.addEventListener("click", showAnalytics);
