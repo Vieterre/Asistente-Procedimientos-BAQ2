@@ -168,3 +168,9 @@ body:has(#editorSection[hidden]) .header-save-control,
 .consultation-report .preview-report-section{overflow-x:auto}.consultation-report h3{color:#123a60}.consultation-report .preview-report-table{min-width:600px}
 .consultation-diagram{overflow-x:auto}.consultation-diagram svg{display:block;width:100%;min-width:760px;height:auto}
 @media(max-width:760px){.consultation-section>.section-heading,#consultationDetail>.section-heading{flex-wrap:wrap;align-items:flex-start}.consultation-card{align-items:flex-start;flex-wrap:wrap}.consultation-report{padding:14px}.page-heading{flex-wrap:wrap}}
+
+/* Administrative return actions share the pending-save orange; other roles keep their style. */
+body:has(#workspace:not([hidden]) #roleWorkspaceBanner[data-role="administrador"]:not([hidden])) :is(#backFromAnalytics,#backFromConsultation,#backFromInstitutionalReports){background:#ffad42;border-color:#ffad42;color:#172f45;box-shadow:none}
+body:has(#workspace:not([hidden]) #roleWorkspaceBanner[data-role="administrador"]:not([hidden])) :is(#backFromAnalytics,#backFromConsultation,#backFromInstitutionalReports):hover:not(:disabled){background:#ffbf6b;border-color:#ffbf6b}
+body:has(#workspace:not([hidden]) #roleWorkspaceBanner[data-role="administrador"]:not([hidden])) :is(#backFromAnalytics,#backFromConsultation,#backFromInstitutionalReports):focus-visible{outline:3px solid #123a60;outline-offset:3px}
+body:has(#workspace:not([hidden]) #roleWorkspaceBanner[data-role="administrador"]:not([hidden])) :is(#backFromAnalytics,#backFromConsultation,#backFromInstitutionalReports):disabled{background:#e8a855;border-color:#e8a855;color:#283d50;opacity:1;cursor:wait}
