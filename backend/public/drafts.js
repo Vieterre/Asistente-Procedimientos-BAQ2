@@ -9,7 +9,7 @@ const ids = [
   "evaluationWorkspace", "evaluationProgress", "evaluationScore", "evaluationLevel", "evaluationVariableResults", "evaluationCriteriaGroups", "evaluationAutoConcept", "evaluationConcept", "evaluationDecisionHint", "evaluationMessage", "exportEvaluationReportButton", "saveEvaluationButton", "returnEvaluationButton", "favorableEvaluationButton",
   "returnedEvaluation", "returnedEvaluationSummary", "returnedEvaluationConcept", "returnedFindings", "saveEvaluationResponses", "returnedEvaluationMessage",
   "adminApprovalSection", "adminApprovalSummary", "adminApprovalObservation", "returnAdminApprovalButton", "approveAdminApprovalButton", "adminApprovalMessage", "adminApprovalQueue", "adminApprovalCount", "adminApprovalQueueMessage", "emptyAdminApprovalQueue", "adminApprovalQueueList", "refreshAdminApprovalQueue",
-  "draftName", "draftNameStatus", "processCode", "draftConsecutive", "draftCode", "draftCodeStatus", "draftObjective", "draftScope", "draftDefinitions", "draftDefinitionsStatus", "draftConditions", "saveDraftButton", "reloadDraftButton", "editorMessage", "headerSaveMessage", "headerSaveLabel",
+  "draftName", "draftNameStatus", "processCode", "draftConsecutive", "draftCode", "draftCodeStatus", "draftObjective", "draftScope", "draftDefinitions", "draftDefinitionsStatus", "draftConditions", "saveDraftButton", "reloadDraftButton", "editorMessage", "headerSaveMessage", "headerSaveLabel", "saveStatusAnnouncement",
   "procedureProgress", "newDraftButton", "addNormButton", "normsList", "emptyNorms", "normReview", "addBoundaryButton", "addActivityButton", "addDecisionButton", "addConnectorButton", "activitiesList", "emptyActivities", "reviewFlowButton", "flowReviewResult", "refreshDraftsButton", "draftCount", "listMessage", "emptyDrafts",
   "draftList", "ownedDraftsSection", "flowSection", "flowSummary", "refreshFlowButton", "flowCanvas", "flowSvg",
   "zoomOutButton", "zoomInButton", "fitFlowButton", "resetFlowZoomButton", "flowZoomValue",
@@ -108,6 +108,8 @@ let changeRows = [];
 let annexesNotApplicable = false;
 let normativityConfirmedMissingTypes = [];
 let lastFlowReviewPassed = false;
+let flowReviewPending = false;
+let flowReviewRequestId = 0;
 let processNames = new Map();
 const processGroupDefinitions = [
   { label: "MACROPROCESOS – PROCESOS MISIONALES · DESARROLLO ECONÓMICO", codes: ["PD", "GT"] },
@@ -613,6 +615,15 @@ function displayActivityNumber(activity, index) {
   return String(activityRows.slice(0, index + 1).filter(item => item?.tipo === "Actividad").length);
 }
 
+function syncFlowReviewButton() {
+  ui.reviewFlowButton.classList.toggle("is-reviewed", lastFlowReviewPassed && !flowReviewPending);
+  ui.reviewFlowButton.setAttribute("aria-busy", String(flowReviewPending));
+  const editable = ["elaborador", "administrador"].includes(currentUserRole) &&
+    (!currentDraft || ["borrador", "devuelto_para_ajustes"].includes(currentDraft.status)) &&
+    !(currentUserRole === "administrador" && currentDraft?.adminApprovalByUserId);
+  ui.reviewFlowButton.disabled = flowReviewPending || !editable;
+}
+
 function markDirty() {
   confirmedSave = null;
   dirty = true;
@@ -625,6 +636,7 @@ function markDirty() {
   ui.flowReviewResult.hidden = true;
   refreshProcedureProgress();
   syncSaveControls();
+  syncFlowReviewButton();
 }
 
 function showFlowReview(issues, completenessIssues = []) {
@@ -633,6 +645,7 @@ function showFlowReview(issues, completenessIssues = []) {
   const errors = issues.filter(issue => issue.severity !== "warning");
   const warnings = issues.filter(issue => issue.severity === "warning");
   lastFlowReviewPassed = errors.length === 0 && completenessIssues.length === 0;
+  syncFlowReviewButton();
   const summary = document.createElement("p");
   summary.className = errors.length || completenessIssues.length ? "flow-review-summary flow-review-errors" : warnings.length ? "flow-review-summary flow-review-warnings" : "flow-review-summary flow-review-ok";
   const blockingSummary = [
@@ -684,21 +697,42 @@ function showFlowReview(issues, completenessIssues = []) {
   refreshProcedureProgress();
 }
 
-async function restoreFlowReviewState() {
+async function runFlowReview(showResults = true) {
   const version = flowReviewVersion;
+  const generation = draftEditorGeneration;
+  const requestId = ++flowReviewRequestId;
+  flowReviewPending = true;
+  lastFlowReviewPassed = false;
+  syncFlowReviewButton();
+  const isCurrent = () => requestId === flowReviewRequestId && version === flowReviewVersion && generation === draftEditorGeneration;
   try {
     const { issues, completenessIssues } = await request("/api/procedures/flow-review", {
       method: "POST", csrf: true,
       body: { activities: activityRows.map(activity => ({ ...activity })) }
     });
-    if (version !== flowReviewVersion) return;
-    lastFlowReviewPassed = issues.every(issue => issue.severity === "warning") && completenessIssues.length === 0;
-    refreshProcedureProgress();
-  } catch {
-    if (version !== flowReviewVersion) return;
+    if (!isCurrent()) return;
+    if (!Array.isArray(issues) || !Array.isArray(completenessIssues)) throw new Error("invalid_flow_review_response");
+    if (showResults) showFlowReview(issues, completenessIssues);
+    else {
+      lastFlowReviewPassed = issues.every(issue => issue.severity === "warning") && completenessIssues.length === 0;
+      refreshProcedureProgress();
+    }
+    return { issues, completenessIssues };
+  } catch (error) {
+    if (!isCurrent()) return;
     lastFlowReviewPassed = false;
-    refreshProcedureProgress();
+    if (showResults) showFlowReview([{ index: null, message: errorText(error) }]);
+    else refreshProcedureProgress();
+  } finally {
+    if (requestId === flowReviewRequestId) {
+      flowReviewPending = false;
+      syncFlowReviewButton();
+    }
   }
+}
+
+async function restoreFlowReviewState() {
+  await runFlowReview(false);
 }
 
 function focusFlowItem(index) {
@@ -1582,14 +1616,19 @@ function drawProcedureFlow(svg, items, markerPrefix = "flow") {
 }
 
 function setMessage(node, text, success = false) {
-  // All save locations present one state; editorMessage remains the sole live announcement.
-  const targets = [ui.editorMessage, ui.documentsMessage, ui.headerSaveMessage].includes(node)
-    ? [ui.editorMessage, ui.documentsMessage, ui.headerSaveMessage]
-    : [node];
+  const shared = [ui.editorMessage, ui.documentsMessage, ui.headerSaveMessage].includes(node);
+  const routineSave = text === "Hay cambios pendientes." || text.startsWith("Guardando…") ||
+    text === "Guardado. Flujograma actualizado." || text.startsWith("Guardado lo enviado.");
+  if (shared) {
+    const announcement = routineSave ? text : "";
+    if (ui.saveStatusAnnouncement.textContent !== announcement) ui.saveStatusAnnouncement.textContent = announcement;
+  }
+  const targets = shared ? [ui.editorMessage, ui.documentsMessage, ui.headerSaveMessage] : [node];
   for (const target of targets) {
-    // The header confirms clean saves by color; retain visible error/validation feedback.
-    const visibleText = target === ui.headerSaveMessage &&
-      (success || text === "Hay cambios pendientes." || text.startsWith("Guardando…")) ? "" : text;
+    // Keep errors/validations at the old editor location, but remove routine save feedback.
+    const hideRoutine = target === ui.editorMessage && routineSave;
+    const hideHeader = target === ui.headerSaveMessage && (success || routineSave);
+    const visibleText = hideRoutine || hideHeader ? "" : text;
     if (target.textContent !== visibleText) target.textContent = visibleText;
     target.classList.toggle("success", success);
     target.hidden = !visibleText;
@@ -2451,6 +2490,9 @@ function clearSession() {
   draftEditorGeneration += 1;
   flowReviewVersion += 1;
   lastFlowReviewPassed = false;
+  flowReviewRequestId += 1;
+  flowReviewPending = false;
+  ui.reviewFlowButton.classList.toggle("is-reviewed", false);
   clearInterval(notificationTimer);
   notificationTimer = null;
   csrfToken = "";
@@ -3182,6 +3224,9 @@ function populateDraft(procedure) {
   draftEditorGeneration += 1;
   flowReviewVersion += 1;
   lastFlowReviewPassed = false;
+  flowReviewRequestId += 1;
+  flowReviewPending = false;
+  ui.reviewFlowButton.classList.toggle("is-reviewed", false);
   currentDraft = procedure;
   returnedEvaluation = procedure.evaluation || null;
   returnedResponsesDirty = false;
@@ -3272,6 +3317,7 @@ function applyDraftEditability() {
   ui.submitReviewButton.title = canSubmit ? "Enviar este borrador guardado para revisión" : "Abre un borrador guardado para habilitar el envío";
   ui.previewButton.hidden = currentUserRole !== "elaborador" && currentUserRole !== "administrador" && currentUserRole !== "evaluador";
   syncSaveControls();
+  syncFlowReviewButton();
 }
 
 async function openAssignedProcedure(id) {
@@ -3301,6 +3347,9 @@ function newDraft() {
   draftEditorGeneration += 1;
   flowReviewVersion += 1;
   lastFlowReviewPassed = false;
+  flowReviewRequestId += 1;
+  flowReviewPending = false;
+  ui.reviewFlowButton.classList.toggle("is-reviewed", false);
   currentDraft = null;
   returnedEvaluation = null;
   returnedResponsesDirty = false;
@@ -3469,21 +3518,8 @@ ui.addConnectorButton.addEventListener("click", () => {
   });
 });
 
-ui.reviewFlowButton.addEventListener("click", async () => {
-  const button = ui.reviewFlowButton;
-  const version = flowReviewVersion;
-  button.disabled = true;
-  try {
-    const { issues, completenessIssues } = await request("/api/procedures/flow-review", {
-      method: "POST", csrf: true,
-      body: { activities: activityRows.map(activity => ({ ...activity })) }
-    });
-    if (version === flowReviewVersion) showFlowReview(issues, completenessIssues);
-  } catch (error) {
-    if (version === flowReviewVersion) showFlowReview([{ index: null, message: errorText(error) }]);
-  } finally {
-    button.disabled = false;
-  }
+ui.reviewFlowButton.addEventListener("click", () => {
+  if (!flowReviewPending) void runFlowReview();
 });
 
 ui.draftForm.addEventListener("submit", async event => {
@@ -3633,11 +3669,9 @@ ui.submitReviewButton.addEventListener("click", async () => {
       }
       if (returnedResponsesDirty) await saveReturnedResponses();
     }
-    const { issues, completenessIssues } = await request("/api/procedures/flow-review", {
-      method: "POST", csrf: true,
-      body: { activities: activityRows.map(activity => ({ ...activity })) }
-    });
-    showFlowReview(issues, completenessIssues);
+    const reviewed = await runFlowReview();
+    if (!reviewed) return;
+    const { issues, completenessIssues } = reviewed;
     const blockingIssues = issues.filter(issue => issue.severity !== "warning");
     if (blockingIssues.length || completenessIssues.length) {
       setMessage(ui.editorMessage, "Corrige las fallas del flujo y los campos obligatorios antes de enviar a evaluación.");

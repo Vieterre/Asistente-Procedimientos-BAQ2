@@ -27,7 +27,7 @@ function harness() {
     currentDraft: { id: 'isolated', revision: 1, status: 'borrador', code: 'DE-P-001' }, currentUserRole: 'elaborador',
     currentPayload: { fields: { objetivo: 'Original' } }, textFields: [['draftObjective', 'objetivo']],
     normRows: [{ norma: 'Original' }], activityRows: [activity], annexRows: [{ documento: 'Original' }], changeRows: [{ fecha: '2015-01-01' }],
-    normativityConfirmedMissingTypes: [], annexesNotApplicable: false, flowReviewVersion: 1, draftEditorGeneration: 1,
+    normativityConfirmedMissingTypes: [], annexesNotApplicable: false, flowReviewVersion: 1, draftEditorGeneration: 1, lastFlowReviewPassed: false, flowReviewPending: false, flowReviewRequestId: 0,
     saveInFlight: false, confirmedSave: null, dirty: true, flowZoom: 100, flowIntrinsicWidth: 0, flowIntrinsicHeight: 0,
     confirmRepeatedApprovalNames: () => true, syncProcedureNameValidity() {}, approvalRoleValue: () => 'Asesor',
     request(path, options) { sent.push({ path, body: structuredClone(options.body) }); return new Promise((resolve, reject) => pending.push({ resolve, reject })); },
@@ -38,7 +38,7 @@ function harness() {
   vm.createContext(context);
   const rendering = source.slice(source.indexOf('function svgNode('), source.indexOf('\nfunction errorText('));
   vm.runInContext(rendering, context);
-  vm.runInContext(source.slice(source.indexOf("function markDirty()"), source.indexOf("function showFlowReview(")), context);
+  vm.runInContext(source.slice(source.indexOf("function syncFlowReviewButton()"), source.indexOf("function showFlowReview(")), context);
   vm.runInContext(source.slice(source.indexOf('function syncSaveControls('), source.indexOf('\nasync function openAssignedProcedure(')), context);
   vm.runInContext(source.slice(source.indexOf('ui.draftForm.addEventListener("submit",'), source.indexOf('\nui.draftName.addEventListener')), context);
   function edit(value) { activity.actividad = value; context.markDirty(); }
@@ -156,4 +156,29 @@ test('revision conflicts keep local edits and expose reload without claiming suc
   assert.match(h.ui.documentsMessage.textContent, /Tus cambios siguen en pantalla/);
   assert.equal(h.ui.saveDraftButton.classList.contains('is-saved'), false);
   assert.equal(h.ui.headerSaveMessage.textContent, h.ui.documentsMessage.textContent);
+});
+
+
+test('saving an unchanged reviewed flow preserves its green review indicator', async () => {
+  const h = harness(); h.context.lastFlowReviewPassed = true; h.context.syncFlowReviewButton();
+  assert.equal(h.ui.reviewFlowButton.classList.contains('is-reviewed'), true);
+  const saving = h.save(); h.succeed(); await saving;
+  assert.equal(h.ui.reviewFlowButton.classList.contains('is-reviewed'), true);
+  h.edit('Cambio del flujo');
+  assert.equal(h.ui.reviewFlowButton.classList.contains('is-reviewed'), false);
+});
+
+test('routine save feedback is absent below Activities while errors remain visible', () => {
+  const h = harness();
+  for (const text of ['Guardando…','Hay cambios pendientes.','Guardado. Flujograma actualizado.','Guardado lo enviado. Hay cambios pendientes; el flujograma muestra lo que está en pantalla.']) {
+    h.context.setMessage(h.ui.documentsMessage, text, text.startsWith('Guardado'));
+    assert.equal(h.ui.editorMessage.hidden, true);
+    assert.equal(h.ui.editorMessage.textContent, '');
+    assert.equal(h.ui.documentsMessage.textContent, text);
+    assert.equal(h.ui.saveStatusAnnouncement.textContent, text);
+  }
+  h.context.setMessage(h.ui.editorMessage, 'Corrige las fallas del flujo.');
+  assert.equal(h.ui.editorMessage.hidden, false);
+  assert.equal(h.ui.editorMessage.textContent, 'Corrige las fallas del flujo.');
+  assert.equal(h.ui.saveStatusAnnouncement.textContent, '');
 });
