@@ -8,7 +8,7 @@ const ids = [
   "evaluationWorkspace", "evaluationProgress", "evaluationScore", "evaluationLevel", "evaluationVariableResults", "evaluationCriteriaGroups", "evaluationAutoConcept", "evaluationConcept", "evaluationDecisionHint", "evaluationMessage", "exportEvaluationReportButton", "saveEvaluationButton", "returnEvaluationButton", "favorableEvaluationButton",
   "returnedEvaluation", "returnedEvaluationSummary", "returnedEvaluationConcept", "returnedFindings", "saveEvaluationResponses", "returnedEvaluationMessage",
   "adminApprovalSection", "adminApprovalSummary", "adminApprovalObservation", "returnAdminApprovalButton", "approveAdminApprovalButton", "adminApprovalMessage", "adminApprovalQueue", "adminApprovalCount", "adminApprovalQueueMessage", "emptyAdminApprovalQueue", "adminApprovalQueueList", "refreshAdminApprovalQueue",
-  "draftName", "draftNameStatus", "processCode", "draftConsecutive", "draftCode", "draftCodeStatus", "draftObjective", "draftScope", "draftDefinitions", "draftDefinitionsStatus", "draftConditions", "saveDraftButton", "reloadDraftButton", "editorMessage",
+  "draftName", "draftNameStatus", "processCode", "draftConsecutive", "draftCode", "draftCodeStatus", "draftObjective", "draftScope", "draftDefinitions", "draftDefinitionsStatus", "draftConditions", "saveDraftButton", "reloadDraftButton", "editorMessage", "headerSaveMessage",
   "procedureProgress", "newDraftButton", "addNormButton", "normsList", "emptyNorms", "normReview", "addBoundaryButton", "addActivityButton", "addDecisionButton", "addConnectorButton", "activitiesList", "emptyActivities", "reviewFlowButton", "flowReviewResult", "refreshDraftsButton", "draftCount", "listMessage", "emptyDrafts",
   "draftList", "ownedDraftsSection", "flowSection", "flowSummary", "refreshFlowButton", "flowCanvas", "flowSvg",
   "zoomOutButton", "zoomInButton", "fitFlowButton", "resetFlowZoomButton", "flowZoomValue",
@@ -1570,9 +1570,15 @@ function renderFlow() {
 }
 
 function setMessage(node, text, success = false) {
-  node.textContent = text;
-  node.classList.toggle("success", success);
-  node.hidden = !text;
+  // All save locations present one state; editorMessage remains the sole live announcement.
+  const targets = [ui.editorMessage, ui.documentsMessage, ui.headerSaveMessage].includes(node)
+    ? [ui.editorMessage, ui.documentsMessage, ui.headerSaveMessage]
+    : [node];
+  for (const target of targets) {
+    if (target.textContent !== text) target.textContent = text;
+    target.classList.toggle("success", success);
+    target.hidden = !text;
+  }
 }
 
 function errorText(error) {
