@@ -3218,7 +3218,7 @@ function syncSaveControls() {
   const label = saveInFlight ? "Guardando…" : currentDraft ? "Guardar cambios" : "Guardar borrador";
   const saved = !saveInFlight && !dirty && confirmedSave?.generation === draftEditorGeneration &&
     confirmedSave?.editVersion === flowReviewVersion;
-  ui.headerSaveLabel.textContent = saveInFlight ? "Guardando…" : "Guardar cambios";
+  ui.headerSaveLabel.textContent = saveInFlight ? "Guardando…" : saved ? "Guardado exitoso" : "Guardar cambios";
   ui.saveDraftButton.classList.toggle("is-saved", saved);
   ui.saveDocumentsButton.textContent = label;
   if (saveInFlight) {
