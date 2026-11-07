@@ -62,6 +62,7 @@ test('successive saves retain the control object and render the last saved edit'
   assert.match(h.svgText(), /Revisar C/);
   assert.equal(h.context.dirty, false);
   assert.equal(h.ui.documentsMessage.textContent, 'Guardado. Flujograma actualizado.');
+  assert.equal(h.ui.headerSaveMessage.textContent, h.ui.documentsMessage.textContent);
   assert.equal(h.ui.saveDraftButton.textContent, 'Guardar cambios');
 });
 
@@ -71,6 +72,8 @@ test('edits during a pending save survive in every row collection and remain dir
   assert.equal(h.ui.saveDraftButton.disabled, true);
   assert.equal(h.ui.saveDocumentsButton.disabled, true);
   assert.equal(h.ui.saveDocumentsButton.textContent, 'Guardando…');
+  assert.equal(h.ui.headerSaveMessage.textContent, 'Guardando…');
+  assert.equal(h.ui.headerSaveMessage.hidden, false);
   assert.equal(h.ui.draftForm.attributes['aria-busy'], 'true');
   h.edit('Revisar pendiente'); objective.value = 'Objetivo posterior';
   h.context.normRows[0].norma = 'Nueva'; h.context.annexRows[0].documento = 'Nuevo'; h.context.changeRows[0].fecha = '2016-01-01';
@@ -86,6 +89,7 @@ test('edits during a pending save survive in every row collection and remain dir
   assert.equal(h.context.dirty, true);
   assert.match(h.svgText(), /Revisar pendiente/);
   assert.match(h.ui.documentsMessage.textContent, /Hay cambios pendientes/);
+  assert.equal(h.ui.headerSaveMessage.textContent, h.ui.documentsMessage.textContent);
   const second = h.save(); h.succeed(); await second;
   assert.equal(h.sent[1].body.payload.fields.objetivo, 'Objetivo posterior');
   assert.equal(h.sent[1].body.payload.activities[0].actividad, 'Revisar pendiente');
@@ -101,6 +105,7 @@ test('duplicate submits send one request; failures preserve input and permit ret
   assert.equal(h.activity.actividad, 'Revisar sin perder');
   assert.equal(h.context.dirty, true);
   assert.match(h.ui.documentsMessage.textContent, /Sin conexión/);
+  assert.equal(h.ui.headerSaveMessage.textContent, h.ui.documentsMessage.textContent);
   assert.equal(h.ui.saveDraftButton.disabled, false);
   assert.equal(h.ui.saveDocumentsButton.disabled, false);
   const retry = h.save(); h.succeed(); await retry;
@@ -139,4 +144,5 @@ test('revision conflicts keep local edits and expose reload without claiming suc
   assert.equal(h.context.dirty, true);
   assert.equal(h.ui.reloadDraftButton.hidden, false);
   assert.match(h.ui.documentsMessage.textContent, /Tus cambios siguen en pantalla/);
+  assert.equal(h.ui.headerSaveMessage.textContent, h.ui.documentsMessage.textContent);
 });

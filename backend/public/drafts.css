@@ -130,9 +130,10 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 @page evaluation-report{size:A4 landscape;margin:10mm}.evaluation-pdf-report{page:evaluation-report;margin:0;font-family:Aptos,"Segoe UI",Arial,sans-serif;color:#243746;font-size:9pt;line-height:1.4}.evaluation-pdf-report,.evaluation-pdf-report *{box-sizing:border-box}.evaluation-pdf-report h1,.evaluation-pdf-report h2{color:#004488}.evaluation-pdf-report h1{margin:0 0 14px;text-align:center;font-size:16pt}.evaluation-pdf-report h2{margin:16px 0 7px;font-size:12pt}.evaluation-pdf-report .evaluation-pdf-meta{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:5px 12px;margin:0;padding:10px;border:1px solid #b8c7cc;background:#f7f9fa}.evaluation-pdf-report .evaluation-pdf-meta dt{font-weight:700;color:#004488}.evaluation-pdf-report .evaluation-pdf-meta dd{margin:0}.evaluation-pdf-report .evaluation-pdf-concept{margin:0;padding:10px;border-left:4px solid #1d9a7c;background:#f3faf7;white-space:pre-wrap}.evaluation-pdf-report table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:7.5pt}.evaluation-pdf-report th,.evaluation-pdf-report td{border:1px solid #b8c7cc;padding:5px;vertical-align:top;text-align:left;white-space:pre-wrap;overflow-wrap:anywhere}.evaluation-pdf-report th{background:#004488;color:#fff;font-weight:700}.evaluation-pdf-report thead{display:table-header-group}.evaluation-pdf-report tr,.evaluation-pdf-report td,.evaluation-pdf-report th{break-inside:avoid-page;page-break-inside:avoid}
 
 /* Keep the external submit button in the active procedure editor only. */
-body:has(#workspace[hidden]) .header-save-button,
-body:has(#draftWorkspace[hidden]) .header-save-button,
-body:has(#editorSection[hidden]) .header-save-button{display:none}
+body:has(#workspace[hidden]) .header-save-control,
+body:has(#draftWorkspace[hidden]) .header-save-control,
+body:has(#editorSection[hidden]) .header-save-control,
+.header-save-control:has(.header-save-button[hidden]){display:none}
 .site-header .header-inner{flex-wrap:wrap}
 .site-header .brand{flex:1 1 260px;min-width:0}
 .site-header .session-controls{flex:1 1 650px;min-width:0;flex-wrap:wrap;justify-content:flex-end;gap:8px}
@@ -141,3 +142,8 @@ body:has(#editorSection[hidden]) .header-save-button{display:none}
 .site-header .header-save-button:focus-visible{outline:3px solid #fff;outline-offset:3px}
 .site-header .header-save-button:disabled{background:#e8a855;border-color:#e8a855;color:#283d50;opacity:1;cursor:wait}
 @media(max-width:760px){.site-header .session-controls{flex-basis:100%}.site-header .header-submit-button{white-space:normal;max-width:100%}.site-header .header-save-button{font-size:12px}}
+
+.header-save-control{display:flex;flex-direction:column;align-items:flex-start;gap:5px;max-width:270px;min-width:0}
+.site-header .header-save-message{display:block;max-width:100%;font-size:11px;line-height:1.35;text-align:left;color:#fff;white-space:pre-line;overflow-wrap:anywhere}
+.site-header .header-save-message.success{color:#d6f5e7}
+@media(max-width:760px){.header-save-control{max-width:100%;flex:0 1 100%;align-items:flex-end}.site-header .header-save-message{text-align:right}}
