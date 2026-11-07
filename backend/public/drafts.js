@@ -203,7 +203,7 @@ const annexHelp = {
 };
 const changeHelp = {
   "Versión": "Número de la versión registrada. Una modificación menor avanza al decimal; una mayor, al siguiente entero.",
-  "Fecha": "Fecha de aprobación o actualización de esta versión, entre el 1 de enero de 2024 y hoy.",
+  "Fecha": "Fecha de aprobación o actualización de esta versión, entre el 1 de enero de 2015 y hoy.",
   "Razón de la actualización": "Describa concretamente qué cambió y por qué se actualizó el procedimiento."
 };
 
@@ -810,7 +810,7 @@ function recordField(record, index, section, key, labelText, kind = "input", opt
     }
   } else if (kind === "date") {
     input.type = "date";
-    input.min = "2024-01-01";
+    input.min = "2015-01-01";
     input.max = todayLocal();
   } else {
     input.maxLength = kind === "textarea" ? 10000 : 500;
@@ -821,7 +821,7 @@ function recordField(record, index, section, key, labelText, kind = "input", opt
       const corrected = input.value < input.min ? input.min : input.value > input.max ? input.max : input.value;
       if (corrected !== input.value) {
         input.value = corrected;
-        setMessage(ui.documentsMessage, "La fecha se ajustó al rango permitido: desde 2024 hasta hoy.");
+        setMessage(ui.documentsMessage, "La fecha se ajustó al rango permitido: desde 2015 hasta hoy.");
       }
     }
     record[key] = input.value;
