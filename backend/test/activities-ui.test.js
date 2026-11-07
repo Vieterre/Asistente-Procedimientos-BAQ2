@@ -120,7 +120,7 @@ test("flow summary warns when all operational lanes have one responsible", async
     readFile(join(root, "backend/public/drafts.css"), "utf8")
   ]);
   assert.match(script, /Aviso: revise la concentración de responsabilidades\./);
-  assert.match(script, /ui\.flowSummary\.classList\.toggle\("is-warning", singleOperationalResponsible\)/);
+  assert.match(script, /ui\.flowSummary\.classList\.toggle\("is-warning", layout.warning\)/);
   assert.match(css, /\.flow-summary\.is-warning/);
 });
 
@@ -155,7 +155,7 @@ test("decision nodes keep the complete question inside an expanded diamond", asy
   assert.ok(layout.lines.length > 2);
   assert.ok(layout.halfHeight > 44);
   assert.doesNotMatch(layout.lines.join(" "), /…/);
-  assert.match(script, /const itemHeights = activityRows\.map\(item => \{/);
+  assert.match(script, /const itemHeights = items\.map\(item => \{/);
   assert.match(script, /const showEvidence = true/);
   assert.match(script, /flowEvidenceFor\(item, showEvidence\) \? 136 : 44/);
 });
@@ -229,7 +229,7 @@ test("reference-aligned editor keeps generated codes, confirmation prompts, help
   assert.match(script, /function displayActivityNumber\(activity, index\)/);
   assert.match(script, /activity\?\.tipo !== "Actividad"/);
   assert.match(script, /const row = \[displayActivityNumber\(activity, index\)/);
-  assert.match(script, /const activityNumber = displayActivityNumber\(item, index\)/);
+  assert.match(script, /const activityNumber = item.tipo === "Actividad"/);
   assert.match(script, /class: "flow-activity-number"/);
   assert.match(script, /class: "flow-activity-number-text"/);
   assert.match(css, /\.flow-activity-number\{fill:#004488/);

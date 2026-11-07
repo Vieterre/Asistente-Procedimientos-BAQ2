@@ -160,3 +160,11 @@ body:has(#editorSection[hidden]) .header-save-control,
 .site-header .header-save-button.is-saved:hover:not(:disabled){background:#08785d;border-color:#08785d;color:#fff}
 .site-header .header-save-message{font-size:12px;font-weight:600;line-height:1.35;text-align:left;color:#fff}
 @media(max-width:760px){.header-save-control{flex:0 1 auto;max-width:100%}.site-header .header-save-message{max-width:270px;text-align:right}}
+
+.consultation-section{padding-top:24px}.consultation-list{list-style:none;padding:0;display:grid;gap:14px}
+.consultation-card{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:18px;border:1px solid #dce4ed;background:#fff;border-radius:8px}
+.consultation-card>div{min-width:0}.consultation-card h3{margin:0 0 8px;color:#123a60;font-size:16px;overflow-wrap:anywhere}.consultation-card p{margin:4px 0;overflow-wrap:anywhere}
+.consultation-card button{flex:none}.consultation-report{border:1px solid #dce4ed;border-radius:8px;padding:22px;overflow-wrap:anywhere}
+.consultation-report .preview-report-section{overflow-x:auto}.consultation-report h3{color:#123a60}.consultation-report .preview-report-table{min-width:600px}
+.consultation-diagram{overflow-x:auto}.consultation-diagram svg{display:block;width:100%;min-width:760px;height:auto}
+@media(max-width:760px){.consultation-section>.section-heading,#consultationDetail>.section-heading{flex-wrap:wrap;align-items:flex-start}.consultation-card{align-items:flex-start;flex-wrap:wrap}.consultation-report{padding:14px}.page-heading{flex-wrap:wrap}}
