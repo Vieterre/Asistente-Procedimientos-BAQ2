@@ -5,7 +5,7 @@ import vm from 'node:vm';
 
 const source = readFileSync(new URL('../public/drafts.js', import.meta.url), 'utf8');
 class Element {
-  constructor() { this.value = ''; this.disabled = false; this.hidden = false; this.textContent = ''; this.children = []; this.style = {}; this.attributes = {}; this.classList = { toggle() {} }; }
+  constructor() { this.value = ''; this.disabled = false; this.hidden = false; this.textContent = ''; this.children = []; this.style = {}; this.attributes = {}; this.classes = new Set(); this.classList = { toggle: (name, on) => on ? this.classes.add(name) : this.classes.delete(name), contains: name => this.classes.has(name) }; }
   append(...nodes) { this.children.push(...nodes); }
   replaceChildren(...nodes) { this.children = nodes; }
   setAttribute(key, value) { this.attributes[key] = value; }
@@ -28,7 +28,7 @@ function harness() {
     currentPayload: { fields: { objetivo: 'Original' } }, textFields: [['draftObjective', 'objetivo']],
     normRows: [{ norma: 'Original' }], activityRows: [activity], annexRows: [{ documento: 'Original' }], changeRows: [{ fecha: '2015-01-01' }],
     normativityConfirmedMissingTypes: [], annexesNotApplicable: false, flowReviewVersion: 1, draftEditorGeneration: 1,
-    saveInFlight: false, dirty: true, flowZoom: 100, flowIntrinsicWidth: 0, flowIntrinsicHeight: 0,
+    saveInFlight: false, confirmedSave: null, dirty: true, flowZoom: 100, flowIntrinsicWidth: 0, flowIntrinsicHeight: 0,
     confirmRepeatedApprovalNames: () => true, syncProcedureNameValidity() {}, approvalRoleValue: () => 'Asesor',
     request(path, options) { sent.push({ path, body: structuredClone(options.body) }); return new Promise((resolve, reject) => pending.push({ resolve, reject })); },
     procedureConsecutive: () => 1, syncProcedureCode() {}, refreshProcedureProgress() {}, loadDrafts: async () => {},
@@ -62,8 +62,14 @@ test('successive saves retain the control object and render the last saved edit'
   assert.match(h.svgText(), /Revisar C/);
   assert.equal(h.context.dirty, false);
   assert.equal(h.ui.documentsMessage.textContent, 'Guardado. Flujograma actualizado.');
-  assert.equal(h.ui.headerSaveMessage.textContent, h.ui.documentsMessage.textContent);
+  assert.equal(h.ui.headerSaveMessage.textContent, 'Flujograma actualizado');
+  assert.equal(h.ui.saveDraftButton.textContent, '✓ Guardado');
+  assert.equal(h.ui.saveDraftButton.classList.contains('is-saved'), true);
+  h.context.syncSaveControls();
+  assert.equal(h.ui.saveDraftButton.textContent, '✓ Guardado');
+  h.edit('Nueva edición pendiente');
   assert.equal(h.ui.saveDraftButton.textContent, 'Guardar cambios');
+  assert.equal(h.ui.saveDraftButton.classList.contains('is-saved'), false);
 });
 
 test('edits during a pending save survive in every row collection and remain dirty', async () => {
@@ -89,6 +95,8 @@ test('edits during a pending save survive in every row collection and remain dir
   assert.equal(h.context.dirty, true);
   assert.match(h.svgText(), /Revisar pendiente/);
   assert.match(h.ui.documentsMessage.textContent, /Hay cambios pendientes/);
+  assert.equal(h.ui.saveDraftButton.classList.contains('is-saved'), false);
+  assert.equal(h.ui.saveDraftButton.textContent, 'Guardar cambios');
   assert.equal(h.ui.headerSaveMessage.textContent, h.ui.documentsMessage.textContent);
   const second = h.save(); h.succeed(); await second;
   assert.equal(h.sent[1].body.payload.fields.objetivo, 'Objetivo posterior');
@@ -105,6 +113,7 @@ test('duplicate submits send one request; failures preserve input and permit ret
   assert.equal(h.activity.actividad, 'Revisar sin perder');
   assert.equal(h.context.dirty, true);
   assert.match(h.ui.documentsMessage.textContent, /Sin conexión/);
+  assert.equal(h.ui.saveDraftButton.classList.contains('is-saved'), false);
   assert.equal(h.ui.headerSaveMessage.textContent, h.ui.documentsMessage.textContent);
   assert.equal(h.ui.saveDraftButton.disabled, false);
   assert.equal(h.ui.saveDocumentsButton.disabled, false);
@@ -119,6 +128,7 @@ test('a late response cannot replace a different editor session', async () => {
   h.context.activityRows = [{ uid: 'other', actividad: 'Otro procedimiento' }];
   h.succeed(); await saving;
   assert.equal(h.context.currentDraft.id, 'different');
+  assert.equal(h.ui.saveDraftButton.classList.contains('is-saved'), false);
   assert.equal(h.context.activityRows[0].actividad, 'Otro procedimiento');
   assert.equal(h.context.saveInFlight, false);
 });
@@ -144,5 +154,6 @@ test('revision conflicts keep local edits and expose reload without claiming suc
   assert.equal(h.context.dirty, true);
   assert.equal(h.ui.reloadDraftButton.hidden, false);
   assert.match(h.ui.documentsMessage.textContent, /Tus cambios siguen en pantalla/);
+  assert.equal(h.ui.saveDraftButton.classList.contains('is-saved'), false);
   assert.equal(h.ui.headerSaveMessage.textContent, h.ui.documentsMessage.textContent);
 });

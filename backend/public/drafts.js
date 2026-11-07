@@ -91,6 +91,7 @@ let returnedResponsesDirty = false;
 let previewBranding = "standard";
 let dirty = false;
 let saveInFlight = false;
+let confirmedSave = null;
 let draftEditorGeneration = 0;
 let flowReviewVersion = 0;
 let flowZoom = 100;
@@ -611,6 +612,7 @@ function displayActivityNumber(activity, index) {
 }
 
 function markDirty() {
+  confirmedSave = null;
   dirty = true;
   flowReviewVersion += 1;
   lastFlowReviewPassed = false;
@@ -620,6 +622,7 @@ function markDirty() {
   ui.flowReviewResult.replaceChildren();
   ui.flowReviewResult.hidden = true;
   refreshProcedureProgress();
+  syncSaveControls();
 }
 
 function showFlowReview(issues, completenessIssues = []) {
@@ -1575,7 +1578,9 @@ function setMessage(node, text, success = false) {
     ? [ui.editorMessage, ui.documentsMessage, ui.headerSaveMessage]
     : [node];
   for (const target of targets) {
-    if (target.textContent !== text) target.textContent = text;
+    const visibleText = target === ui.headerSaveMessage && text === "Guardado. Flujograma actualizado."
+      ? "Flujograma actualizado" : text;
+    if (target.textContent !== visibleText) target.textContent = visibleText;
     target.classList.toggle("success", success);
     target.hidden = !text;
   }
@@ -2423,6 +2428,7 @@ async function openInstitutionalReport(id) {
 }
 
 function clearSession() {
+  confirmedSave = null;
   draftEditorGeneration += 1;
   flowReviewVersion += 1;
   lastFlowReviewPassed = false;
@@ -3151,6 +3157,7 @@ async function reloadCurrentDraft() {
 }
 
 function populateDraft(procedure) {
+  confirmedSave = null;
   draftEditorGeneration += 1;
   flowReviewVersion += 1;
   lastFlowReviewPassed = false;
@@ -3208,9 +3215,14 @@ function populateDraft(procedure) {
 
 function syncSaveControls() {
   const label = saveInFlight ? "Guardando…" : currentDraft ? "Guardar cambios" : "Guardar borrador";
-  for (const button of [ui.saveDraftButton, ui.saveDocumentsButton]) {
-    button.textContent = label;
-    if (saveInFlight) button.disabled = true;
+  const saved = !saveInFlight && !dirty && confirmedSave?.generation === draftEditorGeneration &&
+    confirmedSave?.editVersion === flowReviewVersion;
+  ui.saveDraftButton.textContent = saved ? "✓ Guardado" : label;
+  ui.saveDraftButton.classList.toggle("is-saved", saved);
+  ui.saveDocumentsButton.textContent = label;
+  if (saveInFlight) {
+    ui.saveDraftButton.disabled = true;
+    ui.saveDocumentsButton.disabled = true;
   }
   ui.draftForm.setAttribute("aria-busy", String(saveInFlight));
   if (saveInFlight) {
@@ -3264,6 +3276,7 @@ async function openAssignedProcedure(id) {
 function newDraft() {
   if (saveInFlight) return;
   if (dirty && !window.confirm("Hay cambios sin guardar. ¿Descartarlos?")) return;
+  confirmedSave = null;
   draftEditorGeneration += 1;
   flowReviewVersion += 1;
   lastFlowReviewPassed = false;
@@ -3459,6 +3472,7 @@ ui.draftForm.addEventListener("submit", async event => {
   if (!confirmRepeatedApprovalNames()) return;
   const savedEditVersion = flowReviewVersion;
   const savedEditorGeneration = draftEditorGeneration;
+  confirmedSave = null;
   saveInFlight = true;
   syncSaveControls();
   setMessage(ui.editorMessage, "Guardando…");
@@ -3515,6 +3529,7 @@ ui.draftForm.addEventListener("submit", async event => {
     ui.saveDocumentsButton.textContent = "Guardar cambios";
     ui.reloadDraftButton.hidden = true;
     dirty = hasNewerEdits;
+    confirmedSave = hasNewerEdits ? null : { generation: savedEditorGeneration, editVersion: savedEditVersion };
     applyDraftEditability();
     refreshProcedureProgress();
     const message = hasNewerEdits
