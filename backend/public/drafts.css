@@ -156,7 +156,7 @@ body:has(#editorSection[hidden]) .header-save-control,
 .header-save-control{width:auto;gap:5px}
 .site-header .header-save-button{width:auto;min-width:132px;min-height:34px;flex-direction:row;gap:0;white-space:nowrap}
 .site-header .header-save-label{font-size:13px;font-weight:650;text-align:center;line-height:1.3}
-.site-header .header-save-button.is-saved{background:var(--brand-green);border-color:var(--brand-green);color:#102131}
+.site-header .header-save-button.is-saved{background:var(--brand-green);border-color:var(--brand-green);color:#fff}
 .site-header .header-save-button.is-saved:hover:not(:disabled){background:#08785d;border-color:#08785d;color:#fff}
 .site-header .header-save-message{font-size:12px;font-weight:600;line-height:1.35;text-align:left;color:#fff}
 @media(max-width:760px){.header-save-control{flex:0 1 auto;max-width:100%}.site-header .header-save-message{max-width:270px;text-align:right}}

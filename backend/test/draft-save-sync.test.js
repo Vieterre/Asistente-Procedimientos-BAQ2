@@ -63,10 +63,10 @@ test('successive saves retain the control object and render the last saved edit'
   assert.equal(h.context.dirty, false);
   assert.equal(h.ui.documentsMessage.textContent, 'Guardado. Flujograma actualizado.');
   assert.equal(h.ui.headerSaveMessage.hidden, true);
-  assert.equal(h.ui.headerSaveLabel.textContent, 'Guardar cambios');
+  assert.equal(h.ui.headerSaveLabel.textContent, 'Guardado exitoso');
   assert.equal(h.ui.saveDraftButton.classList.contains('is-saved'), true);
   h.context.syncSaveControls();
-  assert.equal(h.ui.headerSaveLabel.textContent, 'Guardar cambios');
+  assert.equal(h.ui.headerSaveLabel.textContent, 'Guardado exitoso');
   h.edit('Nueva edición pendiente');
   assert.equal(h.ui.headerSaveLabel.textContent, 'Guardar cambios');
   assert.equal(h.ui.saveDraftButton.classList.contains('is-saved'), false);
