@@ -1578,10 +1578,9 @@ function setMessage(node, text, success = false) {
     ? [ui.editorMessage, ui.documentsMessage, ui.headerSaveMessage]
     : [node];
   for (const target of targets) {
-    const visibleText = target !== ui.headerSaveMessage ? text
-      : text === "Guardado. Flujograma actualizado." ? "Flujograma actualizado"
-      : text === "Guardando…" ? ""
-      : text.startsWith("Guardando… ") ? text.slice("Guardando… ".length) : text;
+    // The header confirms clean saves by color; retain visible error/validation feedback.
+    const visibleText = target === ui.headerSaveMessage &&
+      (success || text === "Hay cambios pendientes." || text.startsWith("Guardando…")) ? "" : text;
     if (target.textContent !== visibleText) target.textContent = visibleText;
     target.classList.toggle("success", success);
     target.hidden = !visibleText;
@@ -3219,7 +3218,7 @@ function syncSaveControls() {
   const label = saveInFlight ? "Guardando…" : currentDraft ? "Guardar cambios" : "Guardar borrador";
   const saved = !saveInFlight && !dirty && confirmedSave?.generation === draftEditorGeneration &&
     confirmedSave?.editVersion === flowReviewVersion;
-  ui.headerSaveLabel.textContent = saved ? "✓ Guardado" : label;
+  ui.headerSaveLabel.textContent = saveInFlight ? "Guardando…" : "Guardar cambios";
   ui.saveDraftButton.classList.toggle("is-saved", saved);
   ui.saveDocumentsButton.textContent = label;
   if (saveInFlight) {
@@ -3309,7 +3308,7 @@ function newDraft() {
   ui.processCode.disabled = false;
   ui.editorTitle.textContent = "Nuevo borrador";
   ui.editorStatus.textContent = "Borrador no guardado";
-  ui.headerSaveLabel.textContent = "Guardar borrador";
+  ui.headerSaveLabel.textContent = "Guardar cambios";
   ui.saveDocumentsButton.textContent = "Guardar borrador";
   ui.reloadDraftButton.hidden = true;
   dirty = false;
