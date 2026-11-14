@@ -269,6 +269,11 @@ test("editor validates names and suggests alphabetical definitions without overw
   assert.ok(nameSource, "name validation helper should be present");
   const nameIssues = runInNewContext(`${nameSource}\nprocedureNameIssues`);
   assert.equal(nameIssues("Fomentar el desarrollo económico y la competitividad").length, 0);
+  const expandedName = "Planificar e implementar el programa de auditorías internas del sistema integrado de gestión";
+  for (const name of [expandedName, `${expandedName} institucional`, `${expandedName} institucional distrital`]) {
+    assert.equal(nameIssues(name).length, 0, name);
+  }
+  assert.deepEqual(Array.from(nameIssues(`${expandedName} institucional distrital vigente`)), ["El nombre puede tener máximo 15 palabras."]);
   assert.ok(nameIssues("Fomento al Desarrollo Económico y Competitividad").some(issue => issue.includes("infinitivo")));
 
   const definitionSource = script.match(/function definitionEntries[\s\S]*?(?=\nfunction syncDefinitionsAlphabeticalSuggestion\()/)?.[0];

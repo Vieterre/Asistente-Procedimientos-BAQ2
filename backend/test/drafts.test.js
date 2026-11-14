@@ -347,6 +347,11 @@ test("draft identity conflicts identify the existing procedure and directivos ca
 
 test("procedure names follow the original structure rules", () => {
   assert.deepEqual(procedureNameIssues("Fomentar el desarrollo económico y la competitividad"), []);
+  const expandedName = "Planificar e implementar el programa de auditorías internas del sistema integrado de gestión";
+  for (const name of [expandedName, `${expandedName} institucional`, `${expandedName} institucional distrital`]) {
+    assert.deepEqual(procedureNameIssues(name), [], name);
+  }
+  assert.deepEqual(procedureNameIssues(`${expandedName} institucional distrital vigente`), ["El nombre puede tener máximo 15 palabras."]);
   assert.ok(procedureNameIssues("Fomento al Desarrollo Económico y Competitividad").some(issue => issue.includes("infinitivo")));
   assert.ok(procedureNameIssues("Gestionar solicitudes").some(issue => issue.includes("verbos genéricos")));
   assert.ok(procedureNameIssues("Elaborar informes").some(issue => issue.includes("complemento")));

@@ -749,7 +749,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
       </div>
 
       <div class="field full">
-        <label>Nombre del procedimiento <span class="help-tip" tabindex="0" data-tip="Use un verbo de acción específico y verificable, un solo objeto y, cuando sea necesario, un complemento que precise el alcance. Máximo 12 palabras, mayúscula solo en la primera letra y sin punto final.">i</span></label>
+        <label>Nombre del procedimiento <span class="help-tip" tabindex="0" data-tip="Use un verbo de acción específico y verificable, un solo objeto y, cuando sea necesario, un complemento que precise el alcance. Máximo 15 palabras, mayúscula solo en la primera letra y sin punto final.">i</span></label>
         <input id="nombre" maxlength="140" oninput="validateName()" placeholder="Ej. Formular el plan anual de adquisiciones">
         <div id="nameStatus" class="inline-status"></div>
         <details class="name-guide">
@@ -758,7 +758,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
             <div class="name-rule full"><b>Estructura recomendada</b>El nombre debe expresar una sola acción y un solo propósito.<div class="name-formula"><span class="name-part">Verbo específico</span><span class="name-plus">+</span><span class="name-part">Objeto</span><span class="name-plus">+</span><span class="name-part">Complemento, cuando aplique</span></div></div>
             <div class="name-rule"><b>Componentes</b><strong>Verbo:</strong> acción específica y verificable, como Formular, Elaborar, Adquirir, Supervisar, Liquidar, Atender, Evaluar o Archivar.<br><strong>Objeto:</strong> producto, servicio, documento o recurso público sobre el que se actúa. Debe corresponder a un solo propósito.<br><strong>Complemento:</strong> alcance o contexto que distingue este procedimiento de otros similares. Es obligatorio cuando el objeto es genérico, como informes, contratos o solicitudes.</div>
             <div class="name-rule"><b>Ejemplos correctos</b><ul class="name-examples"><li>Formular el plan anual de adquisiciones</li><li>Supervisar la ejecución de los contratos de prestación de servicios</li><li>Atender las peticiones, quejas y reclamos de la ciudadanía</li><li>Liquidar la nómina de los servidores públicos</li><li>Elaborar los informes de auditoría interna</li><li>Archivar la correspondencia recibida y enviada</li></ul></div>
-            <div class="name-rule name-avoid full"><b>Evite ambigüedades</b>No utilice nombres vagos como “Trámites varios” ni verbos genéricos como “Gestionar”, “Administrar” o “Realizar”. Tampoco use “Elaborar informes” sin indicar cuáles.<ul class="name-examples"><li><strong>No incluya el tipo documental</strong> (“Procedimiento”, “Proceso”, “Trámite”, “Instructivo” o “Formato”), porque se registra en el código.</li><li><strong>Varios propósitos:</strong> si necesita unir dos actividades distintas con “y”, probablemente son dos procedimientos.</li><li><strong>Siglas:</strong> úselas solo si están definidas en el glosario institucional.</li><li><strong>Trámites y servicios para la ciudadanía:</strong> use el nombre oficial registrado ante la autoridad competente.</li><li><strong>Formato:</strong> mayúscula solo en la primera letra, sin punto final, máximo 12 palabras y sin repetir el nombre de otro documento vigente.</li></ul></div>
+            <div class="name-rule name-avoid full"><b>Evite ambigüedades</b>No utilice nombres vagos como “Trámites varios” ni verbos genéricos como “Gestionar”, “Administrar” o “Realizar”. Tampoco use “Elaborar informes” sin indicar cuáles.<ul class="name-examples"><li><strong>No incluya el tipo documental</strong> (“Procedimiento”, “Proceso”, “Trámite”, “Instructivo” o “Formato”), porque se registra en el código.</li><li><strong>Varios propósitos:</strong> si necesita unir dos actividades distintas con “y”, probablemente son dos procedimientos.</li><li><strong>Siglas:</strong> úselas solo si están definidas en el glosario institucional.</li><li><strong>Trámites y servicios para la ciudadanía:</strong> use el nombre oficial registrado ante la autoridad competente.</li><li><strong>Formato:</strong> mayúscula solo en la primera letra, sin punto final, máximo 15 palabras y sin repetir el nombre de otro documento vigente.</li></ul></div>
           </div>
         </details>
       </div>
@@ -1832,8 +1832,8 @@ function validateName(){
     st.className="inline-status warn";st.textContent="El verbo es correcto, pero falta precisar el objeto o alcance de la acción.";
   }else if(genericObject){
     st.className="inline-status warn";st.textContent="El objeto es genérico. Agregue un complemento que precise cuáles informes, contratos o solicitudes.";
-  }else if(words.length>12){
-    st.className="inline-status warn";st.textContent="Reduzca el nombre a un máximo de 12 palabras.";
+  }else if(words.length>15){
+    st.className="inline-status warn";st.textContent="Reduzca el nombre a un máximo de 15 palabras.";
   }else if(/[.!?;:]\s*$/.test(s)){
     st.className="inline-status warn";st.textContent="Retire el signo de puntuación final del nombre.";
   }else if(s.charAt(0)!==s.charAt(0).toUpperCase()){
