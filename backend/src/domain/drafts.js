@@ -47,7 +47,7 @@ export function procedureNameIssues(value) {
   const words = procedureNameWords(name);
   const normalizedWords = words.map(normalizedWord);
   const issues = [];
-  if (words.length > 12) issues.push("El nombre puede tener máximo 12 palabras.");
+  if (words.length > 15) issues.push("El nombre puede tener máximo 15 palabras.");
   if (words.length < 2) issues.push("Incluye el objeto sobre el que actúa el procedimiento.");
   if (!/^[a-zñ]+(?:ar|er|ir)$/i.test(normalizedWords[0] || "")) {
     issues.push("Inicia con un verbo específico en infinitivo, por ejemplo: Formular, Elaborar, Supervisar o Evaluar.");

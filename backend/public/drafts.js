@@ -156,7 +156,7 @@ const controlFields = [
 ];
 const annexTypes = ["Formato", "Instructivo", "Manual", "Guía", "Guía técnica", "Matriz", "Base de datos", "Documento relacionado", "Otro"];
 const helpById = {
-  draftName: "Use un verbo de acción específico y verificable, un solo objeto y, cuando sea necesario, un complemento que precise el alcance. Máximo 12 palabras, mayúscula solo en la primera letra y sin punto final.",
+  draftName: "Use un verbo de acción específico y verificable, un solo objeto y, cuando sea necesario, un complemento que precise el alcance. Máximo 15 palabras, mayúscula solo en la primera letra y sin punto final.",
   processCode: "Seleccione el proceso organizacional. La aplicación utilizará su código para construir y validar automáticamente el código del procedimiento.",
   draftConsecutive: "Corresponde al número consecutivo del procedimiento dentro del proceso. La aplicación lo completa a tres dígitos: 1 se convierte en 001.",
   draftCode: "Se genera con la estructura: CÓDIGO DEL PROCESO + P (Procedimiento) + CONSECUTIVO. Ejemplo: MM-GD-SE-P-006.",
@@ -450,7 +450,7 @@ function procedureNameIssues(value) {
   const words = name.match(/[\p{L}\p{N}]+/gu) || [];
   const normalizedWords = words.map(normalizeProcedureWord);
   const issues = [];
-  if (words.length > 12) issues.push("El nombre puede tener máximo 12 palabras.");
+  if (words.length > 15) issues.push("El nombre puede tener máximo 15 palabras.");
   if (words.length < 2) issues.push("Incluye el objeto sobre el que actúa el procedimiento.");
   if (!/^[a-zñ]+(?:ar|er|ir)$/i.test(normalizedWords[0] || "")) {
     issues.push("Inicia con un verbo específico en infinitivo, por ejemplo: Formular, Elaborar, Supervisar o Evaluar.");
