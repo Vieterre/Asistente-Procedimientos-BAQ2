@@ -353,21 +353,32 @@ test("evaluation combines a non-favorable decision with return and records the a
   assert.match(css, /\.evaluation-auto-concept\{/);
 });
 
-test("preview separates every general condition into an individual report item", async () => {
+test("general conditions preserve free text, punctuation, manual numbering and authored line breaks", async () => {
   const script = await readFile(join(root, "backend/public/drafts.js"), "utf8");
-  const source = script.match(/function reportConditionList[\s\S]*?(?=\nfunction previewFitScale\()/)?.[0];
+  const source = script.match(/function reportFreeText[\s\S]*?(?=\nfunction reportParagraphs\()/)?.[0];
   assert.ok(source, "condition report helper should be present");
   const document = {
-    createTextNode(textContent) { return { textContent }; },
-    createElement() {
-      return { className: "", textContent: "", children: [], append(...items) { this.children.push(...items); } };
+    createElement(tagName) {
+      return { tagName, className: "", textContent: "", children: [] };
     }
   };
-  const reportConditionList = runInNewContext(`${source}\nreportConditionList`, { document });
-  const list = reportConditionList("Primera condición. Segunda condición.\nTercera condición.");
-  assert.equal(list.className, "preview-condition-list");
-  assert.deepEqual(list.children.map(item => item.textContent), ["Primera condición.", "Segunda condición.", "Tercera condición."]);
-  assert.match(script, /reportSection\("4", "Condiciones generales", reportConditionList\(ui\.draftConditions\.value\)\)/);
+  const reportFreeText = runInNewContext(`${source}\nreportFreeText`, { document });
+  for (const text of [
+    "Primera condición. Segunda condición; sigue en el mismo párrafo. ¿Aplica? Sí.",
+    "1. Primera condición. Art. 5, versión 3.1.\n\na) Otra condición; continúa.\n  - Viñeta escrita por la persona.\n",
+    "  Texto con espacios iniciales.\n\n\nSiguiente párrafo.",
+    "Texto literal: <b>sin interpretar etiquetas</b>."
+  ]) {
+    const block = reportFreeText(text);
+    assert.equal(block.className, "preview-free-text");
+    assert.equal(block.tagName, "div");
+    assert.equal(block.textContent, text);
+    assert.equal(block.children.length, 0);
+  }
+  assert.equal(reportFreeText("  \n").textContent, "Sin información registrada.");
+  assert.match(script, /reportSection\("4", "Condiciones generales", reportFreeText\(ui\.draftConditions\.value\)\)/);
+  assert.match(script, /key === 'condiciones' \? reportFreeText\(fields\[key\]\)/);
+  assert.doesNotMatch(script, /reportConditionList/);
 });
 
 test("preview and printed reports preserve readable paragraphs and stable table alignment", async () => {
@@ -394,8 +405,9 @@ test("preview and printed reports preserve readable paragraphs and stable table 
   assert.match(script, /variant: "definitions",\s*columnWidths: \["32%", "68%"\]/);
   assert.match(css, /\.preview-report-table td\{text-align:justify/);
   assert.match(css, /\.preview-report\{min-width:0;max-width:100%;font-size:12px/);
-  assert.match(css, /\.preview-condition-list\{box-sizing:border-box[^}]*list-style-type:lower-alpha/);
-  assert.match(css, /\.preview-report :is\(\.preview-text-block,\.preview-paragraph,\.preview-condition-list,\.preview-condition-list li,\.preview-report-table,\.preview-report-table th,\.preview-report-table td\)\{font-family:var\(--report-content-font\);font-size:var\(--report-content-size\);line-height:1\.55\}/);
+  assert.match(css, /\.preview-free-text\{[^}]*white-space:pre-wrap[^}]*text-align:justify/);
+  assert.doesNotMatch(css, /preview-condition-list/);
+  assert.match(css, /\.preview-report :is\(\.preview-text-block,\.preview-paragraph,\.preview-free-text,\.preview-report-table,\.preview-report-table th,\.preview-report-table td\)\{font-family:var\(--report-content-font\);font-size:var\(--report-content-size\);line-height:1\.55\}/);
   assert.match(css, /@media print\{\.preview-report\{--report-content-size:9pt\}/);
   assert.match(css, /@media print\{\.preview-content\{overflow:visible\}/);
   assert.match(css, /\.preview-report-table tr,\.preview-report-table th,\.preview-report-table td\{break-inside:avoid-page!important;page-break-inside:avoid!important\}/);
