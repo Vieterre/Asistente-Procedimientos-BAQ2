@@ -163,7 +163,7 @@ const helpById = {
   draftObjective: "Explique para qué existe el procedimiento y qué resultado pretende lograr. Debe ser claro, específico y coherente con el proceso. Ejemplo: Establecer los lineamientos para planificar un trabajo de auditoría basado en riesgos.",
   draftScope: "Delimite el procedimiento indicando dónde inicia y dónde finaliza. Puede incluir áreas, usuarios, límites, exclusiones, ámbito territorial o temporal.",
   draftDefinitions: "Registre los términos, siglas y conceptos en orden alfabético. Escriba cada término seguido de dos puntos y su definición. Ejemplo: PAA: Plan Anual de Auditoría.",
-  draftConditions: "Reglas, políticas operativas, restricciones, condiciones previas o criterios que aplican transversalmente al procedimiento y no corresponden a una actividad específica.",
+  draftConditions: "Reglas, políticas operativas, restricciones, condiciones previas o criterios que aplican transversalmente al procedimiento y no corresponden a una actividad específica. Texto libre: puedes escribir párrafos y añadir tu propia numeración o letras.",
   annexApplicability: "Elija No aplica solo si este procedimiento no utiliza documentos anexos. Cambiar a No aplica elimina las filas de anexos tras confirmación.",
   draftPreparedBy: "Cargo que prepara o actualiza técnicamente el procedimiento. Debe ser distinto de quien revisa y aprueba.",
   draftReviewedBy: "Cargo que verifica coherencia, suficiencia y cumplimiento. Debe ser distinto de quien elabora y aprueba.",
@@ -4071,19 +4071,12 @@ function reportSection(number, title, content) {
   return section;
 }
 
-function reportConditionList(value) {
-  const entries = String(value || "").split(/\r?\n+/).flatMap(line =>
-    line.match(/[^.!?]+(?:[.!?]+(?=\s|$)|$)/g) || []
-  ).map(entry => entry.trim().replace(/^(?:[-*]|\d+[.)])\s*/, "")).filter(Boolean);
-  if (!entries.length) return document.createTextNode("Sin información registrada.");
-  const list = document.createElement("ol");
-  list.className = "preview-condition-list";
-  for (const entry of entries) {
-    const item = document.createElement("li");
-    item.textContent = entry;
-    list.append(item);
-  }
-  return list;
+function reportFreeText(value) {
+  const text = String(value ?? "");
+  const block = document.createElement("div");
+  block.className = "preview-free-text";
+  block.textContent = text.trim() ? text : "Sin información registrada.";
+  return block;
 }
 
 function reportParagraphs(value) {
@@ -4318,7 +4311,7 @@ function showPreview({ branding = "standard" } = {}) {
     reportSection("1", "Objetivo", reportParagraphs(ui.draftObjective.value)),
     reportSection("2", "Alcance", reportParagraphs(ui.draftScope.value)),
     reportSection("3", "Términos y definiciones", definitionTable),
-    reportSection("4", "Condiciones generales", reportConditionList(ui.draftConditions.value)),
+    reportSection("4", "Condiciones generales", reportFreeText(ui.draftConditions.value)),
     reportSection("5", "Normatividad", reportTable(["Tipo", "Norma", "Año", "Descripción de la norma", "Artículo / sección", "Entidad emisora"], normRows, row => [row.tipo, row.norma, row.anio, row.descripcion, row.articulo, row.entidad])),
     reportSection("6", "Descripción del procedimiento", activityTable));
 
@@ -4495,7 +4488,7 @@ function renderConsultationProcedure(procedure) {
   const context = document.createElement('div');
   for (const [key, label] of [['objetivo','Objetivo'],['alcance','Alcance'],['definiciones','Definiciones'],['condiciones','Condiciones generales']]) {
     const heading = document.createElement('h4'); heading.textContent = label;
-    context.append(heading, reportParagraphs(fields[key]));
+    context.append(heading, key === 'condiciones' ? reportFreeText(fields[key]) : reportParagraphs(fields[key]));
   }
   report.append(reportSection('2', 'Marco contextual', context));
   report.append(reportSection('3', 'Normatividad', reportTable(['Tipo','Norma','Año','Descripción','Artículo / sección','Entidad emisora'], norms,
