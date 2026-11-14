@@ -90,3 +90,60 @@ test('a long list scrolls only its own viewport to keep the open record visible'
   assert.equal(h.ui.draftList.scrollTop, 0);
   assert.deepEqual(h.active(), ['b']);
 });
+
+function evaluatorSetup() {
+  const h = setup();
+  Object.assign(h.context, { loadEvaluationRubric() {}, renderEvaluationWorkspace() {}, currentEvaluation: null });
+  vm.runInContext(source.slice(source.indexOf('async function loadEvaluatorInbox('), source.indexOf('\nfunction syncActiveDraftSelection(')), h.context);
+  vm.runInContext(source.slice(source.indexOf('async function openAssignedProcedure('), source.indexOf('\nfunction newDraft(')), h.context);
+  const procedures = drafts.map((draft, index) => ({ ...draft, status: index ? 'en_evaluacion' : 'enviado_a_evaluacion' }));
+  h.loadInbox = async (rows = procedures) => {
+    const done = h.context.loadEvaluatorInbox();
+    h.pending.at(-1).resolve({ procedures: rows });
+    await done;
+  };
+  h.openAssigned = async index => {
+    const done = h.context.openAssignedProcedure(procedures[index].id);
+    await Promise.resolve();
+    h.pending.at(-1).resolve({ procedure: procedures[index], evaluation: { id: 'evaluation-' + index } });
+    await done;
+  };
+  h.inboxActive = () => h.ui.evaluatorDraftList.querySelectorAll('button[data-draft-id]').filter(button => button.attributes['aria-current'] === 'true').map(button => button.dataset.draftId);
+  h.procedures = procedures;
+  return h;
+}
+
+test('evaluator selection survives an inbox refresh and follows the successfully opened assigned procedure', async () => {
+  const h = evaluatorSetup();
+  await h.loadInbox();
+  assert.deepEqual(h.inboxActive(), []);
+  await h.openAssigned(0);
+  assert.deepEqual(h.inboxActive(), ['a']);
+  assert.equal(h.context.currentDraft.status, 'enviado_a_evaluacion');
+  assert.equal(h.ui.startEvaluationButton.hidden, false);
+  await h.loadInbox([...h.procedures].reverse());
+  assert.deepEqual(h.inboxActive(), ['a']);
+  await h.openAssigned(1);
+  assert.deepEqual(h.inboxActive(), ['b']);
+  assert.equal(h.context.currentDraft.status, 'en_evaluacion');
+  assert.equal(h.ui.startEvaluationButton.hidden, true);
+  const selected = h.ui.evaluatorDraftList.querySelectorAll('button[data-draft-id]').find(button => button.dataset.draftId === 'b');
+  assert.equal(selected.querySelector('.draft-active-label').hidden, false);
+  assert.equal(selected.querySelector('.draft-status').textContent, 'Revisar');
+  assert.deepEqual(h.active(), []);
+});
+
+test('failed evaluator openings preserve the previous marker and clearing the session removes it', async () => {
+  const h = evaluatorSetup();
+  await h.loadInbox();
+  await h.openAssigned(0);
+  const failed = h.context.openAssignedProcedure('b');
+  await Promise.resolve();
+  assert.deepEqual(h.inboxActive(), ['a']);
+  h.pending.at(-1).reject(new Error('Example failure'));
+  await failed;
+  assert.deepEqual(h.inboxActive(), ['a']);
+  h.context.currentDraft = null;
+  h.context.syncActiveDraftSelection(h.ui.evaluatorDraftList);
+  assert.deepEqual(h.inboxActive(), []);
+});

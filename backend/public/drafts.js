@@ -2516,6 +2516,7 @@ function clearSession() {
   sessionStorage.removeItem(csrfKey);
   currentDraft = null;
   syncActiveDraftSelection();
+  syncActiveDraftSelection(ui.evaluatorDraftList);
   currentUserRole = "";
   currentPayload = {};
   currentEvaluation = null;
@@ -3086,6 +3087,7 @@ async function loadEvaluatorInbox() {
       const button = document.createElement("button");
       button.type = "button";
       button.className = "draft-open";
+      button.dataset.draftId = procedure.id;
       const info = document.createElement("span");
       info.className = "draft-info";
       const name = document.createElement("strong");
@@ -3096,19 +3098,26 @@ async function loadEvaluatorInbox() {
       status.className = "draft-status";
       status.textContent = "Revisar";
       info.append(name, detail);
-      button.append(info, status);
+      const labels = document.createElement("span");
+      labels.className = "draft-labels";
+      const activeLabel = document.createElement("span");
+      activeLabel.className = "draft-active-label";
+      activeLabel.textContent = "Abierto";
+      activeLabel.hidden = true;
+      labels.append(activeLabel, status);
+      button.append(info, labels);
       button.addEventListener("click", () => openAssignedProcedure(procedure.id));
       item.append(button);
       return item;
     }));
+    syncActiveDraftSelection(ui.evaluatorDraftList);
     setMessage(ui.evaluatorInboxMessage, "");
   } catch (error) {
     handleRequestError(error, ui.evaluatorInboxMessage);
   }
 }
 
-function syncActiveDraftSelection() {
-  const list = ui.draftList;
+function syncActiveDraftSelection(list = ui.draftList) {
   for (const button of list.querySelectorAll("button[data-draft-id]")) {
     const active = Boolean(currentDraft?.id && button.dataset.draftId === currentDraft.id);
     if (active) button.setAttribute("aria-current", "true");
@@ -3369,6 +3378,7 @@ async function openAssignedProcedure(id) {
     await loadEvaluationRubric();
     const { procedure, evaluation } = await request(`/api/evaluator/procedures/${encodeURIComponent(id)}`);
     populateDraft(procedure);
+    syncActiveDraftSelection(ui.evaluatorDraftList);
     currentEvaluation = evaluation;
     ui.processCode.disabled = true;
     ui.draftWorkspace.hidden = true;
