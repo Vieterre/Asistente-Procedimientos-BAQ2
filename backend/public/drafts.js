@@ -1420,6 +1420,16 @@ function flowLines(value, maxLength = 22, maxLines = 2) {
   return lines.length ? lines : ["Sin nombre"];
 }
 
+function flowLaneHeaderLayout(roles, laneWidth) {
+  const fontSize = 13;
+  const lineHeight = 18;
+  const padding = 16;
+  const maxLength = Math.max(1, Math.floor((laneWidth - padding * 2) / fontSize));
+  const lines = roles.map(role => flowLines(role, maxLength, Infinity));
+  const height = Math.max(68, padding * 2 + Math.max(...lines.map(label => label.length)) * lineHeight);
+  return { lines, height, fontSize, lineHeight };
+}
+
 function decisionLayout(item) {
   const lines = flowLines(String(item?.descripcion || item?.actividad || "Decisión"), 16, Infinity);
   const longestLine = Math.max(...lines.map(line => line.length), 1);
@@ -1507,6 +1517,8 @@ function drawProcedureFlow(svg, items, markerPrefix = "flow") {
   if (!roles.length) roles.push("Sin responsable");
   const singleOperationalResponsible = roles.length === 1 && roles[0] !== "Sin responsable";
   const laneWidth = showEvidence ? 360 : 260;
+  const header = flowLaneHeaderLayout(roles, laneWidth);
+  const contentTop = header.height + 50;
   const rowHeight = showEvidence ? 168 : 132;
   const { links: flowLinks, outerRouteCount } = flowLinksFor(items);
   const routeGap = 30;
@@ -1516,7 +1528,7 @@ function drawProcedureFlow(svg, items, markerPrefix = "flow") {
   const itemHeights = items.map(item => {
     return Math.max(rowHeight, flowNodeHalfHeight(item) * 2 + (flowEvidenceFor(item, showEvidence) ? 136 : 44));
   });
-  const height = 118 + itemHeights.reduce((total, itemHeight) => total + itemHeight, 0) + 32;
+  const height = contentTop + itemHeights.reduce((total, itemHeight) => total + itemHeight, 0) + 32;
 
   svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
   svg.setAttribute("width", width);
@@ -1534,13 +1546,18 @@ function drawProcedureFlow(svg, items, markerPrefix = "flow") {
   for (const [index, role] of roles.entries()) {
     const x = leftMargin + index * laneWidth;
     svg.append(svgNode("rect", { x, y: 0, width: laneWidth, height, class: `flow-lane${index % 2 ? " alt" : ""}` }));
-    svg.append(svgNode("rect", { x, y: 0, width: laneWidth, height: 68, class: "flow-lane-header" }));
-    const label = svgNode("text", { x: x + laneWidth / 2, y: 31, "text-anchor": "middle", fill: "#fff", "font-size": 13, "font-weight": 700 }, flowLines(role, 28)[0]);
+    svg.append(svgNode("rect", { x, y: 0, width: laneWidth, height: header.height, class: "flow-lane-header" }));
+    const label = svgNode("text", { "text-anchor": "middle", fill: "#fff", "font-size": header.fontSize, "font-weight": 700, "aria-label": role });
     label.append(svgNode("title", {}, role));
+    const lines = header.lines[index];
+    lines.forEach((line, lineIndex) => label.append(svgNode("tspan", {
+      x: x + laneWidth / 2,
+      y: header.height / 2 + (lineIndex - (lines.length - 1) / 2) * header.lineHeight + header.fontSize * .35
+    }, line)));
     svg.append(label);
   }
 
-  let nextY = 118;
+  let nextY = contentTop;
   const positions = new Map(items.map((item, index) => {
     const itemRoles = String(item.responsable || "").split(";").map(role => role.trim()).filter(Boolean);
     if (!itemRoles.length) itemRoles.push("Sin responsable");
@@ -2589,7 +2606,7 @@ async function startSession(user) {
   const authorWorkspace = user.role === "elaborador";
   ui.editorSection.hidden = !authorWorkspace;
   ui.editorHeading.hidden = !authorWorkspace;
-  ui.procedureProgress.hidden = !authorWorkspace;
+  ui.procedureProgress.hidden = !authorWorkspace || user.mustChangePassword;
   ui.draftForm.hidden = !authorWorkspace;
   ui.returnedEvaluation.hidden = true;
   ui.ownedDraftsSection.hidden = !authorWorkspace;
@@ -3488,12 +3505,72 @@ ui.addNormButton.addEventListener("click", () => {
   markDirty();
   ui.normsList.lastElementChild?.querySelector("input")?.focus();
 });
-ui.procedureProgress.addEventListener("click", event => {
-  const button = event.target.closest("button[data-progress-target]");
-  const target = button?.dataset.progressTarget;
-  if (!target) return;
-  document.getElementById(target)?.scrollIntoView({ behavior: "smooth", block: "start" });
-});
+function setupProcedureNavigation() {
+  const navigation = ui.procedureProgress;
+  const header = document.querySelector(".site-header");
+  const list = navigation.querySelector("ol");
+  const items = [...navigation.querySelectorAll("button[data-progress-target]")].map(button => ({
+    button,
+    section: document.getElementById(button.dataset.progressTarget)
+  })).filter(item => item.section);
+  let frame = 0;
+
+  function update() {
+    frame = 0;
+    if (navigation.hidden || ui.workspace.hidden || ui.draftWorkspace.hidden) return;
+    const headerHeight = Math.ceil(header.getBoundingClientRect().height);
+    const navigationHeight = Math.ceil(navigation.getBoundingClientRect().height);
+    const offset = headerHeight + navigationHeight + 16;
+    document.documentElement.style.setProperty("--procedure-header-height", `${headerHeight}px`);
+    document.documentElement.style.setProperty("--procedure-navigation-height", `${navigationHeight}px`);
+
+    const visibleItems = items.filter(({ button, section }) => {
+      const visible = section.getClientRects().length > 0;
+      button.disabled = !visible;
+      button.setAttribute("aria-controls", section.id);
+      button.title = visible ? `Ir a ${button.querySelector(".procedure-progress-label").textContent}` : "La sección estará disponible al agregar contenido.";
+      return visible;
+    });
+    let active = visibleItems[0];
+    for (const item of visibleItems) {
+      if (item.section.getBoundingClientRect().top <= offset + 2) active = item;
+    }
+    if (window.scrollY > 0 && window.scrollY + window.innerHeight >= document.documentElement.scrollHeight - 2) {
+      active = visibleItems.at(-1);
+    }
+    for (const { button } of items) {
+      const isActive = button === active?.button;
+      const wasActive = button.getAttribute("aria-current") === "location";
+      if (isActive) button.setAttribute("aria-current", "location");
+      else button.removeAttribute("aria-current");
+      if (isActive && !wasActive && list.scrollWidth > list.clientWidth) {
+        const buttonRect = button.getBoundingClientRect();
+        const listRect = list.getBoundingClientRect();
+        if (buttonRect.left < listRect.left || buttonRect.right > listRect.right) {
+          list.scrollTo({ left: list.scrollLeft + buttonRect.left - listRect.left - (list.clientWidth - buttonRect.width) / 2, behavior: "auto" });
+        }
+      }
+    }
+  }
+
+  function scheduleUpdate() {
+    if (!frame) frame = requestAnimationFrame(update);
+  }
+  navigation.addEventListener("click", event => {
+    const button = event.target.closest("button[data-progress-target]");
+    if (!button || button.disabled) return;
+    const target = document.getElementById(button.dataset.progressTarget);
+    if (!target || !target.getClientRects().length) return;
+    const behavior = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
+    target.scrollIntoView({ behavior, block: "start" });
+    scheduleUpdate();
+  });
+  window.addEventListener("scroll", scheduleUpdate, { passive: true });
+  window.addEventListener("resize", scheduleUpdate);
+  const observer = new ResizeObserver(scheduleUpdate);
+  for (const element of [header, navigation, ui.workspace]) observer.observe(element);
+  scheduleUpdate();
+}
 function addFlowItem(record) {
   const endIndex = activityRows.findIndex(activity => activity.tipo === "Fin");
   activityRows.splice(endIndex < 0 ? activityRows.length : endIndex, 0, record);
@@ -4053,12 +4130,13 @@ function workflowDate(value, pendingLabel) {
   return dateOnly(value) || pendingLabel;
 }
 
-function approvalReportCell(name, role, date) {
-  return [
+function approvalReportCell(name, role, date, showDate = true) {
+  const lines = [
     `Nombre: ${String(name || "").trim() || "Sin información registrada."}`,
-    `Cargo: ${String(role || "").trim() || "Sin información registrada."}`,
-    `Fecha: ${String(date || "").trim() || "Sin información registrada."}`
-  ].join("\n");
+    `Cargo: ${String(role || "").trim() || "Sin información registrada."}`
+  ];
+  if (showDate) lines.push(`Fecha: ${String(date || "").trim() || "Sin información registrada."}`);
+  return lines.join("\n");
 }
 
 function changeControlReport() {
@@ -4069,10 +4147,11 @@ function changeControlReport() {
     variant: "change-control",
     columnWidths: ["33.33%", "33.33%", "33.34%"]
   });
+  const showDates = currentUserRole !== "elaborador" || (currentDraft?.status || "borrador") !== "borrador";
   const approvals = reportTable(["ELABORÓ", "REVISÓ", "APROBÓ"], [{}], () => [
-    approvalReportCell(ui.draftPreparedName.value, approvalRoleValue(ui.draftPreparedBy), workflowDate(currentDraft?.submittedForReviewAt, "Pendiente de envío a revisión")),
-    approvalReportCell(ui.draftReviewedName.value, approvalRoleValue(ui.draftReviewedBy), workflowDate(currentDraft?.technicalReviewedAt, "Pendiente de concepto técnico")),
-    approvalReportCell(ui.draftApprovedName.value, approvalRoleValue(ui.draftApprovedBy), workflowDate(currentDraft?.approvedAt, "Pendiente de visto bueno administrativo"))
+    approvalReportCell(ui.draftPreparedName.value, approvalRoleValue(ui.draftPreparedBy), workflowDate(currentDraft?.submittedForReviewAt, "Pendiente de envío a revisión"), showDates),
+    approvalReportCell(ui.draftReviewedName.value, approvalRoleValue(ui.draftReviewedBy), workflowDate(currentDraft?.technicalReviewedAt, "Pendiente de concepto técnico"), showDates),
+    approvalReportCell(ui.draftApprovedName.value, approvalRoleValue(ui.draftApprovedBy), workflowDate(currentDraft?.approvedAt, "Pendiente de visto bueno administrativo"), showDates)
   ], { variant: "approval-signatures", columnWidths: ["33.33%", "33.33%", "33.34%"] });
   content.append(updates, approvals);
   return content;
@@ -4536,4 +4615,5 @@ populateApprovalRoleSelect(ui.draftReviewedBy, "", null, true);
 populateApprovalRoleSelect(ui.draftApprovedBy, "", ["Directivo"]);
 installMethodHelps(document);
 setupMethodTooltip();
+setupProcedureNavigation();
 if (csrfToken) request("/api/auth/me").then(({ user }) => startSession(user)).catch(clearSession);
