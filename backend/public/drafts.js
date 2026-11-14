@@ -2515,6 +2515,8 @@ function clearSession() {
   csrfToken = "";
   sessionStorage.removeItem(csrfKey);
   currentDraft = null;
+  syncActiveDraftSelection();
+  syncActiveDraftSelection(ui.evaluatorDraftList);
   currentUserRole = "";
   currentPayload = {};
   currentEvaluation = null;
@@ -3085,6 +3087,7 @@ async function loadEvaluatorInbox() {
       const button = document.createElement("button");
       button.type = "button";
       button.className = "draft-open";
+      button.dataset.draftId = procedure.id;
       const info = document.createElement("span");
       info.className = "draft-info";
       const name = document.createElement("strong");
@@ -3095,14 +3098,37 @@ async function loadEvaluatorInbox() {
       status.className = "draft-status";
       status.textContent = "Revisar";
       info.append(name, detail);
-      button.append(info, status);
+      const labels = document.createElement("span");
+      labels.className = "draft-labels";
+      const activeLabel = document.createElement("span");
+      activeLabel.className = "draft-active-label";
+      activeLabel.textContent = "Abierto";
+      activeLabel.hidden = true;
+      labels.append(activeLabel, status);
+      button.append(info, labels);
       button.addEventListener("click", () => openAssignedProcedure(procedure.id));
       item.append(button);
       return item;
     }));
+    syncActiveDraftSelection(ui.evaluatorDraftList);
     setMessage(ui.evaluatorInboxMessage, "");
   } catch (error) {
     handleRequestError(error, ui.evaluatorInboxMessage);
+  }
+}
+
+function syncActiveDraftSelection(list = ui.draftList) {
+  for (const button of list.querySelectorAll("button[data-draft-id]")) {
+    const active = Boolean(currentDraft?.id && button.dataset.draftId === currentDraft.id);
+    if (active) button.setAttribute("aria-current", "true");
+    else button.removeAttribute("aria-current");
+    button.querySelector(".draft-active-label").hidden = !active;
+    if (active && list.scrollHeight > list.clientHeight) {
+      const top = button.offsetTop;
+      const bottom = top + button.offsetHeight;
+      if (top < list.scrollTop) list.scrollTop = top;
+      else if (bottom > list.scrollTop + list.clientHeight) list.scrollTop = bottom - list.clientHeight;
+    }
   }
 }
 
@@ -3116,6 +3142,7 @@ function renderDrafts(drafts) {
     const button = document.createElement("button");
     button.type = "button";
     button.className = "draft-open";
+    button.dataset.draftId = draft.id;
 
     const info = document.createElement("span");
     info.className = "draft-info";
@@ -3130,12 +3157,20 @@ function renderDrafts(drafts) {
     status.className = "draft-status";
     status.textContent = statusLabel(draft.status);
 
+    const labels = document.createElement("span");
+    labels.className = "draft-labels";
+    const activeLabel = document.createElement("span");
+    activeLabel.className = "draft-active-label";
+    activeLabel.textContent = "Abierto";
+    activeLabel.hidden = true;
+    labels.append(activeLabel, status);
     info.append(name, details);
-    button.append(info, status);
+    button.append(info, labels);
     button.addEventListener("click", () => openDraft(draft.id));
     item.append(button);
     return item;
   }));
+  syncActiveDraftSelection();
 }
 
 function renderAdminApprovalQueue(procedures) {
@@ -3186,6 +3221,7 @@ async function openDraft(id, discardChanges = false) {
     const { procedure } = await request("/api/procedures/" + encodeURIComponent(id));
     if (procedure.evaluation) await loadEvaluationRubric();
     populateDraft(procedure);
+    syncActiveDraftSelection();
     ui.evaluatorInbox.hidden = true;
     ui.evaluatorDetail.hidden = true;
     ui.draftWorkspace.hidden = false;
@@ -3342,6 +3378,7 @@ async function openAssignedProcedure(id) {
     await loadEvaluationRubric();
     const { procedure, evaluation } = await request(`/api/evaluator/procedures/${encodeURIComponent(id)}`);
     populateDraft(procedure);
+    syncActiveDraftSelection(ui.evaluatorDraftList);
     currentEvaluation = evaluation;
     ui.processCode.disabled = true;
     ui.draftWorkspace.hidden = true;
@@ -3368,6 +3405,7 @@ function newDraft() {
   flowReviewPending = false;
   ui.reviewFlowButton.classList.toggle("is-reviewed", false);
   currentDraft = null;
+  syncActiveDraftSelection();
   returnedEvaluation = null;
   returnedResponsesDirty = false;
   ui.returnedEvaluation.hidden = true;

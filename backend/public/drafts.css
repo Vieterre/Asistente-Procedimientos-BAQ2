@@ -206,3 +206,44 @@ body:has(#workspace:not([hidden]) #roleWorkspaceBanner[data-role="administrador"
 @media print{.procedure-progress{display:none!important}}
 
 .preview-free-text{margin:0;white-space:pre-wrap;text-align:justify;text-justify:inter-word;line-height:1.55;overflow-wrap:anywhere;hyphens:auto}
+
+:is(#draftList,#evaluatorDraftList){position:relative}
+:is(#draftList,#evaluatorDraftList) .draft-open{padding-left:12px;padding-right:12px;border-radius:8px}
+:is(#draftList,#evaluatorDraftList) .draft-open[aria-current="true"]{background:#edf5fc;box-shadow:inset 4px 0 #1f6fd0}
+:is(#draftList,#evaluatorDraftList) .draft-open[aria-current="true"]:hover{background:#e5f0fa}
+:is(#draftList,#evaluatorDraftList) .draft-labels{display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex:none}
+:is(#draftList,#evaluatorDraftList) .draft-active-label{display:inline-flex;padding:3px 7px;border:1px solid #c6dced;border-radius:6px;background:#dfedf8;color:#185479;font-size:11px;font-weight:750;line-height:1.25}
+
+/* Refine editor spacing, inline help and controls without altering report styles. */
+@media screen{
+#workspace :is(.editor-section,.list-section,.flow-section,.documents-section){border-color:#dfe7ef;border-top-width:2px;border-top-color:var(--brand-green);border-radius:12px;box-shadow:0 4px 18px rgba(18,58,96,.045);padding:24px}
+#workspace :is(.norm-row,.record-row){border-color:#e1e9f0;border-radius:10px;box-shadow:0 1px 4px rgba(18,58,96,.025);padding:18px}
+#workspace .activity-row{border-top-color:#e1e9f0;border-right-color:#e1e9f0;border-bottom-color:#e1e9f0;border-radius:10px;box-shadow:0 1px 4px rgba(18,58,96,.025);padding:18px}
+#workspace label:has(+.help-tip){display:inline;vertical-align:middle;margin:0;color:#29475e;font-size:13px;font-weight:650;line-height:1.5}
+#workspace label+.help-tip{display:inline-flex;vertical-align:middle;width:20px;height:20px;margin:0 0 7px 7px;border:1px solid #d6e9e2;border-radius:50%;background:#f1f8f5;color:#0d7a5f;font-size:11px;font-weight:750;box-shadow:none;flex:none}
+#workspace label+.help-tip:hover,#workspace label+.help-tip:focus-visible{background:#e3f3ec;border-color:#94cbb7;color:#075c46}
+#workspace :is(.field,.norm-field,.activity-field,.control-field,.record-field){margin-bottom:20px}
+#workspace :is(input:not([type="checkbox"]),select,textarea){display:block;padding:10px 12px;border-color:#cddbe6;border-radius:8px;background:#fcfdff;color:var(--brand-ink);font-size:14px;transition:border-color .16s ease,box-shadow .16s ease,background-color .16s ease}
+#workspace :is(input:not([type="checkbox"]),select){min-height:44px;height:44px}
+#workspace textarea{min-height:132px;line-height:1.55}
+#workspace :is(.norm-grid,.activity-grid,.record-grid,.control-details) textarea{min-height:96px}
+#workspace :is(input,select,textarea):hover{border-color:#9fb7cb}
+#workspace :is(input,select,textarea):focus{background:#fff;border-color:var(--brand-blue);box-shadow:0 0 0 3px rgba(31,111,208,.07)}
+#workspace input[readonly]{background:#f3f7fa;color:#526c82;border-color:#dfe8ef}
+#workspace .field-hint{font-size:12px;line-height:1.45;margin-top:7px}
+#workspace .field-hint:not(.is-invalid):not(.is-warning){color:#697f91}
+#workspace .procedure-identification{column-gap:16px}
+#workspace :is(.norm-grid,.activity-grid,.record-grid){column-gap:16px;row-gap:2px}
+#workspace .section-heading{margin-bottom:20px}
+#workspace .section-heading h2{font-size:20px;line-height:1.25;letter-spacing:-.015em}
+#workspace :is(.context-section,.norms-section,.activities-section)>.section-heading h3{font-size:18px;line-height:1.3}
+#workspace :is(.activity-heading,.norm-heading,.record-row .section-heading) h4{font-size:15px;line-height:1.35;color:#29475e}
+#workspace :is(.primary-button,.secondary-button){border-radius:8px;font-size:13px}
+#workspace :is(.section-heading,.section-actions,.form-actions)>.secondary-button{min-height:40px}
+#workspace .draft-open{border-radius:8px;padding:14px 10px}
+#workspace .draft-open strong{font-size:13px;line-height:1.45}
+#workspace :is(.context-section,.norms-section,.activities-section){border-color:#e5ebf1;padding-top:24px;margin-top:28px}
+@media(max-width:760px){#workspace :is(.editor-section,.list-section,.flow-section,.documents-section){padding:18px}#workspace :is(.norm-row,.activity-row,.record-row){padding:14px}}
+@media(prefers-reduced-motion:reduce){#workspace :is(input,select,textarea){transition:none}}
+:is(#draftList,#evaluatorDraftList){max-height:min(58vh,520px);overflow-y:auto;overscroll-behavior-y:contain;scrollbar-gutter:stable;padding-right:4px}
+}
