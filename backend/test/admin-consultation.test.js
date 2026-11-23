@@ -99,13 +99,15 @@ test('read-only viewer preserves all saved sections and draws without changing e
   const content=new Element(); const editRows=[{uid:'local',actividad:'Edición local pendiente'}];
   const context={document:{createElement:tag=>new Element(tag),createElementNS:(_,tag)=>new Element(tag)},ui:{consultationContent:content},activityRows:editRows,flowIntrinsicWidth:1234,flowIntrinsicHeight:5678,flowZoom:77,dirty:true,statusLabel:value=>value};
   vm.createContext(context);
+  vm.runInContext(source.slice(source.indexOf('function latestDocumentVersion('),source.indexOf('\nfunction suggestNextChangeVersion(')),context);
   vm.runInContext(source.slice(source.indexOf('function svgNode('),source.indexOf('\nfunction errorText(')),context);
   vm.runInContext(source.slice(source.indexOf('function reportTable('),source.indexOf('\nfunction dateOnly(')),context);
   vm.runInContext(source.slice(source.indexOf('function consultationDate('),source.indexOf('\nfunction renderConsultationList(')),context);
   vm.runInContext(source.slice(source.indexOf('function renderConsultationProcedure('),source.indexOf('\nasync function openConsultationProcedure(')),context);
-  const procedure={id,name:row.name,code:row.code,processCode:row.process_code,processName:row.process_name,status:row.status,revision:7,version:'1.0',authorName:'Autora',payload};
+  const procedure={id,name:row.name,code:row.code,processCode:row.process_code,processName:row.process_name,status:row.status,revision:7,version:'1.0',authorName:'Autora',payload:{...payload,changes:[...payload.changes,{version:'5.0',fecha:'2026-11-20',razon:'Última actualización'}]}};
   const before=JSON.stringify(procedure);context.renderConsultationProcedure(procedure);
   const nodes=collect(content),text=nodes.map(n=>n.textContent).join(' ');
+  assert.match(text,/versión 5\.0/);
   for(const expected of ['Objetivo guardado','Alcance guardado','Término: definición','Condiciones guardadas','Manual guardado','Descripción guardada','Sistema guardado','Registro guardado','Ejecución guardada','Anexo guardado','2015-01-01','Creación histórica'])assert.ok(text.includes(expected),expected);
   assert.ok(nodes.some(n=>n.tagName==='svg'&&n.attributes.role==='img'));
   assert.ok(nodes.some(n=>n.tagName==='marker'&&n.attributes.id==='consultationFlowArrow'));

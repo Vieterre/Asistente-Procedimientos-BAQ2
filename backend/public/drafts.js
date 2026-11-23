@@ -372,7 +372,7 @@ function populateApprovalRoleSelect(select, selected = "", allowedLevels = null,
   syncApprovalOther(select);
 }
 
-function suggestNextChangeVersion(changes, fallback = "1.0") {
+function latestDocumentVersion(changes, fallback = "1.0") {
   const validVersion = /^\d+\.\d+$/;
   const highest = [...(Array.isArray(changes) ? changes : [])]
     .map(change => String(change?.version || "").trim())
@@ -384,8 +384,11 @@ function suggestNextChangeVersion(changes, fallback = "1.0") {
       return major > highestMajor || (major === highestMajor && minor > highestMinor) ? version : currentHighest;
     }, "");
   const fallbackVersion = String(fallback || "").trim();
-  const base = highest || (validVersion.test(fallbackVersion) ? fallbackVersion : "1.0");
-  const [major, minor] = base.split(".").map(Number);
+  return highest || (validVersion.test(fallbackVersion) ? fallbackVersion : "1.0");
+}
+
+function suggestNextChangeVersion(changes, fallback = "1.0") {
+  const [major, minor] = latestDocumentVersion(changes, fallback).split(".").map(Number);
   return `${major}.${minor + 1}`;
 }
 
@@ -3974,7 +3977,7 @@ function buildEvaluationReport() {
   meta.className = "evaluation-pdf-meta";
   const metadata = [
     ["Procedimiento", currentDraft.name || "Sin nombre"],
-    ["Código y versión", `${currentDraft.code || "Código pendiente"} · versión ${currentDraft.version || "1.0"}`],
+    ["Código y versión", `${currentDraft.code || "Código pendiente"} · versión ${latestDocumentVersion(changeRows, currentDraft.version || currentPayload.fields?.version)}`],
     ["Proceso", process],
     ["Evaluador", ui.sessionIdentity.textContent || "Sin identificar"],
     ["Estado", statusLabel(currentDraft.status)],
@@ -4173,7 +4176,7 @@ function approvalReportCell(name, role, date, showDate = true) {
 function changeControlReport() {
   const content = document.createElement("div");
   content.className = "preview-change-control";
-  const reportVersion = currentDraft?.version || changeRows.at(-1)?.version || "";
+  const reportVersion = latestDocumentVersion(changeRows, currentDraft?.version || currentPayload.fields?.version);
   const updates = reportTable(["VERSIÓN", "FECHA", "RAZÓN DE LA ACTUALIZACIÓN"], reportChangeRows(changeRows, reportVersion, currentDraft?.approvedAt), row => [row.version, row.fecha, row.razon], {
     variant: "change-control",
     columnWidths: ["33.33%", "33.33%", "33.34%"]
@@ -4272,7 +4275,7 @@ function showPreview({ branding = "standard" } = {}) {
   const meta = document.createElement("div");
   meta.className = "preview-document-meta";
   const reportCode = currentDraft?.code || ui.draftCode.value || "Sin código asignado";
-  const reportVersion = currentDraft?.version || changeRows.at(-1)?.version || "1.0";
+  const reportVersion = latestDocumentVersion(changeRows, currentDraft?.version || currentPayload.fields?.version);
   const reportStatus = statusLabel(currentDraft?.status || "borrador");
   for (const [label, value] of [["Código", reportCode], ["Versión", reportVersion], ["Estado", reportStatus]]) {
     const cell = document.createElement("div");
@@ -4516,7 +4519,7 @@ function renderConsultationProcedure(procedure) {
   const report = document.createElement('article'); report.className = 'preview-report consultation-report';
   const title = document.createElement('h3'); title.textContent = procedure.name;
   const description = document.createElement('p');
-  description.textContent = `${procedure.code || 'Código pendiente'} · ${procedure.processName || procedure.processCode} · ${statusLabel(procedure.status)} · revisión ${procedure.revision} · versión ${procedure.version}`;
+  description.textContent = `${procedure.code || 'Código pendiente'} · ${procedure.processName || procedure.processCode} · ${statusLabel(procedure.status)} · revisión ${procedure.revision} · versión ${latestDocumentVersion(changes, procedure.version || fields.version)}`;
   const people = document.createElement('p');
   people.textContent = `Elaborador: ${procedure.authorName || 'Sin información'} · Evaluador: ${procedure.evaluatorName || 'Sin asignar'} · Actualizado: ${consultationDate(procedure.updatedAt)}`;
   report.append(title, description, people);

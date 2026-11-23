@@ -8,12 +8,13 @@ function report(role, status, saved = true) {
   const ui = Object.fromEntries(Object.entries({ draftPreparedName: 'Elaboradora', draftReviewedName: 'Revisor', draftApprovedName: 'Aprobadora', draftPreparedBy: 'Profesional', draftReviewedBy: 'Jefe', draftApprovedBy: 'Director' }).map(([key, value]) => [key, { value }]));
   const currentDraft = saved ? { status, version: '1.0', submittedForReviewAt: '2026-10-01T12:00:00Z', technicalReviewedAt: '2026-10-02T12:00:00Z', approvedAt: '2026-10-03T12:00:00Z' } : null;
   const context = {
-    ui, currentDraft, currentUserRole: role, changeRows: [{ version: '1.0', fecha: '2026-10-01', razon: 'Creación' }],
+    ui, currentDraft, currentPayload: {}, currentUserRole: role, changeRows: [{ version: '1.0', fecha: '2026-10-01', razon: 'Creación' }],
     approvalRoleValue: select => select.value,
     document: { createElement: () => ({ children: [], append(...nodes) { this.children.push(...nodes); } }) },
     reportTable: (headers, rows, values, options) => ({ headers, rows: rows.map(values), options })
   };
   vm.createContext(context);
+  vm.runInContext(source.slice(source.indexOf('function latestDocumentVersion('), source.indexOf('\nfunction suggestNextChangeVersion(')), context);
   vm.runInContext(source.slice(source.indexOf('function dateOnly('), source.indexOf('\nfunction previewFitScale(')), context);
   return context.changeControlReport().children;
 }
