@@ -9,9 +9,9 @@ const root = join(dirname(fileURLToPath(import.meta.url)), "../..");
 
 test("a new change row suggests the next decimal version from saved history", async () => {
   const script = await readFile(join(root, "backend/public/drafts.js"), "utf8");
-  const helper = script.match(/function suggestNextChangeVersion\(changes, fallback = "1\.0"\) \{[\s\S]*?\n\}/)?.[0];
+  const helper = script.slice(script.indexOf("function latestDocumentVersion("), script.indexOf("\nfunction changeLogWarnings("));
   assert.ok(helper);
-  const suggest = runInNewContext(`(${helper})`);
+  const suggest = runInNewContext(`${helper}\nsuggestNextChangeVersion`);
   assert.equal(suggest([{ version: "1.0" }]), "1.1");
   assert.equal(suggest([{ version: "1.0" }, { version: "1.1" }]), "1.2");
   assert.equal(suggest([{ version: "1.0" }, { version: "" }]), "1.1");
