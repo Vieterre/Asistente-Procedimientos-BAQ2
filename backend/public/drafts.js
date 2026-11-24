@@ -4607,6 +4607,7 @@ async function openReassignment(procedure) {
   if (currentUserRole !== 'administrador' || !procedure.canReassign) return;
   const version = ++reassignmentRequestVersion;
   reassignmentProcedure = null;
+  ui.cancelReassignment.disabled = false;
   ui.reassignmentForm.reset();
   ui.reassignmentTarget.replaceChildren();
   ui.confirmReassignment.disabled = true;
@@ -4640,25 +4641,34 @@ async function submitReassignment(event) {
   const reason = ui.reassignmentReason.value.trim();
   if (!reason) { setMessage(ui.reassignmentMessage, errorMessages.reassignment_reason_required); return; }
   const procedure = reassignmentProcedure;
+  const version = reassignmentRequestVersion;
   ui.confirmReassignment.disabled = true;
+  ui.cancelReassignment.disabled = true;
   setMessage(ui.reassignmentMessage, 'Registrando reasignación…');
   try {
     await request(`/api/admin/procedures/${encodeURIComponent(procedure.id)}/responsibility`, {
       method: 'POST', csrf: true,
       body: { responsibleUserId: ui.reassignmentTarget.value, reason, revision: procedure.revision }
     });
+    if (version !== reassignmentRequestVersion || currentUserRole !== 'administrador') return;
     ui.reassignmentDialog.close();
     await loadConsultationList();
     setMessage(ui.consultationMessage, 'Procedimiento reasignado. Se notificó a ambos elaboradores.', true);
   } catch (error) {
+    if (version !== reassignmentRequestVersion) return;
     handleRequestError(error, ui.reassignmentMessage);
     // A revision conflict requires a fresh list and a new explicit decision.
     if (error.code !== 'draft_conflict') ui.confirmReassignment.disabled = false;
+  } finally {
+    if (version === reassignmentRequestVersion || !ui.reassignmentDialog.open) ui.cancelReassignment.disabled = false;
   }
 }
 
 ui.reassignmentForm.addEventListener('submit', submitReassignment);
 ui.cancelReassignment.addEventListener('click', () => ui.reassignmentDialog.close());
+ui.reassignmentDialog.addEventListener('cancel', event => {
+  if (ui.cancelReassignment.disabled) event.preventDefault();
+});
 ui.reassignmentDialog.addEventListener('close', () => {
   reassignmentRequestVersion++; reassignmentProcedure = null;
 });
