@@ -3,10 +3,12 @@ import { PROCEDURE_STATUS } from "./workflow.js";
 import { DraftError } from "./drafts.js";
 
 const columns = `p.id, p.code, p.name, p.process_code, p.status, p.version, p.revision,
-  p.updated_at, pr.name AS process_name, author.display_name AS author_name,
+  p.updated_at, pr.name AS process_name, author.display_name AS author_name, creator.display_name AS creator_name,
+  p.created_by_user_id, COALESCE(p.responsible_user_id, p.created_by_user_id) AS responsible_user_id,
   evaluator.display_name AS evaluator_name`;
 const joins = `FROM procedures p JOIN processes pr ON pr.code = p.process_code
-  JOIN app_users author ON author.id = p.created_by_user_id
+  JOIN app_users author ON author.id = COALESCE(p.responsible_user_id, p.created_by_user_id)
+  JOIN app_users creator ON creator.id = p.created_by_user_id
   LEFT JOIN app_users evaluator ON evaluator.id = p.assigned_evaluator_id`;
 function requireAdministrator(user) {
   if (!canPerform(user, ACTIONS.CONSULT_ALL_PROCEDURES)) throw new DraftError("forbidden", 403);
@@ -14,7 +16,9 @@ function requireAdministrator(user) {
 function present(row, detail = false) {
   return { id: row.id, code: row.code, name: row.name, processCode: row.process_code,
     processName: row.process_name, status: row.status, version: row.version, revision: row.revision,
-    updatedAt: row.updated_at, authorName: row.author_name, evaluatorName: row.evaluator_name || null,
+    updatedAt: row.updated_at, authorName: row.author_name, creatorName: row.creator_name,
+    createdByUserId: row.created_by_user_id, responsibleUserId: row.responsible_user_id,
+    canReassign: [PROCEDURE_STATUS.DRAFT, PROCEDURE_STATUS.RETURNED].includes(row.status), evaluatorName: row.evaluator_name || null,
     ...(detail ? { payload: row.current_payload } : {}) };
 }
 export async function listAdminConsultation(pool, user, { processCode = "", status = "" } = {}) {

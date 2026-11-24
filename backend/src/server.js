@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 import { checkDatabase, createPool } from "./db/pool.js";
 import { AuthError, SESSION_COOKIE, beginAdministratorMfaEnrollment, changePassword, confirmAdministratorMfaEnrollment, cookieOptions, getSession, hashToken, loginUser, parseCookies, revokeSession } from "./security/auth.js";
 import { listAdminConsultation, getAdminConsultation } from "./domain/admin-consultation.js";
+import { listReassignmentCandidates, reassignProcedure } from "./domain/reassignment.js";
 import { ACTIONS, canPerform } from "./domain/permissions.js";
 import { UserManagementError, createAccount, createBackupAdministrator, getAccountProcessAssignments, listAccounts, recoverBackupAdministrator, resetAccountPassword, setAccountActive, setAccountProcessAssignments } from "./security/admin-users.js";
 import { clientIp } from "./security/client-ip.js";
@@ -433,6 +434,7 @@ export function createAppServer({ poolFactory = createPool, secureCookies, trust
         return;
       }
 
+      const reassignmentMatch = /^\/api\/admin\/procedures\/([0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12})\/responsibility$/.exec(url.pathname);
       const consultationMatch = /^\/api\/admin\/consultation\/procedures(?:\/([0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}))?$/.exec(url.pathname);
       const draftId = /^\/api\/procedures\/([0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12})$/.exec(url.pathname)?.[1];
       const reportDraftId = /^\/api\/reports\/procedures\/([0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12})$/.exec(url.pathname)?.[1];
@@ -440,7 +442,8 @@ export function createAppServer({ poolFactory = createPool, secureCookies, trust
       const responseDraftId = /^\/api\/procedures\/([0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12})\/evaluation-responses$/.exec(url.pathname)?.[1];
       const adminApprovalMatch = /^\/api\/admin\/procedures\/([0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12})\/final-approval$/.exec(url.pathname);
       const assignedDraftMatch = /^\/api\/evaluator\/procedures\/([0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12})(?:\/(start|evaluation|decision))?$/.exec(url.pathname);
-      if ((consultationMatch && req.method === "GET") ||
+      if ((reassignmentMatch && ["GET", "POST"].includes(req.method)) ||
+          (consultationMatch && req.method === "GET") ||
           (url.pathname === "/api/admin/institutional-reports" && req.method === "GET") ||
           (reportDraftId && req.method === "GET") ||
           (url.pathname === "/api/procedures" && ["GET", "POST"].includes(req.method)) ||
@@ -478,7 +481,12 @@ export function createAppServer({ poolFactory = createPool, secureCookies, trust
               return;
             }
           }
-          if (consultationMatch) {
+          if (reassignmentMatch) {
+            const result = req.method === "GET"
+              ? await listReassignmentCandidates(pool, session.user, reassignmentMatch[1])
+              : { reassignment: await reassignProcedure(pool, session.user, reassignmentMatch[1], (await readJson(req)) || {}) };
+            sendJson(res, 200, { ok: true, ...result });
+          } else if (consultationMatch) {
             const result = consultationMatch[1]
               ? { procedure: await getAdminConsultation(pool, session.user, consultationMatch[1]) }
               : await listAdminConsultation(pool, session.user, {

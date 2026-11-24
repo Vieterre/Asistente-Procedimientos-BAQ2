@@ -1,5 +1,6 @@
 const ids = [
   "consultationButton", "consultationSection", "backFromConsultation", "consultationMessage", "consultationListing", "consultationFilters", "consultationProcess", "consultationStatus", "refreshConsultation", "consultationCount", "consultationEmpty", "consultationList", "consultationDetail", "consultationDetailTitle", "backToConsultationList", "consultationContent",
+  "reassignmentDialog", "reassignmentForm", "reassignmentSummary", "reassignmentTarget", "reassignmentReason", "reassignmentMessage", "cancelReassignment", "confirmReassignment",
   "loginView", "loginForm", "loginUsername", "loginPassword", "loginOtp", "loginMessage",
   "workspace", "sessionControls", "sessionIdentity", "notificationCenter", "notificationBell", "notificationPopover", "notificationCount", "emptyNotifications", "notificationList", "markAllNotificationsRead", "logoutButton", "welcomeText", "roleWorkspaceBanner", "roleBannerEyebrow", "roleBannerTitle", "roleBannerDescription",
   "pageHeading", "analyticsButton", "analyticsSection", "analyticsTitle", "analyticsScope", "backFromAnalytics", "refreshAnalytics", "analyticsFilters", "analyticsPeriod", "analyticsProcess", "analyticsRole", "analyticsProcessField", "analyticsRoleField", "analyticsByProcessSection", "exportAnalyticsButton", "analyticsMessage", "analyticsMetrics", "analyticsByDay", "analyticsByProcess", "emptyAnalyticsDays", "emptyAnalyticsProcesses", "analyticsLogins", "emptyAnalyticsLogins", "analyticsUsageMetrics",
@@ -29,6 +30,11 @@ const errorMessages = {
   csrf_failed: "La sesión cambió. Ingresa de nuevo.",
   password_change_required: "Cambia primero la contraseña en Cuentas.",
   forbidden: "Esta cuenta no tiene permiso para gestionar borradores.",
+  reassignment_locked: "Solo se pueden reasignar procedimientos en borrador o devueltos para ajustes.",
+  invalid_responsible_user: "Selecciona el nuevo elaborador responsable.",
+  responsible_user_unavailable: "La cuenta seleccionada debe estar activa y tener asignado este proceso. Actualiza el listado.",
+  responsible_user_unchanged: "Selecciona un elaborador diferente del responsable actual.",
+  reassignment_reason_required: "Escribe el motivo de la reasignación (máximo 2000 caracteres).",
   invalid_draft: "Revisa el nombre del procedimiento.",
   invalid_process: "Selecciona un proceso activo.",
   invalid_procedure_code: "Indica un consecutivo entre 1 y 999 para generar el código del procedimiento.",
@@ -1738,7 +1744,11 @@ async function openNotification(notification) {
     await refreshNotifications();
     ui.notificationPopover.hidden = true;
     ui.notificationBell.setAttribute("aria-expanded", "false");
-    if (notification.eventType === "procedure_submitted_for_review" && currentUserRole === "evaluador") {
+    if (notification.eventType === "procedure_responsibility_reassigned" && currentUserRole === "elaborador") {
+      hideAnalytics();
+      const procedures = await loadDrafts();
+      if (procedures?.some(procedure => procedure.id === notification.procedureId)) await openDraft(notification.procedureId);
+    } else if (notification.eventType === "procedure_submitted_for_review" && currentUserRole === "evaluador") {
       hideAnalytics();
       await openAssignedProcedure(notification.procedureId);
     } else if (["procedure_evaluation_started", "procedure_returned_for_corrections", "procedure_favorable_concept_issued", "procedure_unfavorable_concept_issued", "procedure_formally_approved", "procedure_returned_by_administration"].includes(notification.eventType) && currentUserRole === "elaborador") {
@@ -2501,6 +2511,8 @@ async function openInstitutionalReport(id) {
 }
 
 function clearSession() {
+  reassignmentRequestVersion++; reassignmentProcedure = null;
+  if (ui.reassignmentDialog.open) ui.reassignmentDialog.close();
   consultationRequestVersion++;
   ui.consultationSection.hidden = true;
   ui.consultationButton.hidden = true;
@@ -2713,6 +2725,7 @@ async function loadDrafts() {
   try {
     const { procedures } = await request("/api/procedures");
     renderDrafts(procedures);
+    return procedures;
   } catch (error) {
     handleRequestError(error, ui.listMessage);
   }
@@ -4456,7 +4469,18 @@ function renderConsultationList(procedures) {
     button.type = 'button'; button.className = 'secondary-button'; button.textContent = 'Ver';
     button.setAttribute('aria-label', `Ver ${procedure.name}`);
     button.addEventListener('click', () => openConsultationProcedure(procedure.id));
-    item.append(info, button);
+    const actions = document.createElement('div');
+    actions.className = 'consultation-actions';
+    actions.append(button);
+    if (procedure.canReassign) {
+      const reassign = document.createElement('button');
+      reassign.type = 'button'; reassign.className = 'secondary-button';
+      reassign.textContent = 'Reasignar elaborador';
+      reassign.setAttribute('aria-label', `Reasignar elaborador de ${procedure.name}`);
+      reassign.addEventListener('click', () => openReassignment(procedure));
+      actions.append(reassign);
+    }
+    item.append(info, actions);
     return item;
   }));
 }
@@ -4522,7 +4546,9 @@ function renderConsultationProcedure(procedure) {
   description.textContent = `${procedure.code || 'Código pendiente'} · ${procedure.processName || procedure.processCode} · ${statusLabel(procedure.status)} · revisión ${procedure.revision} · versión ${latestDocumentVersion(changes, procedure.version || fields.version)}`;
   const people = document.createElement('p');
   people.textContent = `Elaborador: ${procedure.authorName || 'Sin información'} · Evaluador: ${procedure.evaluatorName || 'Sin asignar'} · Actualizado: ${consultationDate(procedure.updatedAt)}`;
-  report.append(title, description, people);
+  const creator = document.createElement('p');
+  creator.textContent = `Creador original: ${procedure.creatorName || procedure.authorName || 'Sin información'}`;
+  report.append(title, description, people, creator);
   report.append(reportSection('1', 'Identificación', reportTable(['Campo', 'Valor'], [
     ['Nombre', procedure.name], ['Código', procedure.code || 'Código pendiente'], ['Proceso', `${procedure.processName || ''} (${procedure.processCode})`]
   ], row => row)));
@@ -4573,6 +4599,69 @@ async function openConsultationProcedure(id) {
     if (version === consultationRequestVersion) handleRequestError(error, ui.consultationMessage);
   }
 }
+
+let reassignmentRequestVersion = 0;
+let reassignmentProcedure = null;
+
+async function openReassignment(procedure) {
+  if (currentUserRole !== 'administrador' || !procedure.canReassign) return;
+  const version = ++reassignmentRequestVersion;
+  reassignmentProcedure = null;
+  ui.reassignmentForm.reset();
+  ui.reassignmentTarget.replaceChildren();
+  ui.confirmReassignment.disabled = true;
+  ui.reassignmentSummary.textContent = `${procedure.code || 'Código pendiente'} · ${procedure.name}. Responsable actual: ${procedure.authorName || 'Sin información'}.`;
+  setMessage(ui.reassignmentMessage, 'Consultando elaboradores del proceso…');
+  ui.reassignmentDialog.showModal();
+  try {
+    const result = await request(`/api/admin/procedures/${encodeURIComponent(procedure.id)}/responsibility`);
+    if (version !== reassignmentRequestVersion || !ui.reassignmentDialog.open || currentUserRole !== 'administrador') return;
+    if (result.revision !== procedure.revision) {
+      setMessage(ui.reassignmentMessage, 'El procedimiento cambió. Cierra esta ventana y actualiza el listado antes de reasignarlo.');
+      return;
+    }
+    const placeholder = document.createElement('option');
+    placeholder.value = ''; placeholder.textContent = 'Selecciona un elaborador';
+    ui.reassignmentTarget.replaceChildren(placeholder, ...result.candidates.map(candidate => {
+      const option = document.createElement('option');
+      option.value = candidate.id; option.textContent = candidate.displayName; return option;
+    }));
+    reassignmentProcedure = { id: procedure.id, revision: result.revision };
+    ui.confirmReassignment.disabled = result.candidates.length === 0;
+    setMessage(ui.reassignmentMessage, result.candidates.length ? '' : 'No hay otros elaboradores activos asignados a este proceso. Revisa sus asignaciones en Cuentas.');
+  } catch (error) {
+    if (version === reassignmentRequestVersion && ui.reassignmentDialog.open) handleRequestError(error, ui.reassignmentMessage);
+  }
+}
+
+async function submitReassignment(event) {
+  event.preventDefault();
+  if (currentUserRole !== 'administrador' || !reassignmentProcedure || ui.confirmReassignment.disabled) return;
+  const reason = ui.reassignmentReason.value.trim();
+  if (!reason) { setMessage(ui.reassignmentMessage, errorMessages.reassignment_reason_required); return; }
+  const procedure = reassignmentProcedure;
+  ui.confirmReassignment.disabled = true;
+  setMessage(ui.reassignmentMessage, 'Registrando reasignación…');
+  try {
+    await request(`/api/admin/procedures/${encodeURIComponent(procedure.id)}/responsibility`, {
+      method: 'POST', csrf: true,
+      body: { responsibleUserId: ui.reassignmentTarget.value, reason, revision: procedure.revision }
+    });
+    ui.reassignmentDialog.close();
+    await loadConsultationList();
+    setMessage(ui.consultationMessage, 'Procedimiento reasignado. Se notificó a ambos elaboradores.', true);
+  } catch (error) {
+    handleRequestError(error, ui.reassignmentMessage);
+    // A revision conflict requires a fresh list and a new explicit decision.
+    if (error.code !== 'draft_conflict') ui.confirmReassignment.disabled = false;
+  }
+}
+
+ui.reassignmentForm.addEventListener('submit', submitReassignment);
+ui.cancelReassignment.addEventListener('click', () => ui.reassignmentDialog.close());
+ui.reassignmentDialog.addEventListener('close', () => {
+  reassignmentRequestVersion++; reassignmentProcedure = null;
+});
 
 ui.consultationButton.addEventListener('click', showConsultation);
 ui.backFromConsultation.addEventListener('click', leaveConsultation);
