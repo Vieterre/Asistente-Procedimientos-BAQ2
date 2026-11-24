@@ -10,7 +10,7 @@ GRANT SELECT, INSERT, UPDATE ON public.app_users TO asistente_app_prod;
 
 GRANT SELECT (
   id, code, name, process_code, version, status, revision, updated_at,
-  current_payload, created_by_user_id, assigned_evaluator_id,
+  current_payload, created_by_user_id, responsible_user_id, assigned_evaluator_id,
   admin_approval_observation, admin_approval_by_user_id, admin_approval_at,
   submitted_for_review_at, technical_reviewed_at, approved_at
 ) ON public.procedures TO asistente_app_prod;
@@ -20,7 +20,7 @@ GRANT INSERT (
 ) ON public.procedures TO asistente_app_prod;
 
 GRANT UPDATE (
-  name, code, current_payload, approved_payload, revision, updated_at, status, assigned_evaluator_id,
+  name, code, current_payload, approved_payload, revision, updated_at, status, responsible_user_id, assigned_evaluator_id,
   admin_approval_observation, admin_approval_by_user_id, admin_approval_at,
   submitted_for_review_at, technical_reviewed_at, approved_at
 ) ON public.procedures TO asistente_app_prod;

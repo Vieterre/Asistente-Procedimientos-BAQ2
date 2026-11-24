@@ -36,8 +36,18 @@
 <div class="section-heading"><div><h2 id="institutionalReportsTitle">Reportes institucionales</h2><p id="institutionalReportsCount">0 procedimientos favorables</p></div><div class="section-actions"><button class="secondary-button" id="backFromInstitutionalReports" type="button">Volver a Borradores</button><button class="secondary-button" id="refreshInstitutionalReports" type="button">Actualizar</button></div></div>
 <p class="form-message" id="institutionalReportsMessage" role="status" hidden></p><p class="empty-state" id="emptyInstitutionalReports">No hay procedimientos con concepto favorable.</p><ol class="draft-list" id="institutionalReportsList"></ol>
 </section>
+<dialog id="reassignmentDialog" class="reassignment-dialog" aria-labelledby="reassignmentTitle" aria-describedby="reassignmentSummary">
+<form id="reassignmentForm">
+<h2 id="reassignmentTitle">Reasignar elaborador</h2>
+<p id="reassignmentSummary"></p>
+<p>El nuevo elaborador recibirá el procedimiento y el anterior dejará de editarlo. Se conservarán el contenido, el creador original y el historial.</p>
+<div class="field"><label for="reassignmentTarget">Nuevo elaborador responsable</label><select id="reassignmentTarget" required></select></div>
+<div class="field"><label for="reassignmentReason">Motivo de la reasignación</label><textarea id="reassignmentReason" required maxlength="2000" rows="3"></textarea></div>
+<p id="reassignmentMessage" class="form-message" role="status" hidden></p>
+<div class="form-actions"><button id="cancelReassignment" type="button" class="secondary-button">Cancelar</button><button id="confirmReassignment" type="submit" class="primary-button" disabled>Reasignar elaborador</button></div>
+</form></dialog>
 <section class="consultation-section" id="consultationSection" aria-labelledby="consultationTitle" hidden>
-<div class="section-heading"><div><h2 id="consultationTitle">Consulta de procedimientos</h2><p>Solo consulta · última versión guardada · sin límite de periodo</p></div><button class="secondary-button" id="backFromConsultation" type="button">Volver a Borradores</button></div>
+<div class="section-heading"><div><h2 id="consultationTitle">Consulta de procedimientos</h2><p>Última versión guardada · consulta y reasignación de elaboradores</p></div><button class="secondary-button" id="backFromConsultation" type="button">Volver a Borradores</button></div>
 <p class="form-message" id="consultationMessage" role="status" hidden></p>
 <div id="consultationListing"><form class="analytics-filters" id="consultationFilters"><div class="field"><label for="consultationProcess">Proceso</label><select id="consultationProcess"><option value="">Todos los procesos</option></select></div><div class="field"><label for="consultationStatus">Estado</label><select id="consultationStatus"></select></div><button class="primary-button" type="submit">Aplicar filtros</button><button class="secondary-button" id="refreshConsultation" type="button">Actualizar</button></form><p id="consultationCount"></p><p class="empty-state" id="consultationEmpty" hidden>No hay procedimientos para estos filtros.</p><ol class="consultation-list" id="consultationList"></ol></div>
 <div id="consultationDetail" hidden><div class="section-heading"><h2 id="consultationDetailTitle" tabindex="-1">Solo consulta · última versión guardada</h2><button class="secondary-button" id="backToConsultationList" type="button">Volver al listado</button></div><p class="notice">Esta vista muestra el contenido guardado. No permite editar, evaluar ni aprobar y no constituye un reporte oficial.</p><div id="consultationContent"></div></div></section>

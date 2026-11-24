@@ -233,7 +233,7 @@ export async function listOwnDrafts(pool, user) {
   const result = await pool.query(
     `SELECT id, code, name, process_code, version, status, revision, updated_at,
             submitted_for_review_at, technical_reviewed_at, approved_at
-     FROM procedures p WHERE created_by_user_id = $1
+     FROM procedures p WHERE COALESCE(p.responsible_user_id, p.created_by_user_id) = $1
        AND EXISTS (SELECT 1 FROM user_processes up
                    WHERE up.user_id = $1 AND up.process_code = p.process_code)
      ORDER BY updated_at DESC`,
@@ -248,7 +248,7 @@ export async function getOwnDraft(pool, user, id) {
     `SELECT id, code, name, process_code, version, status, revision, updated_at, current_payload,
             admin_approval_observation, admin_approval_by_user_id, admin_approval_at,
             submitted_for_review_at, technical_reviewed_at, approved_at
-     FROM procedures p WHERE id = $1 AND created_by_user_id = $2
+     FROM procedures p WHERE id = $1 AND COALESCE(p.responsible_user_id, p.created_by_user_id) = $2
        AND EXISTS (SELECT 1 FROM user_processes up
                    WHERE up.user_id = $2 AND up.process_code = p.process_code)`,
     [id, user.id]
@@ -277,10 +277,10 @@ export async function listInstitutionalReports(pool, user) {
 export async function getProcedureReport(pool, user, id) {
   const result = await pool.query(
     `SELECT p.id, p.code, p.name, p.process_code, p.version, p.status, p.revision,
-            p.updated_at, p.current_payload, p.created_by_user_id, p.assigned_evaluator_id,
+            p.updated_at, p.current_payload, p.created_by_user_id, COALESCE(p.responsible_user_id, p.created_by_user_id) AS responsible_user_id, p.assigned_evaluator_id,
             p.submitted_for_review_at, p.technical_reviewed_at, p.approved_at,
             EXISTS (SELECT 1 FROM user_processes up
-                     WHERE up.user_id = p.created_by_user_id AND up.process_code = p.process_code) AS author_process_access,
+                     WHERE up.user_id = COALESCE(p.responsible_user_id, p.created_by_user_id) AND up.process_code = p.process_code) AS author_process_access,
             EXISTS (SELECT 1 FROM user_processes up
                      WHERE up.user_id = $2 AND up.process_code = p.process_code) AS evaluator_process_access
        FROM procedures p
@@ -294,6 +294,7 @@ export async function getProcedureReport(pool, user, id) {
     status: row.status,
     processCode: row.process_code,
     createdByUserId: row.created_by_user_id,
+    responsibleUserId: row.responsible_user_id ?? row.created_by_user_id,
     assignedEvaluatorId: row.assigned_evaluator_id
   };
   const institutional = user.role === ROLES.ADMIN;
@@ -361,8 +362,8 @@ export async function updateOwnDraft(pool, user, id, { name, consecutive, payloa
   try {
     await client.query("BEGIN");
     const found = await client.query(
-      `SELECT id, status, code, process_code, created_by_user_id, revision
-       FROM procedures p WHERE id = $1 AND created_by_user_id = $2
+      `SELECT id, status, code, process_code, created_by_user_id, COALESCE(p.responsible_user_id, p.created_by_user_id) AS responsible_user_id, revision
+       FROM procedures p WHERE id = $1 AND COALESCE(p.responsible_user_id, p.created_by_user_id) = $2
          AND EXISTS (SELECT 1 FROM user_processes up
                      WHERE up.user_id = $2 AND up.process_code = p.process_code)
        FOR UPDATE`,
@@ -370,7 +371,7 @@ export async function updateOwnDraft(pool, user, id, { name, consecutive, payloa
     );
     const procedure = found.rows[0];
     if (!procedure) throw new DraftError("draft_not_found", 404);
-    if (!canPerform(user, ACTIONS.EDIT_PROCEDURE, { procedure: { status: procedure.status, createdByUserId: procedure.created_by_user_id } })) {
+    if (!canPerform(user, ACTIONS.EDIT_PROCEDURE, { procedure: { status: procedure.status, responsibleUserId: procedure.responsible_user_id ?? procedure.created_by_user_id } })) {
       throw new DraftError("draft_locked", 403);
     }
     if (procedure.revision !== revision) throw new DraftError("draft_conflict", 409);
@@ -432,8 +433,8 @@ export async function submitOwnDraft(pool, user, id, { evaluatorId, revision }) 
     await client.query("BEGIN");
     const found = await client.query(
       `SELECT p.id, p.code, p.name, p.process_code, p.version, p.status, p.revision,
-              p.current_payload, p.created_by_user_id, p.assigned_evaluator_id
-         FROM procedures p WHERE p.id = $1 AND p.created_by_user_id = $2
+              p.current_payload, p.created_by_user_id, COALESCE(p.responsible_user_id, p.created_by_user_id) AS responsible_user_id, p.assigned_evaluator_id
+         FROM procedures p WHERE p.id = $1 AND COALESCE(p.responsible_user_id, p.created_by_user_id) = $2
            AND EXISTS (SELECT 1 FROM user_processes up WHERE up.user_id = $2 AND up.process_code = p.process_code)
          FOR UPDATE`,
       [id, user.id]
@@ -481,7 +482,7 @@ export async function submitOwnDraft(pool, user, id, { evaluatorId, revision }) 
     const permissionContext = {
       procedure: {
         status: procedure.status,
-        createdByUserId: procedure.created_by_user_id,
+        responsibleUserId: procedure.responsible_user_id ?? procedure.created_by_user_id,
         assignedEvaluatorId: evaluator.rows.length ? evaluatorId : null,
         isComplete: issues.length === 0
       }
@@ -565,7 +566,7 @@ export async function startAssignedEvaluation(pool, user, id) {
   try {
     await client.query("BEGIN");
     const found = await client.query(
-      `SELECT p.id, p.status, p.assigned_evaluator_id, p.created_by_user_id, p.name
+      `SELECT p.id, p.status, p.assigned_evaluator_id, COALESCE(p.responsible_user_id, p.created_by_user_id) AS responsible_user_id, p.name
          FROM procedures p JOIN user_processes up ON up.process_code = p.process_code AND up.user_id = $2
         WHERE p.id = $1 AND p.assigned_evaluator_id = $2 FOR UPDATE OF p`,
       [id, user.id]
@@ -593,7 +594,7 @@ export async function startAssignedEvaluation(pool, user, id) {
     await client.query(
       `INSERT INTO user_notifications (id, recipient_user_id, procedure_id, event_type, title, message)
        VALUES ($1, $2, $3, 'procedure_evaluation_started', $4, $5)`,
-      [randomUUID(), procedure.created_by_user_id, id, "La evaluación comenzó", `El Evaluador inició la revisión de «${procedure.name}».`]
+      [randomUUID(), procedure.responsible_user_id ?? procedure.created_by_user_id, id, "La evaluación comenzó", `El Evaluador inició la revisión de «${procedure.name}».`]
     );
     await client.query("COMMIT");
     return publicDraft(result.rows[0], true);

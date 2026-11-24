@@ -53,3 +53,16 @@ test("database check requires the procedure name migration before reporting read
   };
   assert.equal(await checkDatabase(pool), false);
 });
+
+test("database check rejects the previous schema until responsibility migration is applied", async () => {
+  const pool = {
+    async query(sql, params) {
+      if (sql.includes("to_regclass")) return { rows: [{
+        users_ready: true, procedures_ready: true, migrations_ready: true,
+        sessions_ready: true, notifications_ready: true
+      }] };
+      return { rows: params[0] === "014_procedure_responsibility" ? [] : [{}] };
+    }
+  };
+  assert.equal(await checkDatabase(pool), false);
+});

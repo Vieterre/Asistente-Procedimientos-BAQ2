@@ -22,6 +22,7 @@ export async function runMigrations(pool = createPool()) {
   const eleventhMigration = await readFile(join(migrationsDir, "011_workflow_milestone_dates.sql"), "utf8");
   const twelfthMigration = await readFile(join(migrationsDir, "012_administrative_approval_notifications.sql"), "utf8");
   const thirteenthMigration = await readFile(join(migrationsDir, "013_normalize_pending_administrative_approvals.sql"), "utf8");
+  const fourteenthMigration = await readFile(join(migrationsDir, "014_procedure_responsibility.sql"), "utf8");
   const migrations = [
     ["001_initial_schema", schema],
     ["002_sessions", secondMigration],
@@ -35,7 +36,8 @@ export async function runMigrations(pool = createPool()) {
     ["010_administrative_final_approval", tenthMigration],
     ["011_workflow_milestone_dates", eleventhMigration],
     ["012_administrative_approval_notifications", twelfthMigration],
-    ["013_normalize_pending_administrative_approvals", thirteenthMigration]
+    ["013_normalize_pending_administrative_approvals", thirteenthMigration],
+    ["014_procedure_responsibility", fourteenthMigration]
   ];
   const client = await pool.connect();
 

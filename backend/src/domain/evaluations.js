@@ -113,7 +113,7 @@ export async function getOwnEvaluationFeedback(pool, user, procedureId) {
            FROM evaluations WHERE procedure_id = p.id
           ORDER BY created_at DESC, id DESC LIMIT 1
        ) e ON TRUE
-      WHERE p.id = $1 AND p.created_by_user_id = $2
+      WHERE p.id = $1 AND COALESCE(p.responsible_user_id, p.created_by_user_id) = $2
         AND p.status IN ($3, $4, $5, $6)`,
     [procedureId, user.id, PROCEDURE_STATUS.RETURNED, PROCEDURE_STATUS.PENDING_ADMIN_APPROVAL,
       PROCEDURE_STATUS.APPROVED, PROCEDURE_STATUS.UNFAVORABLE]
@@ -215,7 +215,7 @@ export async function saveAuthorEvaluationResponses(pool, user, procedureId, res
     await client.query("BEGIN");
     const found = await client.query(
       `SELECT id, version, status FROM procedures p
-        WHERE p.id = $1 AND p.created_by_user_id = $2
+        WHERE p.id = $1 AND COALESCE(p.responsible_user_id, p.created_by_user_id) = $2
           AND EXISTS (SELECT 1 FROM user_processes up WHERE up.user_id = $2 AND up.process_code = p.process_code)
         FOR UPDATE`,
       [procedureId, user.id]
@@ -286,7 +286,7 @@ export async function decideAssignedEvaluation(pool, user, procedureId, { decisi
   try {
     await client.query("BEGIN");
     const found = await client.query(
-      `SELECT p.id, p.name, p.version, p.status, p.assigned_evaluator_id, p.created_by_user_id, p.process_code
+      `SELECT p.id, p.name, p.version, p.status, p.assigned_evaluator_id, COALESCE(p.responsible_user_id, p.created_by_user_id) AS responsible_user_id, p.process_code
          FROM procedures p JOIN user_processes up ON up.process_code = p.process_code AND up.user_id = $2
         WHERE p.id = $1 AND p.assigned_evaluator_id = $2 FOR UPDATE OF p`,
       [procedureId, user.id]
@@ -341,7 +341,7 @@ export async function decideAssignedEvaluation(pool, user, procedureId, { decisi
     await client.query(
       `INSERT INTO user_notifications (id, recipient_user_id, procedure_id, event_type, title, message)
        VALUES ($1, $2, $3, $4, $5, $6)`,
-      [randomUUID(), procedure.created_by_user_id, procedureId, eventType, title, message]
+      [randomUUID(), (procedure.responsible_user_id ?? procedure.created_by_user_id), procedureId, eventType, title, message]
     );
     await client.query("COMMIT");
     return { status: nextStatus, metrics, evaluationId: existing.id };
@@ -439,7 +439,7 @@ export async function decideAdministrativeApproval(pool, user, procedureId, { de
   try {
     await client.query("BEGIN");
     const found = await client.query(
-      `SELECT p.id, p.name, p.version, p.status, p.created_by_user_id, p.assigned_evaluator_id,
+      `SELECT p.id, p.name, p.version, p.status, COALESCE(p.responsible_user_id, p.created_by_user_id) AS responsible_user_id, p.assigned_evaluator_id,
               e.id AS evaluation_id, e.status AS evaluation_status, e.criteria_payload
          FROM procedures p
          JOIN LATERAL (
@@ -486,7 +486,7 @@ export async function decideAdministrativeApproval(pool, user, procedureId, { de
       [randomUUID(), user.id, eventType, procedureId, cleanObservation || null,
         JSON.stringify({ evaluationId: procedure.evaluation_id, decision })]
     );
-    for (const recipientId of new Set([procedure.created_by_user_id, procedure.assigned_evaluator_id].filter(Boolean))) {
+    for (const recipientId of new Set([(procedure.responsible_user_id ?? procedure.created_by_user_id), procedure.assigned_evaluator_id].filter(Boolean))) {
       await client.query(
         `INSERT INTO user_notifications (id, recipient_user_id, procedure_id, event_type, title, message)
          VALUES ($1, $2, $3, $4, $5, $6)`,

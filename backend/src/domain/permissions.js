@@ -12,6 +12,7 @@ export const ACTIONS = Object.freeze({
   DEACTIVATE_USER: "deactivate_user",
   REACTIVATE_USER: "reactivate_user",
   ASSIGN_PROCESSES: "assign_processes",
+  REASSIGN_PROCEDURE: "reassign_procedure",
   CONSULT_ALL_PROCEDURES: "consult_all_procedures",
   VIEW_ADMIN_ANALYTICS: "view_admin_analytics",
   VIEW_OWN_ANALYTICS: "view_own_analytics",
@@ -37,7 +38,8 @@ function active(user) {
 }
 
 function ownsProcedure(user, procedure) {
-  return Boolean(user?.id && procedure?.createdByUserId && user.id === procedure.createdByUserId);
+  const responsibleUserId = procedure?.responsibleUserId ?? procedure?.createdByUserId;
+  return Boolean(user?.id && responsibleUserId && user.id === responsibleUserId);
 }
 
 function assignedToEvaluation(user, procedure) {
@@ -62,6 +64,7 @@ export function canPerform(user, action, context = {}) {
   const { procedure, evaluation, targetUser } = context;
 
   if (user.role === ROLES.ADMIN) {
+    if (action === ACTIONS.REASSIGN_PROCEDURE) return isEditableByAuthorStatus(procedure?.status);
     if (action === ACTIONS.DEACTIVATE_USER) return canAdminDeactivate(targetUser, context);
     if (action === ACTIONS.GENERATE_BRANDED_PDF) return isApproved(procedure?.status);
     if ([ACTIONS.ISSUE_FINAL_APPROVAL, ACTIONS.RETURN_FROM_ADMIN_APPROVAL].includes(action)) {

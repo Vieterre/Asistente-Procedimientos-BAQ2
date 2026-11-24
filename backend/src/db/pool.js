@@ -93,6 +93,10 @@ export async function checkDatabase(pool) {
     "SELECT 1 FROM schema_migrations WHERE version = $1",
     ["013_normalize_pending_administrative_approvals"]
   );
-  return [migration, secondMigration, thirdMigration, fourthMigration, fifthMigration, sixthMigration, seventhMigration, eighthMigration, ninthMigration, tenthMigration, eleventhMigration, twelfthMigration, thirteenthMigration]
+  const fourteenthMigration = await pool.query(
+    "SELECT 1 FROM schema_migrations WHERE version = $1",
+    ["014_procedure_responsibility"]
+  );
+  return [migration, secondMigration, thirdMigration, fourthMigration, fifthMigration, sixthMigration, seventhMigration, eighthMigration, ninthMigration, tenthMigration, eleventhMigration, twelfthMigration, thirteenthMigration, fourteenthMigration]
     .every(result => result.rows.length === 1);
 }

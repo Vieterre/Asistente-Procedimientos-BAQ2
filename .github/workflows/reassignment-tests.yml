@@ -1,0 +1,38 @@
+name: Validar reasignación de procedimientos
+
+on:
+  push:
+    branches: [feature/reasignar-elaborador-20261123]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: civicflow_test
+          POSTGRES_PASSWORD: isolated-test-only
+          POSTGRES_DB: civicflow_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U civicflow_test -d civicflow_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - name: Pruebas y ciclo completo con PostgreSQL aislado
+        run: npm test
+        env:
+          CIVICFLOW_TEST_DATABASE_URL: postgres://civicflow_test:isolated-test-only@127.0.0.1:5432/civicflow_test
