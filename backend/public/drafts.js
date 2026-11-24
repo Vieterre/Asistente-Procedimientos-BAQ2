@@ -4486,13 +4486,13 @@ function renderConsultationList(procedures) {
 }
 
 async function loadConsultationList() {
-  if (currentUserRole !== 'administrador') return;
+  if (currentUserRole !== 'administrador') return null;
   const version = ++consultationRequestVersion;
   setMessage(ui.consultationMessage, 'Consultando procedimientos…');
   const params = new URLSearchParams({ processCode: ui.consultationProcess.value, status: ui.consultationStatus.value });
   try {
     const { procedures, processes } = await request('/api/admin/consultation/procedures?' + params);
-    if (version !== consultationRequestVersion || ui.consultationSection.hidden) return;
+    if (version !== consultationRequestVersion || ui.consultationSection.hidden) return null;
     const selected = ui.consultationProcess.value;
     const all = document.createElement('option'); all.value = ''; all.textContent = 'Todos los procesos';
     ui.consultationProcess.replaceChildren(all, ...processes.map(process => {
@@ -4502,8 +4502,11 @@ async function loadConsultationList() {
     ui.consultationProcess.value = selected;
     renderConsultationList(procedures);
     setMessage(ui.consultationMessage, '');
+    return true;
   } catch (error) {
-    if (version === consultationRequestVersion) handleRequestError(error, ui.consultationMessage);
+    if (version !== consultationRequestVersion) return null;
+    handleRequestError(error, ui.consultationMessage);
+    return false;
   }
 }
 
@@ -4652,8 +4655,13 @@ async function submitReassignment(event) {
     });
     if (version !== reassignmentRequestVersion || currentUserRole !== 'administrador') return;
     ui.reassignmentDialog.close();
-    await loadConsultationList();
-    setMessage(ui.consultationMessage, 'Procedimiento reasignado. Se notificó a ambos elaboradores.', true);
+    const refreshed = await loadConsultationList();
+    if (currentUserRole !== 'administrador' || ui.consultationSection.hidden || refreshed === null) return;
+    if (refreshed === true) {
+      setMessage(ui.consultationMessage, 'Procedimiento reasignado. Se notificó a ambos elaboradores.', true);
+    } else if (refreshed === false) {
+      setMessage(ui.consultationMessage, 'La reasignación se guardó y se notificó a ambos elaboradores, pero no se pudo actualizar el listado. Pulsa Actualizar para ver el nuevo responsable.');
+    }
   } catch (error) {
     if (version !== reassignmentRequestVersion) return;
     handleRequestError(error, ui.reassignmentMessage);

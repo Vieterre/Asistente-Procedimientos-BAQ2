@@ -54,17 +54,22 @@ export async function reassignProcedure(pool, user, procedureId, { responsibleUs
     if (procedure.responsible_user_id.toLowerCase() === responsibleUserId.toLowerCase()) {
       throw new DraftError("responsible_user_unchanged", 409);
     }
-    // Account management locks the target app_users row before deactivation or
-    // replacing process assignments, so this lock serializes those changes too.
+    // Lock the account before checking membership. A joined locking SELECT can
+    // retain a user_processes row from its pre-wait snapshot after a concurrent
+    // process removal commits; this separate statement uses a fresh snapshot.
     const eligible = await client.query(
       `SELECT u.id, u.display_name FROM app_users u
-         JOIN user_processes up ON up.user_id = u.id
         WHERE u.id = $1 AND u.role = 'elaborador' AND u.active = TRUE
-          AND up.process_code = $2 FOR SHARE OF u`,
-      [responsibleUserId, procedure.process_code]
+        FOR SHARE OF u`,
+      [responsibleUserId]
     );
     if (!eligible.rows[0]) throw new DraftError("responsible_user_unavailable", 409);
     const target = eligible.rows[0];
+    const membership = await client.query(
+      "SELECT 1 FROM user_processes WHERE user_id = $1 AND process_code = $2",
+      [target.id, procedure.process_code]
+    );
+    if (!membership.rows.length) throw new DraftError("responsible_user_unavailable", 409);
     const updated = await client.query(
       `UPDATE procedures SET responsible_user_id = $2, revision = revision + 1, updated_at = now()
         WHERE id = $1 RETURNING id, revision, updated_at`, [procedureId, target.id]

@@ -29,6 +29,7 @@ function fakePool({ status = "borrador", eligible = true, failNotification = fal
       if (sql === "COMMIT") return { rows: [] };
       if (sql.startsWith("SELECT id, ")) return { rows: [{ ...procedure }] };
       if (sql.includes("FROM app_users u")) return { rows: eligible ? [target] : [] };
+      if (sql.startsWith("SELECT 1 FROM user_processes")) return { rows: eligible ? [{}] : [] };
       if (sql.startsWith("UPDATE procedures SET responsible_user_id")) {
         procedure.responsible_user_id = params[1]; procedure.revision++;
         return { rows: [{ id, revision: procedure.revision, updated_at: new Date() }] };
@@ -164,10 +165,10 @@ function dialogContext(request) {
     replaceChildren(...nodes) { this.children = nodes; }
     reset() {} addEventListener() {} showModal() { this.open = true; } close() { this.open = false; }
   }
-  const ids = ["reassignmentDialog", "reassignmentForm", "reassignmentTarget", "reassignmentReason", "reassignmentSummary", "reassignmentMessage", "reassignmentMessage", "confirmReassignment", "cancelReassignment", "consultationMessage"];
+  const ids = ["reassignmentDialog", "reassignmentForm", "reassignmentTarget", "reassignmentReason", "reassignmentSummary", "reassignmentMessage", "reassignmentMessage", "confirmReassignment", "cancelReassignment", "consultationMessage", "consultationSection"];
   const context = { currentUserRole: "administrador", document: { createElement: () => new Element() },
     ui: Object.fromEntries(ids.map(key => [key, new Element()])), request, setMessage: (element, message) => { element.textContent = message; },
-    errorMessages: {}, handleRequestError: (error, element) => { element.textContent = error.code; }, loadConsultationList: async () => {} };
+    errorMessages: {}, handleRequestError: (error, element) => { element.textContent = error.code; }, loadConsultationList: async () => true };
   vm.createContext(context);
   const source = readFileSync(new URL("../public/drafts.js", import.meta.url), "utf8");
   vm.runInContext(source.slice(source.indexOf("let reassignmentRequestVersion"), source.indexOf("ui.consultationButton.addEventListener('click'")), context);
@@ -184,6 +185,7 @@ test("dialog sends selected account, required reason and exact revision without 
   assert.equal(calls[1].options.method, "POST"); assert.equal(calls[1].options.csrf, true);
   assert.equal(JSON.stringify(calls[1].options.body), JSON.stringify({ responsibleUserId: nextId, reason: "Cambio de equipo", revision: 7 }));
   assert.equal(context.ui.reassignmentDialog.open, false);
+  assert.match(context.ui.consultationMessage.textContent, /Procedimiento reasignado/);
 });
 
 test("dialog refuses stale revisions and ignores a delayed response after closing", async () => {

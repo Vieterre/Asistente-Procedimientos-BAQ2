@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
+import { setTimeout as delay } from "node:timers/promises";
 import pg from "pg";
 import { runMigrations } from "../src/db/migrate.js";
 import { checkDatabase } from "../src/db/pool.js";
@@ -127,6 +128,48 @@ test("PostgreSQL: migration, restricted grants and complete reassigned workflow"
       assert.equal(results.find(result => result.status === "rejected").reason.code, "draft_conflict");
       const events = await owner.query("SELECT id FROM audit_events WHERE entity_id=$1 AND event_type='procedure_responsibility_reassigned'", [concurrent.id]);
       assert.equal(events.rows.length, 1);
+    });
+    await t.test("process removal committed while reassignment waits invalidates the target", async () => {
+      const concurrent = await createDraft(app, previous, {
+        name: "Formular el plan de prueba de retiro", processCode: "DE", consecutive: "3", payload
+      });
+      const removal = await owner.connect();
+      let pending;
+      try {
+        await removal.query("BEGIN");
+        const removalPid = (await removal.query("SELECT pg_backend_pid() AS pid")).rows[0].pid;
+        // Use the same account-first locking order as setAccountProcessAssignments.
+        await removal.query("SELECT id FROM app_users WHERE id = $1 FOR UPDATE", [next.id]);
+        await removal.query("DELETE FROM user_processes WHERE user_id = $1 AND process_code = 'DE'", [next.id]);
+        pending = reassign(concurrent).then(value => ({ value }), error => ({ error }));
+        let blocked = false;
+        const deadline = Date.now() + 5000;
+        while (Date.now() < deadline) {
+          blocked = (await owner.query(
+            "SELECT EXISTS (SELECT 1 FROM pg_stat_activity WHERE $1 = ANY(pg_blocking_pids(pid))) AS waiting",
+            [removalPid]
+          )).rows[0].waiting;
+          if (blocked) break;
+          await delay(20);
+        }
+        assert.equal(blocked, true, "reassignment must be waiting on the target account lock before removal commits");
+        await removal.query("COMMIT");
+        const result = await pending;
+        assert.equal(result.error?.code, "responsible_user_unavailable");
+        const row = (await owner.query("SELECT responsible_user_id, revision FROM procedures WHERE id = $1", [concurrent.id])).rows[0];
+        assert.equal(row.responsible_user_id, null);
+        assert.equal(row.revision, concurrent.revision);
+        const events = await owner.query(
+          "SELECT id FROM audit_events WHERE entity_id = $1 AND event_type = 'procedure_responsibility_reassigned'",
+          [concurrent.id]
+        );
+        assert.equal(events.rows.length, 0);
+      } finally {
+        await removal.query("ROLLBACK");
+        removal.release();
+        if (pending) await pending;
+        await owner.query("INSERT INTO user_processes (user_id, process_code) VALUES ($1, 'DE') ON CONFLICT DO NOTHING", [next.id]);
+      }
     });
   } finally {
     await app?.end();
