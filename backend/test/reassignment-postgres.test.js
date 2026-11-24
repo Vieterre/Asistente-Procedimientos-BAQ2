@@ -171,6 +171,168 @@ test("PostgreSQL: migration, restricted grants and complete reassigned workflow"
         await owner.query("INSERT INTO user_processes (user_id, process_code) VALUES ($1, 'DE') ON CONFLICT DO NOTHING", [next.id]);
       }
     });
+    await t.test("returned procedure transfers A to B to C without letting former editors save or answer findings", async () => {
+      const third = { id: randomUUID(), role: "elaborador", active: true, displayName: "Tercero" };
+      await owner.query(`INSERT INTO app_users (id, username, display_name, role, active, password_hash)
+        VALUES ($1, 'testuserthird', $2, 'elaborador', TRUE, 'isolated-test-no-login')`, [third.id, third.displayName]);
+      await owner.query("INSERT INTO user_processes (user_id, process_code) VALUES ($1, 'DE')", [third.id]);
+      let returned = await createDraft(app, previous, {
+        name: "Formular el plan con transferencia sucesiva", processCode: "DE", consecutive: "4", payload
+      });
+      returned = await submitOwnDraft(app, previous, returned.id, { evaluatorId: evaluator.id, revision: returned.revision });
+      await startAssignedEvaluation(app, evaluator, returned.id);
+      const criteria = Object.fromEntries(EVALUATION_CRITERIA.map(criterion => [criterion.id, {
+        result: "Cumple", observation: "Revisado", findingStatus: "Cerrado"
+      }]));
+      criteria.con1 = { result: "No cumple", observation: "Precisar alcance", adjustment: "Ajustar alcance", findingStatus: "Pendiente" };
+      await saveAssignedEvaluation(app, evaluator, returned.id, { criteria, concept: "Requiere ajustes" });
+      await decideAssignedEvaluation(app, evaluator, returned.id, { decision: "devolver" });
+      await saveAuthorEvaluationResponses(app, previous, returned.id, { con1: "Respuesta del elaborador A" });
+      const snapshotA = await getOwnDraft(app, previous, returned.id);
+      await reassign(snapshotA);
+      await assert.rejects(updateOwnDraft(app, previous, returned.id, {
+        name: snapshotA.name, payload, revision: snapshotA.revision
+      }), { code: "draft_not_found" });
+      await assert.rejects(saveAuthorEvaluationResponses(app, previous, returned.id, { con1: "Intento anterior A" }), { code: "draft_not_found" });
+      assert.equal(await getOwnEvaluationFeedback(app, previous, returned.id), null);
+      const snapshotB = await getOwnDraft(app, next, returned.id);
+      assert.equal((await getOwnEvaluationFeedback(app, next, returned.id)).criteria.con1.response, "Respuesta del elaborador A");
+      await saveAuthorEvaluationResponses(app, next, returned.id, { con1: "Respuesta del elaborador B" });
+      const beforeSecond = (await owner.query("SELECT * FROM procedures WHERE id=$1", [returned.id])).rows[0];
+      const evaluationBefore = (await owner.query("SELECT * FROM evaluations WHERE procedure_id=$1", [returned.id])).rows;
+      await reassign(snapshotB, third.id);
+      for (const former of [previous, next]) {
+        await assert.rejects(getOwnDraft(app, former, returned.id), { code: "draft_not_found" });
+        await assert.rejects(updateOwnDraft(app, former, returned.id, {
+          name: snapshotB.name, payload, revision: snapshotB.revision
+        }), { code: "draft_not_found" });
+        await assert.rejects(saveAuthorEvaluationResponses(app, former, returned.id, { con1: "Intento anterior" }), { code: "draft_not_found" });
+        await assert.rejects(getProcedureReport(app, former, returned.id), { code: "forbidden" });
+        assert.equal(await getOwnEvaluationFeedback(app, former, returned.id), null);
+        assert.ok(!(await listOwnDrafts(app, former)).some(row => row.id === returned.id));
+      }
+      const afterSecond = (await owner.query("SELECT * FROM procedures WHERE id=$1", [returned.id])).rows[0];
+      for (const key of ["created_by_user_id", "code", "version", "status", "current_payload", "assigned_evaluator_id", "technical_reviewed_at"]) {
+        assert.deepEqual(afterSecond[key], beforeSecond[key]);
+      }
+      assert.equal(afterSecond.created_by_user_id, previous.id);
+      assert.equal(afterSecond.responsible_user_id, third.id);
+      assert.deepEqual((await owner.query("SELECT * FROM evaluations WHERE procedure_id=$1", [returned.id])).rows, evaluationBefore);
+      assert.equal((await getOwnEvaluationFeedback(app, third, returned.id)).criteria.con1.response, "Respuesta del elaborador B");
+      await saveAuthorEvaluationResponses(app, third, returned.id, { con1: "Respuesta del elaborador C" });
+      const finalFeedback = await getOwnEvaluationFeedback(app, third, returned.id);
+      assert.deepEqual(finalFeedback.criteria.con1.trace.filter(entry => entry.action === "Respuesta del Elaborador").map(entry => entry.actor),
+        [previous.displayName, next.displayName, third.displayName]);
+      const current = await getOwnDraft(app, third, returned.id);
+      await updateOwnDraft(app, third, current.id, { name: current.name, payload: current.payload, revision: current.revision });
+      const events = (await owner.query(`SELECT metadata FROM audit_events
+        WHERE entity_id=$1 AND event_type='procedure_responsibility_reassigned' ORDER BY created_at, id`, [returned.id])).rows;
+      assert.deepEqual(events.map(row => [row.metadata.previousResponsibleUserId, row.metadata.responsibleUserId]),
+        [[previous.id, next.id], [next.id, third.id]]);
+    });
+    await t.test("target deactivation committed while reassignment waits rejects the change", async () => {
+      const concurrent = await createDraft(app, previous, {
+        name: "Formular el plan ante desactivación concurrente", processCode: "DE", consecutive: "5", payload
+      });
+      const deactivation = await owner.connect();
+      let pending;
+      try {
+        await deactivation.query("BEGIN");
+        const blockerPid = (await deactivation.query("SELECT pg_backend_pid() AS pid")).rows[0].pid;
+        await deactivation.query("UPDATE app_users SET active=FALSE WHERE id=$1", [next.id]);
+        pending = reassign(concurrent).then(value => ({ value }), error => ({ error }));
+        let blocked = false;
+        const deadline = Date.now() + 5000;
+        while (Date.now() < deadline) {
+          blocked = (await owner.query(
+            "SELECT EXISTS (SELECT 1 FROM pg_stat_activity WHERE $1 = ANY(pg_blocking_pids(pid))) AS waiting", [blockerPid]
+          )).rows[0].waiting;
+          if (blocked) break;
+          await delay(20);
+        }
+        assert.equal(blocked, true, "reassignment must wait on the target update before deactivation commits");
+        await deactivation.query("COMMIT");
+        assert.equal((await pending).error?.code, "responsible_user_unavailable");
+        const row = (await owner.query("SELECT responsible_user_id, revision FROM procedures WHERE id=$1", [concurrent.id])).rows[0];
+        assert.equal(row.responsible_user_id, null);
+        assert.equal(row.revision, concurrent.revision);
+        assert.equal((await owner.query("SELECT id FROM user_notifications WHERE procedure_id=$1", [concurrent.id])).rows.length, 0);
+      } finally {
+        await deactivation.query("ROLLBACK");
+        deactivation.release();
+        if (pending) await pending;
+        await owner.query("UPDATE app_users SET active=TRUE WHERE id=$1", [next.id]);
+      }
+    });
+    await t.test("administrator, evaluator, nonmember and nonexistent targets or procedures fail without writes", async () => {
+      const untouched = await createDraft(app, previous, {
+        name: "Formular el plan para validar destinos", processCode: "DE", consecutive: "6", payload
+      });
+      const before = (await owner.query("SELECT * FROM procedures WHERE id=$1", [untouched.id])).rows[0];
+      for (const targetId of [admin.id, evaluator.id, outside.id, randomUUID()]) {
+        await assert.rejects(reassign(untouched, targetId), { code: "responsible_user_unavailable", status: 409 });
+      }
+      await assert.rejects(reassign({ id: randomUUID(), revision: 1 }), { code: "draft_not_found", status: 404 });
+      await assert.rejects(listReassignmentCandidates(app, admin, randomUUID()), { code: "draft_not_found", status: 404 });
+      assert.deepEqual((await owner.query("SELECT * FROM procedures WHERE id=$1", [untouched.id])).rows[0], before);
+      assert.equal((await owner.query("SELECT id FROM user_notifications WHERE procedure_id=$1", [untouched.id])).rows.length, 0);
+      assert.equal((await owner.query("SELECT id FROM audit_events WHERE entity_id=$1 AND event_type='procedure_responsibility_reassigned'", [untouched.id])).rows.length, 0);
+      assert.equal((await app.query("SELECT 1 AS usable")).rows[0].usable, 1);
+    });
+    await t.test("database audit failure rolls responsibility, revision and notifications back", async () => {
+      const untouched = await createDraft(app, previous, {
+        name: "Formular el plan con auditoría fallida", processCode: "DE", consecutive: "7", payload
+      });
+      const before = (await owner.query("SELECT * FROM procedures WHERE id=$1", [untouched.id])).rows[0];
+      await owner.query(`CREATE FUNCTION ${schema}.reject_reassignment_audit() RETURNS trigger LANGUAGE plpgsql AS $$
+        BEGIN
+          IF NEW.event_type='procedure_responsibility_reassigned' AND NEW.entity_id='${untouched.id}'::uuid THEN
+            RAISE EXCEPTION 'isolated audit failure';
+          END IF;
+          RETURN NEW;
+        END $$`);
+      await owner.query(`CREATE TRIGGER reject_reassignment_audit BEFORE INSERT ON audit_events
+        FOR EACH ROW EXECUTE FUNCTION ${schema}.reject_reassignment_audit()`);
+      try {
+        await assert.rejects(reassign(untouched), { code: "P0001", message: "isolated audit failure" });
+        assert.deepEqual((await owner.query("SELECT * FROM procedures WHERE id=$1", [untouched.id])).rows[0], before);
+        assert.equal((await owner.query("SELECT id FROM audit_events WHERE entity_id=$1 AND event_type='procedure_responsibility_reassigned'", [untouched.id])).rows.length, 0);
+        assert.equal((await owner.query("SELECT id FROM user_notifications WHERE procedure_id=$1", [untouched.id])).rows.length, 0);
+        assert.equal((await app.query("SELECT 1 AS usable")).rows[0].usable, 1);
+      } finally {
+        await owner.query("DROP TRIGGER reject_reassignment_audit ON audit_events");
+        await owner.query(`DROP FUNCTION ${schema}.reject_reassignment_audit()`);
+      }
+      assert.equal((await reassign(untouched)).responsibleUserId, next.id);
+    });
+    await t.test("failure of second notification rolls back first notification, audit and responsibility", async () => {
+      const untouched = await createDraft(app, previous, {
+        name: "Formular el plan con notificación fallida", processCode: "DE", consecutive: "8", payload
+      });
+      const before = (await owner.query("SELECT * FROM procedures WHERE id=$1", [untouched.id])).rows[0];
+      await owner.query(`CREATE FUNCTION ${schema}.reject_second_reassignment_notice() RETURNS trigger LANGUAGE plpgsql AS $$
+        BEGIN
+          IF NEW.event_type='procedure_responsibility_reassigned' AND NEW.procedure_id='${untouched.id}'::uuid
+            AND NEW.recipient_user_id='${next.id}'::uuid THEN
+            RAISE EXCEPTION 'isolated second notification failure';
+          END IF;
+          RETURN NEW;
+        END $$`);
+      await owner.query(`CREATE TRIGGER reject_second_reassignment_notice BEFORE INSERT ON user_notifications
+        FOR EACH ROW EXECUTE FUNCTION ${schema}.reject_second_reassignment_notice()`);
+      try {
+        await assert.rejects(reassign(untouched), { code: "P0001", message: "isolated second notification failure" });
+        assert.deepEqual((await owner.query("SELECT * FROM procedures WHERE id=$1", [untouched.id])).rows[0], before);
+        assert.equal((await owner.query("SELECT id FROM audit_events WHERE entity_id=$1 AND event_type='procedure_responsibility_reassigned'", [untouched.id])).rows.length, 0);
+        assert.equal((await owner.query("SELECT id FROM user_notifications WHERE procedure_id=$1", [untouched.id])).rows.length, 0);
+        assert.equal((await app.query("SELECT 1 AS usable")).rows[0].usable, 1);
+      } finally {
+        await owner.query("DROP TRIGGER reject_second_reassignment_notice ON user_notifications");
+        await owner.query(`DROP FUNCTION ${schema}.reject_second_reassignment_notice()`);
+      }
+      assert.equal((await reassign(untouched)).responsibleUserId, next.id);
+      assert.equal((await owner.query("SELECT id FROM user_notifications WHERE procedure_id=$1", [untouched.id])).rows.length, 2);
+    });
   } finally {
     await app?.end();
     await owner.query(`DROP SCHEMA IF EXISTS ${schema} CASCADE`);
